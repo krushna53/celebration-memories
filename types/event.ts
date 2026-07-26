@@ -6,6 +6,8 @@
  * the admin-editable fields added on top of the Phase 3 schema).
  */
 
+import type { SectionConfigItem } from "@/lib/section-registry";
+
 export type EventCategory =
   | "birthday"
   | "wedding"
@@ -59,6 +61,12 @@ export interface EventRecord {
    * Off by default: RSVP stays locked to personal /invite/[token] links.
    */
   publicRsvpEnabled: boolean;
+  /** Storage path (gallery bucket) of the organizer-chosen link-preview image. See lib/event-metadata.ts. */
+  shareImagePath: string | null;
+  /** Homepage section order/visibility, admin-editable. Null = default (all sections, standard order). See lib/section-registry.ts. */
+  sectionConfig: SectionConfigItem[] | null;
+  /** Max AI Image generations a client-role admin may make for this event. Owner is exempt. See services/ai-image-generations.ts. */
+  aiImageGenerationLimit: number;
   createdAt: string;
   updatedAt: string;
 }

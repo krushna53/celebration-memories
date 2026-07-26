@@ -286,17 +286,41 @@ payouts, contact inquiries, event-day check-in, bulk media export).
 | Memories (moderation) | ✅ | ✅ |
 | Invitees, Check-In, Referrals, Inquiries, Share Image, media export | ✅ | ❌ (redirected to `/admin`) |
 
-To create a client account for a host:
+There are two ways to create a client account for a host:
 
-1. **Authentication → Users → Add user** in Supabase, same as any admin.
+**Self-registration (recommended)** — send them `/admin/register`. They
+fill in their name, email, and a password, and Supabase emails them a
+verification link. Nothing happens until they click it: a database
+trigger (`auto_admin_on_email_confirm` migration) only creates their
+`admins` row — always with `role = 'client'` — the moment
+`auth.users.email_confirmed_at` gets set. An unverified signup has a
+Supabase Auth account but no `admins` row, so `/admin/login` just
+bounces them back with no dashboard access. This means anyone who finds
+`/admin/register` *can* create an account and become a client admin for
+the active event once they verify their email — there's no invite
+step gating who's allowed to register. If you'd rather pre-approve
+specific people, use the manual SQL method below instead and don't
+publicize the register link.
+
+⚠️ This depends on Supabase's **Confirm email** setting being ON
+(Authentication → Providers → Email in the Supabase dashboard — it's
+the default for new projects, but worth double-checking). If it's off,
+signups get a session immediately without verifying anything, and the
+trigger fires right away.
+
+**Manual (SQL)** — for pre-approving a specific person, or creating
+another owner account:
+
+1. **Authentication → Users → Add user** in Supabase.
 2. In the SQL Editor:
    ```sql
    insert into admins (id, email, name, role)
    select id, email, 'Host Name', 'client' from auth.users where email = 'host@example.com';
    ```
-3. Send them the `/admin/login` URL and their password. Their sidebar
-   will only show the allowed pages, and a "Host access" badge appears
-   in the dashboard header so it's clear which mode they're in.
+
+Either way, once they're in: send them the `/admin/login` URL. Their
+sidebar will only show the allowed pages, and a "Host access" badge
+appears in the dashboard header so it's clear which mode they're in.
 
 The allow-list itself lives in `lib/admin-roles.ts` (`CLIENT_ALLOWED_PATHS`)
 if you ever want to open up or restrict a different page. Enforcement is
@@ -342,6 +366,67 @@ else's response. It's a reasonable default for informal or large-list
 events; personal links remain the more precise option and both can be
 used side by side — invitees created through either path show up
 together on `/admin/invitees`.
+
+### Optional integrations: analytics + email
+
+**Microsoft Clarity** (heatmaps + session recordings — see where visitors
+hesitate or give up) — create a free project at clarity.microsoft.com,
+copy its project ID, and set `NEXT_PUBLIC_CLARITY_PROJECT_ID` in your
+env. Leave it blank to skip; the site works identically either way.
+
+There's also a self-hosted, no-account-needed **Visitor Funnel** on the
+admin Overview page — page views → engaged with the RSVP form →
+submitted, plus a completion rate. It's a numbers-only view (nothing
+visual); Clarity is what shows the *why* behind a drop-off, this just
+shows *how many*. It works from day one without any setup, tracked via
+`activity_logs` (see services/tracking.ts).
+
+**Resend** (transactional email — admin notification on new Contact Us
+inquiries, RSVP confirmation to guests who provide an email) — create a
+free account at resend.com, get an API key, and set:
+```
+RESEND_API_KEY=...
+RESEND_FROM_EMAIL=Celebration Memories <notifications@yourdomain.com>
+ADMIN_NOTIFICATION_EMAIL=you@example.com
+```
+Landing in the inbox instead of spam is mostly about **domain
+verification** (SPF/DKIM/DMARC), not the provider — Resend's dashboard
+walks you through adding those DNS records for your own domain. Their
+shared `onboarding@resend.dev` sender works for testing but is more
+likely to get filtered; verify your own domain before relying on this
+for real guest-facing email. Leave `RESEND_API_KEY` unset to skip
+sending email entirely — inquiries still land on `/admin/inquiries`
+either way.
+
+### AI Image (optional, owner-only)
+
+`/admin/ai-image` generates an image from a text description using
+OpenAI's image API — for a link preview image, a gallery photo, or just
+inspiration for a printed invitation. Available to both owner and
+client accounts. Because it costs real money per image and there's no
+billing pass-through to clients yet, client-role admins are capped at
+`events.ai_image_generation_limit` (default 5) generations per event —
+the owner is exempt. Raise or lower it per event with:
+```sql
+update events set ai_image_generation_limit = 30 where slug = 'your-event-slug';
+```
+
+**Getting an API key** (you do this yourself — account creation and
+billing setup aren't something Claude can do on your behalf):
+1. Go to platform.openai.com and sign up / log in.
+2. Add a payment method under **Settings → Billing** — image generation
+   is pay-per-use, there's no free tier.
+3. Go to **Settings → API Keys → Create new secret key**, copy it
+   immediately (it's only shown once).
+4. Set `OPENAI_API_KEY` in your env to that key.
+
+Leave it unset and `/admin/ai-image` shows a "not configured" message
+instead of erroring — everything else on the site works identically
+either way.
+
+**Cost** (mid-2026 pricing, subject to change): roughly $0.02–$0.19 per
+image depending on quality/size. Model defaults to `gpt-image-2`;
+override with `OPENAI_IMAGE_MODEL` if OpenAI ships something newer.
 
 ### Content still needed before launch
 

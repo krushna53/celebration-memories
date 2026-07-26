@@ -13,6 +13,7 @@ import {
   ImagePlus,
   Gift,
   Inbox,
+  Sparkles,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -28,6 +29,7 @@ const NAV = [
   { href: "/admin/timeline", label: "Timeline", icon: Clock },
   { href: "/admin/memories", label: "Memories", icon: ImageIcon },
   { href: "/admin/share-image", label: "Share Image", icon: ImagePlus },
+  { href: "/admin/ai-image", label: "AI Image", icon: Sparkles },
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox },
   { href: "/admin/checkin", label: "Check-In", icon: CalendarCheck },

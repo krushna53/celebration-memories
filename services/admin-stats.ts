@@ -102,3 +102,49 @@ export async function getDashboardStats(eventId: string): Promise<DashboardStats
     ).map((g) => ({ id: g.id, name: g.name, visitCount: g.visit_count })),
   };
 }
+
+export interface VisitorFunnel {
+  landingPageViews: number;
+  publicRsvpPageViews: number;
+  rsvpStarted: number;
+  rsvpSubmitted: number;
+}
+
+async function countActivityEvents(eventId: string, ...eventTypes: string[]): Promise<number> {
+  const { count, error } = await supabaseAdmin()
+    .from("activity_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .in("event_type", eventTypes);
+
+  if (error) {
+    console.error(`countActivityEvents(${eventTypes.join(",")}) failed:`, error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+/**
+ * A lightweight, self-hosted "where are visitors dropping off" funnel:
+ * page views (landing + public RSVP page) → engaged with the RSVP form
+ * (first field focus) → actually submitted. `rsvpSubmitted` reuses the
+ * invitees.rsvp_status counts already computed above rather than
+ * querying activity_logs again, since every non-pending invitee is by
+ * definition a submitted RSVP, however they got there (personal link or
+ * public form). For visual heatmaps/session recordings of *why* a step
+ * loses people, see the Microsoft Clarity integration (README).
+ */
+export async function getVisitorFunnel(eventId: string, invitations: DashboardStats["invitations"]): Promise<VisitorFunnel> {
+  const [landingPageViews, publicRsvpPageViews, rsvpStarted] = await Promise.all([
+    countActivityEvents(eventId, "page_view_landing"),
+    countActivityEvents(eventId, "page_view_public_rsvp"),
+    countActivityEvents(eventId, "rsvp_form_started_token", "rsvp_form_started_public"),
+  ]);
+
+  return {
+    landingPageViews,
+    publicRsvpPageViews,
+    rsvpStarted,
+    rsvpSubmitted: invitations.coming + invitations.maybe + invitations.declined,
+  };
+}

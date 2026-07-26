@@ -35,13 +35,15 @@ export interface TemplateTheme {
   fontDisplayVar: string;
   fontSansVar: string;
   /**
-   * Named motion personality. Every template currently shares the same
-   * restrained Reveal timing (see components/motion/reveal.tsx) — this
-   * flag is read from `data-template-animation` on the theme wrapper so
-   * future work can hook per-template easing/duration without touching
-   * section components. Documented now, not fully wired yet (MVP).
+   * Named motion personality, read via useTemplateAnimation() (see
+   * templates/shared/template-animation-context.tsx) by both the Reveal
+   * component (scroll-entrance timing) and HeroSection (which particle
+   * background renders — gold dust, confetti, or rising balloons).
+   * "festive" and "jubilant" are birthday-specific: festive keeps the
+   * luxury brief's restraint with a warmer/livelier touch, jubilant
+   * goes full celebration (confetti bursts + floating balloons).
    */
-  animation: "luxury" | "playful" | "energetic" | "dreamy" | "minimal";
+  animation: "luxury" | "playful" | "energetic" | "dreamy" | "minimal" | "festive" | "jubilant";
 }
 
 /** Props every template component receives — identical across all templates. */
@@ -77,6 +79,8 @@ const COMPONENTS: Record<string, ComponentType<BirthdayTemplateProps>> = {
   "minimal-white": dynamic(() => import("@/templates/MinimalWhite")),
   "kids-cartoon": dynamic(() => import("@/templates/KidsCartoon")),
   "neon-party": dynamic(() => import("@/templates/NeonParty")),
+  "golden-confetti": dynamic(() => import("@/templates/GoldenConfetti")),
+  "balloon-pop": dynamic(() => import("@/templates/BalloonPop")),
 };
 
 export const ALL_TEMPLATES: TemplateDefinition[] = TEMPLATE_CATALOG.map((summary) => ({

@@ -1,0 +1,13 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#2b0f1a"/>
+  <rect y="220" width="400" height="80" fill="#fffaf3"/>
+  <rect x="60" y="40" width="10" height="4" fill="#ffb35c" transform="rotate(20 65 42)"/>
+  <rect x="320" y="60" width="10" height="4" fill="#ffc98a" transform="rotate(-15 325 62)"/>
+  <rect x="100" y="180" width="10" height="4" fill="#ff9a3c" transform="rotate(35 105 182)"/>
+  <rect x="300" y="170" width="10" height="4" fill="#ffe0b8" transform="rotate(-25 305 172)"/>
+  <rect x="200" y="30" width="10" height="4" fill="#ffb35c" transform="rotate(10 205 32)"/>
+  <line x1="150" y1="120" x2="250" y2="120" stroke="#ff9a3c" stroke-width="2"/>
+  <text x="200" y="100" font-family="Georgia, serif" font-size="15" fill="#ffc98a" text-anchor="middle" letter-spacing="3">HOSTED BY</text>
+  <text x="200" y="150" font-family="Georgia, serif" font-size="24" fill="#fffaf3" text-anchor="middle">Golden Confetti</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#5c2439" text-anchor="middle">Festive &#183; Playfair Display</text>
+</svg>

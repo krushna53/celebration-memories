@@ -32,6 +32,12 @@ export function Footer() {
           Build Your Own Celebration Site
         </Link>
         <Link
+          href="/roles"
+          className="transition-luxury duration-300 hover:text-gold-300"
+        >
+          Who Can Do What
+        </Link>
+        <Link
           href="/privacy"
           className="transition-luxury duration-300 hover:text-gold-300"
         >

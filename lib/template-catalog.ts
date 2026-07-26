@@ -84,6 +84,31 @@ export const TEMPLATE_CATALOG: TemplateSummary[] = [
     secondaryColor: "#2fe0ff",
     fontFamily: "Bebas Neue",
   },
+  {
+    id: "tpl-golden-confetti",
+    slug: "golden-confetti",
+    name: "Golden Confetti",
+    description: "Warm wine & amber with drifting confetti — festive, still polished. Built for birthdays.",
+    category: "festive",
+    premium: false,
+    thumbnail: "/templates/golden-confetti.svg",
+    primaryColor: "#ff9a3c",
+    secondaryColor: "#2b0f1a",
+    fontFamily: "Playfair Display",
+  },
+  {
+    id: "tpl-balloon-pop",
+    slug: "balloon-pop",
+    name: "Balloon Pop",
+    description: "Midnight purple, sunshine yellow, confetti bursts and rising balloons — full celebration mode.",
+    category: "festive",
+    premium: true,
+    price: 499,
+    thumbnail: "/templates/balloon-pop.svg",
+    primaryColor: "#ffc107",
+    secondaryColor: "#1a0b2e",
+    fontFamily: "Baloo 2",
+  },
 ];
 
 export const DEFAULT_TEMPLATE_SLUG = "royal-gold";

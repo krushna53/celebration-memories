@@ -1,3 +1,5 @@
+import { Fragment, type ReactNode } from "react";
+
 import { HeroSection } from "@/features/hero/hero-section";
 import { CountdownSection } from "@/features/countdown/countdown-section";
 import { InvitationSection } from "@/features/invitation/invitation-section";
@@ -6,6 +8,8 @@ import { GallerySection } from "@/features/gallery/gallery-section";
 import { TimelineSection } from "@/features/timeline/timeline-section";
 import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
 import { MemoryWallSection } from "@/features/memory-wall/memory-wall-section";
+import { PageViewBeacon } from "@/features/analytics/page-view-beacon";
+import { normalizeSectionConfig, type SectionKey } from "@/lib/section-registry";
 import type { EventDisplayData } from "@/lib/event-display";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
@@ -18,23 +22,47 @@ export interface EventSectionsProps {
 }
 
 /**
- * The Hero-through-Memory-Wall section stack, in CLAUDE.md's homepage
- * order. This is the one place that composes those sections — every
- * template (see /lib/templates.ts) renders this same component inside
- * its own themed shell, so templates only ever differ by colour/font/
- * layout wrapper, never by section logic or data-fetching.
+ * The Hero-through-Memory-Wall section stack. Hero always renders
+ * first (see lib/section-registry.ts for why); everything after it
+ * renders in whichever order/visibility the admin set on
+ * /admin/event-settings (events.section_config) — defaulting to
+ * CLAUDE.md's original order when unset, so existing events are
+ * unaffected until an admin actively customizes theirs.
+ *
+ * Every template (see /lib/templates.ts) renders this same component
+ * inside its own themed shell, so templates only ever differ by
+ * colour/font/layout wrapper, never by section logic or data-fetching
+ * — and the section builder works identically across all of them.
  */
 export function EventSections({ event, displayData: data, galleryPhotos, milestones }: EventSectionsProps) {
+  const config = normalizeSectionConfig(event?.sectionConfig);
+
+  const sectionsByKey: Record<SectionKey, ReactNode> = {
+    countdown: <CountdownSection isoStart={data.isoStart} />,
+    invitation: <InvitationSection data={data} />,
+    eventDetails: <EventDetailsSection data={data} />,
+    gallery: <GallerySection photos={galleryPhotos} />,
+    timeline: <TimelineSection milestones={milestones} />,
+    rsvp: (
+      <RsvpTeaserSection
+        eventId={event?.id}
+        eventSlug={event?.slug}
+        publicRsvpEnabled={event?.publicRsvpEnabled}
+        honoreeName={event?.honoreeName}
+      />
+    ),
+    memoryWall: event ? <MemoryWallSection eventId={event.id} /> : null,
+  };
+
   return (
     <>
+      {event ? <PageViewBeacon eventId={event.id} page="landing" /> : null}
       <HeroSection data={data} />
-      <CountdownSection isoStart={data.isoStart} />
-      <InvitationSection data={data} />
-      <EventDetailsSection data={data} />
-      <GallerySection photos={galleryPhotos} />
-      <TimelineSection milestones={milestones} />
-      <RsvpTeaserSection eventSlug={event?.slug} publicRsvpEnabled={event?.publicRsvpEnabled} />
-      {event ? <MemoryWallSection eventId={event.id} /> : null}
+      {config
+        .filter((item) => item.visible)
+        .map((item) => (
+          <Fragment key={item.key}>{sectionsByKey[item.key]}</Fragment>
+        ))}
     </>
   );
 }

@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import type { TemplateTheme } from "@/lib/templates";
+import { TemplateAnimationProvider } from "@/templates/shared/template-animation-context";
 
 interface TemplateThemeWrapperProps {
   theme: TemplateTheme;
@@ -38,8 +39,10 @@ export function TemplateThemeWrapper({ theme, children }: TemplateThemeWrapperPr
   } as CSSProperties;
 
   return (
-    <div style={style} data-template-animation={theme.animation}>
-      {children}
-    </div>
+    <TemplateAnimationProvider value={theme.animation}>
+      <div style={style} data-template-animation={theme.animation}>
+        {children}
+      </div>
+    </TemplateAnimationProvider>
   );
 }

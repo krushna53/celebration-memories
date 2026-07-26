@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Loader2 } from "lucide-react";
@@ -8,6 +8,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { submitPublicRsvpAction } from "@/features/rsvp/public-rsvp-actions";
+import { logRsvpStartedAction } from "@/features/tracking/actions";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_OPTIONS,
@@ -24,6 +25,7 @@ const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-
 
 interface PublicRsvpFormProps {
   eventSlug: string;
+  eventId: string;
   honoreeName: string;
 }
 
@@ -36,11 +38,18 @@ interface PublicRsvpFormProps {
  * honeypot field guards against bots since this page has no secret
  * token gating it.
  */
-export function PublicRsvpForm({ eventSlug, honoreeName }: PublicRsvpFormProps) {
+export function PublicRsvpForm({ eventSlug, eventId, honoreeName }: PublicRsvpFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submittedName, setSubmittedName] = useState("");
   const [serverError, setServerError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
+  const startedTracked = useRef(false);
+
+  function trackStarted() {
+    if (startedTracked.current) return;
+    startedTracked.current = true;
+    logRsvpStartedAction(eventId, "public").catch(() => {});
+  }
 
   const {
     register,
@@ -95,6 +104,7 @@ export function PublicRsvpForm({ eventSlug, honoreeName }: PublicRsvpFormProps) 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
+      onFocusCapture={trackStarted}
       noValidate
       className="grid gap-6 rounded-2xl border border-gold-500/15 bg-white px-6 py-8 text-left shadow-sm sm:px-10 sm:py-10"
     >

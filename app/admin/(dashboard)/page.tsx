@@ -1,6 +1,6 @@
 import { EVENT_SLUG } from "@/lib/constants";
 import { getEventBySlug } from "@/services/events";
-import { getDashboardStats } from "@/services/admin-stats";
+import { getDashboardStats, getVisitorFunnel } from "@/services/admin-stats";
 import { StatCard } from "@/features/admin/components/stat-card";
 import { BarChart } from "@/features/admin/components/bar-chart";
 
@@ -13,6 +13,7 @@ export default async function AdminOverviewPage() {
   }
 
   const stats = await getDashboardStats(event.id);
+  const funnel = await getVisitorFunnel(event.id, stats.invitations);
 
   return (
     <div className="grid gap-8">
@@ -61,6 +62,40 @@ export default async function AdminOverviewPage() {
               ))}
             </ul>
           )}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg text-navy-950">Visitor Funnel</h2>
+        <p className="mt-1 text-xs text-navy-700/50">
+          Page views → engaged with the RSVP form → submitted. A rough
+          picture of where visitors drop off.
+          {process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID
+            ? " For the visual why (heatmaps, session recordings), check your Microsoft Clarity dashboard."
+            : " Set up Microsoft Clarity (see README) for heatmaps and session recordings showing the visual why."}
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <StatCard label="Page Views" value={funnel.landingPageViews + funnel.publicRsvpPageViews} />
+          <StatCard label="Engaged With RSVP Form" value={funnel.rsvpStarted} />
+          <StatCard label="Submitted RSVP" value={funnel.rsvpSubmitted} />
+          <StatCard
+            label="Completion Rate"
+            value={
+              funnel.rsvpStarted > 0
+                ? `${Math.round((funnel.rsvpSubmitted / funnel.rsvpStarted) * 100)}%`
+                : "—"
+            }
+            hint="submitted ÷ engaged"
+          />
+        </div>
+        <div className="mt-4">
+          <BarChart
+            data={[
+              { label: "Page Views", value: funnel.landingPageViews + funnel.publicRsvpPageViews, color: "#21395e" },
+              { label: "Engaged", value: funnel.rsvpStarted, color: "#a9861e" },
+              { label: "Submitted", value: funnel.rsvpSubmitted, color: "#c9a227" },
+            ]}
+          />
         </div>
       </div>
     </div>

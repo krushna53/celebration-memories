@@ -1,9 +1,12 @@
+import { cache } from "react";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 import { getInviteeByToken } from "@/services/invitees";
 import { logInviteOpened } from "@/services/tracking";
 import { formatEventDate, formatEventTime } from "@/lib/format";
+import { buildEventMetadata } from "@/lib/event-metadata";
 import { RsvpForm } from "@/features/rsvp/rsvp-form";
 import { MediaUploadsSection } from "@/features/uploads/media-uploads-section";
 import { GuestbookForm } from "@/features/guestbook/guestbook-form";
@@ -19,9 +22,22 @@ interface InvitePageProps {
   params: Promise<{ token: string }>;
 }
 
+// cache() dedupes this within a single request — generateMetadata and
+// the page component both need the invitee, but should only fetch once.
+const loadInvitee = cache((token: string) => getInviteeByToken(token));
+
+// So pasting a personal invite link into WhatsApp/iMessage shows the
+// organizer's link preview image (see lib/event-metadata.ts) instead of
+// a bare URL — previously this route had no metadata at all.
+export async function generateMetadata({ params }: InvitePageProps): Promise<Metadata> {
+  const { token } = await params;
+  const found = await loadInvitee(token);
+  return buildEventMetadata(found?.event ?? null);
+}
+
 export default async function InvitePage({ params }: InvitePageProps) {
   const { token } = await params;
-  const found = await getInviteeByToken(token);
+  const found = await loadInvitee(token);
 
   if (!found) {
     notFound();
@@ -62,6 +78,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
           <Reveal delay={0.1}>
             <RsvpForm
               token={token}
+              eventId={event.id}
               guestName={invitee.name}
               defaultValues={
                 existingRsvp

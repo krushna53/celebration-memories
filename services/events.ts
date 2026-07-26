@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { SectionConfigItem } from "@/lib/section-registry";
 import type { EventRecord } from "@/types/event";
 
 export interface EventRow {
@@ -26,6 +27,9 @@ export interface EventRow {
   template_slug: string | null;
   invite_message_template: string | null;
   public_rsvp_enabled: boolean;
+  share_image_path: string | null;
+  section_config: SectionConfigItem[] | null;
+  ai_image_generation_limit: number;
   created_at: string;
   updated_at: string;
 }
@@ -54,6 +58,9 @@ export function mapEvent(row: EventRow): EventRecord {
     templateSlug: row.template_slug ?? "royal-gold",
     inviteMessageTemplate: row.invite_message_template,
     publicRsvpEnabled: row.public_rsvp_enabled ?? false,
+    shareImagePath: row.share_image_path,
+    sectionConfig: row.section_config,
+    aiImageGenerationLimit: row.ai_image_generation_limit ?? 5,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -107,6 +114,8 @@ export interface EventUpdateInput {
   templateSlug?: string;
   inviteMessageTemplate?: string | null;
   publicRsvpEnabled?: boolean;
+  shareImagePath?: string | null;
+  sectionConfig?: SectionConfigItem[] | null;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -131,6 +140,8 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.inviteMessageTemplate !== undefined)
     patch.invite_message_template = input.inviteMessageTemplate;
   if (input.publicRsvpEnabled !== undefined) patch.public_rsvp_enabled = input.publicRsvpEnabled;
+  if (input.shareImagePath !== undefined) patch.share_image_path = input.shareImagePath;
+  if (input.sectionConfig !== undefined) patch.section_config = input.sectionConfig;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

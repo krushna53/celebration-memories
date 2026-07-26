@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { getCoverPhoto } from "@/services/gallery-photos";
+import { publicMediaUrl } from "@/services/uploads";
 import { toEventDisplayData } from "@/lib/event-display";
 import { SITE_NAME } from "@/lib/constants";
 import type { EventRecord } from "@/types/event";
@@ -8,9 +9,13 @@ import type { EventRecord } from "@/types/event";
 /**
  * Builds per-event page metadata, including a real Open Graph image, so
  * pasting an event's link into Facebook/X/WhatsApp/iMessage shows a
- * proper preview card instead of the generic site default. Falls back
- * gracefully (no image) if the event has no gallery photos yet or
- * Supabase is unreachable — metadata should never break a page render.
+ * proper preview card instead of the generic site default.
+ *
+ * Image priority: the organizer's chosen Link Preview Image
+ * (events.share_image_path, set on Event Settings) first, then the
+ * oldest Gallery photo as a reasonable default, then no image — this
+ * should never throw and break a page render even if Supabase is
+ * unreachable.
  */
 export async function buildEventMetadata(event: EventRecord | null): Promise<Metadata> {
   const data = toEventDisplayData(event);
@@ -20,7 +25,9 @@ export async function buildEventMetadata(event: EventRecord | null): Promise<Met
     : `Hosted by ${data.hostedBy} · ${data.dayOfWeek}, ${data.date}`;
 
   let coverImage: string | null = null;
-  if (event) {
+  if (event?.shareImagePath) {
+    coverImage = publicMediaUrl("gallery", event.shareImagePath);
+  } else if (event) {
     try {
       coverImage = await getCoverPhoto(event.id);
     } catch (err) {

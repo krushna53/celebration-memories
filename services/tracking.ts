@@ -53,3 +53,40 @@ export async function logActivity(inviteeId: string, eventType: string) {
     console.error(`activity_logs insert (${eventType}) failed:`, error.message);
   }
 }
+
+export type PageViewType = "landing" | "public_rsvp";
+
+/**
+ * Logs an anonymous page view (no invitee identity yet) — the homepage/
+ * event landing page, or the public RSVP page. Fired client-side via a
+ * PageViewBeacon (features/analytics/page-view-beacon.tsx) rather than
+ * during a cached/ISR page render, so it's counted per real visit
+ * rather than per revalidation window.
+ */
+export async function logPageView(eventId: string, page: PageViewType): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .from("activity_logs")
+    .insert({ event_id: eventId, event_type: `page_view_${page}` });
+
+  if (error) {
+    console.error(`activity_logs page_view_${page} insert failed:`, error.message);
+  }
+}
+
+export type RsvpFormSource = "token" | "public";
+
+/**
+ * Logs "a visitor engaged with the RSVP form" (fired on first field
+ * focus, not just page load — see the forms' onFocus handlers) so the
+ * admin Visitor Funnel can show landing views → started RSVP →
+ * submitted RSVP, a rough proxy for where guests are dropping off.
+ */
+export async function logRsvpStarted(eventId: string, source: RsvpFormSource): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .from("activity_logs")
+    .insert({ event_id: eventId, event_type: `rsvp_form_started_${source}` });
+
+  if (error) {
+    console.error(`activity_logs rsvp_form_started_${source} insert failed:`, error.message);
+  }
+}

@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 import { findOrCreateSelfInvitee, getEventForPublicRsvp } from "@/services/public-rsvp";
 import { submitRsvp } from "@/services/rsvps";
+import { sendRsvpConfirmation } from "@/lib/email";
 import { rsvpFormSchema, type RsvpFormValues } from "@/types/rsvp";
 
 export type SubmitPublicRsvpResult =
@@ -62,6 +64,20 @@ export async function submitPublicRsvpAction(
       success: false,
       error: "Something went wrong saving your RSVP. Please try again.",
     };
+  }
+
+  if (parsed.data.email) {
+    const requestHeaders = await headers();
+    const host = requestHeaders.get("host");
+    const eventUrl = host ? `https://${host}/events/${eventSlug}` : `/events/${eventSlug}`;
+    sendRsvpConfirmation({
+      guestEmail: parsed.data.email,
+      guestName: parsed.data.name,
+      honoreeName: event.honoreeName,
+      eventTitle: event.eventTitle,
+      coming: parsed.data.coming,
+      eventUrl,
+    }).catch((err) => console.error("sendRsvpConfirmation failed:", err));
   }
 
   revalidatePath(`/events/${eventSlug}/rsvp`);

@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, Copy, Loader2, Save } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, Copy, ImagePlus, Loader2, Save, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { updateEventAction } from "@/features/admin/event-settings/actions";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/image-compression";
+import {
+  confirmShareImageUploadAction,
+  removeShareImageAction,
+  requestShareImageUploadUrlAction,
+  updateEventAction,
+} from "@/features/admin/event-settings/actions";
+import { SectionOrderManager } from "@/features/admin/event-settings/section-order-manager";
 import {
   DEFAULT_INVITE_MESSAGE_TEMPLATE,
   INVITE_TEMPLATE_PLACEHOLDERS,
@@ -18,6 +26,7 @@ const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-
 
 interface EventSettingsFormProps {
   event: EventRecord;
+  shareImageUrl: string | null;
 }
 
 /** Converts an ISO timestamp to the value a <input type="datetime-local"> expects. */
@@ -27,7 +36,7 @@ function toLocalInputValue(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function EventSettingsForm({ event }: EventSettingsFormProps) {
+export function EventSettingsForm({ event, shareImageUrl }: EventSettingsFormProps) {
   const [form, setForm] = useState({
     occasion: event.occasion ?? "",
     honoreeName: event.honoreeName,
@@ -56,11 +65,48 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedRsvpLink, setCopiedRsvpLink] = useState(false);
+  const [uploadingShareImage, setUploadingShareImage] = useState(false);
+  const [shareImageError, setShareImageError] = useState<string | null>(null);
+  const shareImageInputRef = useRef<HTMLInputElement>(null);
 
   function copyRsvpLink() {
     navigator.clipboard.writeText(`${origin}/events/${event.slug}/rsvp`);
     setCopiedRsvpLink(true);
     setTimeout(() => setCopiedRsvpLink(false), 1500);
+  }
+
+  async function handleShareImageFile(rawFile: File) {
+    setUploadingShareImage(true);
+    setShareImageError(null);
+    try {
+      const file = await compressImage(rawFile);
+      const signed = await requestShareImageUploadUrlAction(event.id, file.name, file.type, file.size);
+      if (!signed.success) throw new Error(signed.error);
+
+      const { bucket, path, token } = signed.data;
+      const { error: uploadError } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, token, file);
+      if (uploadError) throw new Error(uploadError.message);
+
+      const confirmed = await confirmShareImageUploadAction(event.id, path);
+      if (!confirmed.success) throw new Error(confirmed.error);
+
+      window.location.reload();
+    } catch (err) {
+      setShareImageError(err instanceof Error ? err.message : "Upload failed.");
+      setUploadingShareImage(false);
+    }
+  }
+
+  async function handleRemoveShareImage() {
+    if (!confirm("Remove the link preview image?")) return;
+    setUploadingShareImage(true);
+    const result = await removeShareImageAction(event.id);
+    if (result.success) {
+      window.location.reload();
+    } else {
+      setShareImageError(result.error);
+      setUploadingShareImage(false);
+    }
   }
 
   function set<K extends keyof typeof form>(key: K, value: string) {
@@ -332,6 +378,76 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
             {previewInviteMessage(form.inviteMessageTemplate, form.hostedBy, form.honoreeName)}
           </div>
         </div>
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Homepage Sections</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          Reorder or hide sections on your public homepage — for example,
+          hide Timeline until you&rsquo;ve added milestones, or move Gallery
+          higher. Changes apply immediately to the live site once saved.
+        </p>
+        <SectionOrderManager eventId={event.id} initialConfig={event.sectionConfig} />
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Link Preview Image</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          The image shown when your site or an invite link is shared on
+          WhatsApp, Facebook, X, or iMessage. Without one, we fall back to
+          your oldest Gallery photo, then no image at all — upload one here
+          for full control. A wide photo (1200×630 or similar) works best.
+        </p>
+        <div className="flex items-center gap-4">
+          {shareImageUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={shareImageUrl}
+              alt="Current link preview"
+              className="h-20 w-36 rounded-lg border border-navy-950/10 object-cover"
+            />
+          ) : (
+            <div className="flex h-20 w-36 items-center justify-center rounded-lg border border-dashed border-navy-950/15 text-navy-700/30">
+              <ImagePlus size={22} />
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            <input
+              ref={shareImageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && handleShareImageFile(e.target.files[0])}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploadingShareImage}
+              onClick={() => shareImageInputRef.current?.click()}
+            >
+              {uploadingShareImage ? (
+                <Loader2 className="animate-spin" size={14} />
+              ) : (
+                <Upload size={14} />
+              )}
+              {shareImageUrl ? "Replace" : "Upload"}
+            </Button>
+            {shareImageUrl ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={uploadingShareImage}
+                onClick={handleRemoveShareImage}
+                className="text-red-600 hover:bg-red-50"
+              >
+                <Trash2 size={14} /> Remove
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        {shareImageError ? <p className="text-sm text-red-600">{shareImageError}</p> : null}
       </section>
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">

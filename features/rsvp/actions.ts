@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 import { getInviteeByToken } from "@/services/invitees";
 import { submitRsvp } from "@/services/rsvps";
+import { sendRsvpConfirmation } from "@/lib/email";
 import { rsvpFormSchema, type RsvpFormValues } from "@/types/rsvp";
 
 export type SubmitRsvpResult =
@@ -38,6 +40,21 @@ export async function submitRsvpAction(
       success: false,
       error: "Something went wrong saving your RSVP. Please try again.",
     };
+  }
+
+  if (parsed.data.email) {
+    const requestHeaders = await headers();
+    const host = requestHeaders.get("host");
+    const eventUrl = host ? `https://${host}/invite/${token}` : `/invite/${token}`;
+    // Best-effort — a failed confirmation email should never fail the RSVP itself.
+    sendRsvpConfirmation({
+      guestEmail: parsed.data.email,
+      guestName: parsed.data.name,
+      honoreeName: found.event.honoreeName,
+      eventTitle: found.event.eventTitle,
+      coming: parsed.data.coming,
+      eventUrl,
+    }).catch((err) => console.error("sendRsvpConfirmation failed:", err));
   }
 
   revalidatePath(`/invite/${token}`);

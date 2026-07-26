@@ -1,6 +1,7 @@
 "use server";
 
 import { createInquiry } from "@/services/inquiries";
+import { sendInquiryNotification } from "@/lib/email";
 import { inquiryFormSchema, type InquiryFormValues } from "@/types/inquiry";
 
 export type SubmitInquiryResult = { success: true } | { success: false; error: string };
@@ -17,6 +18,12 @@ export async function submitInquiryAction(values: InquiryFormValues): Promise<Su
     console.error("submitInquiryAction failed:", err);
     return { success: false, error: "Something went wrong sending your message. Please try again." };
   }
+
+  // Best-effort — the inquiry is already saved either way; a failed
+  // notification email shouldn't surface as an error to the sender.
+  sendInquiryNotification(parsed.data).catch((err) =>
+    console.error("sendInquiryNotification failed:", err),
+  );
 
   return { success: true };
 }

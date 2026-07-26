@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Loader2 } from "lucide-react";
@@ -8,6 +8,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { submitRsvpAction } from "@/features/rsvp/actions";
+import { logRsvpStartedAction } from "@/features/tracking/actions";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_OPTIONS,
@@ -24,13 +25,21 @@ const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-
 
 interface RsvpFormProps {
   token: string;
+  eventId: string;
   defaultValues: Partial<RsvpFormValues>;
   guestName: string;
 }
 
-export function RsvpForm({ token, defaultValues, guestName }: RsvpFormProps) {
+export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const startedTracked = useRef(false);
+
+  function trackStarted() {
+    if (startedTracked.current) return;
+    startedTracked.current = true;
+    logRsvpStartedAction(eventId, "token").catch(() => {});
+  }
 
   const {
     register,
@@ -82,6 +91,7 @@ export function RsvpForm({ token, defaultValues, guestName }: RsvpFormProps) {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
+      onFocusCapture={trackStarted}
       noValidate
       className="grid gap-6 rounded-2xl border border-gold-500/15 bg-white px-6 py-8 text-left shadow-sm sm:px-10 sm:py-10"
     >

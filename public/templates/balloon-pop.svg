@@ -1,0 +1,16 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#1a0b2e"/>
+  <rect y="220" width="400" height="80" fill="#fefcff"/>
+  <ellipse cx="70" cy="80" rx="18" ry="22" fill="#ffd43b" opacity="0.9"/>
+  <line x1="70" y1="102" x2="70" y2="130" stroke="#ffd43b" stroke-width="1" opacity="0.6"/>
+  <ellipse cx="330" cy="60" rx="16" ry="20" fill="#ffe066" opacity="0.9"/>
+  <line x1="330" y1="80" x2="330" y2="105" stroke="#ffe066" stroke-width="1" opacity="0.6"/>
+  <ellipse cx="290" cy="150" rx="14" ry="18" fill="#fff0a8" opacity="0.85"/>
+  <line x1="290" y1="168" x2="290" y2="190" stroke="#fff0a8" stroke-width="1" opacity="0.6"/>
+  <rect x="120" y="40" width="10" height="4" fill="#ffc107" transform="rotate(25 125 42)"/>
+  <rect x="230" y="35" width="10" height="4" fill="#ffd43b" transform="rotate(-20 235 37)"/>
+  <line x1="150" y1="120" x2="250" y2="120" stroke="#ffc107" stroke-width="2"/>
+  <text x="200" y="100" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="15" fill="#ffe066" text-anchor="middle" letter-spacing="3">HOSTED BY</text>
+  <text x="200" y="150" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="24" fill="#fefcff" text-anchor="middle">Balloon Pop</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#3d2266" text-anchor="middle">Full Celebration &#183; Baloo 2</text>
+</svg>

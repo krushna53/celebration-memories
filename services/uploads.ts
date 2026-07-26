@@ -158,4 +158,68 @@ export async function createSignedGalleryUpload(params: {
   return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
 }
 
+/**
+ * Same signed-upload pattern, for the single organizer-chosen "link
+ * preview" image used as the Open Graph/Twitter card image (see
+ * lib/event-metadata.ts). Stored in the `gallery` bucket under a
+ * dedicated prefix so it doesn't show up as a Gallery section photo.
+ */
+export async function createSignedShareImageUpload(params: {
+  eventId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { eventId, fileName, contentType, fileSize } = params;
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported image type: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS.photo;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `${eventId}/share-image/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage
+    .from("gallery")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+}
+
+/**
+ * Uploads an already-in-memory image (e.g. from OpenAI's image API —
+ * see lib/ai-image.ts) directly to the `gallery` bucket, server-side.
+ * Unlike the signed-upload flow above, there's no browser round trip:
+ * the caller already has the bytes, so this just writes them straight
+ * to Storage via the service-role client.
+ */
+export async function uploadGeneratedImage(params: {
+  eventId: string;
+  buffer: Buffer;
+  contentType: string;
+}): Promise<{ path: string; url: string }> {
+  const { eventId, buffer, contentType } = params;
+  const ext = contentType === "image/png" ? "png" : "jpg";
+  const path = `${eventId}/ai-generated/${randomUUID()}.${ext}`;
+
+  const { error } = await supabaseAdmin()
+    .storage.from("gallery")
+    .upload(path, buffer, { contentType, upsert: false });
+
+  if (error) {
+    throw new Error(`Failed to save generated image: ${error.message}`);
+  }
+
+  return { path, url: publicMediaUrl("gallery", path) };
+}
+
 export type { MemoryKind };

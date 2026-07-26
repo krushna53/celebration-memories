@@ -56,17 +56,15 @@ const LIVE_FEATURES = [
   },
   {
     icon: Palette,
-    title: "5 ready-made templates",
+    title: "7 ready-made templates",
     description:
-      "Royal Gold, Floral Pastel, Minimal White, Kids Cartoon, and Neon Party — pick a look and switch anytime from the dashboard.",
+      "Royal Gold, Floral Pastel, Minimal White, Kids Cartoon, Neon Party, Golden Confetti, and Balloon Pop — pick a look and switch anytime from the dashboard.",
   },
-];
-
-const COMING_SOON = [
   {
     icon: Sparkles,
-    title: "AI-assisted design",
-    description: "Describe the mood you want in a sentence and have the site's look adapt to match — planned for higher-tier plans.",
+    title: "AI image generation",
+    description:
+      "Describe the invitation image you want in a sentence and generate it right from the dashboard — available to every event.",
   },
 ];
 
@@ -116,6 +114,12 @@ export default async function PlatformMarketingPage({ searchParams }: PlatformMa
                 <Link href="/events">Browse Public Events</Link>
               </Button>
             </div>
+            <p className="mt-6 text-xs text-ivory-100/60">
+              Curious what a guest, host, or admin can each do?{" "}
+              <Link href="/roles" className="text-gold-300 underline underline-offset-2 hover:text-gold-200">
+                See who can do what
+              </Link>
+            </p>
           </Reveal>
         </div>
       </div>
@@ -132,33 +136,6 @@ export default async function PlatformMarketingPage({ searchParams }: PlatformMa
               <Reveal key={feature.title}>
                 <div className="h-full rounded-2xl border border-navy-950/10 bg-white p-6">
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-500/10 text-gold-600">
-                    <feature.icon size={20} />
-                  </div>
-                  <h3 className="mt-4 font-display text-lg text-navy-950">
-                    {feature.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-navy-700/75">
-                    {feature.description}
-                  </p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white py-20 sm:py-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <SectionHeading
-            eyebrow="On The Roadmap"
-            title="Coming Soon"
-            description="Being built next — not available yet, but planned."
-          />
-          <div className="mx-auto mt-14 grid max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2">
-            {COMING_SOON.map((feature) => (
-              <Reveal key={feature.title}>
-                <div className="h-full rounded-2xl border border-dashed border-navy-950/15 p-6">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-navy-950/5 text-navy-700/60">
                     <feature.icon size={20} />
                   </div>
                   <h3 className="mt-4 font-display text-lg text-navy-950">

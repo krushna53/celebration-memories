@@ -1,10 +1,13 @@
+import { cache } from "react";
 import { MessageCircleQuestion } from "lucide-react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getEventBySlug } from "@/services/events";
 import { formatEventDate, formatEventTime } from "@/lib/format";
+import { buildEventMetadata } from "@/lib/event-metadata";
 import { PublicRsvpForm } from "@/features/rsvp/public-rsvp-form";
+import { PageViewBeacon } from "@/features/analytics/page-view-beacon";
 import { Reveal } from "@/components/motion/reveal";
 import { SiteShell } from "@/components/layout/site-shell";
 
@@ -14,10 +17,13 @@ interface PublicRsvpPageProps {
   params: Promise<{ slug: string }>;
 }
 
+const loadEvent = cache((slug: string) => getEventBySlug(slug));
+
 export async function generateMetadata({ params }: PublicRsvpPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const event = await getEventBySlug(slug);
-  return { title: event ? `RSVP — ${event.honoreeName}'s ${event.eventTitle}` : "RSVP" };
+  const event = await loadEvent(slug);
+  const base = await buildEventMetadata(event);
+  return { ...base, title: event ? `RSVP — ${event.honoreeName}'s ${event.eventTitle}` : "RSVP" };
 }
 
 /**
@@ -30,7 +36,7 @@ export async function generateMetadata({ params }: PublicRsvpPageProps): Promise
  */
 export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
   const { slug } = await params;
-  const event = await getEventBySlug(slug);
+  const event = await loadEvent(slug);
 
   if (!event) {
     notFound();
@@ -38,6 +44,7 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
 
   return (
     <SiteShell honoreeName={event.honoreeName}>
+      <PageViewBeacon eventId={event.id} page="public_rsvp" />
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
           <Reveal>
@@ -59,7 +66,7 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
         <div className="mx-auto mt-12 max-w-xl px-4 sm:px-6">
           {event.publicRsvpEnabled ? (
             <Reveal delay={0.1}>
-              <PublicRsvpForm eventSlug={slug} honoreeName={event.honoreeName} />
+              <PublicRsvpForm eventSlug={slug} eventId={event.id} honoreeName={event.honoreeName} />
             </Reveal>
           ) : (
             <Reveal delay={0.1}>
