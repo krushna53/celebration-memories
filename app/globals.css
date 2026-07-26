@@ -1,0 +1,114 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  /* ---------- Brand palette ---------- */
+  --color-navy-950: #060d1a;
+  --color-navy-900: #0b1626;
+  --color-navy-800: #101f36;
+  --color-navy-700: #172a47;
+  --color-navy-600: #21395e;
+
+  --color-gold-100: #f8ecc6;
+  --color-gold-200: #f0dd9c;
+  --color-gold-300: #e6c874;
+  --color-gold-400: #d9b158;
+  --color-gold-500: #c9a227;
+  --color-gold-600: #a9861e;
+
+  --color-ivory-50: #fffdf7;
+  --color-ivory-100: #fbf6ea;
+  --color-ivory-200: #f5edd8;
+
+  /* ---------- Typography ---------- */
+  --font-display: var(--font-playfair), "Georgia", serif;
+  --font-sans: var(--font-poppins), "Helvetica Neue", Arial, sans-serif;
+
+  /* ---------- Motion ---------- */
+  --ease-luxury: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  --background: var(--color-ivory-50);
+  --foreground: var(--color-navy-950);
+
+  --primary: var(--color-gold-500);
+  --primary-foreground: var(--color-navy-950);
+
+  --secondary: var(--color-navy-900);
+  --secondary-foreground: var(--color-ivory-50);
+
+  --muted: var(--color-ivory-200);
+  --muted-foreground: var(--color-navy-700);
+
+  --accent: var(--color-gold-300);
+  --accent-foreground: var(--color-navy-950);
+
+  --border: color-mix(in srgb, var(--color-gold-500) 25%, transparent);
+  --ring: var(--color-gold-500);
+
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 8px);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+/* Luxury, restrained motion easing utility */
+.transition-luxury {
+  transition-timing-function: var(--ease-luxury);
+}
+
+/* Glassmorphism card used across the hero + invitation surfaces */
+.glass-card {
+  background: color-mix(in srgb, var(--color-navy-900) 55%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid color-mix(in srgb, var(--color-gold-300) 30%, transparent);
+}
+
+/* Thin gold divider */
+.divider-gold {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-gold-400),
+    transparent
+  );
+}

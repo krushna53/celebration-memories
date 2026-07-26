@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Netlify's Next.js runtime handles routing, image optimisation, and
+# server/edge functions automatically via the plugin above — no manual
+# redirects/headers are required for standard App Router usage.
