@@ -1,15 +1,26 @@
 import { HeroSection } from "@/features/hero/hero-section";
+import { CountdownSection } from "@/features/countdown/countdown-section";
+import { InvitationSection } from "@/features/invitation/invitation-section";
+import { EventDetailsSection } from "@/features/event-details/event-details-section";
+import { GallerySection } from "@/features/gallery/gallery-section";
+import { TimelineSection } from "@/features/timeline/timeline-section";
+import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
 
 /**
- * Homepage. Phase 1 ships Hero + global Navbar/Footer (mounted in the
- * root layout). Countdown, Event Details, Gallery, Timeline, RSVP, Guest
- * Memories and Location sections are added in Phase 2 onward, each as
- * its own <section id="..."> matching the anchors in NAV_LINKS.
+ * Homepage. Section order follows CLAUDE.md → Homepage spec:
+ * Hero, Countdown, Invitation, Event Details, Gallery, Timeline, RSVP.
+ * Guest Memories (Memory Wall) ships in Phase 4.
  */
 export default function Home() {
   return (
     <>
       <HeroSection />
+      <CountdownSection />
+      <InvitationSection />
+      <EventDetailsSection />
+      <GallerySection />
+      <TimelineSection />
+      <RsvpTeaserSection />
     </>
   );
 }

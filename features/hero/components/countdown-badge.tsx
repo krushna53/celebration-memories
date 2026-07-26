@@ -1,35 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
 import { ACTIVE_EVENT } from "@/lib/constants";
-
-function getRemaining() {
-  const diff = new Date(ACTIVE_EVENT.isoStart).getTime() - Date.now();
-  const clamped = Math.max(diff, 0);
-  return {
-    days: Math.floor(clamped / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((clamped / (1000 * 60 * 60)) % 24),
-    minutes: Math.floor((clamped / (1000 * 60)) % 60),
-    seconds: Math.floor((clamped / 1000) % 60),
-  };
-}
+import { useCountdown } from "@/hooks/use-countdown";
 
 /**
- * Compact countdown used inside the hero glass card. The full
- * dedicated countdown section (with larger digits) ships in Phase 2;
- * this lightweight version keeps the hero self-contained for Phase 1.
+ * Compact countdown used inside the hero glass card. The full dedicated
+ * countdown section (larger digits) lives in features/countdown.
  */
 export function CountdownBadge() {
-  const [remaining, setRemaining] = useState<ReturnType<
-    typeof getRemaining
-  > | null>(null);
-
-  useEffect(() => {
-    setRemaining(getRemaining());
-    const id = setInterval(() => setRemaining(getRemaining()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  const remaining = useCountdown(ACTIVE_EVENT.isoStart);
 
   const units: Array<{ label: string; value: number | null }> = [
     { label: "Days", value: remaining?.days ?? null },

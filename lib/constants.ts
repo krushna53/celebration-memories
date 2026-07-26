@@ -20,6 +20,24 @@ export const ACTIVE_EVENT = {
   isoStart: "2026-08-23T11:00:00+05:30",
 } as const;
 
+/**
+ * Venue / logistics info for the Event Details section.
+ *
+ * NOTE: these are placeholders — the real venue name, address, maps
+ * link, parking notes, and dress code have not been supplied yet.
+ * Fill these in before launch; the Event Details section is written to
+ * degrade gracefully (hides the map/directions button) while any of
+ * these are null.
+ */
+export const VENUE = {
+  name: null as string | null,
+  address: null as string | null,
+  mapsEmbedUrl: null as string | null,
+  mapsDirectionsUrl: null as string | null,
+  parkingInfo: null as string | null,
+  dressCode: null as string | null,
+} as const;
+
 export const BUILDER = {
   name: "Krushna Web Works",
   whatsappUrl:
