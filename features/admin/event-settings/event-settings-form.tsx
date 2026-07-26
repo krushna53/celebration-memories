@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, Save } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Copy, Loader2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { updateEventAction } from "@/features/admin/event-settings/actions";
+import {
+  DEFAULT_INVITE_MESSAGE_TEMPLATE,
+  INVITE_TEMPLATE_PLACEHOLDERS,
+  previewInviteMessage,
+} from "@/lib/whatsapp";
 import type { EventRecord } from "@/types/event";
 
 const inputClasses =
@@ -39,10 +44,24 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
     visibility: event.visibility,
     shortDescription: event.shortDescription ?? "",
     occasionDate: event.occasionDate ?? "",
+    inviteMessageTemplate: event.inviteMessageTemplate ?? "",
+    publicRsvpEnabled: event.publicRsvpEnabled,
   });
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedRsvpLink, setCopiedRsvpLink] = useState(false);
+
+  function copyRsvpLink() {
+    navigator.clipboard.writeText(`${origin}/events/${event.slug}/rsvp`);
+    setCopiedRsvpLink(true);
+    setTimeout(() => setCopiedRsvpLink(false), 1500);
+  }
 
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -70,6 +89,8 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
       visibility: form.visibility,
       shortDescription: form.shortDescription || null,
       occasionDate: form.occasionDate || null,
+      inviteMessageTemplate: form.inviteMessageTemplate || null,
+      publicRsvpEnabled: form.publicRsvpEnabled,
     });
 
     setSaving(false);
@@ -275,6 +296,107 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
             maxLength={160}
           />
         </div>
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">WhatsApp Invite Message</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          Customize the wording sent when an admin taps WhatsApp next to a
+          guest on the Invitees page. Leave blank to use the default
+          wording. Use these placeholders — they&rsquo;re swapped in per
+          guest:
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {INVITE_TEMPLATE_PLACEHOLDERS.map((p) => (
+            <code
+              key={p.token}
+              title={p.description}
+              className="rounded-md bg-navy-950/5 px-2 py-1 text-xs text-navy-700"
+            >
+              {p.token}
+            </code>
+          ))}
+        </div>
+        <div>
+          <label className={labelClasses}>Message Template (optional)</label>
+          <textarea
+            className={`${inputClasses} mt-1.5 min-h-[110px] resize-y font-mono text-xs`}
+            placeholder={DEFAULT_INVITE_MESSAGE_TEMPLATE}
+            value={form.inviteMessageTemplate}
+            onChange={(e) => set("inviteMessageTemplate", e.target.value)}
+          />
+        </div>
+        <div>
+          <span className={labelClasses}>Preview</span>
+          <div className="mt-1.5 whitespace-pre-wrap rounded-lg border border-dashed border-navy-950/15 bg-navy-950/[0.02] p-3 text-xs text-navy-700">
+            {previewInviteMessage(form.inviteMessageTemplate, form.hostedBy, form.honoreeName)}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Public RSVP Link</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          By default, RSVPs only work through each guest&rsquo;s personal
+          invitation link. If you can&rsquo;t collect everyone&rsquo;s contact
+          details ahead of time to send individual links, turn this on to get
+          a single shareable RSVP link instead — anyone with the link can
+          submit their own RSVP, matched by phone number if they come back to
+          update it. Trade-off: it&rsquo;s less precise than personal links
+          (no per-guest open/visit tracking, and a mistyped phone number could
+          overwrite someone else&rsquo;s response), so only turn it on if
+          sending individual links genuinely isn&rsquo;t practical for this
+          event.
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, publicRsvpEnabled: false }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              !form.publicRsvpEnabled
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            Off — personal links only
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, publicRsvpEnabled: true }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              form.publicRsvpEnabled
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            On — shared RSVP link
+          </button>
+        </div>
+        {form.publicRsvpEnabled && origin ? (
+          <div>
+            <label className={labelClasses}>Shareable RSVP Link</label>
+            <div className="mt-1.5 flex items-center gap-2">
+              <input
+                readOnly
+                value={`${origin}/events/${event.slug}/rsvp`}
+                className={`${inputClasses} bg-navy-950/[0.02] text-navy-700/80`}
+              />
+              <Button type="button" variant="outline" onClick={copyRsvpLink}>
+                {copiedRsvpLink ? <Check size={15} /> : <Copy size={15} />}
+              </Button>
+            </div>
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              Share this on WhatsApp status, a flyer, or anywhere else — every
+              visitor can RSVP themselves.
+            </p>
+          </div>
+        ) : null}
       </section>
 
       {error ? (

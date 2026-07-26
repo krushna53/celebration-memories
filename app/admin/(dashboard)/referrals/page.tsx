@@ -1,9 +1,15 @@
+import { redirect } from "next/navigation";
+
 import { listReferralCodes } from "@/services/referrals";
+import { getCurrentAdmin } from "@/services/admin-auth";
 import { ReferralManager } from "@/features/admin/referrals/referral-manager";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminReferralsPage() {
+  const admin = await getCurrentAdmin();
+  if (admin?.role !== "owner") redirect("/admin");
+
   const codes = await listReferralCodes();
 
   return (

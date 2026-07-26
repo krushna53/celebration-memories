@@ -269,6 +269,80 @@ on new projects. Turn it on under Authentication → Policies / Auth
 settings in the dashboard — it checks new passwords against known
 breach lists at no extra cost.
 
+### Admin roles: owner vs. client
+
+Every row in `admins` has a `role` of either `owner` or `client`. This
+lets Krushna Web Works hand an event host their own admin login without
+exposing agency-only surfaces (guest list/phone numbers, referral
+payouts, contact inquiries, event-day check-in, bulk media export).
+
+| | `owner` (you) | `client` (the event host) |
+|---|---|---|
+| Overview | ✅ | ✅ |
+| Event Settings | ✅ | ✅ |
+| Templates | ✅ | ✅ |
+| Gallery | ✅ | ✅ |
+| Timeline | ✅ | ✅ |
+| Memories (moderation) | ✅ | ✅ |
+| Invitees, Check-In, Referrals, Inquiries, Share Image, media export | ✅ | ❌ (redirected to `/admin`) |
+
+To create a client account for a host:
+
+1. **Authentication → Users → Add user** in Supabase, same as any admin.
+2. In the SQL Editor:
+   ```sql
+   insert into admins (id, email, name, role)
+   select id, email, 'Host Name', 'client' from auth.users where email = 'host@example.com';
+   ```
+3. Send them the `/admin/login` URL and their password. Their sidebar
+   will only show the allowed pages, and a "Host access" badge appears
+   in the dashboard header so it's clear which mode they're in.
+
+The allow-list itself lives in `lib/admin-roles.ts` (`CLIENT_ALLOWED_PATHS`)
+if you ever want to open up or restrict a different page. Enforcement is
+three layers deep on purpose — nav visibility, a redirect guard on each
+restricted page, and a `requireOwner()` check inside every owner-only
+Server Action/route — so a client account can't reach restricted data
+even by guessing a URL or replaying a form submission.
+
+### WhatsApp invites: custom message + bulk sending
+
+**Custom message wording** — Event Settings has a "WhatsApp Invite
+Message" field. Leave it blank for the default wording, or write your
+own using `{{name}}`, `{{link}}`, `{{hostedBy}}`, `{{honoreeName}}`
+placeholders (a live preview shows exactly what a guest will see).
+
+**Bulk sending** — WhatsApp's `wa.me` links only support one contact at
+a time; there's no way to fire a true one-tap "send to everyone" without
+the paid WhatsApp Business API and Meta template approval (see the
+Business & Growth guide for that path if volume ever justifies it). The
+Invitees page's **Bulk Send** button opens a queue instead: it lists
+guests with a phone number who haven't been sent an invite yet, and each
+tap opens WhatsApp pre-filled for that guest, marks them sent, and
+advances to the next — quick tapping-through rather than true
+automation. There's also a **Copy all links as text** option for admins
+who'd rather paste into their own broadcast list. A "Not sent / Sent"
+column tracks who's been reached from the dashboard (best-effort — it
+records when the admin opened WhatsApp, not a delivery receipt).
+
+### Public RSVP (no personal invite link)
+
+By default, RSVP only works through a guest's personal `/invite/[token]`
+link. If collecting phone/email for every guest ahead of time isn't
+practical, turn on **Public RSVP Link** in Event Settings — this opens
+`/events/[slug]/rsvp`, a self-service form anyone with the link can use.
+Guests are matched to an invitee record by phone number (digits-only,
+so formatting doesn't matter), so returning to the same page with the
+same number lets them edit their RSVP instead of creating a duplicate.
+
+Trade-offs versus personal links, worth knowing before turning it on:
+no per-guest open/visit tracking (there's nothing to track before they
+show up), and a mistyped phone number could in theory edit someone
+else's response. It's a reasonable default for informal or large-list
+events; personal links remain the more precise option and both can be
+used side by side — invitees created through either path show up
+together on `/admin/invitees`.
+
 ### Content still needed before launch
 
 - **Event details** — fill in `/admin/event-settings` (currently shows

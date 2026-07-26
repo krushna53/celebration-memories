@@ -17,6 +17,7 @@ interface InviteeRow {
   visit_count: number;
   rsvp_status: RsvpStatus;
   checked_in: boolean;
+  invite_sent_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +36,7 @@ function mapInvitee(row: InviteeRow): InviteeRecord {
     visitCount: row.visit_count,
     rsvpStatus: row.rsvp_status,
     checkedIn: row.checked_in,
+    inviteSentAt: row.invite_sent_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -116,6 +118,20 @@ export async function setCheckedIn(id: string, checkedIn: boolean): Promise<void
     .update({ checked_in: checkedIn })
     .eq("id", id);
   if (error) throw new Error(`Failed to update check-in: ${error.message}`);
+}
+
+/**
+ * Marks that an admin tapped Send/WhatsApp for this guest just now. This
+ * is a "sent from this dashboard" marker, not a real delivery receipt —
+ * wa.me links open WhatsApp client-side, so there's no server-side
+ * confirmation the message actually went through.
+ */
+export async function markInviteSent(id: string): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .from("invitees")
+    .update({ invite_sent_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(`Failed to record invite as sent: ${error.message}`);
 }
 
 /** Bulk-creates invitees from parsed CSV rows, skipping rows without a name. */

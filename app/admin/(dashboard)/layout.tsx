@@ -17,6 +17,7 @@ import {
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { signOutAction } from "@/features/admin/auth-actions";
+import { isPathAllowedForRole } from "@/lib/admin-roles";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -43,6 +44,8 @@ export default async function AdminDashboardLayout({
     redirect("/admin/login");
   }
 
+  const visibleNav = NAV.filter((item) => isPathAllowedForRole(item.href, admin.role));
+
   return (
     <div className="min-h-screen bg-ivory-100">
       <header className="border-b border-navy-950/10 bg-navy-950">
@@ -50,17 +53,24 @@ export default async function AdminDashboardLayout({
           <Link href="/admin" className="font-display text-lg text-gold-300">
             Celebration Memories · Admin
           </Link>
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="tap-target flex items-center gap-1.5 text-sm text-ivory-100/70 hover:text-gold-300"
-            >
-              <LogOut size={16} /> Sign Out
-            </button>
-          </form>
+          <div className="flex items-center gap-4">
+            {admin.role === "client" ? (
+              <span className="hidden rounded-full border border-gold-500/30 px-2.5 py-1 text-xs text-gold-300 sm:inline">
+                Host access
+              </span>
+            ) : null}
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="tap-target flex items-center gap-1.5 text-sm text-ivory-100/70 hover:text-gold-300"
+              >
+                <LogOut size={16} /> Sign Out
+              </button>
+            </form>
+          </div>
         </div>
         <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2 sm:px-6">
-          {NAV.map(({ href, label, icon: Icon }) => (
+          {visibleNav.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}

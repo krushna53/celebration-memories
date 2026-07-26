@@ -24,6 +24,8 @@ export interface EventRow {
   short_description: string | null;
   occasion_date: string | null;
   template_slug: string | null;
+  invite_message_template: string | null;
+  public_rsvp_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -50,6 +52,8 @@ export function mapEvent(row: EventRow): EventRecord {
     shortDescription: row.short_description,
     occasionDate: row.occasion_date,
     templateSlug: row.template_slug ?? "royal-gold",
+    inviteMessageTemplate: row.invite_message_template,
+    publicRsvpEnabled: row.public_rsvp_enabled ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -101,6 +105,8 @@ export interface EventUpdateInput {
   shortDescription?: string | null;
   occasionDate?: string | null;
   templateSlug?: string;
+  inviteMessageTemplate?: string | null;
+  publicRsvpEnabled?: boolean;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -122,6 +128,9 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.shortDescription !== undefined) patch.short_description = input.shortDescription;
   if (input.occasionDate !== undefined) patch.occasion_date = input.occasionDate;
   if (input.templateSlug !== undefined) patch.template_slug = input.templateSlug;
+  if (input.inviteMessageTemplate !== undefined)
+    patch.invite_message_template = input.inviteMessageTemplate;
+  if (input.publicRsvpEnabled !== undefined) patch.public_rsvp_enabled = input.publicRsvpEnabled;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

@@ -3,10 +3,13 @@ import "server-only";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
+export type AdminRole = "owner" | "client";
+
 export interface CurrentAdmin {
   id: string;
   email: string;
   name: string | null;
+  role: AdminRole;
 }
 
 /**
@@ -15,6 +18,12 @@ export interface CurrentAdmin {
  * is not sufficient on its own — only rows present in `admins` may reach
  * the dashboard, so provisioning a new admin is a deliberate two-step
  * process (create the auth user, then add them to `admins`).
+ *
+ * `role` gates which parts of the dashboard an admin can see:
+ * - "owner" (Krushna Web Works) — everything.
+ * - "client" (the event host) — event content only: Overview, Event
+ *   Settings, Templates, Gallery, Timeline, Memories. See
+ *   lib/admin-roles.ts for the exact allow-list and how to change it.
  */
 export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
   const session = await supabaseServer();
@@ -26,9 +35,9 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
 
   const { data, error } = await supabaseAdmin()
     .from("admins")
-    .select("id, email, name")
+    .select("id, email, name, role")
     .eq("id", user.id)
-    .maybeSingle<{ id: string; email: string; name: string | null }>();
+    .maybeSingle<{ id: string; email: string; name: string | null; role: AdminRole }>();
 
   if (error) {
     console.error("Failed to check admins allowlist:", error.message);
@@ -37,3 +46,17 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
 
   return data;
 }
+
+/**
+ * For Server Actions that are owner-only (Invitees, Referrals,
+ * Inquiries, Check-In). Throws rather than returning a boolean so
+ * callers can't accidentally ignore the result — every owner-only
+ * action must call this before doing anything.
+ */
+export async function requireOwner(): Promise<CurrentAdmin> {
+  const admin = await getCurrentAdmin();
+  if (!admin) throw new Error("Not authorized.");
+  if (admin.role !== "owner") throw new Error("This action is restricted to the site owner.");
+  return admin;
+}
+

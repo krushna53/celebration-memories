@@ -4,6 +4,10 @@ import { toEventDisplayData } from "@/lib/event-display";
 import { getTemplateBySlug } from "@/lib/templates";
 import { ShareImageGenerator } from "@/features/admin/share-image/share-image-generator";
 
+// Available to both owner and client roles (see lib/admin-roles.ts) — an
+// event host should be able to make their own shareable invitation image
+// once they've filled in Event Settings, picked a Template, and added
+// Gallery photos, without needing the agency to do it for them.
 export const dynamic = "force-dynamic";
 
 export default async function AdminShareImagePage() {

@@ -2,7 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import JSZip from "jszip";
 
-import { getCurrentAdmin } from "@/services/admin-auth";
+import { requireOwner } from "@/services/admin-auth";
 import { getEventBySlug } from "@/services/events";
 import { listMemoriesForModeration } from "@/services/admin-memories";
 import { EVENT_SLUG } from "@/lib/constants";
@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 /**
  * Streams a .zip of every approved + pending photo/video/audio upload
  * for the site's primary event, so the admin can back up guest media
- * without opening each file individually. Admin-gated.
+ * without opening each file individually. Owner-only: bulk media export
+ * is an agency operations tool, not something client/host accounts need.
  *
  * MVP-scoped: builds the whole zip in memory, which is fine for a
  * single family event's worth of uploads but won't scale to very large
@@ -20,9 +21,13 @@ export const dynamic = "force-dynamic";
  * background-job approach that would replace this at higher volume.
  */
 export async function GET() {
-  const admin = await getCurrentAdmin();
-  if (!admin) {
-    return NextResponse.json({ error: "Not authorized." }, { status: 401 });
+  try {
+    await requireOwner();
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Not authorized." },
+      { status: 403 },
+    );
   }
 
   const event = await getEventBySlug(EVENT_SLUG);

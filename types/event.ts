@@ -47,6 +47,18 @@ export interface EventRecord {
   visibility: "public" | "private";
   /** One or two lines shown on the /events directory card. */
   shortDescription: string | null;
+  /**
+   * WhatsApp invite message wording, with {{name}}, {{link}}, {{hostedBy}},
+   * {{honoreeName}} placeholders. Null = use the built-in default wording
+   * (see lib/whatsapp.ts).
+   */
+  inviteMessageTemplate: string | null;
+  /**
+   * When true, /events/[slug]/rsvp is open to anyone — a self-service
+   * RSVP form for hosts who can't send a unique link to every guest.
+   * Off by default: RSVP stays locked to personal /invite/[token] links.
+   */
+  publicRsvpEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,6 +78,8 @@ export interface InviteeRecord {
   visitCount: number;
   rsvpStatus: RsvpStatus;
   checkedIn: boolean;
+  /** When the admin last tapped Send/WhatsApp for this guest — a "sent from here" marker, not a delivery receipt. */
+  inviteSentAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

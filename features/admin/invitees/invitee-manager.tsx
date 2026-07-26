@@ -4,11 +4,13 @@ import { useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
 import {
   Check,
+  CheckCheck,
   Copy,
   Loader2,
   Pencil,
   Plus,
   Search,
+  Send,
   Trash2,
   Upload,
   X,
@@ -22,8 +24,10 @@ import {
   bulkImportInviteesAction,
   createInviteeAction,
   deleteInviteeAction,
+  markInviteSentAction,
   updateInviteeAction,
 } from "@/features/admin/invitees/actions";
+import { BulkSendPanel } from "@/features/admin/invitees/bulk-send-panel";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -55,6 +59,7 @@ interface InviteeManagerProps {
   initialInvitees: InviteeRecord[];
   hostedBy: string;
   honoreeName: string;
+  inviteMessageTemplate: string | null;
 }
 
 export function InviteeManager({
@@ -62,6 +67,7 @@ export function InviteeManager({
   initialInvitees,
   hostedBy,
   honoreeName,
+  inviteMessageTemplate,
 }: InviteeManagerProps) {
   const [invitees, setInvitees] = useState(initialInvitees);
   const [search, setSearch] = useState("");
@@ -72,6 +78,7 @@ export function InviteeManager({
   const [busy, setBusy] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [importSummary, setImportSummary] = useState<string | null>(null);
+  const [showBulkSend, setShowBulkSend] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -142,6 +149,20 @@ export function InviteeManager({
     setTimeout(() => setCopiedId(null), 1500);
   }
 
+  /**
+   * Best-effort "sent" marker: fires after the WhatsApp tab is already
+   * opening, so a failure here never blocks the guest's message. Updates
+   * local state immediately for instant feedback, then persists.
+   */
+  function markSent(id: string) {
+    setInvitees((prev) =>
+      prev.map((inv) => (inv.id === id ? { ...inv, inviteSentAt: new Date().toISOString() } : inv)),
+    );
+    markInviteSentAction(id).catch(() => {
+      // Non-critical — the guest's WhatsApp tab already opened either way.
+    });
+  }
+
   function handleCsvFile(file: File) {
     Papa.parse<Record<string, string>>(file, {
       header: true,
@@ -189,6 +210,9 @@ export function InviteeManager({
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload size={15} /> Import CSV
           </Button>
+          <Button variant="outline" onClick={() => setShowBulkSend((v) => !v)}>
+            <Send size={15} /> Bulk Send
+          </Button>
           <Button onClick={() => setShowCreate((v) => !v)}>
             <Plus size={15} /> Add Invitee
           </Button>
@@ -201,6 +225,18 @@ export function InviteeManager({
       <p className="mt-1 text-xs text-navy-700/40">
         CSV columns: name, phone, email, relationship
       </p>
+
+      {showBulkSend ? (
+        <BulkSendPanel
+          invitees={invitees}
+          origin={origin}
+          hostedBy={hostedBy}
+          honoreeName={honoreeName}
+          messageTemplate={inviteMessageTemplate}
+          onOpen={markSent}
+          onClose={() => setShowBulkSend(false)}
+        />
+      ) : null}
 
       {showCreate ? (
         <div className="mt-4 grid gap-3 rounded-xl border border-gold-500/20 bg-gold-500/5 p-4 sm:grid-cols-2">
@@ -246,6 +282,7 @@ export function InviteeManager({
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Contact</th>
               <th className="px-4 py-3">RSVP</th>
+              <th className="px-4 py-3">Invite Sent</th>
               <th className="px-4 py-3">Visits</th>
               <th className="px-4 py-3">Checked In</th>
               <th className="px-4 py-3 text-right">Actions</th>
@@ -255,7 +292,7 @@ export function InviteeManager({
             {filtered.map((inv) => (
               <tr key={inv.id} className="border-b border-navy-950/5 last:border-0">
                 {editingId === inv.id ? (
-                  <td colSpan={6} className="px-4 py-3">
+                  <td colSpan={7} className="px-4 py-3">
                     <div className="grid gap-2 sm:grid-cols-4">
                       <input
                         value={editForm.name}
@@ -309,6 +346,16 @@ export function InviteeManager({
                         {RSVP_LABEL[inv.rsvpStatus]}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-navy-700/70">
+                      {inv.inviteSentAt ? (
+                        <span className="inline-flex items-center gap-1 text-green-700">
+                          <CheckCheck size={14} />
+                          {new Date(inv.inviteSentAt).toLocaleDateString()}
+                        </span>
+                      ) : (
+                        <span className="text-navy-700/30">Not sent</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-navy-700/70">{inv.visitCount}</td>
                     <td className="px-4 py-3">{inv.checkedIn ? "Yes" : "No"}</td>
                     <td className="px-4 py-3">
@@ -330,9 +377,11 @@ export function InviteeManager({
                               inviteUrl: `${origin}/invite/${inv.token}`,
                               hostedBy,
                               honoreeName,
+                              messageTemplate: inviteMessageTemplate,
                             })}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() => markSent(inv.id)}
                             className="tap-target flex items-center justify-center text-navy-700/60 hover:text-green-600"
                           >
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">

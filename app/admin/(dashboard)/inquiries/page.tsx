@@ -1,9 +1,15 @@
+import { redirect } from "next/navigation";
+
 import { listInquiries } from "@/services/inquiries";
+import { getCurrentAdmin } from "@/services/admin-auth";
 import { InquiryList } from "@/features/admin/inquiries/inquiry-list";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminInquiriesPage() {
+  const admin = await getCurrentAdmin();
+  if (admin?.role !== "owner") redirect("/admin");
+
   const inquiries = await listInquiries();
 
   return (

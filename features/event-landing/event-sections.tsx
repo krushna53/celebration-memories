@@ -33,7 +33,7 @@ export function EventSections({ event, displayData: data, galleryPhotos, milesto
       <EventDetailsSection data={data} />
       <GallerySection photos={galleryPhotos} />
       <TimelineSection milestones={milestones} />
-      <RsvpTeaserSection />
+      <RsvpTeaserSection eventSlug={event?.slug} publicRsvpEnabled={event?.publicRsvpEnabled} />
       {event ? <MemoryWallSection eventId={event.id} /> : null}
     </>
   );

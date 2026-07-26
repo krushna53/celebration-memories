@@ -18,6 +18,7 @@ interface InviteeRow {
   visit_count: number;
   rsvp_status: InviteeRecord["rsvpStatus"];
   checked_in: boolean;
+  invite_sent_at: string | null;
   created_at: string;
   updated_at: string;
   events: EventRow;
@@ -47,6 +48,7 @@ function mapInvitee(row: InviteeRow): InviteeRecord {
     visitCount: row.visit_count,
     rsvpStatus: row.rsvp_status,
     checkedIn: row.checked_in,
+    inviteSentAt: row.invite_sent_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
