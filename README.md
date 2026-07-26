@@ -465,8 +465,21 @@ function), which looks identical to "the trigger fetch went nowhere":
 the job just sits at `pending` with no invocation ever showing up in the
 function's logs. `/.netlify/functions/*` is reserved by the platform and
 never intercepted by any framework, so this sidesteps that class of
-routing conflict entirely. If a job still never leaves `pending`/`processing`
-after this, check **Netlify dashboard → Logs → Functions →
+routing conflict entirely.
+
+The trigger fetch is also **awaited** (just for the Background
+Function's own near-instant `202` acknowledgement, not for the OpenAI
+work itself) rather than fired-and-forgotten. This mattered in practice:
+on Netlify's Lambda-based runtime, the Server Action's own execution
+environment can be frozen the instant it returns its result to the
+client, which can kill an outbound request that's still in flight and
+hasn't been awaited. An unawaited trigger fetch can therefore silently
+never reach the function at all — indistinguishable, from the UI's
+perspective, from every other cause of a job stuck at `pending`. Awaiting
+the ack (still well under the 10s synchronous limit) guarantees delivery.
+
+If a job still never leaves `pending`/`processing` after all of the
+above, check **Netlify dashboard → Logs → Functions →
 generate-ai-image-background** for the actual invocation and error —
 that's the definitive way to tell whether the function is being reached
 at all.

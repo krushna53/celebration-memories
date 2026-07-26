@@ -11,15 +11,15 @@ import { countAiImageGenerations } from "@/services/ai-image-generations";
 import type { AiImageJobRecord } from "@/types/ai-image-job";
 
 /**
- * Where to reach *this* deployment for the fire-and-forget background
- * function trigger below. Previously this only used SITE_URL (from
- * NEXT_PUBLIC_SITE_URL), which defaults to a placeholder domain if that
- * env var isn't set on a given Netlify site — silently sending the
- * trigger request nowhere, so the background function never ran and
- * jobs sat at "pending" forever with no visible error. Deriving the
- * origin from the incoming request's own headers (which Netlify always
- * sets correctly) makes this self-correct regardless of whether
- * NEXT_PUBLIC_SITE_URL was configured for this specific site.
+ * Where to reach *this* deployment for the background function trigger
+ * below. Previously this only used SITE_URL (from NEXT_PUBLIC_SITE_URL),
+ * which defaults to a placeholder domain if that env var isn't set on a
+ * given Netlify site — silently sending the trigger request nowhere, so
+ * the background function never ran and jobs sat at "pending" forever
+ * with no visible error. Deriving the origin from the incoming request's
+ * own headers (which Netlify always sets correctly) makes this
+ * self-correct regardless of whether NEXT_PUBLIC_SITE_URL was configured
+ * for this specific site.
  */
 async function resolveSiteOrigin(): Promise<string> {
   try {
@@ -83,29 +83,46 @@ export async function generateAiImageAction(eventId: string, prompt: string): Pr
     remaining = limit - used - 1;
   }
 
+  let jobId: string;
   try {
-    const jobId = await createAiImageJob({ eventId, adminId: admin.id, prompt: prompt.trim() });
+    jobId = await createAiImageJob({ eventId, adminId: admin.id, prompt: prompt.trim() });
+  } catch (err) {
+    console.error("generateAiImageAction: failed to create job row:", err);
+    return { success: false, error: "Something went wrong starting the generation. Please try again." };
+  }
 
-    // Fire-and-forget: trigger the background function and return
-    // immediately. We deliberately don't await this fetch resolving
-    // fully — a Background Function responds with an empty 202 almost
-    // instantly (see Netlify docs), so this stays well under the 10s
-    // synchronous limit even though the OpenAI call itself takes much
-    // longer, running after this Server Action has already returned.
+  // Trigger the background function. This IS awaited — but only for the
+  // Background Function's own near-instant 202 acknowledgement (see
+  // Netlify docs), not for the OpenAI work itself, which runs entirely
+  // out-of-band afterward. This used to be fire-and-forget (not
+  // awaited), which seemed safe since a 202 comes back almost
+  // immediately — but on Netlify's Lambda-based runtime, the Server
+  // Action's own execution environment can be frozen the instant this
+  // function returns its result to the client, which can kill an
+  // in-flight outbound request before it finishes sending. Awaiting the
+  // ack (still well under the 10s synchronous limit) guarantees the
+  // trigger actually reaches the background function instead of
+  // silently vanishing, which is what produced jobs stuck at "pending"
+  // forever with zero invocations ever reaching the function.
+  try {
     const origin = await resolveSiteOrigin();
-    fetch(`${origin}/.netlify/functions/generate-ai-image-background`, {
+    const res = await fetch(`${origin}/.netlify/functions/generate-ai-image-background`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ jobId, eventId, prompt: prompt.trim() }),
-    }).catch((err) => {
-      console.error("Failed to trigger AI image background function:", err);
     });
-
-    return { success: true, jobId, remaining };
+    if (!res.ok) {
+      throw new Error(`Background function trigger returned ${res.status}`);
+    }
   } catch (err) {
-    console.error("generateAiImageAction failed:", err);
-    return { success: false, error: "Something went wrong starting the generation. Please try again." };
+    console.error("Failed to trigger AI image background function:", err);
+    return {
+      success: false,
+      error: "Couldn't start image generation — please try again in a moment.",
+    };
   }
+
+  return { success: true, jobId, remaining };
 }
 
 export type AiImageJobStatusResult = AiImageJobRecord | { status: "not_found" };
