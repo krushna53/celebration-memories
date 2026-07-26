@@ -1,5 +1,7 @@
 "use server";
 
+import { headers } from "next/headers";
+
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { getEventBySlug } from "@/services/events";
 import { EVENT_SLUG, SITE_URL } from "@/lib/constants";
@@ -7,6 +9,29 @@ import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { createAiImageJob, getAiImageJob } from "@/services/ai-image-jobs";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
 import type { AiImageJobRecord } from "@/types/ai-image-job";
+
+/**
+ * Where to reach *this* deployment for the fire-and-forget background
+ * function trigger below. Previously this only used SITE_URL (from
+ * NEXT_PUBLIC_SITE_URL), which defaults to a placeholder domain if that
+ * env var isn't set on a given Netlify site — silently sending the
+ * trigger request nowhere, so the background function never ran and
+ * jobs sat at "pending" forever with no visible error. Deriving the
+ * origin from the incoming request's own headers (which Netlify always
+ * sets correctly) makes this self-correct regardless of whether
+ * NEXT_PUBLIC_SITE_URL was configured for this specific site.
+ */
+async function resolveSiteOrigin(): Promise<string> {
+  try {
+    const h = await headers();
+    const host = h.get("x-forwarded-host") || h.get("host");
+    const proto = h.get("x-forwarded-proto") || "https";
+    if (host) return `${proto}://${host}`;
+  } catch (err) {
+    console.error("resolveSiteOrigin: headers() unavailable, falling back to SITE_URL:", err);
+  }
+  return SITE_URL;
+}
 
 export type StartAiImageResult =
   | { success: true; jobId: string; remaining: number | null }
@@ -67,7 +92,8 @@ export async function generateAiImageAction(eventId: string, prompt: string): Pr
     // instantly (see Netlify docs), so this stays well under the 10s
     // synchronous limit even though the OpenAI call itself takes much
     // longer, running after this Server Action has already returned.
-    fetch(`${SITE_URL}/api/generate-ai-image-background`, {
+    const origin = await resolveSiteOrigin();
+    fetch(`${origin}/api/generate-ai-image-background`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ jobId, eventId, prompt: prompt.trim() }),

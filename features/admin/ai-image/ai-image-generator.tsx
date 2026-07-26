@@ -23,6 +23,14 @@ const LOADING_STEPS = [
 /** How often to check whether the background generation has finished. */
 const POLL_INTERVAL_MS = 2500;
 
+/**
+ * Give up after this many polls (~3.5 minutes) even if the job never
+ * flips out of "pending"/"processing" — this is a client-side backstop
+ * alongside the server-side staleness check in services/ai-image-jobs.ts,
+ * so the button never gets stuck saying "Still finishing up" forever.
+ */
+const MAX_POLLS = 84;
+
 const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
   (c): c is { value: GalleryCategory; label: string } => c.value !== "all",
 );
@@ -46,6 +54,7 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
   const [remainingOverride, setRemainingOverride] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
 
   const remaining = remainingOverride ?? (quota ? quota.limit - quota.used : null);
   const atLimit = remaining !== null && remaining <= 0;
@@ -87,7 +96,10 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
     // (see features/admin/ai-image/actions.ts) — the actual OpenAI call
     // runs out-of-band, so we poll for its result instead of awaiting
     // it directly.
+    pollCountRef.current = 0;
     pollRef.current = setInterval(async () => {
+      pollCountRef.current += 1;
+
       const job = await getAiImageJobStatusAction(started.jobId);
 
       if (job.status === "done") {
@@ -100,6 +112,11 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
       } else if (job.status === "error") {
         stopAll();
         setError(job.errorMessage || "Something went wrong generating the image.");
+      } else if (pollCountRef.current >= MAX_POLLS) {
+        // Backstop in case the server-side staleness check somehow
+        // didn't catch it either — never leave the button stuck forever.
+        stopAll();
+        setError("This is taking much longer than expected. Please try again in a bit.");
       }
       // "pending" / "processing" / "not_found" (briefly, before the row
       // is visible) — keep polling.

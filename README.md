@@ -445,14 +445,31 @@ environment variables beyond `OPENAI_API_KEY` above — the background
 function reads the same `NEXT_PUBLIC_SUPABASE_URL` /
 `SUPABASE_SERVICE_ROLE_KEY` already configured for the rest of the site.
 
+The Server Action figures out where to send the trigger request by
+reading the incoming request's own `host`/`x-forwarded-host` header
+(`resolveSiteOrigin()` in `features/admin/ai-image/actions.ts`), so it
+works correctly on any domain without extra setup. `NEXT_PUBLIC_SITE_URL`
+is only used as a fallback if headers are unexpectedly unavailable — you
+don't need to set it just for this feature to work. (An earlier version
+of this relied on `NEXT_PUBLIC_SITE_URL` alone, which silently sent the
+trigger nowhere on any site where that var wasn't set, leaving jobs
+stuck at "pending" forever — if you deployed before this fix and hit
+that, a fresh deploy picks up the corrected behavior automatically.)
+
+As extra safety nets: a job stuck at "pending"/"processing" for more
+than 3 minutes is automatically marked as errored server-side the next
+time its status is checked (`getAiImageJob` in
+`services/ai-image-jobs.ts`), and the browser itself gives up after
+about 3.5 minutes of polling either way — so a stuck job always
+surfaces a clear error instead of spinning forever.
+
 **Testing this locally:** Background Functions only run in Netlify's
 own runtime — plain `next dev` won't serve
 `netlify/functions/generate-ai-image-background.mts` at all, so the job
-will sit at "pending" forever in local dev. Use the Netlify CLI's
-`netlify dev` instead (`npm i -g netlify-cli`, then `netlify dev` from
-the project root), and set `NEXT_PUBLIC_SITE_URL` to whatever it prints
-(typically `http://localhost:8888`) so the Server Action's fetch call
-reaches the right place.
+will sit at "pending" (then auto-error after ~3 minutes, per above) in
+local dev. Use the Netlify CLI's `netlify dev` instead (`npm i -g
+netlify-cli`, then `netlify dev` from the project root) to test the full
+flow.
 
 ### Admin Feature Tour
 
