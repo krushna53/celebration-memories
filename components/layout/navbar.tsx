@@ -31,10 +31,10 @@ export function Navbar() {
           : "bg-transparent",
       )}
     >
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 text-ivory-50">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 text-ivory-50 sm:px-6 sm:py-4">
         <a
           href="#hero"
-          className="font-display text-lg tracking-wide text-gold-300"
+          className="truncate font-display text-base tracking-wide text-gold-300 sm:text-lg"
         >
           {ACTIVE_EVENT.honoreeName}
         </a>
@@ -56,7 +56,7 @@ export function Navbar() {
           type="button"
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
-          className="text-ivory-50 md:hidden"
+          className="tap-target -mr-2 flex shrink-0 items-center justify-center text-ivory-50 md:hidden"
           onClick={() => setOpen((v) => !v)}
         >
           {open ? <X size={22} /> : <Menu size={22} />}
@@ -69,13 +69,13 @@ export function Navbar() {
           open ? "max-h-96" : "max-h-0",
         )}
       >
-        <ul className="flex flex-col gap-1 bg-navy-950/95 px-6 pb-6">
+        <ul className="flex flex-col gap-1 bg-navy-950/95 px-4 pb-4 sm:px-6 sm:pb-6">
           {NAV_LINKS.map((link) => (
             <li key={link.href}>
               <a
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="block py-3 text-sm text-ivory-100/85 hover:text-gold-300"
+                className="tap-target flex items-center text-sm text-ivory-100/85 hover:text-gold-300"
               >
                 {link.label}
               </a>

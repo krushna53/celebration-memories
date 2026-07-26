@@ -13,13 +13,13 @@ interface DetailCardProps {
 
 function DetailCard({ icon, label, value }: DetailCardProps) {
   return (
-    <div className="flex items-start gap-4 rounded-2xl border border-gold-500/15 bg-white px-6 py-5 shadow-sm">
-      <span className="mt-0.5 text-gold-500">{icon}</span>
-      <div>
+    <div className="flex items-start gap-4 rounded-2xl border border-gold-500/15 bg-white px-5 py-4 shadow-sm sm:px-6 sm:py-5">
+      <span className="mt-0.5 shrink-0 text-gold-500">{icon}</span>
+      <div className="min-w-0">
         <p className="text-xs uppercase tracking-[0.25em] text-navy-700/60">
           {label}
         </p>
-        <p className="mt-1 text-sm font-medium text-navy-950 sm:text-base">
+        <p className="mt-1 break-words text-sm font-medium text-navy-950 sm:text-base">
           {value}
         </p>
       </div>

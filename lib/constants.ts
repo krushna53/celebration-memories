@@ -9,6 +9,9 @@
  */
 export const SITE_NAME = "Celebration Memories";
 
+/** Matches the `slug` seeded in supabase/seed.sql for the active event. */
+export const EVENT_SLUG = "mahesh-75th-birthday";
+
 export const ACTIVE_EVENT = {
   honoreeName: "Mahesh J. Shah",
   eventTitle: "75 Years of Love",

@@ -222,7 +222,12 @@ export function RsvpForm({ token, defaultValues, guestName }: RsvpFormProps) {
         </p>
       ) : null}
 
-      <Button type="submit" size="lg" disabled={isSubmitting} className="justify-self-start">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={isSubmitting}
+        className="w-full sm:w-auto sm:justify-self-start"
+      >
         {isSubmitting ? (
           <>
             <Loader2 className="animate-spin" size={16} />

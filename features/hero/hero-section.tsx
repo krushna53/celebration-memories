@@ -45,13 +45,13 @@ export function HeroSection() {
       <GoldParticles />
 
       {/* Foreground content */}
-      <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-col items-center px-6 py-32 text-center">
+      <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-col items-center px-4 py-24 text-center sm:px-6 sm:py-32">
         <motion.div
           initial="hidden"
           animate="show"
           custom={0}
           variants={fadeUp}
-          className="glass-card w-full rounded-3xl px-6 py-10 sm:px-10 sm:py-14"
+          className="glass-card w-full rounded-3xl px-5 py-8 sm:px-10 sm:py-14"
         >
           <motion.p
             custom={0.1}
@@ -118,12 +118,12 @@ export function HeroSection() {
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
+            className="mt-10 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row"
           >
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="w-full sm:w-auto">
               <a href="#rsvp">RSVP Now</a>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
               <a href="#details">View Details</a>
             </Button>
           </motion.div>

@@ -5,7 +5,10 @@ import { getInviteeByToken } from "@/services/invitees";
 import { logInviteOpened } from "@/services/tracking";
 import { formatEventDate, formatEventTime } from "@/lib/format";
 import { RsvpForm } from "@/features/rsvp/rsvp-form";
+import { MediaUploadsSection } from "@/features/uploads/media-uploads-section";
+import { GuestbookForm } from "@/features/guestbook/guestbook-form";
 import { Reveal } from "@/components/motion/reveal";
+import { SectionHeading } from "@/components/ui/section-heading";
 
 // Always dynamic: every request must re-check the token and re-log a
 // visit, so this route is never statically generated or cached.
@@ -32,8 +35,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
   });
 
   return (
-    <div className="bg-ivory-50 pb-24 pt-32">
-      <div className="mx-auto max-w-2xl px-6 text-center">
+    <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
+      <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
         <Reveal>
           <p className="text-xs uppercase tracking-[0.35em] text-gold-500">
             {event.hostedBy} warmly invites
@@ -53,7 +56,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
         </Reveal>
       </div>
 
-      <div className="mx-auto mt-12 max-w-xl px-6">
+      <div className="mx-auto mt-12 max-w-xl px-4 sm:px-6">
         <Reveal delay={0.1}>
           <RsvpForm
             token={token}
@@ -75,6 +78,28 @@ export default async function InvitePage({ params }: InvitePageProps) {
                   }
             }
           />
+        </Reveal>
+      </div>
+
+      <div className="mx-auto mt-16 max-w-xl px-4 sm:px-6">
+        <Reveal>
+          <SectionHeading
+            eyebrow="Add To The Celebration"
+            title="Share Your Memories"
+            description="Photos, videos, or a short voice message — however you'd like to celebrate."
+          />
+        </Reveal>
+        <Reveal delay={0.1} className="mt-8">
+          <MediaUploadsSection token={token} />
+        </Reveal>
+      </div>
+
+      <div className="mx-auto mt-16 max-w-xl px-4 sm:px-6">
+        <Reveal>
+          <SectionHeading eyebrow="Leave A Note" title="Guest Book" />
+        </Reveal>
+        <Reveal delay={0.1} className="mt-8">
+          <GuestbookForm token={token} />
         </Reveal>
       </div>
     </div>
