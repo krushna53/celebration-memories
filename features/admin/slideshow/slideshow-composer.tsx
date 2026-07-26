@@ -225,6 +225,23 @@ export function SlideshowComposer({ slides }: SlideshowComposerProps) {
             choose to save or share the downloaded file yourself (e.g. as a
             WhatsApp status, or upload it wherever you&rsquo;d like).
           </p>
+          <p className="mt-2 text-xs leading-relaxed text-navy-700/50">
+            Downloads as <code className="rounded bg-navy-950/5 px-1 py-0.5">.webm</code> — plays
+            fine in browsers, WhatsApp, and most apps, but a few older devices or players expect{" "}
+            <code className="rounded bg-navy-950/5 px-1 py-0.5">.mp4</code> instead. If you run into
+            that, or want to use this video as the Event Settings{" "}
+            <strong>Link Preview Video</strong> (which requires MP4, up to 20MB — see Event
+            Settings), convert it for free at{" "}
+            <a
+              href="https://cloudconvert.com/webm-to-mp4"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gold-600 underline underline-offset-2"
+            >
+              cloudconvert.com/webm-to-mp4
+            </a>
+            , then upload the converted file.
+          </p>
         </section>
       </div>
     </div>
