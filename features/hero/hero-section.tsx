@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 import type { EventDisplayData } from "@/lib/event-display";
@@ -47,6 +48,12 @@ const THEME_PARTICLE_COLORS = [
  */
 export function HeroSection({ data }: HeroSectionProps) {
   const personality = useTemplateAnimation();
+  // No real family video has been uploaded to /public/hero/family.mp4 yet,
+  // so this renders a static ornamental background (/hero/poster.jpg)
+  // instead of trying (and failing) to play a video. Once a real family
+  // video is added, swap this block back to a <video> tag with poster and
+  // a <source src="/hero/family.mp4">.
+  const [imageFailed, setImageFailed] = useState(false);
 
   return (
     <section
@@ -55,16 +62,15 @@ export function HeroSection({ data }: HeroSectionProps) {
     >
       {/* Background layer */}
       <div className="absolute inset-0">
-        <video
-          className="h-full w-full object-cover opacity-40"
-          autoPlay
-          muted
-          loop
-          playsInline
-          poster="/hero/poster.jpg"
-        >
-          <source src="/hero/family.mp4" type="video/mp4" />
-        </video>
+        {!imageFailed ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/hero/poster.jpg"
+            alt=""
+            className="h-full w-full object-cover opacity-40"
+            onError={() => setImageFailed(true)}
+          />
+        ) : null}
         <div className="absolute inset-0 bg-gradient-to-b from-navy-950/70 via-navy-950/60 to-navy-950" />
       </div>
 

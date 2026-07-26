@@ -4,7 +4,12 @@ import type { ComponentType } from "react";
 import type { EventDisplayData } from "@/lib/event-display";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
-import { TEMPLATE_CATALOG, DEFAULT_TEMPLATE_SLUG, type TemplateSummary } from "@/lib/template-catalog";
+import {
+  TEMPLATE_CATALOG,
+  DEFAULT_TEMPLATE_SLUG,
+  type TemplateSummary,
+  type TemplateAnimationPersonality,
+} from "@/lib/template-catalog";
 
 export type { TemplateSummary };
 export { TEMPLATE_CATALOG, DEFAULT_TEMPLATE_SLUG };
@@ -43,7 +48,7 @@ export interface TemplateTheme {
    * luxury brief's restraint with a warmer/livelier touch, jubilant
    * goes full celebration (confetti bursts + floating balloons).
    */
-  animation: "luxury" | "playful" | "energetic" | "dreamy" | "minimal" | "festive" | "jubilant";
+  animation: TemplateAnimationPersonality;
 }
 
 /** Props every template component receives — identical across all templates. */

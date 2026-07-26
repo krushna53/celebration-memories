@@ -6,6 +6,23 @@
  * See /lib/templates.ts for the full registry (metadata + component),
  * which only Server Components should import.
  */
+/**
+ * Motion personality names, shared between the server-only template
+ * registry (lib/templates.ts, via TemplateTheme.animation) and client
+ * components that need the type without pulling in server-only code
+ * (templates/shared/template-animation-context.tsx). Kept here rather
+ * than in lib/templates.ts specifically so "use client" files never need
+ * to import from that server-only module.
+ */
+export type TemplateAnimationPersonality =
+  | "luxury"
+  | "playful"
+  | "energetic"
+  | "dreamy"
+  | "minimal"
+  | "festive"
+  | "jubilant";
+
 export interface TemplateSummary {
   id: string;
   slug: string;
