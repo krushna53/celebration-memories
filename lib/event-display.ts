@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 
 import { ACTIVE_EVENT, VENUE } from "@/lib/constants";
-import type { EventRecord } from "@/types/event";
+import type { EventRecord, EventCategory } from "@/types/event";
 
 /**
  * Flat, display-ready shape consumed by every public-site section (Hero,
@@ -31,6 +31,9 @@ export interface EventDisplayData {
   dressCode: string | null;
   /** The actual date being honoured, formatted, if it differs from the celebration date. */
   occasionDate: string | null;
+  category: EventCategory | null;
+  additionalNotes: string | null;
+  wishMessage: string | null;
 }
 
 export function toEventDisplayData(event: EventRecord | null): EventDisplayData {
@@ -52,6 +55,9 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
       parkingInfo: VENUE.parkingInfo,
       dressCode: VENUE.dressCode,
       occasionDate: null,
+      category: null,
+      additionalNotes: null,
+      wishMessage: null,
     };
   }
 
@@ -74,5 +80,8 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
     occasionDate: event.occasionDate
       ? format(new Date(`${event.occasionDate}T00:00:00`), "MMMM d, yyyy")
       : null,
+    category: event.category,
+    additionalNotes: event.additionalNotes,
+    wishMessage: event.wishMessage,
   };
 }

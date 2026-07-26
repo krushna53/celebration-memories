@@ -6,18 +6,9 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { listPublicEvents } from "@/services/events";
 import { getCoverPhoto } from "@/services/gallery-photos";
 import { formatEventDate } from "@/lib/format";
-import type { EventCategory } from "@/types/event";
+import { EVENT_CATEGORY_LABELS as CATEGORY_LABELS } from "@/lib/event-category";
 
 export const revalidate = 60;
-
-const CATEGORY_LABELS: Record<EventCategory, string> = {
-  birthday: "Birthday",
-  wedding: "Wedding",
-  anniversary: "Anniversary",
-  retirement: "Retirement",
-  baby_shower: "Baby Shower",
-  corporate: "Corporate",
-};
 
 /**
  * Public directory of every event that has opted into being listed

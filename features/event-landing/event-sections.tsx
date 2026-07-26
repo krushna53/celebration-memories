@@ -7,6 +7,7 @@ import { EventDetailsSection } from "@/features/event-details/event-details-sect
 import { GallerySection } from "@/features/gallery/gallery-section";
 import { TimelineSection } from "@/features/timeline/timeline-section";
 import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
+import { WishMessageSection } from "@/features/event-landing/wish-message-section";
 import { MemoryWallSection } from "@/features/memory-wall/memory-wall-section";
 import { PageViewBeacon } from "@/features/analytics/page-view-beacon";
 import { normalizeSectionConfig, type SectionKey } from "@/lib/section-registry";
@@ -51,6 +52,7 @@ export function EventSections({ event, displayData: data, galleryPhotos, milesto
         honoreeName={event?.honoreeName}
       />
     ),
+    wishMessage: <WishMessageSection data={data} />,
     memoryWall: event ? <MemoryWallSection eventId={event.id} /> : null,
   };
 

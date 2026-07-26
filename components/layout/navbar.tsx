@@ -11,11 +11,24 @@ import { cn } from "@/lib/utils";
  * on mobile. Purely presentational — all anchors point at in-page
  * sections that later phases will populate.
  */
-interface NavbarProps {
-  honoreeName?: string;
+interface NavLink {
+  label: string;
+  href: string;
 }
 
-export function Navbar({ honoreeName = ACTIVE_EVENT.honoreeName }: NavbarProps) {
+interface NavbarProps {
+  honoreeName?: string;
+  /** Overrides the default in-page anchor links (#hero, #details, ...) — used by non-event pages like the platform homepage, whose sections don't match those anchor ids. */
+  navLinks?: readonly NavLink[];
+  /** Shows a "Login" link pointing at /admin/login, e.g. on the platform homepage. Event pages leave this off since a guest has no reason to see it. */
+  showLogin?: boolean;
+}
+
+export function Navbar({
+  honoreeName = ACTIVE_EVENT.honoreeName,
+  navLinks = NAV_LINKS,
+  showLogin = false,
+}: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -44,7 +57,7 @@ export function Navbar({ honoreeName = ACTIVE_EVENT.honoreeName }: NavbarProps) 
         </a>
 
         <ul className="hidden items-center gap-8 md:flex">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <li key={link.href}>
               <a
                 href={link.href}
@@ -54,6 +67,16 @@ export function Navbar({ honoreeName = ACTIVE_EVENT.honoreeName }: NavbarProps) 
               </a>
             </li>
           ))}
+          {showLogin ? (
+            <li>
+              <a
+                href="/admin/login"
+                className="rounded-full border border-gold-400/40 px-4 py-1.5 text-sm tracking-wide text-gold-300 transition-luxury duration-300 hover:border-gold-400 hover:bg-gold-400/10"
+              >
+                Login
+              </a>
+            </li>
+          ) : null}
         </ul>
 
         <button
@@ -74,7 +97,7 @@ export function Navbar({ honoreeName = ACTIVE_EVENT.honoreeName }: NavbarProps) 
         )}
       >
         <ul className="flex flex-col gap-1 bg-navy-950/95 px-4 pb-4 sm:px-6 sm:pb-6">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <li key={link.href}>
               <a
                 href={link.href}
@@ -85,6 +108,17 @@ export function Navbar({ honoreeName = ACTIVE_EVENT.honoreeName }: NavbarProps) 
               </a>
             </li>
           ))}
+          {showLogin ? (
+            <li>
+              <a
+                href="/admin/login"
+                onClick={() => setOpen(false)}
+                className="tap-target flex items-center text-sm text-gold-300"
+              >
+                Login
+              </a>
+            </li>
+          ) : null}
         </ul>
       </div>
     </header>

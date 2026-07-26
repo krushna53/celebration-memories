@@ -10,7 +10,7 @@ import {
   righteous,
   ebGaramond,
 } from "@/lib/fonts";
-import { ACTIVE_EVENT, SITE_NAME } from "@/lib/constants";
+import { ACTIVE_EVENT, SITE_NAME, SITE_URL } from "@/lib/constants";
 import { ClarityScript } from "@/features/analytics/clarity-script";
 
 import "./globals.css";
@@ -18,7 +18,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: `${ACTIVE_EVENT.honoreeName} — ${ACTIVE_EVENT.eventTitle} | ${SITE_NAME}`,
   description: `Join us in celebrating ${ACTIVE_EVENT.honoreeName}'s 75th birthday, hosted by ${ACTIVE_EVENT.hostedBy}. ${ACTIVE_EVENT.dayOfWeek}, ${ACTIVE_EVENT.date}.`,
-  metadataBase: new URL("https://celebration-memories.example.com"),
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     title: `${ACTIVE_EVENT.honoreeName} — ${ACTIVE_EVENT.eventTitle}`,
     description: `Hosted by ${ACTIVE_EVENT.hostedBy} · ${ACTIVE_EVENT.dayOfWeek}, ${ACTIVE_EVENT.date}`,

@@ -1,19 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getCurrentAdmin } from "@/services/admin-auth";
-import { generateAiImage, AiImageError } from "@/lib/ai-image";
-import { uploadGeneratedImage } from "@/services/uploads";
 import { getEventBySlug } from "@/services/events";
-import { EVENT_SLUG } from "@/lib/constants";
-import {
-  countAiImageGenerations,
-  recordAiImageGeneration,
-} from "@/services/ai-image-generations";
+import { EVENT_SLUG, SITE_URL } from "@/lib/constants";
+import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
+import { createAiImageJob, getAiImageJob } from "@/services/ai-image-jobs";
+import { countAiImageGenerations } from "@/services/ai-image-generations";
+import type { AiImageJobRecord } from "@/types/ai-image-job";
 
-export type GenerateAiImageResult =
-  | { success: true; url: string; path: string; remaining: number | null }
+export type StartAiImageResult =
+  | { success: true; jobId: string; remaining: number | null }
   | { success: false; error: string };
 
 /**
@@ -21,13 +17,22 @@ export type GenerateAiImageResult =
  * capped per event (events.ai_image_generation_limit, default 15;
  * owner is exempt) since this calls a real per-image-cost API with no
  * billing pass-through to clients yet. See services/ai-image-generations.ts.
+ *
+ * This only creates a job row and triggers the Netlify Background
+ * Function (netlify/functions/generate-ai-image-background.mts) — it
+ * deliberately does NOT call OpenAI itself. OpenAI's image API routinely
+ * takes 30-60s+, which reliably exceeds Netlify's synchronous function
+ * limit (10s free plan) and produced 502s. The actual generation now
+ * happens out-of-band; the client polls getAiImageJobStatusAction below
+ * until the job flips to "done" or "error".
  */
-export async function generateAiImageAction(
-  eventId: string,
-  prompt: string,
-): Promise<GenerateAiImageResult> {
+export async function generateAiImageAction(eventId: string, prompt: string): Promise<StartAiImageResult> {
   const admin = await getCurrentAdmin();
   if (!admin) return { success: false, error: "Not authorized." };
+
+  if (!AI_IMAGE_CONFIGURED) {
+    return { success: false, error: "AI image generation isn't configured — add OPENAI_API_KEY to enable it." };
+  }
 
   if (!prompt.trim()) {
     return { success: false, error: "Please describe the image you want." };
@@ -54,20 +59,41 @@ export async function generateAiImageAction(
   }
 
   try {
-    const image = await generateAiImage({ prompt: prompt.trim() });
-    const uploaded = await uploadGeneratedImage({
-      eventId,
-      buffer: image.buffer,
-      contentType: image.contentType,
+    const jobId = await createAiImageJob({ eventId, adminId: admin.id, prompt: prompt.trim() });
+
+    // Fire-and-forget: trigger the background function and return
+    // immediately. We deliberately don't await this fetch resolving
+    // fully — a Background Function responds with an empty 202 almost
+    // instantly (see Netlify docs), so this stays well under the 10s
+    // synchronous limit even though the OpenAI call itself takes much
+    // longer, running after this Server Action has already returned.
+    fetch(`${SITE_URL}/api/generate-ai-image-background`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId, eventId, prompt: prompt.trim() }),
+    }).catch((err) => {
+      console.error("Failed to trigger AI image background function:", err);
     });
-    await recordAiImageGeneration({ eventId, adminId: admin.id, prompt: prompt.trim() });
-    revalidatePath("/admin/ai-image");
-    return { success: true, url: uploaded.url, path: uploaded.path, remaining };
+
+    return { success: true, jobId, remaining };
   } catch (err) {
-    if (err instanceof AiImageError) {
-      return { success: false, error: err.message };
-    }
     console.error("generateAiImageAction failed:", err);
-    return { success: false, error: "Something went wrong generating the image. Please try again." };
+    return { success: false, error: "Something went wrong starting the generation. Please try again." };
+  }
+}
+
+export type AiImageJobStatusResult = AiImageJobRecord | { status: "not_found" };
+
+/** Polled by the client every couple of seconds until status is "done" or "error". */
+export async function getAiImageJobStatusAction(jobId: string): Promise<AiImageJobStatusResult> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { status: "not_found" };
+
+  try {
+    const job = await getAiImageJob(jobId);
+    return job ?? { status: "not_found" };
+  } catch (err) {
+    console.error("getAiImageJobStatusAction failed:", err);
+    return { status: "not_found" };
   }
 }

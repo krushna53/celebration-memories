@@ -15,6 +15,10 @@ import {
   Inbox,
   Sparkles,
   PenTool,
+  QrCode,
+  Wallet,
+  Globe,
+  Film,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -32,8 +36,12 @@ const NAV = [
   { href: "/admin/memories", label: "Memories", icon: ImageIcon },
   { href: "/admin/share-image", label: "Share Image", icon: ImagePlus },
   { href: "/admin/ai-image", label: "AI Image", icon: Sparkles },
+  { href: "/admin/slideshow", label: "Slideshow Video", icon: Film },
+  { href: "/admin/domain-search", label: "Domain Search", icon: Globe },
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox },
+  { href: "/admin/payment-settings", label: "Payment Settings", icon: QrCode },
+  { href: "/admin/payments", label: "Payments", icon: Wallet },
   { href: "/admin/checkin", label: "Check-In", icon: CalendarCheck },
   { href: "/admin/help", label: "Help", icon: HelpCircle },
 ] as const;

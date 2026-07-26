@@ -222,4 +222,81 @@ export async function uploadGeneratedImage(params: {
   return { path, url: publicMediaUrl("gallery", path) };
 }
 
+/**
+ * Same signed-upload pattern, for the payment QR code shown at /pay
+ * (see /admin/payment-settings). Platform-level, not per-event — stored
+ * under its own prefix in the `gallery` bucket rather than a dedicated
+ * bucket, matching how share-image/ai-generated already reuse it.
+ */
+export async function createSignedPaymentQrUpload(params: {
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { fileName, contentType, fileSize } = params;
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported image type: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS.photo;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `platform/payment-qr/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage
+    .from("gallery")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+}
+
+/**
+ * Signed upload for the optional link-preview video (og:video —
+ * see lib/event-metadata.ts). Deliberately stricter than a regular
+ * Gallery/guest video upload: MP4 only (the one format every crawler
+ * that does support og:video, i.e. Telegram, reliably plays inline),
+ * and capped much smaller than the 250MB guest-video limit since this
+ * file gets fetched synchronously by link-preview crawlers, which
+ * have their own tight timeouts — a small, fast-loading clip works far
+ * more reliably than a long one.
+ */
+const MAX_SHARE_VIDEO_BYTES = 20 * 1024 * 1024;
+
+export async function createSignedShareVideoUpload(params: {
+  eventId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { eventId, fileName, contentType, fileSize } = params;
+
+  if (contentType !== "video/mp4") {
+    throw new UploadValidationError("Only MP4 video is supported for the link-preview video.");
+  }
+
+  if (fileSize > MAX_SHARE_VIDEO_BYTES) {
+    throw new UploadValidationError("File is too large — link-preview videos are limited to 20MB.");
+  }
+
+  const path = `${eventId}/share-video/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage
+    .from("gallery")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+}
+
 export type { MemoryKind };

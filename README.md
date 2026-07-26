@@ -428,6 +428,59 @@ either way.
 image depending on quality/size. Model defaults to `gpt-image-2`;
 override with `OPENAI_IMAGE_MODEL` if OpenAI ships something newer.
 
+**How generation actually runs:** OpenAI's image API routinely takes
+30–60s+, which is longer than Netlify's synchronous function limit (10s
+on the free plan). So the "Generate Image" button doesn't call OpenAI
+directly — it creates a row in `ai_image_jobs` and triggers a Netlify
+**Background Function** (`netlify/functions/generate-ai-image-background.mts`,
+up to 15 minutes, available on every Netlify plan including free) to do
+the actual OpenAI call and Storage upload. The browser polls
+`getAiImageJobStatusAction` every ~2.5s until the job is `done` or
+`error`. This is why `netlify/functions/` exists alongside the Next.js
+app — it's a standalone function outside the `@netlify/plugin-nextjs`
+build, deliberately kept free of `@/...` path-alias imports since
+Netlify's function bundler doesn't resolve this project's `tsconfig.json`
+paths (see the comment at the top of that file). Nothing here needs new
+environment variables beyond `OPENAI_API_KEY` above — the background
+function reads the same `NEXT_PUBLIC_SUPABASE_URL` /
+`SUPABASE_SERVICE_ROLE_KEY` already configured for the rest of the site.
+
+**Testing this locally:** Background Functions only run in Netlify's
+own runtime — plain `next dev` won't serve
+`netlify/functions/generate-ai-image-background.mts` at all, so the job
+will sit at "pending" forever in local dev. Use the Netlify CLI's
+`netlify dev` instead (`npm i -g netlify-cli`, then `netlify dev` from
+the project root), and set `NEXT_PUBLIC_SITE_URL` to whatever it prints
+(typically `http://localhost:8888`) so the Server Action's fetch call
+reaches the right place.
+
+### Domain Search (optional)
+
+`/admin/domain-search` lets a client search for a custom domain for
+their event (e.g. `mahesh75.com`) and see live availability + pricing
+via GoDaddy's API. This platform can't process the purchase itself —
+GoDaddy only allows programmatic *purchase* for API Reseller accounts,
+a separate approval process requiring a funded balance — so each result
+links out to GoDaddy's own checkout instead. Once a client owns a
+domain, point its DNS at Netlify (Netlify docs → Custom domains) to use
+it for their event.
+
+**Getting an API key:**
+1. Go to developer.godaddy.com/keys and sign in with a GoDaddy account.
+2. Create a **Production** key/secret pair. Note: GoDaddy currently
+   requires the account to have an active domain or prior purchase
+   before issuing production keys — if you don't have one yet, create
+   an **OTE** (test) key instead, which is free and instant, and set
+   `GODADDY_API_ENV=test` (results will be sandbox data, not real).
+3. Set:
+```
+GODADDY_API_KEY=...
+GODADDY_API_SECRET=...
+```
+
+Leave both unset and `/admin/domain-search` shows a "not configured"
+message instead of erroring.
+
 ### Content still needed before launch
 
 - **Event details** — fill in `/admin/event-settings` (currently shows

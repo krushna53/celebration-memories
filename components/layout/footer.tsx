@@ -31,7 +31,7 @@ export function Footer({ designerCredit }: FooterProps = {}) {
           Explore Public Events
         </Link>
         <Link
-          href="/platform"
+          href="/"
           className="transition-luxury duration-300 hover:text-gold-300"
         >
           Build Your Own Celebration Site

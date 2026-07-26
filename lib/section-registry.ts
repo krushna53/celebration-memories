@@ -16,6 +16,7 @@ export const SECTION_KEYS = [
   "gallery",
   "timeline",
   "rsvp",
+  "wishMessage",
   "memoryWall",
 ] as const;
 
@@ -33,6 +34,7 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
   gallery: "Gallery",
   timeline: "Timeline",
   rsvp: "RSVP",
+  wishMessage: "Wish Message",
   memoryWall: "Memory Wall",
 };
 

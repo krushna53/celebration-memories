@@ -1,6 +1,7 @@
-import { CalendarDays, Car, Clock, MapPin, Shirt } from "lucide-react";
+import { CalendarDays, Car, Info, MapPin, Clock, Shirt } from "lucide-react";
 
 import type { EventDisplayData } from "@/lib/event-display";
+import { getWishSectionCopy } from "@/lib/event-category";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,30 @@ export function EventDetailsSection({ data }: EventDetailsSectionProps) {
             </div>
           </Reveal>
         </div>
+
+        {data.additionalNotes?.trim() ? (
+          <Reveal delay={0.25}>
+            <div className="mt-10 rounded-2xl border border-gold-500/15 bg-white px-6 py-5 shadow-sm sm:px-8">
+              <div className="flex items-center gap-2 text-navy-950">
+                <Info size={18} className="text-gold-500" />
+                <h3 className="font-display text-base">
+                  {getWishSectionCopy(data.category).noticesTitle}
+                </h3>
+              </div>
+              <ul className="mt-3 grid gap-1.5">
+                {data.additionalNotes
+                  .split("\n")
+                  .map((line) => line.trim())
+                  .filter(Boolean)
+                  .map((line, i) => (
+                    <li key={i} className="text-sm text-navy-700/80">
+                      {line}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          </Reveal>
+        ) : null}
       </div>
     </section>
   );

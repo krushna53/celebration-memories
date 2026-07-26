@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { updateEvent, type EventUpdateInput } from "@/services/events";
-import { createSignedShareImageUpload } from "@/services/uploads";
+import { createSignedShareImageUpload, createSignedShareVideoUpload } from "@/services/uploads";
 import type { SectionConfigItem } from "@/lib/section-registry";
 
 export type AdminActionResult = { success: true } | { success: false; error: string };
@@ -87,6 +87,56 @@ export async function confirmShareImageUploadAction(
 
   try {
     await updateEvent(eventId, { shareImagePath: path });
+    revalidatePath("/admin/event-settings");
+    revalidatePath("/");
+    revalidatePath("/invite/[token]", "page");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+export async function requestShareVideoUploadUrlAction(
+  eventId: string,
+  fileName: string,
+  contentType: string,
+  fileSize: number,
+) {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false as const, error: "Not authorized." };
+
+  try {
+    const upload = await createSignedShareVideoUpload({ eventId, fileName, contentType, fileSize });
+    return { success: true as const, data: upload };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+export async function removeShareVideoAction(eventId: string): Promise<AdminActionResult> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: "Not authorized." };
+
+  try {
+    await updateEvent(eventId, { shareVideoPath: null });
+    revalidatePath("/admin/event-settings");
+    revalidatePath("/");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/** Saves the just-uploaded path as the event's link-preview video (og:video — Telegram only, see lib/event-metadata.ts). */
+export async function confirmShareVideoUploadAction(
+  eventId: string,
+  path: string,
+): Promise<AdminActionResult> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: "Not authorized." };
+
+  try {
+    await updateEvent(eventId, { shareVideoPath: path });
     revalidatePath("/admin/event-settings");
     revalidatePath("/");
     revalidatePath("/invite/[token]", "page");

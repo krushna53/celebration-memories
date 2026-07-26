@@ -12,6 +12,7 @@ export default async function AdminEventSettingsPage() {
   }
 
   const shareImageUrl = event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null;
+  const shareVideoUrl = event.shareVideoPath ? publicMediaUrl("gallery", event.shareVideoPath) : null;
 
   return (
     <div>
@@ -20,7 +21,7 @@ export default async function AdminEventSettingsPage() {
         These details appear across the public site — hero, event details, and invite pages.
       </p>
       <div className="mt-6">
-        <EventSettingsForm event={event} shareImageUrl={shareImageUrl} />
+        <EventSettingsForm event={event} shareImageUrl={shareImageUrl} shareVideoUrl={shareVideoUrl} />
       </div>
     </div>
   );

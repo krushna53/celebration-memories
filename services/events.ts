@@ -28,8 +28,11 @@ export interface EventRow {
   invite_message_template: string | null;
   public_rsvp_enabled: boolean;
   share_image_path: string | null;
+  share_video_path: string | null;
   section_config: SectionConfigItem[] | null;
   ai_image_generation_limit: number;
+  additional_notes: string | null;
+  wish_message: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -59,8 +62,11 @@ export function mapEvent(row: EventRow): EventRecord {
     inviteMessageTemplate: row.invite_message_template,
     publicRsvpEnabled: row.public_rsvp_enabled ?? false,
     shareImagePath: row.share_image_path,
+    shareVideoPath: row.share_video_path,
     sectionConfig: row.section_config,
     aiImageGenerationLimit: row.ai_image_generation_limit ?? 5,
+    additionalNotes: row.additional_notes,
+    wishMessage: row.wish_message,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -96,6 +102,7 @@ export async function listPublicEvents(): Promise<EventRecord[]> {
 }
 
 export interface EventUpdateInput {
+  category?: EventRecord["category"];
   occasion?: string | null;
   honoreeName?: string;
   eventTitle?: string;
@@ -115,12 +122,16 @@ export interface EventUpdateInput {
   inviteMessageTemplate?: string | null;
   publicRsvpEnabled?: boolean;
   shareImagePath?: string | null;
+  shareVideoPath?: string | null;
   sectionConfig?: SectionConfigItem[] | null;
+  additionalNotes?: string | null;
+  wishMessage?: string | null;
 }
 
 /** Admin-facing update for the event settings form. */
 export async function updateEvent(id: string, input: EventUpdateInput): Promise<void> {
   const patch: Record<string, unknown> = {};
+  if (input.category !== undefined) patch.category = input.category;
   if (input.occasion !== undefined) patch.occasion = input.occasion;
   if (input.honoreeName !== undefined) patch.honoree_name = input.honoreeName;
   if (input.eventTitle !== undefined) patch.event_title = input.eventTitle;
@@ -141,7 +152,10 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
     patch.invite_message_template = input.inviteMessageTemplate;
   if (input.publicRsvpEnabled !== undefined) patch.public_rsvp_enabled = input.publicRsvpEnabled;
   if (input.shareImagePath !== undefined) patch.share_image_path = input.shareImagePath;
+  if (input.shareVideoPath !== undefined) patch.share_video_path = input.shareVideoPath;
   if (input.sectionConfig !== undefined) patch.section_config = input.sectionConfig;
+  if (input.additionalNotes !== undefined) patch.additional_notes = input.additionalNotes;
+  if (input.wishMessage !== undefined) patch.wish_message = input.wishMessage;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

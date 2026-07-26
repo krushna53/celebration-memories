@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, ImagePlus, Loader2, Save, Trash2, Upload } from "lucide-react";
+import { Check, Copy, Film, ImagePlus, Loader2, Save, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import {
   confirmShareImageUploadAction,
+  confirmShareVideoUploadAction,
   removeShareImageAction,
+  removeShareVideoAction,
   requestShareImageUploadUrlAction,
+  requestShareVideoUploadUrlAction,
   updateEventAction,
 } from "@/features/admin/event-settings/actions";
 import { SectionOrderManager } from "@/features/admin/event-settings/section-order-manager";
@@ -18,6 +21,7 @@ import {
   INVITE_TEMPLATE_PLACEHOLDERS,
   previewInviteMessage,
 } from "@/lib/whatsapp";
+import { EVENT_CATEGORY_OPTIONS, getWishSectionCopy } from "@/lib/event-category";
 import type { EventRecord } from "@/types/event";
 
 const inputClasses =
@@ -27,6 +31,7 @@ const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-
 interface EventSettingsFormProps {
   event: EventRecord;
   shareImageUrl: string | null;
+  shareVideoUrl: string | null;
 }
 
 /** Converts an ISO timestamp to the value a <input type="datetime-local"> expects. */
@@ -36,8 +41,9 @@ function toLocalInputValue(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function EventSettingsForm({ event, shareImageUrl }: EventSettingsFormProps) {
+export function EventSettingsForm({ event, shareImageUrl, shareVideoUrl }: EventSettingsFormProps) {
   const [form, setForm] = useState({
+    category: event.category,
     occasion: event.occasion ?? "",
     honoreeName: event.honoreeName,
     eventTitle: event.eventTitle,
@@ -55,6 +61,8 @@ export function EventSettingsForm({ event, shareImageUrl }: EventSettingsFormPro
     occasionDate: event.occasionDate ?? "",
     inviteMessageTemplate: event.inviteMessageTemplate ?? "",
     publicRsvpEnabled: event.publicRsvpEnabled,
+    additionalNotes: event.additionalNotes ?? "",
+    wishMessage: event.wishMessage ?? "",
   });
   const [origin, setOrigin] = useState("");
 
@@ -68,6 +76,9 @@ export function EventSettingsForm({ event, shareImageUrl }: EventSettingsFormPro
   const [uploadingShareImage, setUploadingShareImage] = useState(false);
   const [shareImageError, setShareImageError] = useState<string | null>(null);
   const shareImageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingShareVideo, setUploadingShareVideo] = useState(false);
+  const [shareVideoError, setShareVideoError] = useState<string | null>(null);
+  const shareVideoInputRef = useRef<HTMLInputElement>(null);
 
   function copyRsvpLink() {
     navigator.clipboard.writeText(`${origin}/events/${event.slug}/rsvp`);
@@ -109,6 +120,46 @@ export function EventSettingsForm({ event, shareImageUrl }: EventSettingsFormPro
     }
   }
 
+  async function handleShareVideoFile(file: File) {
+    setUploadingShareVideo(true);
+    setShareVideoError(null);
+    try {
+      if (file.type !== "video/mp4") {
+        throw new Error("Only MP4 video is supported.");
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        throw new Error("File is too large — link-preview videos are limited to 20MB.");
+      }
+
+      const signed = await requestShareVideoUploadUrlAction(event.id, file.name, file.type, file.size);
+      if (!signed.success) throw new Error(signed.error);
+
+      const { bucket, path, token } = signed.data;
+      const { error: uploadError } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, token, file);
+      if (uploadError) throw new Error(uploadError.message);
+
+      const confirmed = await confirmShareVideoUploadAction(event.id, path);
+      if (!confirmed.success) throw new Error(confirmed.error);
+
+      window.location.reload();
+    } catch (err) {
+      setShareVideoError(err instanceof Error ? err.message : "Upload failed.");
+      setUploadingShareVideo(false);
+    }
+  }
+
+  async function handleRemoveShareVideo() {
+    if (!confirm("Remove the link preview video?")) return;
+    setUploadingShareVideo(true);
+    const result = await removeShareVideoAction(event.id);
+    if (result.success) {
+      window.location.reload();
+    } else {
+      setShareVideoError(result.error);
+      setUploadingShareVideo(false);
+    }
+  }
+
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
     setSaved(false);
@@ -120,6 +171,7 @@ export function EventSettingsForm({ event, shareImageUrl }: EventSettingsFormPro
     setError(null);
 
     const result = await updateEventAction(event.id, {
+      category: form.category,
       occasion: form.occasion || null,
       honoreeName: form.honoreeName,
       eventTitle: form.eventTitle,
@@ -137,6 +189,8 @@ export function EventSettingsForm({ event, shareImageUrl }: EventSettingsFormPro
       occasionDate: form.occasionDate || null,
       inviteMessageTemplate: form.inviteMessageTemplate || null,
       publicRsvpEnabled: form.publicRsvpEnabled,
+      additionalNotes: form.additionalNotes || null,
+      wishMessage: form.wishMessage || null,
     });
 
     setSaving(false);
@@ -152,6 +206,26 @@ export function EventSettingsForm({ event, shareImageUrl }: EventSettingsFormPro
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Who &amp; What</h2>
         <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelClasses}>Event Type</label>
+            <select
+              className={`${inputClasses} mt-1.5`}
+              value={form.category}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, category: e.target.value as EventRecord["category"] }));
+                setSaved(false);
+              }}
+            >
+              {EVENT_CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              Changes the wording used for the Wish Message section and Event Details notices below.
+            </p>
+          </div>
           <div>
             <label className={labelClasses}>Hosted For (Honoree)</label>
             <input
@@ -290,6 +364,39 @@ export function EventSettingsForm({ event, shareImageUrl }: EventSettingsFormPro
               onChange={(e) => set("dressCode", e.target.value)}
             />
           </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Notices &amp; Wish Message</h2>
+        <div>
+          <label className={labelClasses}>
+            {getWishSectionCopy(form.category).noticesTitle} (shown in Event Details)
+          </label>
+          <textarea
+            className={`${inputClasses} mt-1.5 min-h-[90px] resize-y`}
+            placeholder={"e.g. No gifts please\nDress code: Formal\nParking available on-site"}
+            value={form.additionalNotes}
+            onChange={(e) => set("additionalNotes", e.target.value)}
+          />
+          <p className="mt-1.5 text-xs text-navy-700/50">
+            One line per notice — each shows as its own line on the site.
+          </p>
+        </div>
+        <div>
+          <label className={labelClasses}>
+            {getWishSectionCopy(form.category).title} (its own section below RSVP)
+          </label>
+          <textarea
+            className={`${inputClasses} mt-1.5 min-h-[90px] resize-y`}
+            placeholder={getWishSectionCopy(form.category).placeholder}
+            value={form.wishMessage}
+            onChange={(e) => set("wishMessage", e.target.value)}
+          />
+          <p className="mt-1.5 text-xs text-navy-700/50">
+            Optional — leave blank and this section won&rsquo;t show at all.
+            Reorder or hide it like any other section under Homepage Sections below.
+          </p>
         </div>
       </section>
 
@@ -448,6 +555,62 @@ export function EventSettingsForm({ event, shareImageUrl }: EventSettingsFormPro
           </div>
         </div>
         {shareImageError ? <p className="text-sm text-red-600">{shareImageError}</p> : null}
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Link Preview Video (optional)</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          An optional short video shown instead of the image above — but{" "}
+          <strong>only on Telegram</strong>. WhatsApp, Facebook, and Messenger all ignore
+          video previews entirely and will keep showing your Link Preview Image regardless —
+          this is a platform limitation, not a bug. Keep the image configured above either way.
+        </p>
+        <div className="flex items-center gap-4">
+          {shareVideoUrl ? (
+            <video src={shareVideoUrl} controls className="h-20 w-36 rounded-lg border border-navy-950/10 object-cover" />
+          ) : (
+            <div className="flex h-20 w-36 items-center justify-center rounded-lg border border-dashed border-navy-950/15 text-navy-700/30">
+              <Film size={22} />
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            <input
+              ref={shareVideoInputRef}
+              type="file"
+              accept="video/mp4"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && handleShareVideoFile(e.target.files[0])}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploadingShareVideo}
+              onClick={() => shareVideoInputRef.current?.click()}
+            >
+              {uploadingShareVideo ? (
+                <Loader2 className="animate-spin" size={14} />
+              ) : (
+                <Upload size={14} />
+              )}
+              {shareVideoUrl ? "Replace" : "Upload"}
+            </Button>
+            {shareVideoUrl ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={uploadingShareVideo}
+                onClick={handleRemoveShareVideo}
+                className="text-red-600 hover:bg-red-50"
+              >
+                <Trash2 size={14} /> Remove
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <p className="text-xs text-navy-700/50">MP4 only, up to 20MB — keep it short (a few seconds).</p>
+        {shareVideoError ? <p className="text-sm text-red-600">{shareVideoError}</p> : null}
       </section>
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">

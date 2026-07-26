@@ -9,6 +9,14 @@
  */
 export const SITE_NAME = "Celebration Memories";
 
+/**
+ * Base URL for absolute links, metadata, and the sitemap/robots routes
+ * (app/sitemap.ts, app/robots.ts). Set NEXT_PUBLIC_SITE_URL once you
+ * have a real production domain — falls back to a placeholder so local
+ * dev and preview builds don't need it configured.
+ */
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://celebration-memories.example.com";
+
 /** Matches the `slug` seeded in supabase/seed.sql for the active event. */
 export const EVENT_SLUG = "mahesh-75th-birthday";
 

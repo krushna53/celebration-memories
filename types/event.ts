@@ -14,7 +14,11 @@ export type EventCategory =
   | "anniversary"
   | "retirement"
   | "baby_shower"
-  | "corporate";
+  | "corporate"
+  | "obituary"
+  | "workshop"
+  | "education"
+  | "live_stream";
 
 export interface EventRecord {
   id: string;
@@ -63,10 +67,21 @@ export interface EventRecord {
   publicRsvpEnabled: boolean;
   /** Storage path (gallery bucket) of the organizer-chosen link-preview image. See lib/event-metadata.ts. */
   shareImagePath: string | null;
+  /**
+   * Storage path (gallery bucket) of an optional link-preview video
+   * (og:video). Only Telegram actually plays this inline — WhatsApp,
+   * Facebook, and Messenger ignore og:video entirely and always fall
+   * back to shareImagePath. See lib/event-metadata.ts.
+   */
+  shareVideoPath: string | null;
   /** Homepage section order/visibility, admin-editable. Null = default (all sections, standard order). See lib/section-registry.ts. */
   sectionConfig: SectionConfigItem[] | null;
   /** Max AI Image generations a client-role admin may make for this event. Owner is exempt. See services/ai-image-generations.ts. */
   aiImageGenerationLimit: number;
+  /** Short free-text notices ("No gifts please", "Dress code: formal"), shown in Event Details. One per line, admin-editable. */
+  additionalNotes: string | null;
+  /** Free-text message shown in its own homepage section (default: below RSVP) — heading adapts to `category`, see lib/event-category.ts. */
+  wishMessage: string | null;
   createdAt: string;
   updatedAt: string;
 }

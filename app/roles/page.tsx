@@ -42,7 +42,7 @@ const PERSONAS: Persona[] = [
       { label: "Personal invite link", href: "/" },
       { label: "Visitor Guide", href: "/guide" },
       { label: "Contact Us", href: "/contact" },
-      { label: "Platform info", href: "/platform" },
+      { label: "Platform info", href: "/" },
       { label: "Privacy Notice", href: "/privacy" },
     ],
   },

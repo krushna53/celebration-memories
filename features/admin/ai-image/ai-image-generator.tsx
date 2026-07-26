@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Download, ImagePlus, Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { generateAiImageAction } from "@/features/admin/ai-image/actions";
+import { generateAiImageAction, getAiImageJobStatusAction } from "@/features/admin/ai-image/actions";
 import { confirmShareImageUploadAction } from "@/features/admin/event-settings/actions";
 import { confirmGalleryUploadAction } from "@/features/admin/gallery/actions";
 import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
@@ -17,8 +17,11 @@ const LOADING_STEPS = [
   "Designing the invitation...",
   "Enhancing details...",
   "Applying your theme...",
-  "Final rendering...",
+  "Still finishing up — this can take up to a minute...",
 ];
+
+/** How often to check whether the background generation has finished. */
+const POLL_INTERVAL_MS = 2500;
 
 const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
   (c): c is { value: GalleryCategory; label: string } => c.value !== "all",
@@ -42,6 +45,7 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
   const [savedTo, setSavedTo] = useState<"share" | "gallery" | null>(null);
   const [remainingOverride, setRemainingOverride] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const remaining = remainingOverride ?? (quota ? quota.limit - quota.used : null);
   const atLimit = remaining !== null && remaining <= 0;
@@ -49,8 +53,15 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
+
+  function stopAll() {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (pollRef.current) clearInterval(pollRef.current);
+    setBusy(false);
+  }
 
   async function handleGenerate() {
     setBusy(true);
@@ -62,17 +73,37 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
       setLoadingStep((s) => Math.min(s + 1, LOADING_STEPS.length - 1));
     }, 2200);
 
-    const outcome = await generateAiImageAction(eventId, prompt);
+    const started = await generateAiImageAction(eventId, prompt);
 
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    setBusy(false);
-
-    if (outcome.success) {
-      setResult({ url: outcome.url, path: outcome.path });
-      if (outcome.remaining !== null) setRemainingOverride(outcome.remaining);
-    } else {
-      setError(outcome.error);
+    if (!started.success) {
+      stopAll();
+      setError(started.error);
+      return;
     }
+
+    if (started.remaining !== null) setRemainingOverride(started.remaining);
+
+    // The Server Action only kicked off a Netlify Background Function
+    // (see features/admin/ai-image/actions.ts) — the actual OpenAI call
+    // runs out-of-band, so we poll for its result instead of awaiting
+    // it directly.
+    pollRef.current = setInterval(async () => {
+      const job = await getAiImageJobStatusAction(started.jobId);
+
+      if (job.status === "done") {
+        stopAll();
+        if (job.resultUrl && job.resultPath) {
+          setResult({ url: job.resultUrl, path: job.resultPath });
+        } else {
+          setError("Generation finished but no image was returned. Please try again.");
+        }
+      } else if (job.status === "error") {
+        stopAll();
+        setError(job.errorMessage || "Something went wrong generating the image.");
+      }
+      // "pending" / "processing" / "not_found" (briefly, before the row
+      // is visible) — keep polling.
+    }, POLL_INTERVAL_MS);
   }
 
   async function handleUseAsShareImage() {
