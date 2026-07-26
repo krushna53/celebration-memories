@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { publicMediaUrl } from "@/services/uploads";
 import type { TimelineMilestoneRecord } from "@/types/content";
 
 interface MilestoneRow {
@@ -10,6 +11,7 @@ interface MilestoneRow {
   title: string;
   description: string;
   sort_order: number;
+  image_path: string | null;
   created_at: string;
 }
 
@@ -21,6 +23,7 @@ function mapRow(row: MilestoneRow): TimelineMilestoneRecord {
     title: row.title,
     description: row.description,
     sortOrder: row.sort_order,
+    imageUrl: row.image_path ? publicMediaUrl("gallery", row.image_path) : null,
     createdAt: row.created_at,
   };
 }
@@ -55,13 +58,20 @@ export async function createMilestone(input: {
 
 export async function updateMilestone(
   id: string,
-  input: { period?: string; title?: string; description?: string; sortOrder?: number },
+  input: {
+    period?: string;
+    title?: string;
+    description?: string;
+    sortOrder?: number;
+    imagePath?: string | null;
+  },
 ): Promise<void> {
   const patch: Record<string, unknown> = {};
   if (input.period !== undefined) patch.period = input.period;
   if (input.title !== undefined) patch.title = input.title;
   if (input.description !== undefined) patch.description = input.description;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
+  if (input.imagePath !== undefined) patch.image_path = input.imagePath;
 
   const { error } = await supabaseAdmin().from("timeline_milestones").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update milestone: ${error.message}`);

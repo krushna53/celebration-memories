@@ -5,14 +5,14 @@ import { ArrowDown, ArrowUp, Download, Film, Loader2, Music, X } from "lucide-re
 
 import { Button } from "@/components/ui/button";
 import { useSlideshowRecorder, type SlideshowPhotoInput } from "@/hooks/use-slideshow-recorder";
-import type { GalleryPhotoRecord } from "@/types/content";
+import type { SlideSource } from "@/types/content";
 
 interface SlideshowComposerProps {
-  photos: GalleryPhotoRecord[];
+  slides: SlideSource[];
 }
 
-export function SlideshowComposer({ photos }: SlideshowComposerProps) {
-  const [selectedIds, setSelectedIds] = useState<string[]>(photos.slice(0, 8).map((p) => p.id));
+export function SlideshowComposer({ slides }: SlideshowComposerProps) {
+  const [selectedIds, setSelectedIds] = useState<string[]>(slides.slice(0, 8).map((p) => p.id));
   const [secondsPerPhoto, setSecondsPerPhoto] = useState(3);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -20,8 +20,8 @@ export function SlideshowComposer({ photos }: SlideshowComposerProps) {
   const { status, progress, error, videoUrl, generate, cancel, reset } = useSlideshowRecorder();
 
   const selectedPhotos: SlideshowPhotoInput[] = selectedIds
-    .map((id) => photos.find((p) => p.id === id))
-    .filter((p): p is GalleryPhotoRecord => Boolean(p))
+    .map((id) => slides.find((p) => p.id === id))
+    .filter((p): p is SlideSource => Boolean(p))
     .map((p) => ({ id: p.id, url: p.url }));
 
   function toggle(id: string) {
@@ -41,13 +41,14 @@ export function SlideshowComposer({ photos }: SlideshowComposerProps) {
 
   const busy = status === "loading" || status === "recording";
 
-  if (photos.length === 0) {
+  if (slides.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-navy-950/15 bg-white p-8 text-center">
         <Film className="mx-auto text-navy-700/30" size={28} />
-        <h3 className="mt-3 font-display text-lg text-navy-950">No Gallery photos yet</h3>
+        <h3 className="mt-3 font-display text-lg text-navy-950">No photos yet</h3>
         <p className="mx-auto mt-2 max-w-md text-sm text-navy-700/60">
-          Add some photos in the Gallery tab first, then come back here to turn them into a slideshow video.
+          Add some photos in Gallery, or attach a photo to a Timeline milestone, then come
+          back here to turn them into a slideshow video.
         </p>
       </div>
     );
@@ -59,11 +60,11 @@ export function SlideshowComposer({ photos }: SlideshowComposerProps) {
         <section className="rounded-xl border border-navy-950/10 bg-white p-4">
           <h2 className="font-display text-lg text-navy-950">1. Pick &amp; order photos</h2>
           <p className="mt-1 text-xs text-navy-700/50">
-            {selectedIds.length} of {photos.length} selected — reorder with the arrows.
+            {selectedIds.length} of {slides.length} selected — reorder with the arrows.
           </p>
           <div className="mt-3 grid max-h-[420px] gap-2 overflow-y-auto pr-1">
             {selectedIds.map((id, i) => {
-              const photo = photos.find((p) => p.id === id);
+              const photo = slides.find((p) => p.id === id);
               if (!photo) return null;
               return (
                 <div
@@ -72,7 +73,7 @@ export function SlideshowComposer({ photos }: SlideshowComposerProps) {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={photo.url} alt={photo.caption ?? ""} className="h-14 w-14 shrink-0 rounded-md object-cover" />
-                  <div className="flex-1 truncate text-xs text-navy-700/70">{photo.caption || photo.category}</div>
+                  <div className="flex-1 truncate text-xs text-navy-700/70">{photo.caption ?? "Untitled"}</div>
                   <button
                     type="button"
                     onClick={() => move(id, -1)}
@@ -101,7 +102,7 @@ export function SlideshowComposer({ photos }: SlideshowComposerProps) {
             })}
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5 border-t border-navy-950/5 pt-3">
-            {photos
+            {slides
               .filter((p) => !selectedIds.includes(p.id))
               .map((p) => (
                 <button

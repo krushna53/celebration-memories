@@ -41,6 +41,14 @@ export function TimelineSection({ milestones }: TimelineSectionProps) {
                 <p className="mt-2 text-sm leading-relaxed text-ivory-100/70 sm:text-base">
                   {milestone.description}
                 </p>
+                {milestone.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={milestone.imageUrl}
+                    alt={milestone.title}
+                    className="mt-4 h-40 w-full max-w-sm rounded-xl border border-gold-500/15 object-cover sm:h-48"
+                  />
+                ) : null}
               </li>
             </Reveal>
           ))}
