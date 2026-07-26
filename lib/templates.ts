@@ -86,6 +86,9 @@ const COMPONENTS: Record<string, ComponentType<BirthdayTemplateProps>> = {
   "neon-party": dynamic(() => import("@/templates/NeonParty")),
   "golden-confetti": dynamic(() => import("@/templates/GoldenConfetti")),
   "balloon-pop": dynamic(() => import("@/templates/BalloonPop")),
+  "milestone-elegant": dynamic(() => import("@/templates/MilestoneElegant")),
+  "retro-disco": dynamic(() => import("@/templates/RetroDisco")),
+  "vintage-keepsake": dynamic(() => import("@/templates/VintageKeepsake")),
 };
 
 export const ALL_TEMPLATES: TemplateDefinition[] = TEMPLATE_CATALOG.map((summary) => ({

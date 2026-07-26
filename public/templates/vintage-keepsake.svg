@@ -1,0 +1,11 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#2e1f14"/>
+  <rect y="220" width="400" height="80" fill="#fffdf8"/>
+  <rect x="140" y="55" width="120" height="90" fill="none" stroke="#d4ad5f" stroke-width="2"/>
+  <rect x="148" y="63" width="104" height="74" fill="none" stroke="#d4ad5f" stroke-opacity="0.5" stroke-width="1"/>
+  <circle cx="200" cy="100" r="16" fill="none" stroke="#e3c98e" stroke-width="1.2"/>
+  <line x1="150" y1="165" x2="250" y2="165" stroke="#c08a3e" stroke-width="1.2"/>
+  <text x="200" y="182" font-family="Georgia, serif" font-size="13" fill="#d4ad5f" text-anchor="middle" letter-spacing="3">HOSTED BY</text>
+  <text x="200" y="200" font-family="Georgia, serif" font-size="20" fill="#faf3e4" text-anchor="middle" font-style="italic">Vintage Keepsake</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#77593d" text-anchor="middle">General &#183; EB Garamond</text>
+</svg>

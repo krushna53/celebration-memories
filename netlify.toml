@@ -8,6 +8,14 @@
 [build.environment]
   NODE_VERSION = "20"
 
+[functions]
+  # Raises the synchronous function execution limit as far as Netlify
+  # allows (26s max — only actually applies on Pro/Enterprise plans; on
+  # Starter it stays capped at 10s regardless of this setting). Needed
+  # for /admin/ai-image's Server Action, which calls OpenAI's image API
+  # and can otherwise get killed mid-request with a 502. See README.
+  timeout = 26
+
 # Netlify's Next.js runtime handles routing, image optimisation, and
 # server/edge functions automatically via the plugin above — no manual
 # redirects/headers are required for standard App Router usage.

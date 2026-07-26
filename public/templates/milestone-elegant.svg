@@ -1,0 +1,12 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#0a1f1a"/>
+  <rect y="220" width="400" height="80" fill="#fffdf7"/>
+  <rect x="30" y="30" width="340" height="240" fill="none" stroke="#c9a227" stroke-width="1.5"/>
+  <rect x="38" y="38" width="324" height="224" fill="none" stroke="#c9a227" stroke-opacity="0.5" stroke-width="1"/>
+  <circle cx="200" cy="95" r="18" fill="none" stroke="#e8cd85" stroke-width="1.5"/>
+  <text x="200" y="101" font-family="Georgia, serif" font-size="16" fill="#e8cd85" text-anchor="middle">75</text>
+  <line x1="150" y1="140" x2="250" y2="140" stroke="#c9a227" stroke-width="1.5"/>
+  <text x="200" y="130" font-family="Georgia, serif" font-size="14" fill="#dcb85c" text-anchor="middle" letter-spacing="3">HOSTED BY</text>
+  <text x="200" y="175" font-family="Georgia, serif" font-size="22" fill="#fdf6e3" text-anchor="middle">Milestone Elegant</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#26604e" text-anchor="middle">Formal &#183; Playfair Display</text>
+</svg>

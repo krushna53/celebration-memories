@@ -5,6 +5,8 @@ import {
   Baloo_2,
   Bebas_Neue,
   Inter,
+  Righteous,
+  EB_Garamond,
 } from "next/font/google";
 
 /**
@@ -65,5 +67,21 @@ export const inter = Inter({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+/** Bold, rounded groovy display face — used by the Retro Disco template. */
+export const righteous = Righteous({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-righteous",
+  display: "swap",
+});
+
+/** Old-style antique serif — used by the Vintage Keepsake template. */
+export const ebGaramond = EB_Garamond({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-eb-garamond",
   display: "swap",
 });

@@ -28,6 +28,14 @@ export class AiImageError extends Error {}
 export interface GenerateAiImageParams {
   prompt: string;
   size?: "1024x1024" | "1024x1536" | "1536x1024";
+  /**
+   * Defaults to "medium" rather than OpenAI's own default ("auto", which
+   * often resolves to "high") specifically to keep generation time under
+   * Netlify's serverless function execution limit — 10s by default, 26s
+   * max even on paid plans. "high" quality routinely takes 30-60s+ and
+   * gets killed mid-request (a 502), not just slower. See README.
+   */
+  quality?: "low" | "medium" | "high";
 }
 
 export interface GeneratedAiImage {
@@ -38,6 +46,7 @@ export interface GeneratedAiImage {
 export async function generateAiImage({
   prompt,
   size = "1024x1024",
+  quality = "medium",
 }: GenerateAiImageParams): Promise<GeneratedAiImage> {
   const client = getClient();
   if (!client) {
@@ -48,12 +57,23 @@ export async function generateAiImage({
 
   const model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2";
 
-  const response = await client.images.generate({
-    model,
-    prompt,
-    size,
-    n: 1,
-  });
+  let response;
+  try {
+    response = await client.images.generate({
+      model,
+      prompt,
+      size,
+      quality,
+      n: 1,
+    });
+  } catch (err) {
+    // Surface OpenAI-side timeouts/errors as a clear message rather than
+    // an opaque 500 — the Server Action still has to finish within
+    // Netlify's function limit regardless, but this at least tells the
+    // admin what actually happened instead of a generic failure.
+    const message = err instanceof Error ? err.message : "Unknown error";
+    throw new AiImageError(`OpenAI image generation failed: ${message}`);
+  }
 
   const image = response.data?.[0];
   if (!image?.b64_json) {

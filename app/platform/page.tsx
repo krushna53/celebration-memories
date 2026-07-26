@@ -56,9 +56,9 @@ const LIVE_FEATURES = [
   },
   {
     icon: Palette,
-    title: "7 ready-made templates",
+    title: "10 ready-made templates",
     description:
-      "Royal Gold, Floral Pastel, Minimal White, Kids Cartoon, Neon Party, Golden Confetti, and Balloon Pop — pick a look and switch anytime from the dashboard.",
+      "Royal Gold, Floral Pastel, Minimal White, Kids Cartoon, Neon Party, Golden Confetti, Balloon Pop, Milestone Elegant, Retro Disco, and Vintage Keepsake — pick a look and switch anytime from the dashboard.",
   },
   {
     icon: Sparkles,

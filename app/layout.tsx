@@ -1,6 +1,15 @@
 import type { Metadata, Viewport } from "next";
 
-import { playfair, poppins, dancingScript, baloo2, bebasNeue, inter } from "@/lib/fonts";
+import {
+  playfair,
+  poppins,
+  dancingScript,
+  baloo2,
+  bebasNeue,
+  inter,
+  righteous,
+  ebGaramond,
+} from "@/lib/fonts";
 import { ACTIVE_EVENT, SITE_NAME } from "@/lib/constants";
 import { ClarityScript } from "@/features/analytics/clarity-script";
 
@@ -31,7 +40,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${poppins.variable} ${dancingScript.variable} ${baloo2.variable} ${bebasNeue.variable} ${inter.variable}`}
+      className={`${playfair.variable} ${poppins.variable} ${dancingScript.variable} ${baloo2.variable} ${bebasNeue.variable} ${inter.variable} ${righteous.variable} ${ebGaramond.variable}`}
     >
       <body className="antialiased">
         {children}
