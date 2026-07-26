@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import type { ComponentType } from "react";
+import { createElement, type ComponentType } from "react";
 
 import type { EventDisplayData } from "@/lib/event-display";
 import type { EventRecord } from "@/types/event";
@@ -8,48 +8,14 @@ import {
   TEMPLATE_CATALOG,
   DEFAULT_TEMPLATE_SLUG,
   type TemplateSummary,
-  type TemplateAnimationPersonality,
+  type TemplateTheme,
 } from "@/lib/template-catalog";
+import { communitySubmissionToTemplateSummary } from "@/lib/community-theme";
+import { getTemplateSubmissionBySlug } from "@/services/template-submissions";
+import type { TemplateSubmissionRecord } from "@/types/template-submission";
 
-export type { TemplateSummary };
+export type { TemplateSummary, TemplateTheme };
 export { TEMPLATE_CATALOG, DEFAULT_TEMPLATE_SLUG };
-
-/**
- * Per-template palette, expressed as overrides for the exact CSS custom
- * property names app/globals.css declares in `@theme` — see
- * /templates/shared/template-theme-wrapper.tsx for how these get applied.
- */
-export interface TemplateTheme {
-  colors: {
-    navy950: string;
-    navy900: string;
-    navy800: string;
-    navy700: string;
-    navy600: string;
-    gold100: string;
-    gold200: string;
-    gold300: string;
-    gold400: string;
-    gold500: string;
-    gold600: string;
-    ivory50: string;
-    ivory100: string;
-    ivory200: string;
-  };
-  /** Full CSS font-family value, e.g. `"var(--font-playfair), Georgia, serif"`. */
-  fontDisplayVar: string;
-  fontSansVar: string;
-  /**
-   * Named motion personality, read via useTemplateAnimation() (see
-   * templates/shared/template-animation-context.tsx) by both the Reveal
-   * component (scroll-entrance timing) and HeroSection (which particle
-   * background renders — gold dust, confetti, or rising balloons).
-   * "festive" and "jubilant" are birthday-specific: festive keeps the
-   * luxury brief's restraint with a warmer/livelier touch, jubilant
-   * goes full celebration (confetti bursts + floating balloons).
-   */
-  animation: TemplateAnimationPersonality;
-}
 
 /** Props every template component receives — identical across all templates. */
 export interface BirthdayTemplateProps {
@@ -102,4 +68,41 @@ export function getTemplateBySlug(slug: string | null | undefined): TemplateDefi
     ALL_TEMPLATES.find((t) => t.slug === DEFAULT_TEMPLATE_SLUG) ??
     ALL_TEMPLATES[0]!
   );
+}
+
+const CommunityTemplateComponent = dynamic(() => import("@/templates/CommunityTemplate"));
+
+function communityTemplateDefinition(submission: TemplateSubmissionRecord): TemplateDefinition {
+  function Component(props: BirthdayTemplateProps) {
+    return createElement(CommunityTemplateComponent, { submission, ...props });
+  }
+
+  // communitySubmissionToTemplateSummary also includes a `designer` field
+  // (for the admin picker's credit display) that TemplateDefinition
+  // doesn't declare — harmless excess property, nothing here reads it.
+  return { ...communitySubmissionToTemplateSummary(submission), component: Component };
+}
+
+/**
+ * Community-aware template resolution — checks the built-in registry
+ * first (fast, synchronous path every existing call site still uses via
+ * getTemplateBySlug), and only falls back to a Supabase lookup for an
+ * approved community submission if the slug isn't a built-in. Used by
+ * the actual public page renderer (features/event-landing/event-landing
+ * -page.tsx); the two admin tool pages (AI Image, Share Image) that also
+ * call getTemplateBySlug just read accent-color metadata for their own
+ * UI and stay on the synchronous built-in-only path for now — if an
+ * event is on a community template those two tools currently show the
+ * default template's colors, a known, minor limitation.
+ */
+export async function resolveTemplate(slug: string | null | undefined): Promise<TemplateDefinition> {
+  const builtIn = ALL_TEMPLATES.find((t) => t.slug === slug);
+  if (builtIn) return builtIn;
+
+  if (slug) {
+    const submission = await getTemplateSubmissionBySlug(slug);
+    if (submission) return communityTemplateDefinition(submission);
+  }
+
+  return getTemplateBySlug(slug);
 }

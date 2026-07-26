@@ -1,7 +1,7 @@
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listMilestones } from "@/services/timeline";
 import { toEventDisplayData } from "@/lib/event-display";
-import { getTemplateBySlug } from "@/lib/templates";
+import { resolveTemplate } from "@/lib/templates";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 
@@ -34,7 +34,7 @@ export async function EventLandingPage({ event }: EventLandingPageProps) {
     }
   }
 
-  const template = getTemplateBySlug(event?.templateSlug);
+  const template = await resolveTemplate(event?.templateSlug);
   const TemplateComponent = template.component;
   const displayData = toEventDisplayData(event);
 

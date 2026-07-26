@@ -1,14 +1,30 @@
+import Link from "next/link";
+
 import { EVENT_SLUG } from "@/lib/constants";
 import { getEventBySlug } from "@/services/events";
-import { TemplatePicker } from "@/features/admin/templates/template-picker";
+import { listApprovedTemplateSubmissions } from "@/services/template-submissions";
+import { communitySubmissionToTemplateSummary } from "@/lib/community-theme";
+import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
+import { TemplatePicker, type PickerTemplate } from "@/features/admin/templates/template-picker";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminTemplatesPage() {
-  const event = await getEventBySlug(EVENT_SLUG);
+  const [event, approvedSubmissions] = await Promise.all([
+    getEventBySlug(EVENT_SLUG),
+    listApprovedTemplateSubmissions(),
+  ]);
   if (!event) {
     return <p className="text-navy-700">No event found. Check your Supabase seed data.</p>;
   }
+
+  // Built-in templates first, then approved community submissions — see
+  // lib/community-theme.ts#communitySubmissionToTemplateSummary for how a
+  // submission maps to this same shape.
+  const templates: PickerTemplate[] = [
+    ...TEMPLATE_CATALOG,
+    ...approvedSubmissions.map(communitySubmissionToTemplateSummary),
+  ];
 
   return (
     <div>
@@ -16,10 +32,15 @@ export default async function AdminTemplatesPage() {
       <p className="mt-1 text-sm text-navy-700/60">
         Choose the look of your site. Every template uses the same sections
         (Hero, Countdown, Gallery, Timeline, RSVP, Memory Wall) — only
-        colours, fonts, and animation style change.
+        colours, fonts, and animation style change. Includes
+        community-contributed templates —{" "}
+        <Link href="/templates/submit" className="text-gold-600 underline underline-offset-2">
+          anyone can submit one
+        </Link>
+        .
       </p>
       <div className="mt-6">
-        <TemplatePicker eventId={event.id} currentTemplateSlug={event.templateSlug} />
+        <TemplatePicker eventId={event.id} currentTemplateSlug={event.templateSlug} templates={templates} />
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import {
   Gift,
   Inbox,
   Sparkles,
+  PenTool,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/event-settings", label: "Event Settings", icon: Settings },
   { href: "/admin/templates", label: "Templates", icon: Palette },
+  { href: "/admin/template-submissions", label: "Template Submissions", icon: PenTool },
   { href: "/admin/invitees", label: "Invitees", icon: Users },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/admin/timeline", label: "Timeline", icon: Clock },

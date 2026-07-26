@@ -5,22 +5,27 @@ import Image from "next/image";
 import { Check, Crown, Loader2 } from "lucide-react";
 
 import { updateEventAction } from "@/features/admin/event-settings/actions";
-import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
+import type { TemplateSummary } from "@/lib/template-catalog";
+
+export type PickerTemplate = TemplateSummary & {
+  designer?: { name: string; website: string | null };
+};
 
 interface TemplatePickerProps {
   eventId: string;
   currentTemplateSlug: string;
+  templates: PickerTemplate[];
 }
 
 /**
- * Renders every entry in TEMPLATE_CATALOG (lib/template-catalog.ts) —
- * never a hardcoded list — so adding a template to the registry makes it
- * show up here automatically. Deliberately reads the metadata-only
- * catalog rather than the full lib/templates.ts registry, since this is
- * a client component and the full registry's component imports pull in
- * server-only code.
+ * Renders whichever templates the caller passes in — built-in
+ * (TEMPLATE_CATALOG) merged with any approved community submissions, see
+ * app/admin/(dashboard)/templates/page.tsx. Takes the list as a prop
+ * rather than importing TEMPLATE_CATALOG directly so the server-fetched
+ * community templates can be merged in without this client component
+ * needing to know how that merge happens.
  */
-export function TemplatePicker({ eventId, currentTemplateSlug }: TemplatePickerProps) {
+export function TemplatePicker({ eventId, currentTemplateSlug, templates }: TemplatePickerProps) {
   const [selected, setSelected] = useState(currentTemplateSlug);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +46,7 @@ export function TemplatePicker({ eventId, currentTemplateSlug }: TemplatePickerP
   return (
     <div>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {TEMPLATE_CATALOG.map((template) => {
+        {templates.map((template) => {
           const isSelected = template.slug === selected;
           return (
             <button
@@ -88,6 +93,11 @@ export function TemplatePicker({ eventId, currentTemplateSlug }: TemplatePickerP
                 <p className="mt-1.5 text-xs leading-relaxed text-navy-700/70">
                   {template.description}
                 </p>
+                {template.designer ? (
+                  <p className="mt-1.5 text-[11px] text-gold-600">
+                    Designed by {template.designer.name}
+                  </p>
+                ) : null}
               </div>
             </button>
           );

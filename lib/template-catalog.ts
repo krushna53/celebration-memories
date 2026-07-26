@@ -23,6 +23,45 @@ export type TemplateAnimationPersonality =
   | "festive"
   | "jubilant";
 
+/**
+ * Per-template palette, expressed as overrides for the exact CSS custom
+ * property names app/globals.css declares in `@theme` — see
+ * /templates/shared/template-theme-wrapper.tsx for how these get applied.
+ * Deliberately declared here (client-safe) rather than in the
+ * server-only lib/templates.ts, since client components — including the
+ * public template-submission form's live preview and
+ * lib/community-theme.ts — need this shape without pulling in server-only
+ * code. lib/templates.ts re-exports this type for existing imports.
+ */
+export interface TemplateTheme {
+  colors: {
+    navy950: string;
+    navy900: string;
+    navy800: string;
+    navy700: string;
+    navy600: string;
+    gold100: string;
+    gold200: string;
+    gold300: string;
+    gold400: string;
+    gold500: string;
+    gold600: string;
+    ivory50: string;
+    ivory100: string;
+    ivory200: string;
+  };
+  /** Full CSS font-family value, e.g. `"var(--font-playfair), Georgia, serif"`. */
+  fontDisplayVar: string;
+  fontSansVar: string;
+  /**
+   * Named motion personality, read via useTemplateAnimation() (see
+   * templates/shared/template-animation-context.tsx) by both the Reveal
+   * component (scroll-entrance timing) and HeroSection (which particle
+   * background renders — gold dust, confetti, or rising balloons).
+   */
+  animation: TemplateAnimationPersonality;
+}
+
 export interface TemplateSummary {
   id: string;
   slug: string;
