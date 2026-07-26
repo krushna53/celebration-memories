@@ -5,5 +5,5 @@
   <circle cx="350" cy="60" r="14" fill="#ffab9c"/>
   <rect y="220" width="400" height="80" fill="#1f2937"/>
   <text x="200" y="150" font-family="'Comic Sans MS', cursive" font-size="30" fill="#ff6f61" text-anchor="middle" font-weight="700">Kids Cartoon</text>
-  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#f5fffe" text-anchor="middle">Coral &amp; Turquoise &middot; Baloo 2 &middot; Premium</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#f5fffe" text-anchor="middle">Coral &amp; Turquoise &#183; Baloo 2 &#183; Premium</text>
 </svg>

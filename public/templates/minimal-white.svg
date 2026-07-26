@@ -4,5 +4,5 @@
   <line x1="170" y1="140" x2="230" y2="140" stroke="#1a1a1a" stroke-width="1"/>
   <text x="200" y="110" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#6b6b6b" text-anchor="middle" letter-spacing="4">MINIMAL</text>
   <text x="200" y="160" font-family="Helvetica, Arial, sans-serif" font-size="24" fill="#1a1a1a" text-anchor="middle" font-weight="300" letter-spacing="1">White</text>
-  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#8f8f8f" text-anchor="middle">Monochrome &middot; Inter</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#8f8f8f" text-anchor="middle">Monochrome &#183; Inter</text>
 </svg>

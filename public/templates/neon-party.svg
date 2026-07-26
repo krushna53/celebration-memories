@@ -4,5 +4,5 @@
   <line x1="0" y1="234" x2="400" y2="234" stroke="#ff2fb8" stroke-width="1"/>
   <text x="200" y="150" font-family="Impact, sans-serif" font-size="34" fill="#ff2fb8" text-anchor="middle" letter-spacing="2">NEON PARTY</text>
   <text x="200" y="180" font-family="Impact, sans-serif" font-size="16" fill="#2fe0ff" text-anchor="middle" letter-spacing="3">BEBAS NEUE</text>
-  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#ecdcff" text-anchor="middle">Pink &amp; Cyan &middot; Premium</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#ecdcff" text-anchor="middle">Pink &amp; Cyan &#183; Premium</text>
 </svg>

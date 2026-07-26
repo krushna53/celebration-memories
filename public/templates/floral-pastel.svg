@@ -5,5 +5,5 @@
   <circle cx="320" cy="90" r="18" fill="#c96a8c"/>
   <line x1="150" y1="120" x2="250" y2="120" stroke="#c96a8c" stroke-width="2"/>
   <text x="200" y="105" font-family="cursive" font-size="30" fill="#c96a8c" text-anchor="middle">Floral Pastel</text>
-  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#fdf1ec" text-anchor="middle">Blush &amp; Sage &middot; Dancing Script</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#fdf1ec" text-anchor="middle">Blush &amp; Sage &#183; Dancing Script</text>
 </svg>
