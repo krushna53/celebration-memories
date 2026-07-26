@@ -456,6 +456,21 @@ trigger nowhere on any site where that var wasn't set, leaving jobs
 stuck at "pending" forever — if you deployed before this fix and hit
 that, a fresh deploy picks up the corrected behavior automatically.)
 
+The trigger also targets `/.netlify/functions/generate-ai-image-background`
+— Netlify's own reserved invocation path for every function — rather than
+a custom `path` in the function's config. A custom path can end up
+shadowed by `@netlify/plugin-nextjs`'s own catch-all routing on some
+sites (the framework claims a path before the request ever reaches your
+function), which looks identical to "the trigger fetch went nowhere":
+the job just sits at `pending` with no invocation ever showing up in the
+function's logs. `/.netlify/functions/*` is reserved by the platform and
+never intercepted by any framework, so this sidesteps that class of
+routing conflict entirely. If a job still never leaves `pending`/`processing`
+after this, check **Netlify dashboard → Logs → Functions →
+generate-ai-image-background** for the actual invocation and error —
+that's the definitive way to tell whether the function is being reached
+at all.
+
 As extra safety nets: a job stuck at "pending"/"processing" for more
 than 3 minutes is automatically marked as errored server-side the next
 time its status is checked (`getAiImageJob` in

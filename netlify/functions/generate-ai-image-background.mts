@@ -131,7 +131,13 @@ async function handler(req: Request): Promise<Response> {
 
 export default handler;
 
+// Deliberately no custom `path` here — this deploys at Netlify's own
+// reserved invocation path, /.netlify/functions/generate-ai-image-background,
+// which the platform guarantees is never intercepted by the
+// @netlify/plugin-nextjs framework's routing (unlike a custom `path`,
+// which can end up shadowed by the framework's catch-all handler on
+// some sites). See resolveSiteOrigin()'s caller in
+// features/admin/ai-image/actions.ts for the matching trigger URL.
 export const config: Config = {
   background: true,
-  path: "/api/generate-ai-image-background",
 };

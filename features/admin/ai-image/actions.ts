@@ -93,7 +93,7 @@ export async function generateAiImageAction(eventId: string, prompt: string): Pr
     // synchronous limit even though the OpenAI call itself takes much
     // longer, running after this Server Action has already returned.
     const origin = await resolveSiteOrigin();
-    fetch(`${origin}/api/generate-ai-image-background`, {
+    fetch(`${origin}/.netlify/functions/generate-ai-image-background`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ jobId, eventId, prompt: prompt.trim() }),
