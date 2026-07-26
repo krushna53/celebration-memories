@@ -2,6 +2,7 @@ import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listMilestones } from "@/services/timeline";
 import { toEventDisplayData } from "@/lib/event-display";
 import { resolveTemplate } from "@/lib/templates";
+import { CustomCssBlock } from "@/features/event-landing/custom-css-block";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 
@@ -39,11 +40,14 @@ export async function EventLandingPage({ event }: EventLandingPageProps) {
   const displayData = toEventDisplayData(event);
 
   return (
-    <TemplateComponent
-      event={event}
-      displayData={displayData}
-      galleryPhotos={galleryPhotos}
-      milestones={milestones}
-    />
+    <>
+      <CustomCssBlock css={event?.customCss ?? null} />
+      <TemplateComponent
+        event={event}
+        displayData={displayData}
+        galleryPhotos={galleryPhotos}
+        milestones={milestones}
+      />
+    </>
   );
 }

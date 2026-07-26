@@ -24,6 +24,8 @@ import {
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { signOutAction } from "@/features/admin/auth-actions";
 import { isPathAllowedForRole } from "@/lib/admin-roles";
+import { TOUR_STEP_COPY } from "@/lib/admin-tour-steps";
+import { AdminTourController, type TourStep } from "@/features/admin/tour/admin-tour-controller";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -58,6 +60,15 @@ export default async function AdminDashboardLayout({
 
   const visibleNav = NAV.filter((item) => isPathAllowedForRole(item.href, admin.role));
 
+  const tourSteps: TourStep[] = visibleNav
+    .map((item) => {
+      const copy = TOUR_STEP_COPY[item.href];
+      return copy
+        ? { href: item.href as string, title: copy.title, description: copy.description }
+        : null;
+    })
+    .filter((step): step is TourStep => step !== null);
+
   return (
     <div className="min-h-screen bg-ivory-100">
       <header className="border-b border-navy-950/10 bg-navy-950">
@@ -71,6 +82,7 @@ export default async function AdminDashboardLayout({
                 Host access
               </span>
             ) : null}
+            <AdminTourController steps={tourSteps} autoStart={!admin.hasSeenTour} />
             <form action={signOutAction}>
               <button
                 type="submit"
@@ -86,6 +98,7 @@ export default async function AdminDashboardLayout({
             <Link
               key={href}
               href={href}
+              data-tour-id={href}
               className="flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm text-ivory-100/80 transition-luxury duration-200 hover:bg-white/5 hover:text-gold-300"
             >
               <Icon size={15} /> {label}

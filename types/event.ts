@@ -78,10 +78,18 @@ export interface EventRecord {
   sectionConfig: SectionConfigItem[] | null;
   /** Max AI Image generations a client-role admin may make for this event. Owner is exempt. See services/ai-image-generations.ts. */
   aiImageGenerationLimit: number;
+  /** Max AI Custom CSS generations a client-role admin may make for this event. Owner is exempt. See services/ai-css-generations.ts. */
+  aiCssGenerationLimit: number;
   /** Short free-text notices ("No gifts please", "Dress code: formal"), shown in Event Details. One per line, admin-editable. */
   additionalNotes: string | null;
   /** Free-text message shown in its own homepage section (default: below RSVP) — heading adapts to `category`, see lib/event-category.ts. */
   wishMessage: string | null;
+  /**
+   * Client-safe custom CSS for this event's public page only —
+   * deliberately CSS-only, never JS (see lib/custom-css.ts for why and
+   * what's blocked). Validated both on save and again at render time.
+   */
+  customCss: string | null;
   createdAt: string;
   updatedAt: string;
 }

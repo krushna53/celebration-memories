@@ -454,6 +454,48 @@ the project root), and set `NEXT_PUBLIC_SITE_URL` to whatever it prints
 (typically `http://localhost:8888`) so the Server Action's fetch call
 reaches the right place.
 
+### Admin Feature Tour
+
+The admin dashboard header has a "Take the Tour" button that plays a
+spotlight walkthrough over the nav — one step per feature, pulled from
+`lib/admin-tour-steps.ts` and automatically filtered to whatever the
+signed-in admin's role can see (owner vs. client, see
+`lib/admin-roles.ts`). It auto-plays once for each admin on their first
+login (`admins.has_seen_tour`), then only replays when they click the
+button again. Adding a new nav item to `NAV` in
+`app/admin/(dashboard)/layout.tsx`? Add a matching entry to
+`TOUR_STEP_COPY` (keyed by the same `href`) or it's silently skipped in
+the tour.
+
+### AI-Generated Custom CSS (optional)
+
+The Custom CSS field in `/admin/event-settings` includes a "Generate
+with AI" helper — describe a style change in plain language (e.g. "make
+the section headings larger and add more spacing") and OpenAI writes
+the CSS, which is appended into the textarea for you to review before
+saving. It reuses `OPENAI_API_KEY` (no separate key needed) and runs as
+a plain Server Action rather than a Background Function — a short CSS
+snippet is fast enough to finish well within Netlify's synchronous
+function limit, unlike AI Image above.
+
+Every output — regardless of what the model produces — is passed
+through the same `validateCustomCss()` blocklist as hand-typed CSS
+(`lib/custom-css.ts`): no `url(...)`, no `@import`, no embedded tags or
+scripts. If the model's output fails that check, generation fails with
+an error rather than silently saving something unsafe.
+
+Available to both owner and client accounts; client-role admins are
+capped at `events.ai_css_generation_limit` (default 20) generations per
+event, same pattern as AI Image — the owner is exempt. Raise or lower
+it per event with:
+```sql
+update events set ai_css_generation_limit = 50 where slug = 'your-event-slug';
+```
+
+Leave `OPENAI_API_KEY` unset and the section shows a "not configured"
+note instead of the generator — hand-typed Custom CSS still works
+either way.
+
 ### Domain Search (optional)
 
 `/admin/domain-search` lets a client search for a custom domain for

@@ -31,8 +31,10 @@ export interface EventRow {
   share_video_path: string | null;
   section_config: SectionConfigItem[] | null;
   ai_image_generation_limit: number;
+  ai_css_generation_limit: number;
   additional_notes: string | null;
   wish_message: string | null;
+  custom_css: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -65,8 +67,10 @@ export function mapEvent(row: EventRow): EventRecord {
     shareVideoPath: row.share_video_path,
     sectionConfig: row.section_config,
     aiImageGenerationLimit: row.ai_image_generation_limit ?? 5,
+    aiCssGenerationLimit: row.ai_css_generation_limit ?? 20,
     additionalNotes: row.additional_notes,
     wishMessage: row.wish_message,
+    customCss: row.custom_css,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -126,6 +130,7 @@ export interface EventUpdateInput {
   sectionConfig?: SectionConfigItem[] | null;
   additionalNotes?: string | null;
   wishMessage?: string | null;
+  customCss?: string | null;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -156,6 +161,7 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.sectionConfig !== undefined) patch.section_config = input.sectionConfig;
   if (input.additionalNotes !== undefined) patch.additional_notes = input.additionalNotes;
   if (input.wishMessage !== undefined) patch.wish_message = input.wishMessage;
+  if (input.customCss !== undefined) patch.custom_css = input.customCss;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

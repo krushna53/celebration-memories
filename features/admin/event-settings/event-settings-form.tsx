@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Film, ImagePlus, Loader2, Save, Trash2, Upload } from "lucide-react";
+import { Check, Copy, Film, ImagePlus, Loader2, Save, Sparkles, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -9,6 +9,7 @@ import { compressImage } from "@/lib/image-compression";
 import {
   confirmShareImageUploadAction,
   confirmShareVideoUploadAction,
+  generateCustomCssAction,
   removeShareImageAction,
   removeShareVideoAction,
   requestShareImageUploadUrlAction,
@@ -22,6 +23,7 @@ import {
   previewInviteMessage,
 } from "@/lib/whatsapp";
 import { EVENT_CATEGORY_OPTIONS, getWishSectionCopy } from "@/lib/event-category";
+import { validateCustomCss } from "@/lib/custom-css";
 import type { EventRecord } from "@/types/event";
 
 const inputClasses =
@@ -32,6 +34,8 @@ interface EventSettingsFormProps {
   event: EventRecord;
   shareImageUrl: string | null;
   shareVideoUrl: string | null;
+  aiCssConfigured: boolean;
+  aiCssQuota: { used: number; limit: number } | null;
 }
 
 /** Converts an ISO timestamp to the value a <input type="datetime-local"> expects. */
@@ -41,7 +45,13 @@ function toLocalInputValue(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function EventSettingsForm({ event, shareImageUrl, shareVideoUrl }: EventSettingsFormProps) {
+export function EventSettingsForm({
+  event,
+  shareImageUrl,
+  shareVideoUrl,
+  aiCssConfigured,
+  aiCssQuota,
+}: EventSettingsFormProps) {
   const [form, setForm] = useState({
     category: event.category,
     occasion: event.occasion ?? "",
@@ -63,7 +73,9 @@ export function EventSettingsForm({ event, shareImageUrl, shareVideoUrl }: Event
     publicRsvpEnabled: event.publicRsvpEnabled,
     additionalNotes: event.additionalNotes ?? "",
     wishMessage: event.wishMessage ?? "",
+    customCss: event.customCss ?? "",
   });
+  const [customCssError, setCustomCssError] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
@@ -79,6 +91,12 @@ export function EventSettingsForm({ event, shareImageUrl, shareVideoUrl }: Event
   const [uploadingShareVideo, setUploadingShareVideo] = useState(false);
   const [shareVideoError, setShareVideoError] = useState<string | null>(null);
   const shareVideoInputRef = useRef<HTMLInputElement>(null);
+  const [aiCssPrompt, setAiCssPrompt] = useState("");
+  const [generatingCss, setGeneratingCss] = useState(false);
+  const [aiCssGenError, setAiCssGenError] = useState<string | null>(null);
+  const [aiCssRemaining, setAiCssRemaining] = useState<number | null>(
+    aiCssQuota ? Math.max(aiCssQuota.limit - aiCssQuota.used, 0) : null,
+  );
 
   function copyRsvpLink() {
     navigator.clipboard.writeText(`${origin}/events/${event.slug}/rsvp`);
@@ -160,6 +178,23 @@ export function EventSettingsForm({ event, shareImageUrl, shareVideoUrl }: Event
     }
   }
 
+  async function handleGenerateCss() {
+    setGeneratingCss(true);
+    setAiCssGenError(null);
+    try {
+      const result = await generateCustomCssAction(event.id, aiCssPrompt);
+      if (!result.success) {
+        setAiCssGenError(result.error);
+        return;
+      }
+      set("customCss", form.customCss ? `${form.customCss}\n\n${result.css}` : result.css);
+      setCustomCssError(null);
+      if (result.remaining !== null) setAiCssRemaining(result.remaining);
+    } finally {
+      setGeneratingCss(false);
+    }
+  }
+
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
     setSaved(false);
@@ -167,8 +202,17 @@ export function EventSettingsForm({ event, shareImageUrl, shareVideoUrl }: Event
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError(null);
+
+    if (form.customCss) {
+      const cssError = validateCustomCss(form.customCss);
+      if (cssError) {
+        setCustomCssError(cssError);
+        return;
+      }
+    }
+    setCustomCssError(null);
+    setSaving(true);
 
     const result = await updateEventAction(event.id, {
       category: form.category,
@@ -191,6 +235,7 @@ export function EventSettingsForm({ event, shareImageUrl, shareVideoUrl }: Event
       publicRsvpEnabled: form.publicRsvpEnabled,
       additionalNotes: form.additionalNotes || null,
       wishMessage: form.wishMessage || null,
+      customCss: form.customCss || null,
     });
 
     setSaving(false);
@@ -676,6 +721,75 @@ export function EventSettingsForm({ event, shareImageUrl, shareVideoUrl }: Event
             </p>
           </div>
         ) : null}
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Custom CSS (Advanced)</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          Fine-tune colors, spacing, or fonts on your public page with your own CSS.
+          Deliberately CSS-only — no JavaScript or HTML — since this is a shared platform
+          and script injection would put every guest who visits your page at risk. A few
+          constructs are blocked outright for the same reason:{" "}
+          <code className="rounded bg-navy-950/5 px-1 py-0.5">url(...)</code>,{" "}
+          <code className="rounded bg-navy-950/5 px-1 py-0.5">@import</code>, and anything
+          that looks like an embedded tag or script. Applies only to your own event page.
+        </p>
+
+        {aiCssConfigured ? (
+          <div className="rounded-lg border border-dashed border-navy-950/15 bg-navy-950/[0.02] p-3">
+            <label className={labelClasses}>Generate with AI (optional)</label>
+            <p className="mt-1 text-xs text-navy-700/50">
+              Describe a style change in plain language and AI will write the CSS for you —
+              it&rsquo;s appended below for you to review before saving. Still CSS-only and
+              still run through the same safety check above.
+            </p>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                className={inputClasses}
+                placeholder="e.g. make the section headings a bit larger and add more spacing"
+                value={aiCssPrompt}
+                onChange={(e) => setAiCssPrompt(e.target.value)}
+                disabled={generatingCss}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={generatingCss || !aiCssPrompt.trim()}
+                onClick={handleGenerateCss}
+                className="shrink-0"
+              >
+                {generatingCss ? (
+                  <Loader2 className="animate-spin" size={14} />
+                ) : (
+                  <Sparkles size={14} />
+                )}
+                Generate
+              </Button>
+            </div>
+            {aiCssQuota ? (
+              <p className="mt-1.5 text-xs text-navy-700/50">
+                {aiCssRemaining} of {aiCssQuota.limit} AI generations remaining for this event.
+              </p>
+            ) : null}
+            {aiCssGenError ? <p className="mt-1.5 text-sm text-red-600">{aiCssGenError}</p> : null}
+          </div>
+        ) : (
+          <p className="text-xs text-navy-700/40">
+            AI-assisted generation isn&rsquo;t configured — add OPENAI_API_KEY to enable it.
+            You can still hand-write CSS below.
+          </p>
+        )}
+
+        <textarea
+          className={`${inputClasses} min-h-[140px] resize-y font-mono text-xs`}
+          placeholder={".hero-title {\n  letter-spacing: 0.05em;\n}"}
+          value={form.customCss}
+          onChange={(e) => {
+            set("customCss", e.target.value);
+            setCustomCssError(null);
+          }}
+        />
+        {customCssError ? <p className="text-sm text-red-600">{customCssError}</p> : null}
       </section>
 
       {error ? (

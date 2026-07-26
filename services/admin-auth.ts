@@ -10,6 +10,8 @@ export interface CurrentAdmin {
   email: string;
   name: string | null;
   role: AdminRole;
+  /** Whether this admin has already dismissed/finished the interactive dashboard tour once. See features/admin/tour/. */
+  hasSeenTour: boolean;
 }
 
 /**
@@ -35,16 +37,30 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
 
   const { data, error } = await supabaseAdmin()
     .from("admins")
-    .select("id, email, name, role")
+    .select("id, email, name, role, has_seen_tour")
     .eq("id", user.id)
-    .maybeSingle<{ id: string; email: string; name: string | null; role: AdminRole }>();
+    .maybeSingle<{
+      id: string;
+      email: string;
+      name: string | null;
+      role: AdminRole;
+      has_seen_tour: boolean;
+    }>();
 
   if (error) {
     console.error("Failed to check admins allowlist:", error.message);
     return null;
   }
 
-  return data;
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    email: data.email,
+    name: data.name,
+    role: data.role,
+    hasSeenTour: data.has_seen_tour,
+  };
 }
 
 /**
