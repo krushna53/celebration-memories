@@ -1,13 +1,24 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { CalendarCheck, Image as ImageIcon, LayoutDashboard, LogOut, Users } from "lucide-react";
+import {
+  CalendarCheck,
+  Image as ImageIcon,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Clock,
+  Users,
+} from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { signOutAction } from "@/features/admin/auth-actions";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/event-settings", label: "Event Settings", icon: Settings },
   { href: "/admin/invitees", label: "Invitees", icon: Users },
+  { href: "/admin/gallery", label: "Gallery", icon: ImageIcon },
+  { href: "/admin/timeline", label: "Timeline", icon: Clock },
   { href: "/admin/memories", label: "Memories", icon: ImageIcon },
   { href: "/admin/checkin", label: "Check-In", icon: CalendarCheck },
 ] as const;

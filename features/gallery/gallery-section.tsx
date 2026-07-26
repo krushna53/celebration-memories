@@ -9,27 +9,25 @@ import "react-photo-view/dist/react-photo-view.css";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
-import {
-  GALLERY_CATEGORIES,
-  GALLERY_ITEMS,
-  type GalleryCategory,
-} from "@/features/gallery/gallery-data";
+import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
+import type { GalleryPhotoRecord } from "@/types/content";
+
+interface GallerySectionProps {
+  photos: GalleryPhotoRecord[];
+}
 
 /**
  * Masonry photo gallery with category filtering and a full-screen
  * lightbox (react-photo-view). Images are lazy-loaded via next/image.
- * Shows a graceful empty state per category until real photos are
- * added to gallery-data.ts.
+ * Sourced from admin-curated `gallery_photos` (see /admin/gallery) —
+ * shows a graceful empty state per category until photos are added.
  */
-export function GallerySection() {
+export function GallerySection({ photos }: GallerySectionProps) {
   const [active, setActive] = useState<GalleryCategory | "all">("all");
 
   const items = useMemo(
-    () =>
-      active === "all"
-        ? GALLERY_ITEMS
-        : GALLERY_ITEMS.filter((item) => item.category === active),
-    [active],
+    () => (active === "all" ? photos : photos.filter((item) => item.category === active)),
+    [active, photos],
   );
 
   return (
@@ -39,7 +37,7 @@ export function GallerySection() {
           <SectionHeading
             eyebrow="Cherished Moments"
             title="Gallery"
-            description="A lifetime of memories — from childhood to grandchildren."
+            description="A lifetime of memories, shared by the family."
           />
         </Reveal>
 
@@ -85,11 +83,11 @@ export function GallerySection() {
                     key={item.id}
                     className="mb-4 overflow-hidden rounded-xl break-inside-avoid border border-navy-950/5"
                   >
-                    <PhotoView src={item.src}>
+                    <PhotoView src={item.url}>
                       <div className="relative cursor-zoom-in">
                         <Image
-                          src={item.src}
-                          alt={item.alt}
+                          src={item.url}
+                          alt={item.caption ?? ""}
                           width={600}
                           height={800}
                           loading="lazy"

@@ -2,8 +2,6 @@ import type { Metadata, Viewport } from "next";
 
 import { playfair, poppins } from "@/lib/fonts";
 import { ACTIVE_EVENT, SITE_NAME } from "@/lib/constants";
-import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
 
 import "./globals.css";
 
@@ -31,11 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${playfair.variable} ${poppins.variable}`}>
-      <body className="antialiased">
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

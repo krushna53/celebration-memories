@@ -1,6 +1,5 @@
 "use client";
 
-import { ACTIVE_EVENT } from "@/lib/constants";
 import { useCountdown } from "@/hooks/use-countdown";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
@@ -12,13 +11,17 @@ const UNITS: Array<{ key: "days" | "hours" | "minutes" | "seconds"; label: strin
   { key: "seconds", label: "Seconds" },
 ];
 
+interface CountdownSectionProps {
+  isoStart: string;
+}
+
 /**
  * Full-size dedicated countdown section, distinct from the compact
  * badge embedded in the hero card. Continues the hero's dark-navy,
  * gold-accented treatment.
  */
-export function CountdownSection() {
-  const remaining = useCountdown(ACTIVE_EVENT.isoStart);
+export function CountdownSection({ isoStart }: CountdownSectionProps) {
+  const remaining = useCountdown(isoStart);
 
   return (
     <section
@@ -31,7 +34,7 @@ export function CountdownSection() {
             tone="dark"
             eyebrow="The Celebration Begins In"
             title="Counting Down the Moments"
-            description="Every second brings us closer to honouring 75 remarkable years."
+            description="Every second brings us closer to honouring this special day."
           />
         </Reveal>
 

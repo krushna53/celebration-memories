@@ -1,14 +1,13 @@
 "use client";
 
-import { ACTIVE_EVENT } from "@/lib/constants";
 import { useCountdown } from "@/hooks/use-countdown";
 
 /**
  * Compact countdown used inside the hero glass card. The full dedicated
  * countdown section (larger digits) lives in features/countdown.
  */
-export function CountdownBadge() {
-  const remaining = useCountdown(ACTIVE_EVENT.isoStart);
+export function CountdownBadge({ isoStart }: { isoStart: string }) {
+  const remaining = useCountdown(isoStart);
 
   const units: Array<{ label: string; value: number | null }> = [
     { label: "Days", value: remaining?.days ?? null },

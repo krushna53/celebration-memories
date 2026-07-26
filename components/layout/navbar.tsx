@@ -11,7 +11,11 @@ import { cn } from "@/lib/utils";
  * on mobile. Purely presentational — all anchors point at in-page
  * sections that later phases will populate.
  */
-export function Navbar() {
+interface NavbarProps {
+  honoreeName?: string;
+}
+
+export function Navbar({ honoreeName = ACTIVE_EVENT.honoreeName }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -36,7 +40,7 @@ export function Navbar() {
           href="#hero"
           className="truncate font-display text-base tracking-wide text-gold-300 sm:text-lg"
         >
-          {ACTIVE_EVENT.honoreeName}
+          {honoreeName}
         </a>
 
         <ul className="hidden items-center gap-8 md:flex">

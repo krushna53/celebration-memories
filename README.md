@@ -2,7 +2,9 @@
 
 Premium, multi-event digital invitation & memory-sharing platform.
 First event: **Mahesh J. Shah's 75th Birthday Celebration**, hosted by
-**Jagruti Shah**.
+**Jagruti Shah** — though as of this update, all of that is editable
+from the admin dashboard rather than hardcoded. See "Admin content
+management" below.
 
 See `CLAUDE.md` in the project root for the full product spec and phased
 delivery plan.
@@ -32,7 +34,8 @@ a new deploy.
 
 ## Status
 
-All 6 phases from CLAUDE.md are implemented:
+All 6 phases from CLAUDE.md are implemented, plus a full admin content
+management layer on top:
 
 - **Phase 1** — project setup, theme, layout, navigation, hero, footer.
 - **Phase 2** — Countdown, Invitation, Event Details, Gallery, Timeline,
@@ -44,11 +47,42 @@ All 6 phases from CLAUDE.md are implemented:
   public Memory Wall. See "Where guests upload" below.
 - **Phase 5** — admin dashboard: overview + analytics, invitee
   management (create/edit/delete, CSV import, WhatsApp send), memory
-  moderation, and event-day check-in. See "Admin access" below.
+  moderation, and event-day check-in.
+- **Content management** — Event Settings, Gallery, and Timeline are now
+  all admin-editable and pulled live from Supabase (no more hardcoded
+  content files for these). See "Admin content management" below.
 
 Mobile responsiveness has been reviewed across every section (touch
 target sizing, stacked layouts on narrow viewports, no horizontal
 overflow).
+
+### Admin content management
+
+Everything that used to be hardcoded in source files is now editable
+from `/admin` and reflected on the public site within about a minute
+(the homepage revalidates every 60s):
+
+- **Event Settings** (`/admin/event-settings`) — Hosted For (honoree
+  name), Hosted By, Occasion (e.g. "75th Birthday Celebration"),
+  Tagline (the poetic subtitle, e.g. "75 Years of Love"), start/end
+  date & time, venue name/address, Google Maps directions + embed URLs,
+  parking info, dress code. These drive the Hero, Countdown, Invitation,
+  and Event Details sections everywhere on the public site, plus the
+  personalized invite pages.
+- **Gallery** (`/admin/gallery`) — upload photos straight from the
+  browser (compressed client-side, same signed-upload pipeline as guest
+  uploads) into one of the six categories (Childhood, Wedding, Family,
+  Friends, Travel, Grandchildren). Shows up immediately in the public
+  Gallery section's category filters.
+- **Timeline** (`/admin/timeline`) — add/remove/reorder life-story
+  milestones (period, title, description) with up/down arrows. The
+  public Timeline section only renders once at least one milestone
+  exists.
+
+This is separate from guest-submitted content: the **Memories** page
+still moderates what guests upload via their invite links (Memory
+Wall), while **Gallery** and **Timeline** are strictly admin-curated —
+guests never see an edit control for either.
 
 ### Where guests upload — and how easy it is
 
@@ -90,24 +124,26 @@ the account must also have a row in `admins`. To create your first admin:
 3. Sign in at `/admin/login`.
 
 From there: **Overview** (RSVP breakdown, upload counts, most active
-guests), **Invitees** (create/edit/delete, CSV import with
-`name,phone,email,relationship` columns, copy invite link, one-tap
-WhatsApp send), **Memories** (approve/feature/delete guest uploads —
-defaults to showing only what's pending review), **Check-In** (search +
-tap to check a guest in on event day).
+guests), **Event Settings**, **Invitees** (create/edit/delete, CSV
+import with `name,phone,email,relationship` columns, copy invite link,
+one-tap WhatsApp send), **Gallery**, **Timeline**, **Memories**
+(approve/feature/delete guest uploads — defaults to showing only what's
+pending review), **Check-In** (search + tap to check a guest in on
+event day).
+
+Recommended: Supabase's "Leaked Password Protection" is off by default
+on new projects. Turn it on under Authentication → Policies / Auth
+settings in the dashboard — it checks new passwords against known
+breach lists at no extra cost.
 
 ### Content still needed before launch
 
-- **Venue** — fill in `lib/constants.ts` → `VENUE` (name, address, Google
-  Maps embed/directions URLs, parking, dress code). The Event Details
-  section shows "to be announced" placeholders until then.
-- **Gallery photos** — add entries to
-  `features/gallery/gallery-data.ts` and drop the corresponding images
-  under `public/gallery/<category>/`. Empty categories show a "coming
-  soon" state. (Separate from guest uploads/Memory Wall, which are
-  already live.)
-- **Timeline** — `features/timeline/timeline-data.ts` currently has
-  placeholder life-stage milestones; replace with real dates/stories.
+- **Event details** — fill in `/admin/event-settings` (currently shows
+  the seeded "Mahesh J. Shah" defaults from `supabase/seed.sql`).
+- **Gallery photos** — add them via `/admin/gallery`. Empty categories
+  show a "coming soon" state.
+- **Timeline** — add milestones via `/admin/timeline`; the section is
+  hidden entirely until at least one exists.
 - **Admin account** — see "Admin access" above; nobody can reach
   `/admin` until you create one.
 - **Invitees** — either add them one at a time from `/admin/invitees`,
@@ -122,3 +158,7 @@ tap to check a guest in on event day).
   abuse safeguards — there's no CAPTCHA or IP-based rate limiting.
 - Deleting an invitee cascades to their RSVP/uploads/activity — there's
   a confirm dialog, but no undo.
+- The site currently supports one active event at a time (`EVENT_SLUG`
+  in `lib/constants.ts`). The database schema is already multi-event
+  (every table is scoped by `event_id`); wiring up event switching in
+  the admin UI is the remaining piece for true multi-tenant use.

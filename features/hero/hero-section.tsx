@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 
-import { ACTIVE_EVENT } from "@/lib/constants";
+import type { EventDisplayData } from "@/lib/event-display";
 import { Button } from "@/components/ui/button";
 import { CountdownBadge } from "@/features/hero/components/countdown-badge";
 import { GoldParticles } from "@/features/hero/components/gold-particles";
@@ -16,12 +16,16 @@ const fadeUp = {
   }),
 };
 
+interface HeroSectionProps {
+  data: EventDisplayData;
+}
+
 /**
  * Hero / landing section. Background video is optional and progressively
  * enhanced — if no video is supplied at /public/hero/family.mp4 the
  * gradient + particle background stands on its own.
  */
-export function HeroSection() {
+export function HeroSection({ data }: HeroSectionProps) {
   return (
     <section
       id="hero"
@@ -60,7 +64,7 @@ export function HeroSection() {
             animate="show"
             className="text-xs uppercase tracking-[0.35em] text-gold-300/90"
           >
-            Hosted by {ACTIVE_EVENT.hostedBy}
+            {data.occasion ? `${data.occasion} · ` : ""}Hosted by {data.hostedBy}
           </motion.p>
 
           <motion.h1
@@ -70,7 +74,7 @@ export function HeroSection() {
             animate="show"
             className="mt-4 text-4xl text-ivory-50 sm:text-5xl md:text-6xl"
           >
-            {ACTIVE_EVENT.honoreeName}
+            {data.honoreeName}
           </motion.h1>
 
           <motion.p
@@ -80,7 +84,7 @@ export function HeroSection() {
             animate="show"
             className="mt-3 font-display text-xl italic text-gold-200 sm:text-2xl"
           >
-            {ACTIVE_EVENT.eventTitle}
+            {data.eventTitle}
           </motion.p>
 
           <motion.div
@@ -98,9 +102,9 @@ export function HeroSection() {
             animate="show"
             className="mt-6 text-sm tracking-wide text-ivory-100/80 sm:text-base"
           >
-            {ACTIVE_EVENT.dayOfWeek}, {ACTIVE_EVENT.date}
+            {data.dayOfWeek}, {data.date}
             <br />
-            {ACTIVE_EVENT.startTime} &ndash; {ACTIVE_EVENT.endTime}
+            {data.startTime} &ndash; {data.endTime}
           </motion.p>
 
           <motion.div
@@ -110,7 +114,7 @@ export function HeroSection() {
             animate="show"
             className="mt-8"
           >
-            <CountdownBadge />
+            <CountdownBadge isoStart={data.isoStart} />
           </motion.div>
 
           <motion.div

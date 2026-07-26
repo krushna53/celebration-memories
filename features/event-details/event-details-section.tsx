@@ -1,6 +1,6 @@
 import { CalendarDays, Car, Clock, MapPin, Shirt } from "lucide-react";
 
-import { ACTIVE_EVENT, VENUE } from "@/lib/constants";
+import type { EventDisplayData } from "@/lib/event-display";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
@@ -27,13 +27,17 @@ function DetailCard({ icon, label, value }: DetailCardProps) {
   );
 }
 
+interface EventDetailsSectionProps {
+  data: EventDisplayData;
+}
+
 /**
  * Date / time / venue / parking / dress code, with an embedded map when
- * `VENUE.mapsEmbedUrl` is configured. Falls back to "to be announced"
+ * `data.mapsEmbedUrl` is configured. Falls back to "to be announced"
  * copy so the section never looks broken before real venue details are
- * filled in (see lib/constants.ts → VENUE).
+ * filled in via /admin/event-settings.
  */
-export function EventDetailsSection() {
+export function EventDetailsSection({ data }: EventDetailsSectionProps) {
   return (
     <section id="details" className="bg-ivory-100 py-20 sm:py-28">
       <div className="mx-auto max-w-5xl px-6">
@@ -50,37 +54,33 @@ export function EventDetailsSection() {
             <DetailCard
               icon={<CalendarDays size={20} />}
               label="Date"
-              value={`${ACTIVE_EVENT.dayOfWeek}, ${ACTIVE_EVENT.date}`}
+              value={`${data.dayOfWeek}, ${data.date}`}
             />
             <DetailCard
               icon={<Clock size={20} />}
               label="Time"
-              value={`${ACTIVE_EVENT.startTime} – ${ACTIVE_EVENT.endTime}`}
+              value={`${data.startTime} – ${data.endTime}`}
             />
             <DetailCard
               icon={<MapPin size={20} />}
               label="Venue"
-              value={VENUE.name ?? "To be announced"}
+              value={data.venueName ?? "To be announced"}
             />
             <DetailCard
               icon={<Shirt size={20} />}
               label="Dress Code"
-              value={VENUE.dressCode ?? "Details coming soon"}
+              value={data.dressCode ?? "Details coming soon"}
             />
             <DetailCard
               icon={<Car size={20} />}
               label="Parking"
-              value={VENUE.parkingInfo ?? "Details coming soon"}
+              value={data.parkingInfo ?? "Details coming soon"}
             />
 
-            {VENUE.mapsDirectionsUrl ? (
+            {data.mapsUrl ? (
               <div className="sm:col-span-2">
                 <Button asChild variant="outline" className="w-full sm:w-auto">
-                  <a
-                    href={VENUE.mapsDirectionsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a href={data.mapsUrl} target="_blank" rel="noopener noreferrer">
                     Get Directions
                   </a>
                 </Button>
@@ -90,9 +90,9 @@ export function EventDetailsSection() {
 
           <Reveal delay={0.2}>
             <div className="flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-2xl border border-gold-500/15 bg-white shadow-sm lg:aspect-auto lg:h-full lg:min-h-[360px]">
-              {VENUE.mapsEmbedUrl ? (
+              {data.mapsEmbedUrl ? (
                 <iframe
-                  src={VENUE.mapsEmbedUrl}
+                  src={data.mapsEmbedUrl}
                   title="Venue location"
                   className="h-full w-full"
                   loading="lazy"

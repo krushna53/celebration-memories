@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { mapEvent, type EventRow } from "@/services/events";
 import type { EventRecord, InviteeRecord } from "@/types/event";
 import type { AttendanceOption, MealPreference, RsvpRecord } from "@/types/rsvp";
 
@@ -22,24 +23,6 @@ interface InviteeRow {
   events: EventRow;
 }
 
-interface EventRow {
-  id: string;
-  slug: string;
-  category: EventRecord["category"];
-  honoree_name: string;
-  event_title: string;
-  hosted_by: string;
-  venue_name: string | null;
-  venue_address: string | null;
-  maps_url: string | null;
-  start_at: string;
-  end_at: string;
-  dress_code: string | null;
-  hero_video_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 interface RsvpRow {
   invitee_id: string;
   coming: AttendanceOption;
@@ -48,26 +31,6 @@ interface RsvpRow {
   meal_preference: MealPreference;
   comments: string | null;
   submitted_at: string;
-}
-
-function mapEvent(row: EventRow): EventRecord {
-  return {
-    id: row.id,
-    slug: row.slug,
-    category: row.category,
-    honoreeName: row.honoree_name,
-    eventTitle: row.event_title,
-    hostedBy: row.hosted_by,
-    venueName: row.venue_name,
-    venueAddress: row.venue_address,
-    mapsUrl: row.maps_url,
-    startAt: row.start_at,
-    endAt: row.end_at,
-    dressCode: row.dress_code,
-    heroVideoUrl: row.hero_video_url,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
 }
 
 function mapInvitee(row: InviteeRow): InviteeRecord {

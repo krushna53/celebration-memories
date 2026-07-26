@@ -1,10 +1,9 @@
 /**
  * Core domain types for the multi-event platform.
  *
- * These mirror the `events` / `invitees` tables introduced in Phase 3
- * (see CLAUDE.md → Database). Kept here ahead of the Supabase schema so
- * Phase 1 components (constants, hero) are already typed against the
- * eventual data model instead of ad-hoc shapes.
+ * These mirror the `events` / `invitees` tables (see CLAUDE.md →
+ * Database, plus supabase/migrations/0004_content_management.sql for
+ * the admin-editable fields added on top of the Phase 3 schema).
  */
 
 export type EventCategory =
@@ -19,12 +18,19 @@ export interface EventRecord {
   id: string;
   slug: string;
   category: EventCategory;
+  /** Free-text label shown prominently, e.g. "75th Birthday Celebration". */
+  occasion: string | null;
   honoreeName: string;
+  /** Poetic tagline shown under the honoree name, e.g. "75 Years of Love". */
   eventTitle: string;
   hostedBy: string;
   venueName: string | null;
   venueAddress: string | null;
+  /** Google Maps "Get Directions" link. */
   mapsUrl: string | null;
+  /** Google Maps embeddable iframe src URL. */
+  mapsEmbedUrl: string | null;
+  parkingInfo: string | null;
   startAt: string; // ISO timestamp
   endAt: string; // ISO timestamp
   dressCode: string | null;

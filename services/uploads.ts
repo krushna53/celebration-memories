@@ -121,4 +121,41 @@ export function publicMediaUrl(bucket: string, path: string): string {
   return data.publicUrl;
 }
 
+/**
+ * Same signed-upload pattern as createSignedMediaUpload, but for
+ * admin-curated content (the site Gallery) rather than guest uploads —
+ * no invitee/per-guest cap, targets the `gallery` bucket. Callers are
+ * responsible for checking `getCurrentAdmin()` before calling this.
+ */
+export async function createSignedGalleryUpload(params: {
+  eventId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { eventId, fileName, contentType, fileSize } = params;
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported image type: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS.photo;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `${eventId}/gallery/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage
+    .from("gallery")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+}
+
 export type { MemoryKind };
