@@ -29,7 +29,9 @@
     "tailwind-merge": "^2.5.4",
     "zod": "^3.23.8",
     "server-only": "^0.0.1",
-    "papaparse": "^5.4.1"
+    "papaparse": "^5.4.1",
+    "jszip": "^3.10.1",
+    "heic2any": "^0.0.4"
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.12",

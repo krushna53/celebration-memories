@@ -1,10 +1,12 @@
 import { Images } from "lucide-react";
 
-import { EVENT_SLUG } from "@/lib/constants";
-import { getEventBySlug } from "@/services/events";
 import { getMemoryWallItems } from "@/services/memory-wall";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { MemoryCard } from "@/features/memory-wall/components/memory-card";
+
+interface MemoryWallSectionProps {
+  eventId: string;
+}
 
 /**
  * Public "Memory Wall" — approved guest photos/videos/audio/guestbook
@@ -13,14 +15,11 @@ import { MemoryCard } from "@/features/memory-wall/components/memory-card";
  * degrades to a friendly empty state if Supabase isn't reachable/
  * configured instead of breaking the whole homepage build.
  */
-export async function MemoryWallSection() {
+export async function MemoryWallSection({ eventId }: MemoryWallSectionProps) {
   let items: Awaited<ReturnType<typeof getMemoryWallItems>> = [];
 
   try {
-    const event = await getEventBySlug(EVENT_SLUG);
-    if (event) {
-      items = await getMemoryWallItems(event.id);
-    }
+    items = await getMemoryWallItems(eventId);
   } catch (err) {
     console.error("MemoryWallSection failed to load:", err);
   }

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 
-import { playfair, poppins } from "@/lib/fonts";
+import { playfair, poppins, dancingScript, baloo2, bebasNeue, inter } from "@/lib/fonts";
 import { ACTIVE_EVENT, SITE_NAME } from "@/lib/constants";
 
 import "./globals.css";
@@ -28,7 +28,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${playfair.variable} ${poppins.variable}`}>
+    <html
+      lang="en"
+      className={`${playfair.variable} ${poppins.variable} ${dancingScript.variable} ${baloo2.variable} ${bebasNeue.variable} ${inter.variable}`}
+    >
       <body className="antialiased">{children}</body>
     </html>
   );

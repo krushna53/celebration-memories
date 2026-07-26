@@ -39,6 +39,20 @@ export async function listGalleryPhotos(eventId: string): Promise<GalleryPhotoRe
   return (data as GalleryPhotoRow[]).map(mapRow);
 }
 
+/** One representative photo for an event card (e.g. the /events directory). */
+export async function getCoverPhoto(eventId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("gallery_photos")
+    .select("storage_path")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(`Failed to load cover photo: ${error.message}`);
+  return data ? publicMediaUrl("gallery", data.storage_path) : null;
+}
+
 export async function createGalleryPhoto(input: {
   eventId: string;
   category: GalleryCategory;

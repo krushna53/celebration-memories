@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MemoryItem } from "@/types/memory";
 import { VideoPlayer } from "@/features/memory-wall/components/video-player";
+import { MediaShareButtons } from "@/components/media/media-share-buttons";
 
 interface MemoryCardProps {
   item: MemoryItem;
@@ -26,10 +27,27 @@ export function MemoryCard({ item }: MemoryCardProps) {
       {item.kind === "photo" ? (
         <div className="relative aspect-[4/3] w-full bg-navy-950/5">
           <Image src={item.url} alt={item.caption ?? "Guest photo"} fill className="object-cover" />
+          {/* Always visible, not hover-only — most guests share from a phone, which has no hover state. */}
+          <MediaShareButtons
+            url={item.url}
+            fileNameBase={`${item.author.name}-photo`}
+            shareText={`A photo from ${item.author.name}`}
+            className="absolute right-2 top-2 flex gap-1.5"
+          />
         </div>
       ) : null}
 
-      {item.kind === "video" ? <VideoPlayer url={item.url} /> : null}
+      {item.kind === "video" ? (
+        <div className="relative">
+          <VideoPlayer url={item.url} />
+          <MediaShareButtons
+            url={item.url}
+            fileNameBase={`${item.author.name}-video`}
+            shareText={`A video from ${item.author.name}`}
+            className="absolute right-2 top-2 z-10 flex gap-1.5"
+          />
+        </div>
+      ) : null}
 
       {item.kind === "audio" ? (
         <div className="bg-navy-950 px-4 py-6">

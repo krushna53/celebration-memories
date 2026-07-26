@@ -51,6 +51,15 @@ management layer on top:
 - **Content management** — Event Settings, Gallery, and Timeline are now
   all admin-editable and pulled live from Supabase (no more hardcoded
   content files for these). See "Admin content management" below.
+- **Public/platform pages** — a generic `/events/[slug]` page for any
+  event, a public `/events` directory (opt-in via visibility), and a
+  `/platform` marketing page for the platform itself. See "Platform-level
+  pages" below.
+- **Templates, GDPR, referrals & admin tools** — a config-driven template
+  registry with 5 themes, an occasion-date field, admin media download,
+  a shareable invitation-image generator, guest consent capture, a
+  referral-link program, and a Contact Us inbox. See "Templates" and
+  "Round 3 additions" below.
 
 Mobile responsiveness has been reviewed across every section (touch
 target sizing, stacked layouts on narrow viewports, no horizontal
@@ -66,9 +75,10 @@ from `/admin` and reflected on the public site within about a minute
   name), Hosted By, Occasion (e.g. "75th Birthday Celebration"),
   Tagline (the poetic subtitle, e.g. "75 Years of Love"), start/end
   date & time, venue name/address, Google Maps directions + embed URLs,
-  parking info, dress code. These drive the Hero, Countdown, Invitation,
-  and Event Details sections everywhere on the public site, plus the
-  personalized invite pages.
+  parking info, dress code, **visibility** (Public/Private), and a short
+  description used on the public directory card. These drive the Hero,
+  Countdown, Invitation, and Event Details sections everywhere on the
+  public site, plus the personalized invite pages.
 - **Gallery** (`/admin/gallery`) — upload photos straight from the
   browser (compressed client-side, same signed-upload pipeline as guest
   uploads) into one of the six categories (Childhood, Wedding, Family,
@@ -83,6 +93,129 @@ This is separate from guest-submitted content: the **Memories** page
 still moderates what guests upload via their invite links (Memory
 Wall), while **Gallery** and **Timeline** are strictly admin-curated —
 guests never see an edit control for either.
+
+### Platform-level pages
+
+Alongside any individual event's site, there are three pages that sit
+above the event level:
+
+- **`/`** — the site's primary event (whichever event has slug
+  `EVENT_SLUG` in `lib/constants.ts`; currently the Mahesh J. Shah
+  birthday). Unchanged behavior from before.
+- **`/events/[slug]`** — the same Hero-through-Memory-Wall experience as
+  `/`, but for *any* event by its slug. This is what makes the platform
+  genuinely multi-event: every event gets its own shareable URL. Works
+  for both public and private events — `visibility` only controls the
+  directory listing below, not whether the link itself works (same
+  trust model as a per-guest invite link).
+- **`/events`** — a public directory listing every event with
+  `visibility = "public"`, as cards with a cover photo (first uploaded
+  gallery photo), category badge, date, and venue. Private events never
+  appear here. Toggle an event's visibility from its Event Settings page.
+- **`/platform`** — a marketing page for Celebration Memories itself
+  (distinct from any one event), aimed at someone who wants to build
+  their own event site. Lists what's live today and what's on the
+  roadmap (color themes/templates, AI-assisted design), with a WhatsApp
+  CTA to Krushna Web Works. Linked from the footer on every page.
+
+### Templates
+
+Every event picks a visual template from `/admin/templates` — the
+registry lives entirely in `lib/template-catalog.ts` (metadata: name,
+description, category, free/premium + price, thumbnail) and
+`lib/templates.ts` (pairs each slug with its dynamically-imported
+component). Nothing hardcodes a template list or switches on slug with
+if/else — every surface reads from these two files, so adding template
+#6 only means: a new `/templates/<Name>/{index.tsx,theme.ts}` folder, one
+new entry in `TEMPLATE_CATALOG`, one new line in the `COMPONENTS` map.
+
+All 5 shipped templates (Royal Gold, Floral Pastel, Minimal White, Kids
+Cartoon, Neon Party) render the *exact same* Hero → Memory Wall section
+stack (`features/event-landing/event-sections.tsx`) — only colour
+palette, font pairing, and a named "animation personality" differ,
+applied by overriding the same CSS custom properties
+`app/globals.css` declares (see
+`templates/shared/template-theme-wrapper.tsx`). No section component
+knows templates exist. Kids Cartoon and Neon Party are marked premium
+with a price (₹499 / ₹599) as pricing metadata only — no checkout is
+wired up yet (see the Business & Growth guide for the recommended
+Razorpay path).
+
+### Round 3 additions
+
+- **Occasion Date** — Event Settings now has an optional "Actual
+  Occasion Date" separate from the celebration's start/end time (e.g. a
+  real birthdate that differs from the party date). Shown on the public
+  site as an extra detail card when set.
+- **Admin media download** — `/admin/memories` has a "Download All
+  Media (.zip)" button (`/api/admin/media-export`) that bundles every
+  photo/video/audio upload for backup. In-memory zip — fine at family-
+  event scale, flagged in `docs/risk-analysis.md` as needing a
+  background-job rewrite at real volume.
+- **Shareable invitation image** — `/admin/share-image` composes a
+  downloadable PNG invitation card (Canvas-based, optionally using an
+  uploaded photo as background), with a Share button that uses the Web
+  Share API on mobile (falls back to opening WhatsApp with just the
+  text+link, since browsers can't attach a file into a WhatsApp message
+  programmatically).
+- **GDPR-style consent** — RSVP and Guest Book both require a consent
+  checkbox before submitting, timestamped as `consent_at` on the row. A
+  `/privacy` page explains what's collected and why, linked from every
+  footer.
+- **Referrals** — `/admin/referrals` generates shareable
+  `/platform?ref=<code>` links, tracks visits automatically, and lets
+  the admin manually log conversions + reward amounts with a
+  pending/paid toggle. Deliberately no automated payout — see the
+  Business & Growth guide for why a manual step is the right call here.
+- **Contact Us** — a public `/contact` form (name/email/message) writes
+  to an `inquiries` table; `/admin/inquiries` lists and marks them read.
+- **How-to guides** — `/admin/help` (every admin feature, including how
+  to send a guest's unique invite link) and `/guide` (what a visitor can
+  do), both linked from their respective navigation.
+- **Support / Contribute** — a link on `/platform` (`SUPPORT.url` in
+  `lib/constants.ts`) currently opens WhatsApp; swap it for a UPI or
+  Razorpay Payment Link once one exists (steps in the Business & Growth
+  guide).
+- **`docs/risk-analysis.md`** — where the platform breaks first as
+  traffic/media volume grow, and the concrete safeguard for each.
+- **`docs/business-growth-guide.md`** — Razorpay account setup, India/
+  foreign pricing recommendations, a "build free, pay to publish" gating
+  pattern for monetization, GoDaddy→Netlify custom domain steps, and
+  positioning advice for standing out as a real product rather than "an
+  AI demo."
+
+### Sharing media to Instagram/Facebook/X/etc
+
+There's no web API any of those platforms expose for posting content
+directly from a website — that's a platform limitation, not something
+this app can route around. What actually works, and what's built:
+
+- **Every uploaded photo is normalized to JPEG**, including iPhone HEIC
+  photos (converted client-side via `heic2any` before the existing
+  resize/compress step in `lib/image-compression.ts`). Chrome, Firefox,
+  and most social upload flows can't reliably handle raw HEIC — this was
+  silently producing photos guests could see on their own iPhone but
+  nowhere else. Now everything that lands in Storage is a normal JPEG.
+- **Download + Share buttons** on every Memory Wall and Gallery photo/
+  video (`components/media/media-share-buttons.tsx`). Download fetches
+  the file and forces a save (works even though the file lives on a
+  different domain in Supabase Storage). Share uses the Web Share API
+  with the actual file attached — on a phone, that opens the native OS
+  share sheet, the same one Instagram/Facebook/WhatsApp/etc register
+  into, so a guest can often post straight from there. Desktop browsers
+  mostly don't support sharing files this way, so Share falls back to
+  Download there.
+- **Rich link previews** — `/` and `/events/[slug]` now generate real
+  Open Graph + Twitter Card metadata per event (`lib/event-metadata.ts`),
+  using the event's first gallery photo as the preview image. Pasting
+  the event link into Facebook, X, WhatsApp, or iMessage now shows an
+  actual photo and the honoree's name instead of a generic card.
+
+Not solved, and not solvable from a website: HEVC-encoded `.mov` videos
+from iPhone can still have inconsistent playback in some browsers before
+a guest downloads them — once downloaded, native apps (including
+Instagram's own uploader) handle that format fine, so it's a viewing
+quirk on this site, not a sharing blocker.
 
 ### Where guests upload — and how easy it is
 
@@ -148,6 +281,9 @@ breach lists at no extra cost.
   `/admin` until you create one.
 - **Invitees** — either add them one at a time from `/admin/invitees`,
   or bulk-import via CSV.
+- **Visibility** — new events default to Private (link-only). If you
+  want Mahesh's event listed on the public `/events` directory, flip it
+  to Public in Event Settings.
 
 ### Known limitations
 
@@ -159,6 +295,15 @@ breach lists at no extra cost.
 - Deleting an invitee cascades to their RSVP/uploads/activity — there's
   a confirm dialog, but no undo.
 - The site currently supports one active event at a time (`EVENT_SLUG`
-  in `lib/constants.ts`). The database schema is already multi-event
-  (every table is scoped by `event_id`); wiring up event switching in
-  the admin UI is the remaining piece for true multi-tenant use.
+  in `lib/constants.ts`) for the homepage and admin dashboard. Other
+  events are reachable at `/events/[slug]` and can be created directly
+  in the `events` table, but there's no admin UI yet to create a new
+  event or switch which one the dashboard manages.
+- Not yet built (deliberately deferred — see `docs/business-growth-guide.md`
+  for the reasoning on each): a developer-facing template marketplace
+  with paid listings and real checkout (Stripe/Razorpay), an AI
+  prompt-based site redesigner, self-serve customer signup + billing
+  (today every new event is onboarded manually), the "build free, pay to
+  publish" paywall gate, and custom-domain connection UI (the DNS steps
+  exist in the guide, but there's no in-app flow yet). These are on the
+  roadmap — see the "Coming Soon" section on `/platform`.

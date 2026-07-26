@@ -60,6 +60,9 @@ export const rsvpFormSchema = z.object({
   children: z.coerce.number().int().min(0).max(20),
   mealPreference: z.enum(MEAL_PREFERENCES),
   comments: z.string().trim().max(1000).optional().or(z.literal("")),
+  consent: z.boolean().refine((v) => v === true, {
+    message: "Please agree to the privacy notice to submit your RSVP.",
+  }),
 });
 
 export type RsvpFormValues = z.infer<typeof rsvpFormSchema>;

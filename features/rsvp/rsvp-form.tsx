@@ -216,6 +216,33 @@ export function RsvpForm({ token, defaultValues, guestName }: RsvpFormProps) {
         />
       </div>
 
+      <div>
+        <label className="flex items-start gap-2.5 text-sm text-navy-700/80">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-navy-950/30 text-gold-500 focus:ring-gold-500/40"
+            {...register("consent")}
+          />
+          <span>
+            I agree that the details I provide here (name, contact info, and
+            RSVP) may be stored and used by the host to plan this event. See
+            the{" "}
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gold-600 underline underline-offset-2"
+            >
+              Privacy Notice
+            </a>
+            .
+          </span>
+        </label>
+        {errors.consent ? (
+          <p className="mt-1 text-xs text-red-600">{errors.consent.message}</p>
+        ) : null}
+      </div>
+
       {serverError ? (
         <p className="text-sm text-red-600" role="alert">
           {serverError}

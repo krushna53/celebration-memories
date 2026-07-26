@@ -18,6 +18,7 @@ export async function submitGuestbookEntry(params: {
     message: values.message,
     country: values.country || null,
     photo_storage_path: photoPath || null,
+    consent_at: new Date().toISOString(),
   });
 
   if (error) {

@@ -61,6 +61,13 @@ export function EventDetailsSection({ data }: EventDetailsSectionProps) {
               label="Time"
               value={`${data.startTime} – ${data.endTime}`}
             />
+            {data.occasionDate ? (
+              <DetailCard
+                icon={<CalendarDays size={20} />}
+                label="The Actual Day"
+                value={data.occasionDate}
+              />
+            ) : null}
             <DetailCard
               icon={<MapPin size={20} />}
               label="Venue"

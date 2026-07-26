@@ -29,7 +29,7 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
             Approve, feature, or remove guest photos, videos, audio, and guest book messages.
           </p>
         </div>
-        <div className="flex gap-2 text-sm">
+        <div className="flex flex-wrap gap-2 text-sm">
           <a
             href="/admin/memories"
             className={`rounded-full px-3 py-1.5 ${!showAll ? "bg-gold-500 text-navy-950" : "border border-navy-950/15 text-navy-700/70"}`}
@@ -41,6 +41,12 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
             className={`rounded-full px-3 py-1.5 ${showAll ? "bg-gold-500 text-navy-950" : "border border-navy-950/15 text-navy-700/70"}`}
           >
             All
+          </a>
+          <a
+            href="/api/admin/media-export"
+            className="rounded-full border border-navy-950/15 px-3 py-1.5 text-navy-700/70 hover:border-gold-500/50 hover:text-gold-700"
+          >
+            Download All Media (.zip)
           </a>
         </div>
       </div>

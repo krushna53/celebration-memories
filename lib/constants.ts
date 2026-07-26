@@ -47,6 +47,18 @@ export const BUILDER = {
     "https://wa.me/919987982969?text=Hi%20Harshal,%20I%20visited%20your%20event%20website%20and%20would%20like%20to%20create%20something%20similar.",
 } as const;
 
+/**
+ * Support/donate CTA for the platform. No payment processor is wired up
+ * yet (see the Business & Growth guide for Razorpay setup steps) — this
+ * currently opens a WhatsApp message so a supporter can reach out
+ * directly. Once a Razorpay Payment Link or UPI ID exists, swap `url`
+ * for that link (e.g. "https://rzp.io/l/your-link" or
+ * "upi://pay?pa=yourvpa@bank&pn=Krushna%20Web%20Works").
+ */
+export const SUPPORT = {
+  url: "https://wa.me/919987982969?text=Hi%20Harshal,%20I%27d%20like%20to%20support%20Celebration%20Memories.",
+} as const;
+
 export const NAV_LINKS = [
   { label: "Home", href: "#hero" },
   { label: "Event Details", href: "#details" },

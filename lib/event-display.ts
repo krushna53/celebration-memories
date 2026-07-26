@@ -29,6 +29,8 @@ export interface EventDisplayData {
   mapsEmbedUrl: string | null;
   parkingInfo: string | null;
   dressCode: string | null;
+  /** The actual date being honoured, formatted, if it differs from the celebration date. */
+  occasionDate: string | null;
 }
 
 export function toEventDisplayData(event: EventRecord | null): EventDisplayData {
@@ -49,6 +51,7 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
       mapsEmbedUrl: VENUE.mapsEmbedUrl,
       parkingInfo: VENUE.parkingInfo,
       dressCode: VENUE.dressCode,
+      occasionDate: null,
     };
   }
 
@@ -68,5 +71,8 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
     mapsEmbedUrl: event.mapsEmbedUrl,
     parkingInfo: event.parkingInfo,
     dressCode: event.dressCode,
+    occasionDate: event.occasionDate
+      ? format(new Date(`${event.occasionDate}T00:00:00`), "MMMM d, yyyy")
+      : null,
   };
 }

@@ -20,6 +20,8 @@ export interface EventRecord {
   category: EventCategory;
   /** Free-text label shown prominently, e.g. "75th Birthday Celebration". */
   occasion: string | null;
+  /** Slug into lib/templates.ts ALL_TEMPLATES — which visual template renders this event. */
+  templateSlug: string;
   honoreeName: string;
   /** Poetic tagline shown under the honoree name, e.g. "75 Years of Love". */
   eventTitle: string;
@@ -33,8 +35,18 @@ export interface EventRecord {
   parkingInfo: string | null;
   startAt: string; // ISO timestamp
   endAt: string; // ISO timestamp
+  /**
+   * The actual date being honoured (e.g. real birthdate/anniversary
+   * date) — optional, and may differ from startAt/endAt, which is when
+   * the celebration itself is held. YYYY-MM-DD or null.
+   */
+  occasionDate: string | null;
   dressCode: string | null;
   heroVideoUrl: string | null;
+  /** Controls whether this event appears in the public /events directory. Direct links always work regardless. */
+  visibility: "public" | "private";
+  /** One or two lines shown on the /events directory card. */
+  shortDescription: string | null;
   createdAt: string;
   updatedAt: string;
 }

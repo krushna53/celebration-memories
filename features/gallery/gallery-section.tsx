@@ -11,6 +11,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
 import type { GalleryPhotoRecord } from "@/types/content";
+import { MediaShareButtons } from "@/components/media/media-share-buttons";
 
 interface GallerySectionProps {
   photos: GalleryPhotoRecord[];
@@ -81,7 +82,7 @@ export function GallerySection({ photos }: GallerySectionProps) {
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="mb-4 overflow-hidden rounded-xl break-inside-avoid border border-navy-950/5"
+                    className="relative mb-4 overflow-hidden rounded-xl break-inside-avoid border border-navy-950/5"
                   >
                     <PhotoView src={item.url}>
                       <div className="relative cursor-zoom-in">
@@ -95,6 +96,12 @@ export function GallerySection({ photos }: GallerySectionProps) {
                         />
                       </div>
                     </PhotoView>
+                    <MediaShareButtons
+                      url={item.url}
+                      fileNameBase={`gallery-${item.category}`}
+                      shareText={item.caption ?? undefined}
+                      className="absolute right-2 top-2 flex gap-1.5"
+                    />
                   </div>
                 ))}
               </div>

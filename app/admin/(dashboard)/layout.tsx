@@ -8,6 +8,11 @@ import {
   Settings,
   Clock,
   Users,
+  Palette,
+  HelpCircle,
+  ImagePlus,
+  Gift,
+  Inbox,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -16,11 +21,16 @@ import { signOutAction } from "@/features/admin/auth-actions";
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/event-settings", label: "Event Settings", icon: Settings },
+  { href: "/admin/templates", label: "Templates", icon: Palette },
   { href: "/admin/invitees", label: "Invitees", icon: Users },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/admin/timeline", label: "Timeline", icon: Clock },
   { href: "/admin/memories", label: "Memories", icon: ImageIcon },
+  { href: "/admin/share-image", label: "Share Image", icon: ImagePlus },
+  { href: "/admin/referrals", label: "Referrals", icon: Gift },
+  { href: "/admin/inquiries", label: "Inquiries", icon: Inbox },
   { href: "/admin/checkin", label: "Check-In", icon: CalendarCheck },
+  { href: "/admin/help", label: "Help", icon: HelpCircle },
 ] as const;
 
 export default async function AdminDashboardLayout({

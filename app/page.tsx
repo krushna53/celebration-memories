@@ -1,65 +1,36 @@
-import { HeroSection } from "@/features/hero/hero-section";
-import { CountdownSection } from "@/features/countdown/countdown-section";
-import { InvitationSection } from "@/features/invitation/invitation-section";
-import { EventDetailsSection } from "@/features/event-details/event-details-section";
-import { GallerySection } from "@/features/gallery/gallery-section";
-import { TimelineSection } from "@/features/timeline/timeline-section";
-import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
-import { MemoryWallSection } from "@/features/memory-wall/memory-wall-section";
-import { SiteShell } from "@/components/layout/site-shell";
+import { cache } from "react";
+import type { Metadata } from "next";
+
+import { EventLandingPage } from "@/features/event-landing/event-landing-page";
 import { EVENT_SLUG } from "@/lib/constants";
 import { getEventBySlug } from "@/services/events";
-import { listGalleryPhotos } from "@/services/gallery-photos";
-import { listMilestones } from "@/services/timeline";
-import { toEventDisplayData } from "@/lib/event-display";
+import { buildEventMetadata } from "@/lib/event-metadata";
 import type { EventRecord } from "@/types/event";
-import type { GalleryPhotoRecord } from "@/types/content";
-import type { TimelineMilestoneRecord } from "@/types/content";
 
 /**
- * Homepage. Section order follows CLAUDE.md → Homepage spec: Hero,
- * Countdown, Invitation, Event Details (incl. Location/maps), Gallery,
- * Timeline, RSVP, Guest Memories.
- *
- * All event/gallery/timeline content is admin-editable (see /admin) and
- * fetched here server-side. Falls back to lib/constants.ts defaults and
- * empty content lists if Supabase is unreachable, so the homepage never
- * hard-fails — see toEventDisplayData().
- *
- * Revalidated periodically (not fully static) so edits made in the
- * admin dashboard show up without a full redeploy.
+ * Primary homepage — always renders the site's main event (EVENT_SLUG).
+ * Revalidated periodically (not fully static) so admin edits show up
+ * without a full redeploy. See features/event-landing for the shared
+ * section-assembly logic reused by /events/[slug].
  */
 export const revalidate = 60;
 
-export default async function Home() {
-  let event: EventRecord | null = null;
-  let galleryPhotos: GalleryPhotoRecord[] = [];
-  let milestones: TimelineMilestoneRecord[] = [];
-
+// cache() dedupes this within a single request — generateMetadata and
+// the page component both need the event, but should only fetch it once.
+const loadEvent = cache(async (): Promise<EventRecord | null> => {
   try {
-    event = await getEventBySlug(EVENT_SLUG);
-    if (event) {
-      [galleryPhotos, milestones] = await Promise.all([
-        listGalleryPhotos(event.id),
-        listMilestones(event.id),
-      ]);
-    }
+    return await getEventBySlug(EVENT_SLUG);
   } catch (err) {
     console.error("Homepage failed to load event data:", err);
+    return null;
   }
+});
 
-  const data = toEventDisplayData(event);
+export async function generateMetadata(): Promise<Metadata> {
+  return buildEventMetadata(await loadEvent());
+}
 
-  return (
-    <SiteShell honoreeName={data.honoreeName}>
-      <HeroSection data={data} />
-      <CountdownSection isoStart={data.isoStart} />
-      <InvitationSection data={data} />
-      <EventDetailsSection data={data} />
-      <GallerySection photos={galleryPhotos} />
-      <TimelineSection milestones={milestones} />
-      <RsvpTeaserSection />
-      <MemoryWallSection />
-    </SiteShell>
-  );
+export default async function Home() {
+  const event = await loadEvent();
+  return <EventLandingPage event={event} />;
 }

@@ -36,6 +36,9 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
     mapsEmbedUrl: event.mapsEmbedUrl ?? "",
     parkingInfo: event.parkingInfo ?? "",
     dressCode: event.dressCode ?? "",
+    visibility: event.visibility,
+    shortDescription: event.shortDescription ?? "",
+    occasionDate: event.occasionDate ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -64,6 +67,9 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
       mapsEmbedUrl: form.mapsEmbedUrl || null,
       parkingInfo: form.parkingInfo || null,
       dressCode: form.dressCode || null,
+      visibility: form.visibility,
+      shortDescription: form.shortDescription || null,
+      occasionDate: form.occasionDate || null,
     });
 
     setSaving(false);
@@ -120,9 +126,16 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Date &amp; Time</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          &ldquo;Starts / Ends&rdquo; is when the <em>celebration</em> takes place —
+          this drives the countdown, RSVP window, and everywhere a date/time
+          shows on the site. If the actual occasion (e.g. a real birthdate or
+          anniversary date) falls on a different day than the party, add it
+          separately below — it&rsquo;s optional and purely informational.
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className={labelClasses}>Starts</label>
+            <label className={labelClasses}>Celebration Starts</label>
             <input
               type="datetime-local"
               className={`${inputClasses} mt-1.5`}
@@ -132,7 +145,7 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
             />
           </div>
           <div>
-            <label className={labelClasses}>Ends</label>
+            <label className={labelClasses}>Celebration Ends</label>
             <input
               type="datetime-local"
               className={`${inputClasses} mt-1.5`}
@@ -140,6 +153,19 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
               onChange={(e) => set("endAt", e.target.value)}
               required
             />
+          </div>
+          <div>
+            <label className={labelClasses}>Actual Occasion Date (optional)</label>
+            <input
+              type="date"
+              className={`${inputClasses} mt-1.5`}
+              value={form.occasionDate}
+              onChange={(e) => set("occasionDate", e.target.value)}
+            />
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              e.g. Mahesh&rsquo;s real birthdate, if the party is held on a
+              different day.
+            </p>
           </div>
         </div>
       </section>
@@ -197,6 +223,57 @@ export function EventSettingsForm({ event }: EventSettingsFormProps) {
               onChange={(e) => set("dressCode", e.target.value)}
             />
           </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Public Listing</h2>
+        <div>
+          <label className={labelClasses}>Visibility</label>
+          <div className="mt-1.5 flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setForm((f) => ({ ...f, visibility: "public" }));
+                setSaved(false);
+              }}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+                form.visibility === "public"
+                  ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                  : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+              }`}
+            >
+              Public — listed on /events
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setForm((f) => ({ ...f, visibility: "private" }));
+                setSaved(false);
+              }}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+                form.visibility === "private"
+                  ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                  : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+              }`}
+            >
+              Private — link only
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-navy-700/60">
+            Either way, the site is always reachable at its direct link — this only
+            controls whether it shows up in the public events directory.
+          </p>
+        </div>
+        <div>
+          <label className={labelClasses}>Short Description (for the directory card)</label>
+          <input
+            className={`${inputClasses} mt-1.5`}
+            placeholder="e.g. A joyful evening celebrating 75 years, with family and friends."
+            value={form.shortDescription}
+            onChange={(e) => set("shortDescription", e.target.value)}
+            maxLength={160}
+          />
         </div>
       </section>
 

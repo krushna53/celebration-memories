@@ -20,6 +20,10 @@ export interface EventRow {
   end_at: string;
   dress_code: string | null;
   hero_video_url: string | null;
+  visibility: "public" | "private";
+  short_description: string | null;
+  occasion_date: string | null;
+  template_slug: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +46,10 @@ export function mapEvent(row: EventRow): EventRecord {
     endAt: row.end_at,
     dressCode: row.dress_code,
     heroVideoUrl: row.hero_video_url,
+    visibility: row.visibility,
+    shortDescription: row.short_description,
+    occasionDate: row.occasion_date,
+    templateSlug: row.template_slug ?? "royal-gold",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -60,6 +68,22 @@ export async function getEventBySlug(slug: string): Promise<EventRecord | null> 
   return data ? mapEvent(data) : null;
 }
 
+/**
+ * Events opted into the public /events directory, newest-starting first.
+ * Private events are never returned here — they're still reachable by
+ * anyone with the direct /events/[slug] link, same as an invite link.
+ */
+export async function listPublicEvents(): Promise<EventRecord[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("events")
+    .select("*")
+    .eq("visibility", "public")
+    .order("start_at", { ascending: true });
+
+  if (error) throw new Error(`Failed to list public events: ${error.message}`);
+  return (data as EventRow[]).map(mapEvent);
+}
+
 export interface EventUpdateInput {
   occasion?: string | null;
   honoreeName?: string;
@@ -73,6 +97,10 @@ export interface EventUpdateInput {
   startAt?: string;
   endAt?: string;
   dressCode?: string | null;
+  visibility?: "public" | "private";
+  shortDescription?: string | null;
+  occasionDate?: string | null;
+  templateSlug?: string;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -90,6 +118,10 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.startAt !== undefined) patch.start_at = input.startAt;
   if (input.endAt !== undefined) patch.end_at = input.endAt;
   if (input.dressCode !== undefined) patch.dress_code = input.dressCode;
+  if (input.visibility !== undefined) patch.visibility = input.visibility;
+  if (input.shortDescription !== undefined) patch.short_description = input.shortDescription;
+  if (input.occasionDate !== undefined) patch.occasion_date = input.occasionDate;
+  if (input.templateSlug !== undefined) patch.template_slug = input.templateSlug;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

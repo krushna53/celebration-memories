@@ -22,6 +22,7 @@ export async function submitRsvp(inviteeId: string, values: RsvpFormValues) {
       meal_preference: values.mealPreference,
       comments: values.comments || null,
       submitted_at: new Date().toISOString(),
+      consent_at: new Date().toISOString(),
     },
     { onConflict: "invitee_id" },
   );
