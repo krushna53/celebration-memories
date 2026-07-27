@@ -447,14 +447,13 @@ function reads the same `NEXT_PUBLIC_SUPABASE_URL` /
 
 **Who triggers the background function, and why:** this went through
 several iterations before landing on the current approach, worth
-recording here since it's easy to reintroduce the bug if this code gets
+recording here since it's easy to reintroduce a bug if this code gets
 refactored later. The trigger is fired **from the browser** (see
 `handleGenerate` in `features/admin/ai-image/ai-image-generator.tsx`),
-using `fetch("/.netlify/functions/generate-ai-image-background", {
-..., keepalive: true })` — a relative URL (no origin-detection logic
-needed) with `keepalive: true`, the same mechanism used for analytics
-beacons, which tells the browser to finish sending the request even if
-the page navigates away immediately after.
+using a plain `fetch("/.netlify/functions/generate-ai-image-background",
+{ method: "POST", ... })` — a relative URL, so it always resolves
+against whatever origin the admin is actually using, with no
+origin-detection logic needed on either side.
 
 Earlier versions had the *Server Action* trigger the background function
 instead (a server-to-server fetch, right after creating the job row).
@@ -470,6 +469,21 @@ which can kill an outbound request that hasn't fully completed yet —
 even one that's been awaited for its initial acknowledgement. A browser
 tab isn't subject to that; triggering from the client sidesteps the
 failure mode entirely instead of continuing to work around it.
+
+The client-side trigger also deliberately does **not** use `fetch(...,
+{ keepalive: true })`, even though that's the usual advice for "fire
+this and don't wait for it" requests. Keepalive requests share a
+combined 64KB budget (per the Fetch spec) across every keepalive
+request in flight on the page — including this site's Microsoft Clarity
+analytics beacons — and Chrome fails them completely silently when that
+budget is exceeded: no console error, no Network-tab entry, nothing.
+That produces exactly the same symptom as the server-to-server issue
+above (job stuck at `pending`, zero invocations in the function's logs),
+which cost real debugging time before landing on this as the cause.
+`keepalive` exists to survive the *page unloading* mid-request, which
+isn't the situation here — the admin stays on `/admin/ai-image` the
+whole time watching the spinner — so a plain `fetch` is both sufficient
+and sidesteps this failure mode entirely.
 
 Because the trigger endpoint is therefore reachable with any
 client-supplied `jobId`, the background function looks the job up first

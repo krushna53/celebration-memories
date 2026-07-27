@@ -95,13 +95,23 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
     // Trigger the Netlify Background Function ourselves, from the
     // browser, rather than the Server Action doing a server-to-server
     // fetch (see the comment on generateAiImageAction for why that
-    // approach kept failing). `keepalive: true` is the same mechanism
-    // browsers use for analytics beacons — it tells the browser to
-    // finish sending this request even if the page navigates away
-    // right after, which a fire-and-forget call from a serverless
-    // function can't guarantee for itself. The URL is relative, so it
-    // always resolves against whatever origin the admin is actually
-    // using — no origin-detection logic needed on either side.
+    // approach kept failing). The URL is relative, so it always
+    // resolves against whatever origin the admin is actually using — no
+    // origin-detection logic needed on either side.
+    //
+    // Deliberately NOT using `keepalive: true` here, despite that being
+    // the usual advice for "fire this and don't wait for it" requests —
+    // keepalive requests share a combined 64KB budget (per the Fetch
+    // spec) across every keepalive request in flight on the page,
+    // including this site's Microsoft Clarity analytics beacons, and
+    // Chrome fails them completely silently when that budget is
+    // exceeded: no console error, no network entry, nothing — which is
+    // exactly the "request never reaches the server, no visible error"
+    // symptom this trigger kept producing. keepalive exists to survive
+    // the *page unloading* mid-request, which isn't our situation: the
+    // admin stays on this page the whole time watching the spinner, so
+    // a plain fetch is both sufficient and avoids that failure mode
+    // entirely.
     //
     // This is deliberately not awaited beyond firing it: the actual
     // OpenAI call runs out-of-band in the background function, and we
@@ -113,7 +123,6 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ jobId: started.jobId, eventId, prompt }),
-      keepalive: true,
     }).catch((err) => {
       console.error("Failed to trigger AI image background function:", err);
     });
