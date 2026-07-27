@@ -20,7 +20,12 @@ export interface GalleryPhotoRecord {
 export interface SlideSource {
   id: string;
   url: string;
+  /** Combined display caption shown in the composer's photo list, e.g. "1978 — Wedding Day". */
   caption: string | null;
+  /** Main line for the Slideshow Video's on-screen caption bar — a milestone's title, or a gallery photo's caption. Null = no caption bar for this slide. */
+  captionTitle: string | null;
+  /** Smaller second line under captionTitle — a milestone's period (e.g. "1978"). Always null for gallery photos. */
+  captionSubtitle: string | null;
 }
 
 export interface TimelineMilestoneRecord {

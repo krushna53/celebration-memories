@@ -331,4 +331,46 @@ export async function createSignedTimelineImageUpload(params: {
   return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
 }
 
+/**
+ * Same signed-upload pattern, for an optional background-music track for
+ * the Slideshow Video tool (/admin/slideshow). Deliberately stored in
+ * the `gallery` bucket (not the guest-facing `audio` bucket/table — this
+ * is admin-curated content with no moderation row needed, same
+ * convention as share-image/share-video/ai-generated/timeline above)
+ * under its own prefix. There's no confirm step or DB row: the caller
+ * just needs the resulting public URL to hand to the
+ * generate-slideshow-video Edge Function, nothing is "saved" as a
+ * memory.
+ */
+export async function createSignedSlideshowMusicUpload(params: {
+  eventId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { eventId, fileName, contentType, fileSize } = params;
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.audio;
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported audio type: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS.audio;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `${eventId}/slideshow-music/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage
+    .from("gallery")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+}
+
 export type { MemoryKind };

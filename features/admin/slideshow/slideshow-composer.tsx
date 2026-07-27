@@ -1,28 +1,50 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Download, Film, Loader2, Music, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Download, Film, ImagePlus, Loader2, Music, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useSlideshowRecorder, type SlideshowPhotoInput } from "@/hooks/use-slideshow-recorder";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { useSlideshowVideoJob } from "@/hooks/use-slideshow-video-job";
+import { requestSlideshowMusicUploadUrlAction } from "@/features/admin/slideshow/actions";
+import { confirmShareVideoUploadAction } from "@/features/admin/event-settings/actions";
 import type { SlideSource } from "@/types/content";
 
 interface SlideshowComposerProps {
+  eventId: string;
   slides: SlideSource[];
+  /** Non-null only for client-role admins — owner has no cap. */
+  quota: { used: number; limit: number } | null;
+  theme: { primaryColor: string; secondaryColor: string; fontFamily: string };
 }
 
-export function SlideshowComposer({ slides }: SlideshowComposerProps) {
+const STATUS_LABEL: Record<string, string> = {
+  starting: "Starting...",
+  processing: "Rendering — this can take a minute or two...",
+};
+
+export function SlideshowComposer({ eventId, slides, quota, theme }: SlideshowComposerProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>(slides.slice(0, 8).map((p) => p.id));
   const [secondsPerPhoto, setSecondsPerPhoto] = useState(3);
+  const [showCaptions, setShowCaptions] = useState(true);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioUploading, setAudioUploading] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [savedAsPreview, setSavedAsPreview] = useState(false);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
-  const { status, progress, error, videoUrl, generate, cancel, reset } = useSlideshowRecorder();
+  const { status, error, videoUrl, remaining, generate, cancel, reset } = useSlideshowVideoJob();
 
-  const selectedPhotos: SlideshowPhotoInput[] = selectedIds
+  const selectedSlides = selectedIds
     .map((id) => slides.find((p) => p.id === id))
-    .filter((p): p is SlideSource => Boolean(p))
-    .map((p) => ({ id: p.id, url: p.url }));
+    .filter((p): p is SlideSource => Boolean(p));
+
+  // remaining comes from the hook once a render has actually been
+  // started (the Server Action computes it at job-creation time — same
+  // optimistic-decrement convention AI Image uses); falls back to the
+  // page's server-rendered quota beforehand.
+  const remainingCount = remaining ?? (quota ? quota.limit - quota.used : null);
+  const atLimit = remainingCount !== null && remainingCount <= 0;
 
   function toggle(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -39,7 +61,85 @@ export function SlideshowComposer({ slides }: SlideshowComposerProps) {
     });
   }
 
-  const busy = status === "loading" || status === "recording";
+  async function handleAudioPick(file: File | null) {
+    setAudioError(null);
+    setAudioFile(file);
+  }
+
+  async function handleGenerate() {
+    setSavedAsPreview(false);
+
+    let audioUrl: string | null = null;
+    if (audioFile) {
+      setAudioUploading(true);
+      setAudioError(null);
+      try {
+        const signed = await requestSlideshowMusicUploadUrlAction(
+          eventId,
+          audioFile.name,
+          audioFile.type,
+          audioFile.size,
+        );
+        if (!signed.success) throw new Error(signed.error);
+
+        const { bucket, path, token } = signed.data;
+        const { error: uploadError } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, token, audioFile);
+        if (uploadError) throw new Error(uploadError.message);
+
+        audioUrl = supabaseBrowser().storage.from(bucket).getPublicUrl(path).data.publicUrl;
+      } catch (err) {
+        setAudioUploading(false);
+        setAudioError(err instanceof Error ? err.message : "Failed to upload audio.");
+        return;
+      }
+      setAudioUploading(false);
+    }
+
+    await generate({
+      eventId,
+      slides: selectedSlides.map((s) => ({
+        url: s.url,
+        captionTitle: s.captionTitle,
+        captionSubtitle: s.captionSubtitle,
+      })),
+      secondsPerPhoto,
+      audioUrl,
+      showCaptions,
+      theme,
+    });
+  }
+
+  async function handleUseAsShareVideo(path: string) {
+    setAudioError(null);
+    // The Link Preview Video is fetched synchronously by crawlers with
+    // tight timeouts (see createSignedShareVideoUpload's doc comment) —
+    // that 20MB ceiling is only enforced on the browser-upload path, so
+    // check it here too before saving a render that came from this
+    // longer-video-capable flow instead.
+    if (videoUrl) {
+      try {
+        const head = await fetch(videoUrl, { method: "HEAD" });
+        const size = Number(head.headers.get("content-length") || 0);
+        if (size > 20 * 1024 * 1024) {
+          setAudioError(
+            "This video is over 20MB, too large for a reliable Link Preview Video — try fewer photos or fewer seconds per photo.",
+          );
+          return;
+        }
+      } catch {
+        // If the size check itself fails, fall through and let the save proceed.
+      }
+    }
+    const outcome = await confirmShareVideoUploadAction(eventId, path);
+    if (outcome.success) {
+      setSavedAsPreview(true);
+    } else {
+      setAudioError(outcome.error);
+    }
+  }
+
+  const busy = status === "starting" || status === "processing" || audioUploading;
+  const resultPath = videoUrl ? new URL(videoUrl).pathname.split("/gallery/")[1] ?? null : null;
 
   if (slides.length === 0) {
     return (
@@ -120,7 +220,7 @@ export function SlideshowComposer({ slides }: SlideshowComposerProps) {
         </section>
 
         <section className="rounded-xl border border-navy-950/10 bg-white p-4">
-          <h2 className="font-display text-lg text-navy-950">2. Timing &amp; music</h2>
+          <h2 className="font-display text-lg text-navy-950">2. Timing, captions &amp; music</h2>
           <div className="mt-3 grid gap-4">
             <div>
               <label className="text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70">
@@ -139,6 +239,20 @@ export function SlideshowComposer({ slides }: SlideshowComposerProps) {
                 {secondsPerPhoto}s each · total ~{Math.round(selectedIds.length * secondsPerPhoto)}s
               </p>
             </div>
+            <label className="flex items-center gap-2 text-sm text-navy-950">
+              <input
+                type="checkbox"
+                checked={showCaptions}
+                onChange={(e) => setShowCaptions(e.target.checked)}
+                className="h-4 w-4 rounded border-navy-950/20"
+              />
+              Show captions on Timeline slides
+            </label>
+            <p className="-mt-2 text-xs text-navy-700/50">
+              Adds a caption bar with the milestone&rsquo;s title and period (or a Gallery
+              photo&rsquo;s caption) at the bottom of that slide, styled with your event&rsquo;s
+              theme colors.
+            </p>
             <div>
               <label className="text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70">
                 Background music (optional)
@@ -146,16 +260,16 @@ export function SlideshowComposer({ slides }: SlideshowComposerProps) {
               <input
                 ref={audioInputRef}
                 type="file"
-                accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-m4a"
+                accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/webm"
                 className="hidden"
-                onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => handleAudioPick(e.target.files?.[0] ?? null)}
               />
               {audioFile ? (
                 <div className="mt-1.5 flex items-center justify-between rounded-lg border border-navy-950/10 px-3 py-2 text-sm">
                   <span className="flex items-center gap-1.5 truncate text-navy-950">
                     <Music size={14} /> {audioFile.name}
                   </span>
-                  <button type="button" onClick={() => setAudioFile(null)} className="text-navy-700/50 hover:text-red-600">
+                  <button type="button" onClick={() => handleAudioPick(null)} className="text-navy-700/50 hover:text-red-600">
                     <X size={14} />
                   </button>
                 </div>
@@ -166,21 +280,23 @@ export function SlideshowComposer({ slides }: SlideshowComposerProps) {
               )}
               <p className="mt-1.5 text-xs text-navy-700/50">
                 Only use music you have the rights to use — this doesn&rsquo;t check licensing for you.
+                Uploaded to your event&rsquo;s Storage so the render service can use it (25MB limit).
               </p>
+              {audioError ? <p className="mt-1 text-xs text-red-600">{audioError}</p> : null}
             </div>
           </div>
         </section>
 
         <Button
           size="lg"
-          disabled={busy || selectedIds.length === 0}
-          onClick={() => generate(selectedPhotos, secondsPerPhoto, audioFile)}
+          disabled={busy || selectedIds.length === 0 || atLimit}
+          onClick={handleGenerate}
           className="w-full sm:w-auto"
         >
           {busy ? (
             <>
               <Loader2 className="animate-spin" size={16} />
-              {status === "loading" ? "Loading photos..." : `Recording... ${Math.round(progress * 100)}%`}
+              {audioUploading ? "Uploading audio..." : STATUS_LABEL[status] ?? "Working..."}
             </>
           ) : (
             <>
@@ -188,10 +304,18 @@ export function SlideshowComposer({ slides }: SlideshowComposerProps) {
             </>
           )}
         </Button>
-        {busy ? (
+        {busy && status === "processing" ? (
           <button type="button" onClick={cancel} className="text-left text-xs text-navy-700/50 underline underline-offset-2">
             Cancel
           </button>
+        ) : null}
+        {atLimit ? (
+          <p className="text-sm text-amber-700">
+            You&rsquo;ve used all {quota?.limit} Slideshow Video renders for this event. Contact
+            your site admin to raise the limit.
+          </p>
+        ) : remainingCount !== null ? (
+          <p className="text-xs text-navy-700/50">{remainingCount} render{remainingCount === 1 ? "" : "s"} remaining.</p>
         ) : null}
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </div>
@@ -211,36 +335,28 @@ export function SlideshowComposer({ slides }: SlideshowComposerProps) {
           {videoUrl ? (
             <div className="mt-3 flex flex-wrap gap-2">
               <Button asChild size="sm">
-                <a href={videoUrl} download="slideshow.webm">
+                <a href={videoUrl} download="slideshow.mp4">
                   <Download size={14} /> Download
                 </a>
               </Button>
+              {resultPath ? (
+                <Button variant="outline" size="sm" onClick={() => handleUseAsShareVideo(resultPath)}>
+                  {savedAsPreview ? <Check size={14} /> : <ImagePlus size={14} />}
+                  Use as Link Preview Video
+                </Button>
+              ) : null}
               <Button variant="outline" size="sm" onClick={reset}>
                 Start over
               </Button>
             </div>
           ) : null}
+          {savedAsPreview ? (
+            <p className="mt-2 text-xs text-green-700">Saved as your Link Preview Video.</p>
+          ) : null}
           <p className="mt-3 text-xs leading-relaxed text-navy-700/50">
-            Rendered entirely in your browser — nothing is uploaded until you
-            choose to save or share the downloaded file yourself (e.g. as a
-            WhatsApp status, or upload it wherever you&rsquo;d like).
-          </p>
-          <p className="mt-2 text-xs leading-relaxed text-navy-700/50">
-            Downloads as <code className="rounded bg-navy-950/5 px-1 py-0.5">.webm</code> — plays
-            fine in browsers, WhatsApp, and most apps, but a few older devices or players expect{" "}
-            <code className="rounded bg-navy-950/5 px-1 py-0.5">.mp4</code> instead. If you run into
-            that, or want to use this video as the Event Settings{" "}
-            <strong>Link Preview Video</strong> (which requires MP4, up to 20MB — see Event
-            Settings), convert it for free at{" "}
-            <a
-              href="https://cloudconvert.com/webm-to-mp4"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gold-600 underline underline-offset-2"
-            >
-              cloudconvert.com/webm-to-mp4
-            </a>
-            , then upload the converted file.
+            Rendered server-side as a real <code className="rounded bg-navy-950/5 px-1 py-0.5">.mp4</code> —
+            plays everywhere, including as the Event Settings{" "}
+            <strong>Link Preview Video</strong> (up to 20MB) with no conversion step needed.
           </p>
         </section>
       </div>

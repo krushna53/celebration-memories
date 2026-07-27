@@ -504,6 +504,94 @@ removing the "fire something and hope it runs later" step altogether.
 
 </details>
 
+### Slideshow Video (optional)
+
+`/admin/slideshow` turns your Gallery and Timeline photos into a real
+MP4 video — pick photos, set the pace, optionally add background music
+and timeline captions, then render. Available to both owner and client
+accounts; client-role admins are capped at
+`events.slideshow_video_generation_limit` (default 3) renders per
+event — the owner is exempt. Raise or lower it per event with:
+```sql
+update events set slideshow_video_generation_limit = 15 where slug = 'your-event-slug';
+```
+
+**How generation actually runs:** this used to render entirely in the
+browser via `<canvas>` + `MediaRecorder` (free, but WebM-only,
+download-only, no text overlays). It now renders server-side through
+[Shotstack](https://shotstack.io), a video-editing API, via two Supabase
+Edge Functions:
+
+1. `generate-slideshow-video` — called by the browser once
+   `startSlideshowVideoAction` (a Server Action) has created a job row
+   and checked the per-event quota. Builds a Shotstack JSON timeline
+   from the selected photos (with Ken Burns / slide effects and
+   crossfade transitions), optional caption-bar HTML overlays for
+   captioned slides, and an optional soundtrack — then submits it to
+   Shotstack and records the returned render id.
+2. `slideshow-video-status` — polled by the browser every 4 seconds
+   after that. Checks Shotstack's render status; once it reports
+   `done`, downloads the finished MP4 and re-uploads it into this
+   project's own Storage (`gallery` bucket, `slideshow-video/` prefix)
+   so the result doesn't depend on Shotstack's own retention, then marks
+   the job row done.
+
+Unlike AI Image, this genuinely can't be one synchronous Edge Function
+call — Shotstack renders are asynchronous by design (the submit call
+returns almost immediately with a render id; the render itself
+typically takes anywhere from ~10 seconds to a couple of minutes
+depending on length and photo count). Trying to force a render-and-wait
+into a single request would eventually hit Supabase's own wall-clock
+limit for a long enough slideshow, so this uses the same
+submit-then-poll shape as the old (now-removed) Netlify Background
+Function design — except this time each poll is a fast, ordinary
+request/response to our own Edge Function, not a fire-and-forget trigger
+into a black box, so there's no repeat of that debugging saga.
+
+**Getting a Shotstack API key** (you do this yourself):
+1. Go to [dashboard.shotstack.io/register](https://dashboard.shotstack.io/register) and sign up — a free
+   sandbox/stage key is issued immediately, good enough to test the
+   whole flow end-to-end (renders come back watermarked on stage).
+2. Find your keys under **API Keys** in the dashboard — there's a
+   separate key for the **Stage** (sandbox, watermarked, free) and
+   **Production** (`v1`, no watermark, billed per render-minute)
+   environments.
+3. Set `SHOTSTACK_API_KEY` as an Edge Function secret — **Supabase
+   Dashboard → Project Settings → Edge Functions → Secrets**, or
+   `supabase secrets set SHOTSTACK_API_KEY=...` via CLI. This is a
+   Supabase secret, not a Next.js environment variable — it's read
+   directly by the two Edge Functions above, the same way
+   `OPENAI_API_KEY` is for AI Image's Edge Function.
+4. While testing with a Stage key, also set `SHOTSTACK_ENV=stage` the
+   same way (defaults to `v1`/production otherwise — a Stage key against
+   the `v1` endpoint, or vice versa, gets rejected with an
+   authentication error).
+
+Leave `SHOTSTACK_API_KEY` unset and both Edge Functions return `{"success":
+false, "error": "Not configured"}`, which the composer surfaces as a
+plain error message — nothing else on the site is affected either way.
+
+**Cost** (2026 pricing, subject to change): Shotstack bills per rendered
+video-minute, roughly $0.20–$0.30/minute depending on plan — see
+[shotstack.io/pricing](https://shotstack.io/pricing/) for current rates.
+A typical slideshow (8 photos × 3s) is well under a minute of output.
+
+**Caption bars:** when "Show captions on Timeline slides" is checked,
+each captioned slide gets a translucent bar at the bottom with the
+milestone's title and period (or a Gallery photo's own caption),
+colored from the event's template (`primaryColor`/`secondaryColor`).
+Text is rendered through Shotstack's HTML asset type with the template's
+`fontFamily` set in CSS — Shotstack's renderer doesn't have every Google
+Font installed, so a template using an unusual display face may fall
+back to a default serif/sans rather than matching pixel-for-pixel; the
+color and layout still match regardless. This is a known, minor
+limitation, not a bug.
+
+**The finished video** is a genuine MP4 (1280×720), so unlike the old
+WebM output it can be used directly as the Event Settings **Link Preview
+Video** (which requires MP4, ≤20MB) via the composer's "Use as Link
+Preview Video" button — no manual conversion step needed anymore.
+
 ### Admin Feature Tour
 
 The admin dashboard header has a "Take the Tour" button that plays a

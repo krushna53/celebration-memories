@@ -32,6 +32,7 @@ export interface EventRow {
   section_config: SectionConfigItem[] | null;
   ai_image_generation_limit: number;
   ai_css_generation_limit: number;
+  slideshow_video_generation_limit: number;
   additional_notes: string | null;
   wish_message: string | null;
   custom_css: string | null;
@@ -68,6 +69,7 @@ export function mapEvent(row: EventRow): EventRecord {
     sectionConfig: row.section_config,
     aiImageGenerationLimit: row.ai_image_generation_limit ?? 5,
     aiCssGenerationLimit: row.ai_css_generation_limit ?? 20,
+    slideshowVideoGenerationLimit: row.slideshow_video_generation_limit ?? 3,
     additionalNotes: row.additional_notes,
     wishMessage: row.wish_message,
     customCss: row.custom_css,
