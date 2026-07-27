@@ -53,6 +53,18 @@ export async function getCoverPhoto(eventId: string): Promise<string | null> {
   return data ? publicMediaUrl("gallery", data.storage_path) : null;
 }
 
+/** Used by the wizard's draft-scoped delete action to verify a photo actually belongs to the caller's draft event before deleting it — see features/start/actions/gallery.ts. */
+export async function getGalleryPhotoById(id: string): Promise<GalleryPhotoRecord | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("gallery_photos")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle<GalleryPhotoRow>();
+
+  if (error) throw new Error(`Failed to look up gallery photo: ${error.message}`);
+  return data ? mapRow(data) : null;
+}
+
 export async function createGalleryPhoto(input: {
   eventId: string;
   category: GalleryCategory;

@@ -39,6 +39,18 @@ export async function listMilestones(eventId: string): Promise<TimelineMilestone
   return (data as MilestoneRow[]).map(mapRow);
 }
 
+/** Used by the wizard's draft-scoped timeline actions to verify a milestone belongs to the caller's draft event before modifying it — see features/start/actions/timeline.ts. */
+export async function getMilestoneById(id: string): Promise<TimelineMilestoneRecord | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("timeline_milestones")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle<MilestoneRow>();
+
+  if (error) throw new Error(`Failed to look up milestone: ${error.message}`);
+  return data ? mapRow(data) : null;
+}
+
 export async function createMilestone(input: {
   eventId: string;
   period: string;

@@ -12,6 +12,15 @@ export interface CurrentAdmin {
   role: AdminRole;
   /** Whether this admin has already dismissed/finished the interactive dashboard tour once. See features/admin/tour/. */
   hasSeenTour: boolean;
+  /**
+   * Non-null only for client-role admins created through the self-serve
+   * onboarding wizard (see services/event-drafts.ts) — scopes them to
+   * exactly that one event. Null (the default, for every pre-existing
+   * admin including you) means "unscoped", which today still resolves
+   * to the single EVENT_SLUG event everywhere — see
+   * lib/admin-event.ts's resolveAdminEvent().
+   */
+  eventId: string | null;
 }
 
 /**
@@ -37,7 +46,7 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
 
   const { data, error } = await supabaseAdmin()
     .from("admins")
-    .select("id, email, name, role, has_seen_tour")
+    .select("id, email, name, role, has_seen_tour, event_id")
     .eq("id", user.id)
     .maybeSingle<{
       id: string;
@@ -45,6 +54,7 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
       name: string | null;
       role: AdminRole;
       has_seen_tour: boolean;
+      event_id: string | null;
     }>();
 
   if (error) {
@@ -60,6 +70,7 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
     name: data.name,
     role: data.role,
     hasSeenTour: data.has_seen_tour,
+    eventId: data.event_id,
   };
 }
 
@@ -74,5 +85,29 @@ export async function requireOwner(): Promise<CurrentAdmin> {
   if (!admin) throw new Error("Not authorized.");
   if (admin.role !== "owner") throw new Error("This action is restricted to the site owner.");
   return admin;
+}
+
+/**
+ * Looks up the client-role admin scoped to a specific event, if one
+ * exists — used by the wizard's payment step (features/start/actions/payment.ts)
+ * to confirm the host actually finished account creation (i.e. clicked
+ * their email verification link, which is what creates this row — see
+ * the handle_new_confirmed_admin trigger) before letting them pay. Not
+ * session-based, since the wizard visitor has no admin session yet.
+ */
+export async function getAdminByEventId(
+  eventId: string,
+): Promise<{ id: string; email: string; name: string | null } | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("admins")
+    .select("id, email, name")
+    .eq("event_id", eventId)
+    .maybeSingle<{ id: string; email: string; name: string | null }>();
+
+  if (error) {
+    console.error("getAdminByEventId failed:", error.message);
+    return null;
+  }
+  return data;
 }
 

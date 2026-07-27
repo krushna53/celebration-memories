@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Download, ImagePlus, Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { generateAiImageAction } from "@/features/admin/ai-image/actions";
-import { confirmShareImageUploadAction } from "@/features/admin/event-settings/actions";
+import { generateAiImageAction, type StartAiImageResult } from "@/features/admin/ai-image/actions";
+import { confirmShareImageUploadAction, type AdminActionResult } from "@/features/admin/event-settings/actions";
 import { confirmGalleryUploadAction } from "@/features/admin/gallery/actions";
 import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -34,15 +34,58 @@ const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
   (c): c is { value: GalleryCategory; label: string } => c.value !== "all",
 );
 
+/**
+ * Every action this component needs, defaulting to the real admin
+ * actions (getCurrentAdmin()-gated) — the self-serve onboarding wizard
+ * (features/start/) overrides these with draft-token-gated equivalents
+ * bound to a specific draft via .bind(null, token), since an anonymous
+ * wizard visitor has no admin session. See features/start/draft-auth.ts.
+ */
+export interface AiImageActions {
+  generate: (eventId: string, prompt: string) => Promise<StartAiImageResult>;
+  useAsShareImage: (eventId: string, path: string) => Promise<AdminActionResult>;
+  addToGallery: (
+    eventId: string,
+    category: GalleryCategory,
+    path: string,
+    caption: string,
+  ) => Promise<AdminActionResult>;
+}
+
+const DEFAULT_ACTIONS: AiImageActions = {
+  generate: generateAiImageAction,
+  useAsShareImage: confirmShareImageUploadAction,
+  addToGallery: confirmGalleryUploadAction,
+};
+
 interface AiImageGeneratorProps {
   eventId: string;
   defaultPrompt: string;
   configured: boolean;
   /** Non-null only for client-role admins — owner has no cap. */
   quota: { used: number; limit: number } | null;
+  actions?: AiImageActions;
+  /**
+   * The wizard has no Supabase Auth session to send with the Edge
+   * Function call — pass the anon key instead of a session token in
+   * that case. The Edge Function's real authorization is the job's
+   * jobId/eventId match (see supabase/functions/generate-ai-image),
+   * not this header; verify_jwt just needs *a* valid Supabase-signed
+   * JWT, and the anon key qualifies. Admin dashboard usage (the
+   * default, anonAuthKey undefined) keeps sending the signed-in
+   * admin's own session token, unchanged.
+   */
+  anonAuthKey?: string;
 }
 
-export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: AiImageGeneratorProps) {
+export function AiImageGenerator({
+  eventId,
+  defaultPrompt,
+  configured,
+  quota,
+  actions = DEFAULT_ACTIONS,
+  anonAuthKey,
+}: AiImageGeneratorProps) {
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [busy, setBusy] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -77,7 +120,7 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
       setLoadingStep((s) => Math.min(s + 1, LOADING_STEPS.length - 1));
     }, 2200);
 
-    const started = await generateAiImageAction(eventId, prompt);
+    const started = await actions.generate(eventId, prompt);
 
     if (!started.success) {
       stopLoadingSteps();
@@ -96,16 +139,19 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
     // upload, job row update — happens inside this one request/response
     // instead of needing to be triggered separately and polled for.
     //
-    // Requires the admin's own Supabase session token in the
-    // Authorization header — the Edge Function has JWT verification
-    // enabled (verify_jwt), so this proves a genuine signed-in admin is
-    // calling it, not just anyone who discovers the URL.
+    // Sends the admin's own Supabase session token in the Authorization
+    // header when there is one (the Edge Function has JWT verification
+    // enabled) — falls back to anonAuthKey for the wizard's anonymous
+    // visitors, since verify_jwt only needs *a* valid Supabase-signed
+    // JWT, and the real per-request authorization is the job's
+    // jobId/eventId match done inside the function itself either way.
     try {
       const {
         data: { session },
       } = await supabaseBrowser().auth.getSession();
 
-      if (!session) {
+      const authToken = session?.access_token ?? anonAuthKey;
+      if (!authToken) {
         stopLoadingSteps();
         setError("Your session has expired — please sign in again.");
         return;
@@ -120,7 +166,7 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({ jobId: started.jobId, eventId, prompt }),
           signal: controller.signal,
@@ -152,7 +198,7 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
   async function handleUseAsShareImage() {
     if (!result) return;
     setBusy(true);
-    const outcome = await confirmShareImageUploadAction(eventId, result.path);
+    const outcome = await actions.useAsShareImage(eventId, result.path);
     setBusy(false);
     if (outcome.success) {
       setSavedTo("share");
@@ -164,7 +210,7 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
   async function handleAddToGallery() {
     if (!result) return;
     setBusy(true);
-    const outcome = await confirmGalleryUploadAction(eventId, category, result.path, "AI-generated");
+    const outcome = await actions.addToGallery(eventId, category, result.path, "AI-generated");
     setBusy(false);
     if (outcome.success) {
       setSavedTo("gallery");

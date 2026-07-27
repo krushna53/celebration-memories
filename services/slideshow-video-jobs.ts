@@ -10,10 +10,14 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
  * createAiImageJob exactly — see the doc comment on
  * startSlideshowVideoAction in features/admin/slideshow/actions.ts for
  * the full flow.
+ *
+ * adminId is nullable for jobs created by the self-serve wizard
+ * (features/start/actions/slideshow.ts), where the draft event has no
+ * admin yet — see the nullable_admin_id_for_draft_jobs migration.
  */
 export async function createSlideshowVideoJob(params: {
   eventId: string;
-  adminId: string;
+  adminId: string | null;
 }): Promise<string> {
   const { data, error } = await supabaseAdmin()
     .from("slideshow_video_jobs")

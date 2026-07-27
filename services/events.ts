@@ -78,6 +78,20 @@ export function mapEvent(row: EventRow): EventRecord {
   };
 }
 
+/** Used by resolveAdminEvent() for client-role admins scoped to one specific event (admins.event_id) — see services/event-drafts.ts and lib/admin-event.ts. */
+export async function getEventById(id: string): Promise<EventRecord | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("events")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle<EventRow>();
+
+  if (error) {
+    throw new Error(`Failed to look up event: ${error.message}`);
+  }
+  return data ? mapEvent(data) : null;
+}
+
 export async function getEventBySlug(slug: string): Promise<EventRecord | null> {
   const { data, error } = await supabaseAdmin()
     .from("events")

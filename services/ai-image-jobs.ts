@@ -10,10 +10,15 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
  * the only thing that Server Action does synchronously; the browser
  * calls the Edge Function directly afterward and awaits its real
  * result, so there's no separate polling/status-lookup path anymore.
+ *
+ * adminId is nullable for jobs created by the self-serve wizard
+ * (features/start/actions/ai-image.ts), where the draft event has no
+ * admin yet — see the draft_events_and_admin_scoping /
+ * nullable_admin_id_for_draft_jobs migrations.
  */
 export async function createAiImageJob(params: {
   eventId: string;
-  adminId: string;
+  adminId: string | null;
   prompt: string;
 }): Promise<string> {
   const { data, error } = await supabaseAdmin()

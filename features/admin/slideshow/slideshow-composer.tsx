@@ -6,9 +6,22 @@ import { ArrowDown, ArrowUp, Check, Download, Film, ImagePlus, Loader2, Music, X
 import { Button } from "@/components/ui/button";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useSlideshowVideoJob } from "@/hooks/use-slideshow-video-job";
-import { requestSlideshowMusicUploadUrlAction } from "@/features/admin/slideshow/actions";
-import { confirmShareVideoUploadAction } from "@/features/admin/event-settings/actions";
+import { requestSlideshowMusicUploadUrlAction, startSlideshowVideoAction } from "@/features/admin/slideshow/actions";
+import { confirmShareVideoUploadAction, type AdminActionResult } from "@/features/admin/event-settings/actions";
 import type { SlideSource } from "@/types/content";
+
+/** See AiImageActions's doc comment — same override pattern for the self-serve wizard. */
+export interface SlideshowActions {
+  start: typeof startSlideshowVideoAction;
+  requestMusicUpload: typeof requestSlideshowMusicUploadUrlAction;
+  useAsShareVideo: (eventId: string, path: string) => Promise<AdminActionResult>;
+}
+
+const DEFAULT_ACTIONS: SlideshowActions = {
+  start: startSlideshowVideoAction,
+  requestMusicUpload: requestSlideshowMusicUploadUrlAction,
+  useAsShareVideo: confirmShareVideoUploadAction,
+};
 
 interface SlideshowComposerProps {
   eventId: string;
@@ -16,6 +29,9 @@ interface SlideshowComposerProps {
   /** Non-null only for client-role admins — owner has no cap. */
   quota: { used: number; limit: number } | null;
   theme: { primaryColor: string; secondaryColor: string; fontFamily: string };
+  actions?: SlideshowActions;
+  /** See ai-image-generator.tsx's matching prop for why the wizard needs this. */
+  anonAuthKey?: string;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -23,7 +39,14 @@ const STATUS_LABEL: Record<string, string> = {
   processing: "Rendering — this can take a minute or two...",
 };
 
-export function SlideshowComposer({ eventId, slides, quota, theme }: SlideshowComposerProps) {
+export function SlideshowComposer({
+  eventId,
+  slides,
+  quota,
+  theme,
+  actions = DEFAULT_ACTIONS,
+  anonAuthKey,
+}: SlideshowComposerProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>(slides.slice(0, 8).map((p) => p.id));
   const [secondsPerPhoto, setSecondsPerPhoto] = useState(3);
   const [showCaptions, setShowCaptions] = useState(true);
@@ -33,7 +56,10 @@ export function SlideshowComposer({ eventId, slides, quota, theme }: SlideshowCo
   const [savedAsPreview, setSavedAsPreview] = useState(false);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
-  const { status, error, videoUrl, remaining, generate, cancel, reset } = useSlideshowVideoJob();
+  const { status, error, videoUrl, remaining, generate, cancel, reset } = useSlideshowVideoJob(
+    actions.start,
+    anonAuthKey,
+  );
 
   const selectedSlides = selectedIds
     .map((id) => slides.find((p) => p.id === id))
@@ -74,7 +100,7 @@ export function SlideshowComposer({ eventId, slides, quota, theme }: SlideshowCo
       setAudioUploading(true);
       setAudioError(null);
       try {
-        const signed = await requestSlideshowMusicUploadUrlAction(
+        const signed = await actions.requestMusicUpload(
           eventId,
           audioFile.name,
           audioFile.type,
@@ -130,7 +156,7 @@ export function SlideshowComposer({ eventId, slides, quota, theme }: SlideshowCo
         // If the size check itself fails, fall through and let the save proceed.
       }
     }
-    const outcome = await confirmShareVideoUploadAction(eventId, path);
+    const outcome = await actions.useAsShareVideo(eventId, path);
     if (outcome.success) {
       setSavedAsPreview(true);
     } else {

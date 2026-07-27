@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { startSlideshowVideoAction } from "@/features/admin/slideshow/actions";
+import { startSlideshowVideoAction, type StartSlideshowVideoResult } from "@/features/admin/slideshow/actions";
 
 export interface SlideshowVideoSlideInput {
   url: string;
@@ -33,8 +33,18 @@ const MAX_POLLS = 90;
  * supabase/functions/slideshow-video-status, and the README's
  * "Slideshow Video" section for the full design and why this can't be
  * one synchronous call the way AI Image's Edge Function is.
+ *
+ * `startAction` defaults to the real admin action; the self-serve
+ * wizard (features/start/) passes a draft-token-gated override, same
+ * pattern as AiImageActions. `anonAuthKey` is the Supabase anon key,
+ * used as the Edge Functions' Authorization header when there's no
+ * admin session (the wizard) — see the matching comment in
+ * ai-image-generator.tsx for why that's safe.
  */
-export function useSlideshowVideoJob() {
+export function useSlideshowVideoJob(
+  startAction: (eventId: string) => Promise<StartSlideshowVideoResult> = startSlideshowVideoAction,
+  anonAuthKey?: string,
+) {
   const [status, setStatus] = useState<SlideshowVideoStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -63,7 +73,7 @@ export function useSlideshowVideoJob() {
     setError(null);
     setVideoUrl(null);
 
-    const started = await startSlideshowVideoAction(input.eventId);
+    const started = await startAction(input.eventId);
     if (!started.success) {
       setStatus("error");
       setError(started.error);
@@ -74,7 +84,8 @@ export function useSlideshowVideoJob() {
     const {
       data: { session },
     } = await supabaseBrowser().auth.getSession();
-    if (!session) {
+    const authToken = session?.access_token ?? anonAuthKey;
+    if (!authToken) {
       setStatus("error");
       setError("Your session has expired — please sign in again.");
       return;
@@ -83,7 +94,7 @@ export function useSlideshowVideoJob() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const authHeaders = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${authToken}`,
     };
 
     try {
@@ -159,7 +170,7 @@ export function useSlideshowVideoJob() {
     };
 
     await poll();
-  }, []);
+  }, [startAction, anonAuthKey]);
 
   return { status, error, videoUrl, remaining, generate, cancel, reset };
 }

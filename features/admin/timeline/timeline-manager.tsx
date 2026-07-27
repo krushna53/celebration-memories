@@ -19,14 +19,34 @@ import {
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2 text-sm focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 
+/** See AiImageActions's doc comment — same override pattern for the self-serve wizard. */
+export interface TimelineActions {
+  createMilestone: typeof createMilestoneAction;
+  updateMilestone: typeof updateMilestoneAction;
+  deleteMilestone: typeof deleteMilestoneAction;
+  requestImageUpload: typeof requestTimelineImageUploadUrlAction;
+  confirmImageUpload: typeof confirmTimelineImageUploadAction;
+  removeImage: typeof removeTimelineImageAction;
+}
+
+const DEFAULT_ACTIONS: TimelineActions = {
+  createMilestone: createMilestoneAction,
+  updateMilestone: updateMilestoneAction,
+  deleteMilestone: deleteMilestoneAction,
+  requestImageUpload: requestTimelineImageUploadUrlAction,
+  confirmImageUpload: confirmTimelineImageUploadAction,
+  removeImage: removeTimelineImageAction,
+};
+
 interface TimelineManagerProps {
   eventId: string;
   initialMilestones: TimelineMilestoneRecord[];
+  actions?: TimelineActions;
 }
 
 const EMPTY = { period: "", title: "", description: "" };
 
-export function TimelineManager({ eventId, initialMilestones }: TimelineManagerProps) {
+export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_ACTIONS }: TimelineManagerProps) {
   const [milestones, setMilestones] = useState(
     [...initialMilestones].sort((a, b) => a.sortOrder - b.sortOrder),
   );
@@ -40,7 +60,7 @@ export function TimelineManager({ eventId, initialMilestones }: TimelineManagerP
   async function handleAdd() {
     if (!form.period.trim() || !form.title.trim() || !form.description.trim()) return;
     setBusy(true);
-    const result = await createMilestoneAction({
+    const result = await actions.createMilestone({
       eventId,
       ...form,
       sortOrder: milestones.length,
@@ -57,7 +77,7 @@ export function TimelineManager({ eventId, initialMilestones }: TimelineManagerP
   async function handleDelete(id: string) {
     if (!confirm("Delete this milestone?")) return;
     setBusyId(id);
-    const result = await deleteMilestoneAction(id);
+    const result = await actions.deleteMilestone(id);
     setBusyId(null);
     if (result.success) {
       setMilestones((prev) => prev.filter((m) => m.id !== id));
@@ -80,7 +100,7 @@ export function TimelineManager({ eventId, initialMilestones }: TimelineManagerP
 
     setBusy(true);
     await Promise.all(
-      reordered.map((m, i) => updateMilestoneAction(m.id, { sortOrder: i })),
+      reordered.map((m, i) => actions.updateMilestone(m.id, { sortOrder: i })),
     );
     setBusy(false);
   }
@@ -97,14 +117,14 @@ export function TimelineManager({ eventId, initialMilestones }: TimelineManagerP
     setImageBusyId(milestoneId);
     try {
       const file = await compressImage(rawFile);
-      const signed = await requestTimelineImageUploadUrlAction(eventId, file.name, file.type, file.size);
+      const signed = await actions.requestImageUpload(eventId, file.name, file.type, file.size);
       if (!signed.success) throw new Error(signed.error);
 
       const { bucket, path, token } = signed.data;
       const { error: uploadError } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, token, file);
       if (uploadError) throw new Error(uploadError.message);
 
-      const confirmed = await confirmTimelineImageUploadAction(milestoneId, path);
+      const confirmed = await actions.confirmImageUpload(milestoneId, path);
       if (!confirmed.success) throw new Error(confirmed.error);
 
       window.location.reload();
@@ -117,7 +137,7 @@ export function TimelineManager({ eventId, initialMilestones }: TimelineManagerP
   async function handleRemoveImage(milestoneId: string) {
     if (!confirm("Remove this milestone's photo?")) return;
     setImageBusyId(milestoneId);
-    const result = await removeTimelineImageAction(milestoneId);
+    const result = await actions.removeImage(milestoneId);
     if (result.success) {
       window.location.reload();
     } else {

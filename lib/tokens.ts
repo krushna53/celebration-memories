@@ -21,3 +21,15 @@ export function generateInviteToken(length = 8): string {
   }
   return token;
 }
+
+/**
+ * Generate a draft event's URL token — same "possession of the token is
+ * the auth" pattern as generateInviteToken above, but far higher
+ * entropy (192 bits vs ~40) since this one grants write access to build
+ * out an entire event, not just update one guest's own RSVP. Lives only
+ * in a URL (/start/[token]/...), never typed by hand, so readability
+ * doesn't matter — see services/event-drafts.ts.
+ */
+export function generateDraftToken(): string {
+  return randomBytes(24).toString("base64url");
+}

@@ -19,6 +19,7 @@ import {
   Wallet,
   Globe,
   Film,
+  FileClock,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -45,6 +46,7 @@ const NAV = [
   { href: "/admin/payment-settings", label: "Payment Settings", icon: QrCode },
   { href: "/admin/payments", label: "Payments", icon: Wallet },
   { href: "/admin/checkin", label: "Check-In", icon: CalendarCheck },
+  { href: "/admin/drafts", label: "Drafts", icon: FileClock },
   { href: "/admin/help", label: "Help", icon: HelpCircle },
 ] as const;
 

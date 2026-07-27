@@ -14,16 +14,30 @@ import {
   requestGalleryUploadUrlAction,
 } from "@/features/admin/gallery/actions";
 
+/** See AiImageActions's doc comment — same override pattern for the self-serve wizard. */
+export interface GalleryActions {
+  requestUploadUrl: typeof requestGalleryUploadUrlAction;
+  confirmUpload: typeof confirmGalleryUploadAction;
+  deletePhoto: typeof deleteGalleryPhotoAction;
+}
+
+const DEFAULT_ACTIONS: GalleryActions = {
+  requestUploadUrl: requestGalleryUploadUrlAction,
+  confirmUpload: confirmGalleryUploadAction,
+  deletePhoto: deleteGalleryPhotoAction,
+};
+
 interface GalleryManagerProps {
   eventId: string;
   initialPhotos: GalleryPhotoRecord[];
+  actions?: GalleryActions;
 }
 
 const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
   (c): c is { value: GalleryCategory; label: string } => c.value !== "all",
 );
 
-export function GalleryManager({ eventId, initialPhotos }: GalleryManagerProps) {
+export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIONS }: GalleryManagerProps) {
   const [photos, setPhotos] = useState(initialPhotos);
   const [category, setCategory] = useState<GalleryCategory>("family");
   const [uploading, setUploading] = useState(false);
@@ -38,7 +52,7 @@ export function GalleryManager({ eventId, initialPhotos }: GalleryManagerProps) 
     for (const rawFile of Array.from(files)) {
       try {
         const file = await compressImage(rawFile);
-        const signed = await requestGalleryUploadUrlAction(eventId, file.name, file.type, file.size);
+        const signed = await actions.requestUploadUrl(eventId, file.name, file.type, file.size);
         if (!signed.success) throw new Error(signed.error);
 
         const { bucket, path, token } = signed.data;
@@ -47,7 +61,7 @@ export function GalleryManager({ eventId, initialPhotos }: GalleryManagerProps) 
           .uploadToSignedUrl(path, token, file);
         if (uploadError) throw new Error(uploadError.message);
 
-        const confirmed = await confirmGalleryUploadAction(eventId, category, path, "");
+        const confirmed = await actions.confirmUpload(eventId, category, path, "");
         if (!confirmed.success) throw new Error(confirmed.error);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Upload failed.");
@@ -61,7 +75,7 @@ export function GalleryManager({ eventId, initialPhotos }: GalleryManagerProps) 
   async function handleDelete(id: string) {
     if (!confirm("Delete this photo?")) return;
     setBusyId(id);
-    const result = await deleteGalleryPhotoAction(id);
+    const result = await actions.deletePhoto(id);
     setBusyId(null);
     if (result.success) {
       setPhotos((prev) => prev.filter((p) => p.id !== id));

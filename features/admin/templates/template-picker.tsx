@@ -5,16 +5,21 @@ import Image from "next/image";
 import { Check, Crown, Loader2 } from "lucide-react";
 
 import { updateEventAction } from "@/features/admin/event-settings/actions";
+import type { AdminActionResult } from "@/features/admin/event-settings/actions";
 import type { TemplateSummary } from "@/lib/template-catalog";
 
 export type PickerTemplate = TemplateSummary & {
   designer?: { name: string; website: string | null };
 };
 
+/** The one action this component needs — swappable so the wizard can pass its draft-token-gated mirror instead. Defaults to the real admin action. */
+export type UpdateTemplateAction = (eventId: string, input: { templateSlug: string }) => Promise<AdminActionResult>;
+
 interface TemplatePickerProps {
   eventId: string;
   currentTemplateSlug: string;
   templates: PickerTemplate[];
+  updateAction?: UpdateTemplateAction;
 }
 
 /**
@@ -25,7 +30,12 @@ interface TemplatePickerProps {
  * community templates can be merged in without this client component
  * needing to know how that merge happens.
  */
-export function TemplatePicker({ eventId, currentTemplateSlug, templates }: TemplatePickerProps) {
+export function TemplatePicker({
+  eventId,
+  currentTemplateSlug,
+  templates,
+  updateAction = updateEventAction,
+}: TemplatePickerProps) {
   const [selected, setSelected] = useState(currentTemplateSlug);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +44,7 @@ export function TemplatePicker({ eventId, currentTemplateSlug, templates }: Temp
     if (slug === selected || pending) return;
     setError(null);
     startTransition(async () => {
-      const result = await updateEventAction(eventId, { templateSlug: slug });
+      const result = await updateAction(eventId, { templateSlug: slug });
       if (result.success) {
         setSelected(slug);
       } else {
