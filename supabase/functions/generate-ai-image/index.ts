@@ -35,14 +35,30 @@ interface RequestBody {
   prompt: string;
 }
 
+// The browser calls this function directly (see ai-image-generator.tsx),
+// so it needs to answer CORS preflight (OPTIONS) requests and include
+// these headers on every response — Supabase's API gateway bypasses
+// /functions/v1/* entirely (the Edge Runtime does its own JWT check per
+// verify_jwt), so CORS is this function's own responsibility, not
+// something the platform adds for us.
+const corsHeaders: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   if (req.method !== "POST") {
     return jsonResponse({ success: false, error: "Method not allowed" }, 405);
   }
