@@ -4,9 +4,8 @@ import { getCurrentAdmin } from "@/services/admin-auth";
 import { getEventBySlug } from "@/services/events";
 import { EVENT_SLUG } from "@/lib/constants";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
-import { createAiImageJob, getAiImageJob } from "@/services/ai-image-jobs";
+import { createAiImageJob } from "@/services/ai-image-jobs";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
-import type { AiImageJobRecord } from "@/types/ai-image-job";
 
 export type StartAiImageResult =
   | { success: true; jobId: string; remaining: number | null }
@@ -18,26 +17,25 @@ export type StartAiImageResult =
  * owner is exempt) since this calls a real per-image-cost API with no
  * billing pass-through to clients yet. See services/ai-image-generations.ts.
  *
- * This ONLY creates a job row — it deliberately does not call OpenAI,
- * and it deliberately does not trigger the Netlify Background Function
- * either (netlify/functions/generate-ai-image-background.mts). That
- * trigger used to happen here, as a server-to-server fetch from this
- * Server Action, but that turned out to be unreliable in practice
- * across several fix attempts (site-origin resolution, custom vs.
- * reserved function paths, awaited vs. fire-and-forget) — jobs kept
- * ending up stuck at "pending" with zero invocations ever reaching the
- * function, consistent with the outbound request never actually
- * completing before this Lambda-based Server Action's own execution
- * environment was torn down.
+ * This ONLY creates a job row — it deliberately does not call OpenAI
+ * itself. The actual generation runs in a Supabase Edge Function
+ * (supabase/functions/generate-ai-image/index.ts), called directly by
+ * the browser right after this action returns a jobId (see
+ * handleGenerate in ai-image-generator.tsx), and awaited synchronously —
+ * Edge Functions get up to 150s (free plan) / 400s (paid) of wall-clock
+ * time per request, comfortably more than OpenAI's usual 30-60s, so
+ * there's no need for a fire-and-forget trigger or a polling loop at
+ * all: the browser just waits for the real response.
  *
- * The trigger now happens client-side instead (see
- * ai-image-generator.tsx's handleGenerate, right after this action
- * returns a jobId), using `fetch(..., { keepalive: true })` — the same
- * mechanism browsers use for analytics beacons, specifically designed
- * to survive the calling context going away. A real browser tab isn't
- * subject to the "may be frozen the instant a response is sent" behavior
- * a serverless function invocation is, which removes the failure mode
- * entirely rather than working around it.
+ * This replaces an earlier design built around a Netlify Background
+ * Function (trigger-and-poll). That design was abandoned after
+ * extensive debugging established the trigger request was reliably
+ * failing to actually execute on Netlify's side — confirmed correctly
+ * deployed and bundled, accepting invocations with a 202, yet never
+ * producing a single log line or database update, across every trigger
+ * mechanism tried (server-to-server fetch, various origin/path fixes,
+ * client-side fetch with and without keepalive). See the README's AI
+ * Image section for the full history if this ever needs revisiting.
  */
 export async function generateAiImageAction(eventId: string, prompt: string): Promise<StartAiImageResult> {
   const admin = await getCurrentAdmin();
@@ -77,21 +75,5 @@ export async function generateAiImageAction(eventId: string, prompt: string): Pr
   } catch (err) {
     console.error("generateAiImageAction: failed to create job row:", err);
     return { success: false, error: "Something went wrong starting the generation. Please try again." };
-  }
-}
-
-export type AiImageJobStatusResult = AiImageJobRecord | { status: "not_found" };
-
-/** Polled by the client every couple of seconds until status is "done" or "error". */
-export async function getAiImageJobStatusAction(jobId: string): Promise<AiImageJobStatusResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { status: "not_found" };
-
-  try {
-    const job = await getAiImageJob(jobId);
-    return job ?? { status: "not_found" };
-  } catch (err) {
-    console.error("getAiImageJobStatusAction failed:", err);
-    return { status: "not_found" };
   }
 }

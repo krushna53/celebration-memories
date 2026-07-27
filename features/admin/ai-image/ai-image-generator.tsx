@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Download, ImagePlus, Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { generateAiImageAction, getAiImageJobStatusAction } from "@/features/admin/ai-image/actions";
+import { generateAiImageAction } from "@/features/admin/ai-image/actions";
 import { confirmShareImageUploadAction } from "@/features/admin/event-settings/actions";
 import { confirmGalleryUploadAction } from "@/features/admin/gallery/actions";
 import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -20,16 +21,14 @@ const LOADING_STEPS = [
   "Still finishing up — this can take up to a minute...",
 ];
 
-/** How often to check whether the background generation has finished. */
-const POLL_INTERVAL_MS = 2500;
-
 /**
- * Give up after this many polls (~3.5 minutes) even if the job never
- * flips out of "pending"/"processing" — this is a client-side backstop
- * alongside the server-side staleness check in services/ai-image-jobs.ts,
- * so the button never gets stuck saying "Still finishing up" forever.
+ * Client-side ceiling on how long to wait for the Edge Function's
+ * response before giving up — the function itself can run up to 150s
+ * (free plan) / 400s (paid), but OpenAI's image API practically always
+ * resolves well under a minute, so anything beyond this almost
+ * certainly means something's actually stuck rather than just slow.
  */
-const MAX_POLLS = 84;
+const REQUEST_TIMEOUT_MS = 90_000;
 
 const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
   (c): c is { value: GalleryCategory; label: string } => c.value !== "all",
@@ -53,8 +52,6 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
   const [savedTo, setSavedTo] = useState<"share" | "gallery" | null>(null);
   const [remainingOverride, setRemainingOverride] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollCountRef = useRef(0);
 
   const remaining = remainingOverride ?? (quota ? quota.limit - quota.used : null);
   const atLimit = remaining !== null && remaining <= 0;
@@ -62,13 +59,11 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
 
-  function stopAll() {
+  function stopLoadingSteps() {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    if (pollRef.current) clearInterval(pollRef.current);
     setBusy(false);
   }
 
@@ -85,73 +80,73 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
     const started = await generateAiImageAction(eventId, prompt);
 
     if (!started.success) {
-      stopAll();
+      stopLoadingSteps();
       setError(started.error);
       return;
     }
 
     if (started.remaining !== null) setRemainingOverride(started.remaining);
 
-    // Trigger the Netlify Background Function ourselves, from the
-    // browser, rather than the Server Action doing a server-to-server
-    // fetch (see the comment on generateAiImageAction for why that
-    // approach kept failing). The URL is relative, so it always
-    // resolves against whatever origin the admin is actually using — no
-    // origin-detection logic needed on either side.
+    // Call the Supabase Edge Function directly and await the real
+    // result — see the comment on generateAiImageAction for why this
+    // replaced an earlier trigger-and-poll design built around a
+    // Netlify Background Function. Edge Functions get up to 150s (free
+    // plan) of wall-clock time per request, comfortably more than
+    // OpenAI's usual 30-60s, so the whole thing — OpenAI call, Storage
+    // upload, job row update — happens inside this one request/response
+    // instead of needing to be triggered separately and polled for.
     //
-    // Deliberately NOT using `keepalive: true` here, despite that being
-    // the usual advice for "fire this and don't wait for it" requests —
-    // keepalive requests share a combined 64KB budget (per the Fetch
-    // spec) across every keepalive request in flight on the page,
-    // including this site's Microsoft Clarity analytics beacons, and
-    // Chrome fails them completely silently when that budget is
-    // exceeded: no console error, no network entry, nothing — which is
-    // exactly the "request never reaches the server, no visible error"
-    // symptom this trigger kept producing. keepalive exists to survive
-    // the *page unloading* mid-request, which isn't our situation: the
-    // admin stays on this page the whole time watching the spinner, so
-    // a plain fetch is both sufficient and avoids that failure mode
-    // entirely.
-    //
-    // This is deliberately not awaited beyond firing it: the actual
-    // OpenAI call runs out-of-band in the background function, and we
-    // poll for its result below regardless of how the trigger itself
-    // fares (the 3-minute server-side staleness check in
-    // services/ai-image-jobs.ts and the poll ceiling below both cover
-    // us if the trigger somehow doesn't land).
-    fetch("/.netlify/functions/generate-ai-image-background", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId: started.jobId, eventId, prompt }),
-    }).catch((err) => {
-      console.error("Failed to trigger AI image background function:", err);
-    });
+    // Requires the admin's own Supabase session token in the
+    // Authorization header — the Edge Function has JWT verification
+    // enabled (verify_jwt), so this proves a genuine signed-in admin is
+    // calling it, not just anyone who discovers the URL.
+    try {
+      const {
+        data: { session },
+      } = await supabaseBrowser().auth.getSession();
 
-    pollCountRef.current = 0;
-    pollRef.current = setInterval(async () => {
-      pollCountRef.current += 1;
-
-      const job = await getAiImageJobStatusAction(started.jobId);
-
-      if (job.status === "done") {
-        stopAll();
-        if (job.resultUrl && job.resultPath) {
-          setResult({ url: job.resultUrl, path: job.resultPath });
-        } else {
-          setError("Generation finished but no image was returned. Please try again.");
-        }
-      } else if (job.status === "error") {
-        stopAll();
-        setError(job.errorMessage || "Something went wrong generating the image.");
-      } else if (pollCountRef.current >= MAX_POLLS) {
-        // Backstop in case the server-side staleness check somehow
-        // didn't catch it either — never leave the button stuck forever.
-        stopAll();
-        setError("This is taking much longer than expected. Please try again in a bit.");
+      if (!session) {
+        stopLoadingSteps();
+        setError("Your session has expired — please sign in again.");
+        return;
       }
-      // "pending" / "processing" / "not_found" (briefly, before the row
-      // is visible) — keep polling.
-    }, POLL_INTERVAL_MS);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-ai-image`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ jobId: started.jobId, eventId, prompt }),
+          signal: controller.signal,
+        },
+      );
+      clearTimeout(timeout);
+
+      const outcome: { success: boolean; error?: string; resultUrl?: string; resultPath?: string } =
+        await res.json();
+
+      stopLoadingSteps();
+
+      if (!outcome.success || !outcome.resultUrl || !outcome.resultPath) {
+        setError(outcome.error || "Something went wrong generating the image.");
+        return;
+      }
+
+      setResult({ url: outcome.resultUrl, path: outcome.resultPath });
+    } catch (err) {
+      stopLoadingSteps();
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("This is taking much longer than expected. Please try again in a bit.");
+      } else {
+        setError(err instanceof Error ? err.message : "Something went wrong generating the image.");
+      }
+    }
   }
 
   async function handleUseAsShareImage() {

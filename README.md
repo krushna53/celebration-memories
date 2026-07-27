@@ -430,86 +430,79 @@ override with `OPENAI_IMAGE_MODEL` if OpenAI ships something newer.
 
 **How generation actually runs:** OpenAI's image API routinely takes
 30–60s+, which is longer than Netlify's synchronous function limit (10s
-on the free plan). So the "Generate Image" button doesn't call OpenAI
-directly — it creates a row in `ai_image_jobs` and triggers a Netlify
-**Background Function** (`netlify/functions/generate-ai-image-background.mts`,
-up to 15 minutes, available on every Netlify plan including free) to do
-the actual OpenAI call and Storage upload. The browser polls
-`getAiImageJobStatusAction` every ~2.5s until the job is `done` or
-`error`. This is why `netlify/functions/` exists alongside the Next.js
-app — it's a standalone function outside the `@netlify/plugin-nextjs`
-build, deliberately kept free of `@/...` path-alias imports since
-Netlify's function bundler doesn't resolve this project's `tsconfig.json`
-paths (see the comment at the top of that file). Nothing here needs new
-environment variables beyond `OPENAI_API_KEY` above — the background
-function reads the same `NEXT_PUBLIC_SUPABASE_URL` /
-`SUPABASE_SERVICE_ROLE_KEY` already configured for the rest of the site.
+on the free plan). Rather than run the call inside a Next.js Server
+Action or Netlify function, it runs inside a **Supabase Edge Function**
+(`supabase/functions/generate-ai-image/index.ts`), which gets a much
+longer wall-clock budget (150s on Supabase's free plan, 400s on paid) —
+comfortably more than OpenAI needs. The flow is fully synchronous, no
+polling:
 
-**Who triggers the background function, and why:** this went through
-several iterations before landing on the current approach, worth
-recording here since it's easy to reintroduce a bug if this code gets
-refactored later. The trigger is fired **from the browser** (see
-`handleGenerate` in `features/admin/ai-image/ai-image-generator.tsx`),
-using a plain `fetch("/.netlify/functions/generate-ai-image-background",
-{ method: "POST", ... })` — a relative URL, so it always resolves
-against whatever origin the admin is actually using, with no
-origin-detection logic needed on either side.
+1. The "Generate Image" button calls `generateAiImageAction` (a Server
+   Action), which checks the per-event quota for client-role admins and
+   inserts a row into `ai_image_jobs` — nothing else.
+2. The browser then calls the Edge Function directly — `POST
+   {NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-ai-image` with the
+   admin's own Supabase session token in the `Authorization: Bearer`
+   header (the function has `verify_jwt` enabled, so it rejects anyone
+   who isn't a signed-in admin) — and awaits the real response. The Edge
+   Function does the OpenAI call, uploads the result to the `gallery`
+   Storage bucket, updates the job row to `done`/`error`, and returns
+   the final image URL directly in its response body.
+3. `handleGenerate` in `features/admin/ai-image/ai-image-generator.tsx`
+   shows the result (or the error) the moment that response comes back —
+   there's no separate status-polling action anymore.
 
-Earlier versions had the *Server Action* trigger the background function
-instead (a server-to-server fetch, right after creating the job row).
-That's the more obvious design, but it proved unreliable in practice
-across several fix attempts — resolving the site origin from request
-headers, switching from a custom function `path` to Netlify's reserved
-`/.netlify/functions/*` invocation path, and awaiting the trigger fetch
-instead of firing it and forgetting it. Jobs kept ending up stuck at
-`pending` with zero invocations ever reaching the function. The most
-likely explanation: Netlify's Lambda-based runtime can freeze a Server
-Action's execution environment the instant it returns its response,
-which can kill an outbound request that hasn't fully completed yet —
-even one that's been awaited for its initial acknowledgement. A browser
-tab isn't subject to that; triggering from the client sidesteps the
-failure mode entirely instead of continuing to work around it.
+The Edge Function needs its own `OPENAI_API_KEY` secret set in Supabase
+(separate from the Next.js app's environment variable of the same name)
+— see **Deploying/updating the Edge Function** below.
 
-The client-side trigger also deliberately does **not** use `fetch(...,
-{ keepalive: true })`, even though that's the usual advice for "fire
-this and don't wait for it" requests. Keepalive requests share a
-combined 64KB budget (per the Fetch spec) across every keepalive
-request in flight on the page — including this site's Microsoft Clarity
-analytics beacons — and Chrome fails them completely silently when that
-budget is exceeded: no console error, no Network-tab entry, nothing.
-That produces exactly the same symptom as the server-to-server issue
-above (job stuck at `pending`, zero invocations in the function's logs),
-which cost real debugging time before landing on this as the cause.
-`keepalive` exists to survive the *page unloading* mid-request, which
-isn't the situation here — the admin stays on `/admin/ai-image` the
-whole time watching the spinner — so a plain `fetch` is both sufficient
-and sidesteps this failure mode entirely.
+**Deploying/updating the Edge Function:** deploy with the Supabase CLI
+(`supabase functions deploy generate-ai-image`) or the dashboard. It
+needs three secrets available to it at runtime — `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` are auto-injected by Supabase for every Edge
+Function, but `OPENAI_API_KEY` is not and must be set explicitly:
+**Project Settings → Edge Functions → Secrets** in the Supabase
+dashboard, or `supabase secrets set OPENAI_API_KEY=sk-...` via CLI.
+Until that secret exists, the function responds with `{"success":
+false, "error": "Not configured"}` (HTTP 500) for every request.
 
-Because the trigger endpoint is therefore reachable with any
-client-supplied `jobId`, the background function looks the job up first
-and confirms it's real, still pending/processing, and belongs to the
-`eventId` it actually was created with — before spending any OpenAI
-credits. See the guard near the top of
-`generate-ai-image-background.mts`.
+**Testing this locally:** because `verify_jwt` is on, a bare `curl`
+without a real Supabase session token gets rejected before the handler
+even runs (expected — not a bug). The reliable way to test end-to-end is
+through the actual `/admin/ai-image` page while signed in, since that's
+the only path that has a genuine session token to send. `supabase
+functions serve generate-ai-image` (Supabase CLI) can run the function
+locally against your linked project if you want to iterate on it
+directly without a full redeploy each time.
 
-As extra safety nets on top of all this: a job stuck at
-`pending`/`processing` for more than 3 minutes is automatically marked
-as errored server-side the next time its status is checked
-(`getAiImageJob` in `services/ai-image-jobs.ts`), and the browser itself
-gives up after about 3.5 minutes of polling either way — so a stuck job
-always surfaces a clear error instead of spinning forever. If a job
-still never leaves `pending`/`processing`, check **Netlify dashboard →
-Logs → Functions → generate-ai-image-background** for the actual
-invocation and error — that's the definitive way to tell whether the
-function is being reached at all.
+<details>
+<summary>Why not a Netlify Background Function? (earlier design, abandoned)</summary>
 
-**Testing this locally:** Background Functions only run in Netlify's
-own runtime — plain `next dev` won't serve
-`netlify/functions/generate-ai-image-background.mts` at all, so the job
-will sit at "pending" (then auto-error after ~3 minutes, per above) in
-local dev. Use the Netlify CLI's `netlify dev` instead (`npm i -g
-netlify-cli`, then `netlify dev` from the project root) to test the full
-flow.
+An earlier version of this feature used a Netlify Background Function
+(`netlify/functions/generate-ai-image-background.mts`, since deleted) —
+the browser or Server Action would trigger it, then the browser would
+poll a job row every ~2.5s until it reported `done`/`error`. That design
+went through several fix attempts (resolving the site origin from
+request headers, switching to Netlify's reserved `/.netlify/functions/*`
+path, awaiting the trigger fetch, moving the trigger to the browser,
+removing `fetch`'s `keepalive` flag after discovering Chrome silently
+drops keepalive requests once a shared 64KB budget across all in-flight
+keepalive requests on the page — including this site's Microsoft Clarity
+beacons — is exceeded) and none of them fixed it.
+
+The function was confirmed correctly deployed and bundled on every
+build, and a direct `curl` to its endpoint reliably got a `202`
+acceptance from Netlify — but nothing downstream ever happened: the
+job row it should have updated never changed, and the Function log page
+showed zero entries, not even Netlify's own baseline per-invocation log
+line. That combination — accepted invocation, zero execution, zero logs
+— pointed to a platform-level issue with that specific Background
+Function rather than anything fixable in this codebase, so the whole
+trigger-and-poll design was replaced with the synchronous Supabase Edge
+Function described above, which sidesteps the problem entirely by
+removing the "fire something and hope it runs later" step altogether.
+
+</details>
 
 ### Admin Feature Tour
 

@@ -9,15 +9,12 @@
   NODE_VERSION = "20"
 
 # A previous [functions] timeout override lived here to raise the
-# synchronous function limit for /admin/ai-image's OpenAI call. It's
-# been removed for two reasons: (1) Netlify's config schema now rejects
-# `[functions] timeout = <number>` outright ("Configuration property
-# functions.timeout must be an object"), which was failing every deploy;
-# (2) it's no longer needed regardless — AI Image generation now runs
-# through a genuine Netlify Background Function
-# (netlify/functions/generate-ai-image-background.mts, up to 15 minutes)
-# instead of relying on a bumped synchronous timeout. See README's
-# "AI Image" section.
+# synchronous function limit for /admin/ai-image's OpenAI call. It's been
+# removed: Netlify's config schema rejects `[functions] timeout = <number>`
+# outright ("Configuration property functions.timeout must be an object"),
+# and it's no longer needed regardless — AI Image generation now runs as a
+# synchronous Supabase Edge Function call from the browser, not a Netlify
+# function at all. See README's "AI Image" section.
 #
 # Netlify's Next.js runtime handles routing, image optimisation, and
 # server/edge functions automatically via the plugin above — no manual
