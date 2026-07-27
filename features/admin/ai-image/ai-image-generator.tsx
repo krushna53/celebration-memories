@@ -92,10 +92,32 @@ export function AiImageGenerator({ eventId, defaultPrompt, configured, quota }: 
 
     if (started.remaining !== null) setRemainingOverride(started.remaining);
 
-    // The Server Action only kicked off a Netlify Background Function
-    // (see features/admin/ai-image/actions.ts) — the actual OpenAI call
-    // runs out-of-band, so we poll for its result instead of awaiting
-    // it directly.
+    // Trigger the Netlify Background Function ourselves, from the
+    // browser, rather than the Server Action doing a server-to-server
+    // fetch (see the comment on generateAiImageAction for why that
+    // approach kept failing). `keepalive: true` is the same mechanism
+    // browsers use for analytics beacons — it tells the browser to
+    // finish sending this request even if the page navigates away
+    // right after, which a fire-and-forget call from a serverless
+    // function can't guarantee for itself. The URL is relative, so it
+    // always resolves against whatever origin the admin is actually
+    // using — no origin-detection logic needed on either side.
+    //
+    // This is deliberately not awaited beyond firing it: the actual
+    // OpenAI call runs out-of-band in the background function, and we
+    // poll for its result below regardless of how the trigger itself
+    // fares (the 3-minute server-side staleness check in
+    // services/ai-image-jobs.ts and the poll ceiling below both cover
+    // us if the trigger somehow doesn't land).
+    fetch("/.netlify/functions/generate-ai-image-background", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: started.jobId, eventId, prompt }),
+      keepalive: true,
+    }).catch((err) => {
+      console.error("Failed to trigger AI image background function:", err);
+    });
+
     pollCountRef.current = 0;
     pollRef.current = setInterval(async () => {
       pollCountRef.current += 1;

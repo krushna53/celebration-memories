@@ -1,37 +1,12 @@
 "use server";
 
-import { headers } from "next/headers";
-
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { getEventBySlug } from "@/services/events";
-import { EVENT_SLUG, SITE_URL } from "@/lib/constants";
+import { EVENT_SLUG } from "@/lib/constants";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { createAiImageJob, getAiImageJob } from "@/services/ai-image-jobs";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
 import type { AiImageJobRecord } from "@/types/ai-image-job";
-
-/**
- * Where to reach *this* deployment for the background function trigger
- * below. Previously this only used SITE_URL (from NEXT_PUBLIC_SITE_URL),
- * which defaults to a placeholder domain if that env var isn't set on a
- * given Netlify site — silently sending the trigger request nowhere, so
- * the background function never ran and jobs sat at "pending" forever
- * with no visible error. Deriving the origin from the incoming request's
- * own headers (which Netlify always sets correctly) makes this
- * self-correct regardless of whether NEXT_PUBLIC_SITE_URL was configured
- * for this specific site.
- */
-async function resolveSiteOrigin(): Promise<string> {
-  try {
-    const h = await headers();
-    const host = h.get("x-forwarded-host") || h.get("host");
-    const proto = h.get("x-forwarded-proto") || "https";
-    if (host) return `${proto}://${host}`;
-  } catch (err) {
-    console.error("resolveSiteOrigin: headers() unavailable, falling back to SITE_URL:", err);
-  }
-  return SITE_URL;
-}
 
 export type StartAiImageResult =
   | { success: true; jobId: string; remaining: number | null }
@@ -43,13 +18,26 @@ export type StartAiImageResult =
  * owner is exempt) since this calls a real per-image-cost API with no
  * billing pass-through to clients yet. See services/ai-image-generations.ts.
  *
- * This only creates a job row and triggers the Netlify Background
- * Function (netlify/functions/generate-ai-image-background.mts) — it
- * deliberately does NOT call OpenAI itself. OpenAI's image API routinely
- * takes 30-60s+, which reliably exceeds Netlify's synchronous function
- * limit (10s free plan) and produced 502s. The actual generation now
- * happens out-of-band; the client polls getAiImageJobStatusAction below
- * until the job flips to "done" or "error".
+ * This ONLY creates a job row — it deliberately does not call OpenAI,
+ * and it deliberately does not trigger the Netlify Background Function
+ * either (netlify/functions/generate-ai-image-background.mts). That
+ * trigger used to happen here, as a server-to-server fetch from this
+ * Server Action, but that turned out to be unreliable in practice
+ * across several fix attempts (site-origin resolution, custom vs.
+ * reserved function paths, awaited vs. fire-and-forget) — jobs kept
+ * ending up stuck at "pending" with zero invocations ever reaching the
+ * function, consistent with the outbound request never actually
+ * completing before this Lambda-based Server Action's own execution
+ * environment was torn down.
+ *
+ * The trigger now happens client-side instead (see
+ * ai-image-generator.tsx's handleGenerate, right after this action
+ * returns a jobId), using `fetch(..., { keepalive: true })` — the same
+ * mechanism browsers use for analytics beacons, specifically designed
+ * to survive the calling context going away. A real browser tab isn't
+ * subject to the "may be frozen the instant a response is sent" behavior
+ * a serverless function invocation is, which removes the failure mode
+ * entirely rather than working around it.
  */
 export async function generateAiImageAction(eventId: string, prompt: string): Promise<StartAiImageResult> {
   const admin = await getCurrentAdmin();
@@ -83,46 +71,13 @@ export async function generateAiImageAction(eventId: string, prompt: string): Pr
     remaining = limit - used - 1;
   }
 
-  let jobId: string;
   try {
-    jobId = await createAiImageJob({ eventId, adminId: admin.id, prompt: prompt.trim() });
+    const jobId = await createAiImageJob({ eventId, adminId: admin.id, prompt: prompt.trim() });
+    return { success: true, jobId, remaining };
   } catch (err) {
     console.error("generateAiImageAction: failed to create job row:", err);
     return { success: false, error: "Something went wrong starting the generation. Please try again." };
   }
-
-  // Trigger the background function. This IS awaited — but only for the
-  // Background Function's own near-instant 202 acknowledgement (see
-  // Netlify docs), not for the OpenAI work itself, which runs entirely
-  // out-of-band afterward. This used to be fire-and-forget (not
-  // awaited), which seemed safe since a 202 comes back almost
-  // immediately — but on Netlify's Lambda-based runtime, the Server
-  // Action's own execution environment can be frozen the instant this
-  // function returns its result to the client, which can kill an
-  // in-flight outbound request before it finishes sending. Awaiting the
-  // ack (still well under the 10s synchronous limit) guarantees the
-  // trigger actually reaches the background function instead of
-  // silently vanishing, which is what produced jobs stuck at "pending"
-  // forever with zero invocations ever reaching the function.
-  try {
-    const origin = await resolveSiteOrigin();
-    const res = await fetch(`${origin}/.netlify/functions/generate-ai-image-background`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId, eventId, prompt: prompt.trim() }),
-    });
-    if (!res.ok) {
-      throw new Error(`Background function trigger returned ${res.status}`);
-    }
-  } catch (err) {
-    console.error("Failed to trigger AI image background function:", err);
-    return {
-      success: false,
-      error: "Couldn't start image generation — please try again in a moment.",
-    };
-  }
-
-  return { success: true, jobId, remaining };
 }
 
 export type AiImageJobStatusResult = AiImageJobRecord | { status: "not_found" };

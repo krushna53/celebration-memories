@@ -26,6 +26,14 @@ import OpenAI from "openai";
  * this function updates the ai_image_jobs row directly, and the client
  * polls getAiImageJobStatusAction (features/admin/ai-image/actions.ts)
  * until status flips to "done" or "error".
+ *
+ * This is triggered directly from the browser (see handleGenerate in
+ * features/admin/ai-image/ai-image-generator.tsx), not from the Server
+ * Action that creates the job — a server-to-server trigger from the
+ * Server Action turned out to be unreliable in practice. Because that
+ * means this endpoint is reachable with any client-supplied jobId, it
+ * looks the job up and confirms it's actually in "pending"/"processing"
+ * state before spending any OpenAI credits — see the guard below.
  */
 
 interface RequestBody {
@@ -57,6 +65,34 @@ async function handler(req: Request): Promise<Response> {
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+  // Guard against spending OpenAI credits on a forged/replayed/already-
+  // finished job now that this endpoint is triggered directly from the
+  // browser rather than only from a trusted server-to-server call.
+  const { data: existingJob, error: lookupError } = await supabase
+    .from("ai_image_jobs")
+    .select("status, event_id")
+    .eq("id", jobId)
+    .maybeSingle<{ status: string; event_id: string }>();
+
+  if (lookupError) {
+    console.error(`generate-ai-image-background: failed to look up job ${jobId}: ${lookupError.message}`);
+    return new Response("Lookup failed", { status: 500 });
+  }
+  if (!existingJob) {
+    return new Response("Job not found", { status: 404 });
+  }
+  if (existingJob.event_id !== eventId) {
+    // Don't trust the caller-supplied eventId for anything (e.g. the
+    // Storage path below) beyond matching what the job was actually
+    // created with — prevents a forged eventId from landing a generated
+    // image in a different event's gallery folder.
+    return new Response("Job/event mismatch", { status: 400 });
+  }
+  if (existingJob.status === "done") {
+    // Already succeeded (e.g. a duplicate/replayed trigger) — nothing to do.
+    return new Response(null, { status: 202 });
+  }
 
   async function fail(message: string) {
     console.error(`generate-ai-image-background: job ${jobId} failed: ${message}`);

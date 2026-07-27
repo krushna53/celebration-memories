@@ -445,51 +445,49 @@ environment variables beyond `OPENAI_API_KEY` above — the background
 function reads the same `NEXT_PUBLIC_SUPABASE_URL` /
 `SUPABASE_SERVICE_ROLE_KEY` already configured for the rest of the site.
 
-The Server Action figures out where to send the trigger request by
-reading the incoming request's own `host`/`x-forwarded-host` header
-(`resolveSiteOrigin()` in `features/admin/ai-image/actions.ts`), so it
-works correctly on any domain without extra setup. `NEXT_PUBLIC_SITE_URL`
-is only used as a fallback if headers are unexpectedly unavailable — you
-don't need to set it just for this feature to work. (An earlier version
-of this relied on `NEXT_PUBLIC_SITE_URL` alone, which silently sent the
-trigger nowhere on any site where that var wasn't set, leaving jobs
-stuck at "pending" forever — if you deployed before this fix and hit
-that, a fresh deploy picks up the corrected behavior automatically.)
+**Who triggers the background function, and why:** this went through
+several iterations before landing on the current approach, worth
+recording here since it's easy to reintroduce the bug if this code gets
+refactored later. The trigger is fired **from the browser** (see
+`handleGenerate` in `features/admin/ai-image/ai-image-generator.tsx`),
+using `fetch("/.netlify/functions/generate-ai-image-background", {
+..., keepalive: true })` — a relative URL (no origin-detection logic
+needed) with `keepalive: true`, the same mechanism used for analytics
+beacons, which tells the browser to finish sending the request even if
+the page navigates away immediately after.
 
-The trigger also targets `/.netlify/functions/generate-ai-image-background`
-— Netlify's own reserved invocation path for every function — rather than
-a custom `path` in the function's config. A custom path can end up
-shadowed by `@netlify/plugin-nextjs`'s own catch-all routing on some
-sites (the framework claims a path before the request ever reaches your
-function), which looks identical to "the trigger fetch went nowhere":
-the job just sits at `pending` with no invocation ever showing up in the
-function's logs. `/.netlify/functions/*` is reserved by the platform and
-never intercepted by any framework, so this sidesteps that class of
-routing conflict entirely.
+Earlier versions had the *Server Action* trigger the background function
+instead (a server-to-server fetch, right after creating the job row).
+That's the more obvious design, but it proved unreliable in practice
+across several fix attempts — resolving the site origin from request
+headers, switching from a custom function `path` to Netlify's reserved
+`/.netlify/functions/*` invocation path, and awaiting the trigger fetch
+instead of firing it and forgetting it. Jobs kept ending up stuck at
+`pending` with zero invocations ever reaching the function. The most
+likely explanation: Netlify's Lambda-based runtime can freeze a Server
+Action's execution environment the instant it returns its response,
+which can kill an outbound request that hasn't fully completed yet —
+even one that's been awaited for its initial acknowledgement. A browser
+tab isn't subject to that; triggering from the client sidesteps the
+failure mode entirely instead of continuing to work around it.
 
-The trigger fetch is also **awaited** (just for the Background
-Function's own near-instant `202` acknowledgement, not for the OpenAI
-work itself) rather than fired-and-forgotten. This mattered in practice:
-on Netlify's Lambda-based runtime, the Server Action's own execution
-environment can be frozen the instant it returns its result to the
-client, which can kill an outbound request that's still in flight and
-hasn't been awaited. An unawaited trigger fetch can therefore silently
-never reach the function at all — indistinguishable, from the UI's
-perspective, from every other cause of a job stuck at `pending`. Awaiting
-the ack (still well under the 10s synchronous limit) guarantees delivery.
+Because the trigger endpoint is therefore reachable with any
+client-supplied `jobId`, the background function looks the job up first
+and confirms it's real, still pending/processing, and belongs to the
+`eventId` it actually was created with — before spending any OpenAI
+credits. See the guard near the top of
+`generate-ai-image-background.mts`.
 
-If a job still never leaves `pending`/`processing` after all of the
-above, check **Netlify dashboard → Logs → Functions →
-generate-ai-image-background** for the actual invocation and error —
-that's the definitive way to tell whether the function is being reached
-at all.
-
-As extra safety nets: a job stuck at "pending"/"processing" for more
-than 3 minutes is automatically marked as errored server-side the next
-time its status is checked (`getAiImageJob` in
-`services/ai-image-jobs.ts`), and the browser itself gives up after
-about 3.5 minutes of polling either way — so a stuck job always
-surfaces a clear error instead of spinning forever.
+As extra safety nets on top of all this: a job stuck at
+`pending`/`processing` for more than 3 minutes is automatically marked
+as errored server-side the next time its status is checked
+(`getAiImageJob` in `services/ai-image-jobs.ts`), and the browser itself
+gives up after about 3.5 minutes of polling either way — so a stuck job
+always surfaces a clear error instead of spinning forever. If a job
+still never leaves `pending`/`processing`, check **Netlify dashboard →
+Logs → Functions → generate-ai-image-background** for the actual
+invocation and error — that's the definitive way to tell whether the
+function is being reached at all.
 
 **Testing this locally:** Background Functions only run in Netlify's
 own runtime — plain `next dev` won't serve
