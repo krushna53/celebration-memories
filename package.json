@@ -37,7 +37,8 @@
     "heic2any": "^0.0.4",
     "resend": "^4.0.1",
     "openai": "^6.49.0",
-    "stripe": "^22.3.2"
+    "stripe": "^22.3.2",
+    "razorpay": "^2.9.8"
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.12",

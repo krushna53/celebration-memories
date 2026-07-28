@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireStripeClient, STRIPE_CONFIGURED } from "@/lib/stripe";
 import { claimDraftEvent } from "@/services/event-drafts";
+import { recordWizardPayment } from "@/services/wizard-payments";
 
 export const dynamic = "force-dynamic";
 // Stripe's SDK needs Node's crypto module for signature verification —
@@ -52,6 +53,15 @@ export async function POST(request: Request): Promise<Response> {
       const eventId = session.metadata?.eventId;
       if (eventId) {
         await claimDraftEvent(eventId);
+        await recordWizardPayment({
+          eventId,
+          adminId: null,
+          provider: "stripe",
+          plan: session.mode === "subscription" ? "subscription" : "one_time",
+          amount: session.amount_total ?? 0,
+          currency: session.currency ?? "usd",
+          externalId: session.id,
+        });
       } else {
         console.error("Stripe checkout.session.completed missing metadata.eventId", session.id);
       }

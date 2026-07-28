@@ -20,6 +20,8 @@ import {
   Globe,
   Film,
   FileClock,
+  CreditCard,
+  Ticket,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -47,6 +49,8 @@ const NAV = [
   { href: "/admin/payments", label: "Payments", icon: Wallet },
   { href: "/admin/checkin", label: "Check-In", icon: CalendarCheck },
   { href: "/admin/drafts", label: "Drafts", icon: FileClock },
+  { href: "/admin/billing", label: "Billing", icon: CreditCard },
+  { href: "/admin/promo-codes", label: "Promo Codes", icon: Ticket },
   { href: "/admin/help", label: "Help", icon: HelpCircle },
 ] as const;
 
