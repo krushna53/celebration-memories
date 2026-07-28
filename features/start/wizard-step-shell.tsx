@@ -2,13 +2,19 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { WizardNav } from "@/features/start/wizard-nav";
+import { WizardSidebar } from "@/features/start/wizard-sidebar";
 import { WIZARD_STEPS, nextWizardStep, prevWizardStep, wizardStepHref } from "@/features/start/wizard-steps";
 
 /**
- * Common chrome (step nav + heading + prev/next footer) shared by every
- * wizard step page — see app/start/[token]/*\/page.tsx. Steps aren't
- * gated in order, so "Next" is always available; it's just a shortcut
- * to the next step in WIZARD_STEPS, not a validation gate.
+ * Common chrome (step nav + heading + prev/next footer + sidebar) shared
+ * by every wizard step page — see app/start/[token]/*\/page.tsx. Steps
+ * aren't gated in order, so "Next" is always available; it's just a
+ * shortcut to the next step in WIZARD_STEPS, not a validation gate.
+ *
+ * Laid out as a two-column grid on large screens (main content + a
+ * WizardSidebar of tips/what's-ahead) rather than a single narrow
+ * centered column — deliberately, so wide-screen viewports don't read
+ * as mostly empty space around a small centered form.
  */
 export function WizardStepShell({
   token,
@@ -40,38 +46,44 @@ export function WizardStepShell({
   return (
     <div>
       <WizardNav token={token} currentSlug={slug} />
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl text-navy-950">{title}</h1>
-            <p className="mt-1 text-sm text-navy-700/60">{description}</p>
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:py-10 lg:grid-cols-[1fr_280px]">
+        <div className="min-w-0">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="font-display text-2xl text-navy-950">{title}</h1>
+              <p className="mt-1 text-sm text-navy-700/60">{description}</p>
+            </div>
+            {headerAction ? <div className="shrink-0 pt-1">{headerAction}</div> : null}
           </div>
-          {headerAction ? <div className="shrink-0 pt-1">{headerAction}</div> : null}
-        </div>
-        <div className="mt-6">{children}</div>
+          <div className="mt-6">{children}</div>
 
-        {!hideFooter ? (
-          <div className="mt-10 flex items-center justify-between border-t border-navy-950/10 pt-6">
-            {prev ? (
-              <Link
-                href={wizardStepHref(token, prev.slug)}
-                className="inline-flex items-center gap-1.5 text-sm text-navy-700/70 hover:text-navy-950"
-              >
-                <ArrowLeft size={15} /> {prev.label}
-              </Link>
-            ) : (
-              <span />
-            )}
-            {next ? (
-              <Link
-                href={wizardStepHref(token, next.slug)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-medium text-navy-950 hover:brightness-110"
-              >
-                {next.label} <ArrowRight size={15} />
-              </Link>
-            ) : null}
-          </div>
-        ) : null}
+          {!hideFooter ? (
+            <div className="mt-10 flex items-center justify-between border-t border-navy-950/10 pt-6">
+              {prev ? (
+                <Link
+                  href={wizardStepHref(token, prev.slug)}
+                  className="inline-flex items-center gap-1.5 text-sm text-navy-700/70 hover:text-navy-950"
+                >
+                  <ArrowLeft size={15} /> {prev.label}
+                </Link>
+              ) : (
+                <span />
+              )}
+              {next ? (
+                <Link
+                  href={wizardStepHref(token, next.slug)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-medium text-navy-950 hover:brightness-110"
+                >
+                  {next.label} <ArrowRight size={15} />
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+
+        <aside className="lg:pt-1">
+          <WizardSidebar token={token} currentSlug={slug} />
+        </aside>
       </div>
     </div>
   );

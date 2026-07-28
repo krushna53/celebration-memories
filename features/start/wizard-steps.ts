@@ -21,16 +21,75 @@ export interface WizardStep {
   slug: string;
   label: string;
   description: string;
+  /** Short, encouraging tips shown in the step sidebar (WizardStepShell) — see features/start/wizard-sidebar.tsx. */
+  tips: string[];
 }
 
 export const WIZARD_STEPS: WizardStep[] = [
-  { slug: "basics", label: "Event Details", description: "Who, what, when, where" },
-  { slug: "timeline", label: "Timeline", description: "Add life milestones" },
-  { slug: "gallery", label: "Gallery", description: "Upload photos" },
-  { slug: "template", label: "Template", description: "Pick a look" },
-  { slug: "ai-image", label: "Invitation Card", description: "Optional — generate an AI invitation image" },
-  { slug: "slideshow", label: "Slideshow", description: "Turn photos into a video" },
-  { slug: "review", label: "Review", description: "Preview & create your account" },
+  {
+    slug: "basics",
+    label: "Event Details",
+    description: "Who, what, when, where",
+    tips: [
+      "Everything here feeds the rest of the wizard — your AI invitation prompt, the public page, even the WhatsApp message you'll eventually send guests.",
+      "Not sure about the exact time yet? You can always change it later — nothing here is locked in.",
+    ],
+  },
+  {
+    slug: "timeline",
+    label: "Timeline",
+    description: "Add life milestones",
+    tips: [
+      "A handful of milestones goes a long way — 4 or 5 well-chosen moments usually read better than a long list.",
+      "Add a photo to a milestone and it becomes eligible for your Slideshow automatically.",
+    ],
+  },
+  {
+    slug: "gallery",
+    label: "Gallery",
+    description: "Upload photos",
+    tips: [
+      "Sort photos into categories now — guests browse the Gallery by category on the live site.",
+      "Higher-resolution photos look sharper both in the Gallery and if you use them in your Slideshow.",
+    ],
+  },
+  {
+    slug: "template",
+    label: "Template",
+    description: "Pick a look",
+    tips: [
+      "Every template shares the same sections — you're only changing colors, fonts, and motion, so switching later won't lose any content.",
+      "The template you pick here also shapes the AI Image step's suggested color palette.",
+    ],
+  },
+  {
+    slug: "ai-image",
+    label: "Invitation Card",
+    description: "Optional — generate an AI invitation image",
+    tips: [
+      "Be specific — mention colors, motifs, and mood for a noticeably better result than a generic description.",
+      "You can download the generated image immediately, even if you don't save it as your Link Preview Image or continue further.",
+      "Save it as your Link Preview Image and it automatically becomes the first slide in your Slideshow, too.",
+    ],
+  },
+  {
+    slug: "slideshow",
+    label: "Slideshow",
+    description: "Turn photos into a video",
+    tips: [
+      "Add background music for a noticeably more polished result — most phone/piano recordings work fine.",
+      "You can re-render as many times as your plan allows, so it's fine to experiment with pacing and photo order.",
+    ],
+  },
+  {
+    slug: "review",
+    label: "Review",
+    description: "Preview & create your account",
+    tips: [
+      "This is the real public page, exactly as guests will see it — worth opening on your phone too.",
+      "Creating an account doesn't charge you anything by itself — payment is a separate step after.",
+    ],
+  },
 ];
 
 export function wizardStepHref(token: string, slug: string): string {
