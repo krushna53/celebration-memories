@@ -40,7 +40,7 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
       token={token}
       slug="ai-image"
       title="Invitation Card"
-      description="Optional — describe an image and generate it with AI to use as your invitation card and link preview image. Skip it if you'd rather not, or come back to it later."
+      description="Optional — describe an image and generate it with AI to use as your invitation card and link preview image. If you save it as your Link Preview Image, it'll also lead off your Slideshow. Skip it if you'd rather not, or come back to it later."
       headerAction={
         next ? (
           <Link
