@@ -1,7 +1,8 @@
-import { Sparkles } from "lucide-react";
+import { Heart, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { beginDraftAction } from "@/features/start/actions/begin";
+import { BUILDER } from "@/lib/constants";
 
 export const metadata = {
   title: "Create Your Event Site — Celebration Memories",
@@ -40,6 +41,18 @@ export default function StartPage() {
           Already have an account?{" "}
           <a href="/admin/login" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
             Sign in
+          </a>
+        </p>
+        <p className="mt-8 flex items-center justify-center gap-1.5 text-xs text-ivory-100/50">
+          Made with <Heart size={12} className="fill-gold-400 text-gold-400" />{" "}
+          by{" "}
+          <a
+            href={BUILDER.whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-gold-300 hover:text-gold-200"
+          >
+            {BUILDER.name}
           </a>
         </p>
       </div>

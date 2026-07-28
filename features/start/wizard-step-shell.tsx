@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { WizardNav } from "@/features/start/wizard-nav";
 import { WizardSidebar } from "@/features/start/wizard-sidebar";
 import { nextWizardStep, prevWizardStep, wizardStepHref } from "@/features/start/wizard-steps";
+import { Footer } from "@/components/layout/footer";
 
 /**
  * Common chrome (step nav + heading + prev/next footer + sidebar) shared
@@ -91,6 +92,8 @@ export function WizardStepShell({
           <WizardSidebar token={token} currentSlug={slug} goals={goals} />
         </aside>
       </div>
+
+      <Footer />
     </div>
   );
 }

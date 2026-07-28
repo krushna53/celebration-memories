@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { PartyPopper } from "lucide-react";
+import { Heart, PartyPopper } from "lucide-react";
+
+import { BUILDER } from "@/lib/constants";
 
 export const metadata = {
   title: "You're All Set — Celebration Memories",
@@ -48,6 +50,18 @@ export default async function WizardSuccessPage({
             Go to your dashboard
           </Link>
         </div>
+        <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-ivory-100/50">
+          Made with <Heart size={12} className="fill-gold-400 text-gold-400" />{" "}
+          by{" "}
+          <a
+            href={BUILDER.whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-gold-300 hover:text-gold-200"
+          >
+            {BUILDER.name}
+          </a>
+        </p>
       </div>
     </div>
   );
