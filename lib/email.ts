@@ -106,6 +106,36 @@ export async function sendRsvpConfirmation(input: {
   });
 }
 
+/**
+ * Notifies the owner (ADMIN_NOTIFICATION_EMAIL, falling back to the
+ * platform's own email) when a client requests a custom domain from
+ * the admin dashboard's FAQ chatbot (features/admin/support/faq-chatbot.tsx).
+ * The request is also saved to the `inquiries` table via createInquiry
+ * so it shows up in /admin/inquiries even if this email doesn't land —
+ * see features/admin/support/actions.ts.
+ */
+export async function sendCustomDomainRequestNotification(input: {
+  adminName: string;
+  adminEmail: string;
+  eventSlug: string;
+  domain: string;
+  notes: string;
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "krushnawebworks@gmail.com";
+
+  await sendEmail({
+    to: adminEmail,
+    subject: `Custom domain request from ${input.adminName} (${input.eventSlug})`,
+    html: `
+      <p><strong>${escapeHtml(input.adminName)}</strong> (${escapeHtml(input.adminEmail)}) requested a custom domain
+      for their event (<code>${escapeHtml(input.eventSlug)}</code>):</p>
+      <p style="font-size:16px;"><strong>${escapeHtml(input.domain)}</strong></p>
+      ${input.notes ? `<blockquote style="border-left:3px solid #c9a227;margin:0;padding-left:12px;color:#333;">${escapeHtml(input.notes).replace(/\n/g, "<br />")}</blockquote>` : ""}
+      <p style="color:#888;font-size:12px;">Reply directly to ${escapeHtml(input.adminEmail)}, or view it in /admin/inquiries.</p>
+    `,
+  });
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

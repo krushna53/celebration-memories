@@ -1,34 +1,31 @@
 import { notFound } from "next/navigation";
 
 import { getDraftEventByToken } from "@/services/event-drafts";
-import { EventBasicsForm } from "@/features/start/event-basics-form";
+import { GoalsPicker } from "@/features/start/goals-picker";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
 import { draftUpdateEventAction } from "@/features/start/actions/event";
-import { wizardStepHref, nextWizardStep } from "@/features/start/wizard-steps";
 
 export const dynamic = "force-dynamic";
 
-export default async function WizardBasicsPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function WizardGoalsPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const event = await getDraftEventByToken(token);
   if (!event) notFound();
 
-  const next = nextWizardStep("basics", event.wizardGoals);
-
   return (
     <WizardStepShell
       token={token}
-      slug="basics"
+      slug="goals"
       goals={event.wizardGoals}
-      title="Event Details"
-      description="These details appear across your public site — hero, event details, and invite pages."
+      title="What would you like to build?"
+      description="Pick as many as you'd like — this decides which steps you'll see next. Just want a quick invitation card or video? Those don't need an account or payment at all."
       hideFooter
     >
-      <EventBasicsForm
+      <GoalsPicker
         token={token}
-        event={event}
+        eventId={event.id}
+        currentGoals={event.wizardGoals}
         updateAction={draftUpdateEventAction}
-        nextHref={next ? wizardStepHref(token, next.slug) : undefined}
       />
     </WizardStepShell>
   );

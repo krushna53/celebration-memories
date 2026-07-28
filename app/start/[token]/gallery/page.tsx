@@ -23,6 +23,7 @@ export default async function WizardGalleryPage({ params }: { params: Promise<{ 
     <WizardStepShell
       token={token}
       slug="gallery"
+      goals={event.wizardGoals}
       title="Gallery"
       description="Upload the photos shown in your public Gallery section, by category."
     >

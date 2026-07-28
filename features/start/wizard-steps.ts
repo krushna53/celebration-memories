@@ -3,20 +3,38 @@
  * order — see app/start/[token]/layout.tsx (nav) and each step's
  * page.tsx (prev/next links).
  *
- * Order: Event Details -> Timeline -> Gallery -> Template -> Invitation
- * Card (AI Image) -> Slideshow -> Review. Event Details deliberately
- * comes first so the AI Image step's default prompt is built from real
- * honoree name / occasion / venue / template instead of placeholders.
- * AI Image sits late and is skippable (see its page.tsx's "Skip for
- * now" link) since it's the one step with a real per-image API cost —
- * but it comes right *before* Slideshow, not after, because when a
- * host has saved a generated image as their Link Preview Image
- * (event.shareImagePath), the Slideshow step automatically leads with
- * it as the first slide (see app/start/[token]/slideshow/page.tsx) —
- * that only works smoothly first-time-through if AI Image already ran.
- * "Memories" was explicitly dropped (guest-facing moderation queue
- * doesn't apply to a not-yet-live draft).
+ * The step list is no longer fixed: it's computed from what the host
+ * actually wants (see WizardGoal / resolveWizardSteps below), chosen on
+ * the new Goals step right after Occasion. Occasion and Goals always
+ * run first, in that order, for every draft — everything after that is
+ * conditional:
+ *
+ *   - Event Details and Template always show (every goal benefits from
+ *     both — Template even shapes the AI Image prompt's palette).
+ *   - Timeline and Gallery show if "slideshow" or "website" was picked
+ *     (Slideshow is built from their photos either way).
+ *   - Invitation Card (AI Image) shows if "invitation_card" or
+ *     "website" was picked.
+ *   - Slideshow shows if "slideshow" or "website" was picked.
+ *   - Review always runs last, but its own page.tsx branches its
+ *     content: the paid account/payment flow only if "website" was
+ *     picked, otherwise a light, free "here's what you made, download
+ *     it" screen with no account required at all.
+ *
+ * A draft with no goals chosen yet (mid-wizard, before reaching the
+ * Goals step) resolves to the full step list, so nav/sidebar don't look
+ * broken before a choice has been made. "Memories" was explicitly
+ * dropped from the whole wizard (guest-facing moderation queue doesn't
+ * apply to a not-yet-live draft).
  */
+export type WizardGoal = "invitation_card" | "slideshow" | "website";
+
+export const WIZARD_GOAL_OPTIONS: { value: WizardGoal; label: string; description: string }[] = [
+  { value: "invitation_card", label: "Invitation Card", description: "An AI-generated invitation image" },
+  { value: "slideshow", label: "Slideshow Video", description: "A music-backed video from your photos" },
+  { value: "website", label: "Full Web Page", description: "A complete shareable event site" },
+];
+
 export interface WizardStep {
   slug: string;
   label: string;
@@ -25,8 +43,30 @@ export interface WizardStep {
   tips: string[];
 }
 
-export const WIZARD_STEPS: WizardStep[] = [
-  {
+/**
+ * Deliberately not typed as Record<string, WizardStep> — that would
+ * make every lookup return `WizardStep | undefined` under
+ * noUncheckedIndexedAccess. Keeping this as a plain literal-keyed
+ * object lets TypeScript know exactly which keys exist, so
+ * STEP_REGISTRY.basics etc. is always a real WizardStep below.
+ */
+const STEP_REGISTRY = {
+  occasion: {
+    slug: "occasion",
+    label: "Occasion",
+    description: "What are you celebrating?",
+    tips: ["Pick whichever is closest — you can fine-tune the wording and details on the next steps."],
+  },
+  goals: {
+    slug: "goals",
+    label: "What to Build",
+    description: "Pick one, two, or all three",
+    tips: [
+      "Not sure yet? Pick everything — you can always come back and add more before you're done.",
+      "Just want a quick invitation card or video? You won't need an account or payment at all for those.",
+    ],
+  },
+  basics: {
     slug: "basics",
     label: "Event Details",
     description: "Who, what, when, where",
@@ -35,7 +75,7 @@ export const WIZARD_STEPS: WizardStep[] = [
       "Not sure about the exact time yet? You can always change it later — nothing here is locked in.",
     ],
   },
-  {
+  timeline: {
     slug: "timeline",
     label: "Timeline",
     description: "Add life milestones",
@@ -44,7 +84,7 @@ export const WIZARD_STEPS: WizardStep[] = [
       "Add a photo to a milestone and it becomes eligible for your Slideshow automatically.",
     ],
   },
-  {
+  gallery: {
     slug: "gallery",
     label: "Gallery",
     description: "Upload photos",
@@ -53,7 +93,7 @@ export const WIZARD_STEPS: WizardStep[] = [
       "Higher-resolution photos look sharper both in the Gallery and if you use them in your Slideshow.",
     ],
   },
-  {
+  template: {
     slug: "template",
     label: "Template",
     description: "Pick a look",
@@ -62,7 +102,7 @@ export const WIZARD_STEPS: WizardStep[] = [
       "The template you pick here also shapes the AI Image step's suggested color palette.",
     ],
   },
-  {
+  "ai-image": {
     slug: "ai-image",
     label: "Invitation Card",
     description: "Optional — generate an AI invitation image",
@@ -72,7 +112,7 @@ export const WIZARD_STEPS: WizardStep[] = [
       "Save it as your Link Preview Image and it automatically becomes the first slide in your Slideshow, too.",
     ],
   },
-  {
+  slideshow: {
     slug: "slideshow",
     label: "Slideshow",
     description: "Turn photos into a video",
@@ -81,29 +121,50 @@ export const WIZARD_STEPS: WizardStep[] = [
       "You can re-render as many times as your plan allows, so it's fine to experiment with pacing and photo order.",
     ],
   },
-  {
+  review: {
     slug: "review",
     label: "Review",
-    description: "Preview & create your account",
+    description: "See what you've built",
     tips: [
-      "This is the real public page, exactly as guests will see it — worth opening on your phone too.",
-      "Creating an account doesn't charge you anything by itself — payment is a separate step after.",
+      "This is the real result, exactly as it'll look — worth checking on your phone too.",
+      "Creating an account doesn't charge you anything by itself — payment is a separate step after, and only applies if you're keeping a full website.",
     ],
   },
-];
+};
+
+/** Computes the actual step list for a draft based on its chosen goals — see this file's top doc comment for the exact rules. */
+export function resolveWizardSteps(goals: string[] | null | undefined): WizardStep[] {
+  const steps: WizardStep[] = [STEP_REGISTRY.occasion, STEP_REGISTRY.goals];
+
+  const hasGoals = Array.isArray(goals) && goals.length > 0;
+  const wantsWebsite = !hasGoals || goals!.includes("website");
+  const wantsCard = !hasGoals || goals!.includes("invitation_card");
+  const wantsSlideshow = !hasGoals || goals!.includes("slideshow");
+
+  steps.push(STEP_REGISTRY.basics);
+  if (wantsWebsite || wantsSlideshow) steps.push(STEP_REGISTRY.timeline, STEP_REGISTRY.gallery);
+  steps.push(STEP_REGISTRY.template);
+  if (wantsWebsite || wantsCard) steps.push(STEP_REGISTRY["ai-image"]);
+  if (wantsWebsite || wantsSlideshow) steps.push(STEP_REGISTRY.slideshow);
+  steps.push(STEP_REGISTRY.review);
+
+  return steps;
+}
 
 export function wizardStepHref(token: string, slug: string): string {
   return `/start/${token}/${slug}`;
 }
 
-export function nextWizardStep(slug: string): WizardStep | null {
-  const i = WIZARD_STEPS.findIndex((s) => s.slug === slug);
-  if (i === -1 || i === WIZARD_STEPS.length - 1) return null;
-  return WIZARD_STEPS[i + 1] ?? null;
+export function nextWizardStep(slug: string, goals?: string[] | null): WizardStep | null {
+  const steps = resolveWizardSteps(goals);
+  const i = steps.findIndex((s) => s.slug === slug);
+  if (i === -1 || i === steps.length - 1) return null;
+  return steps[i + 1] ?? null;
 }
 
-export function prevWizardStep(slug: string): WizardStep | null {
-  const i = WIZARD_STEPS.findIndex((s) => s.slug === slug);
+export function prevWizardStep(slug: string, goals?: string[] | null): WizardStep | null {
+  const steps = resolveWizardSteps(goals);
+  const i = steps.findIndex((s) => s.slug === slug);
   if (i <= 0) return null;
-  return WIZARD_STEPS[i - 1] ?? null;
+  return steps[i - 1] ?? null;
 }

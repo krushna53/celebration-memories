@@ -27,6 +27,7 @@ export default async function WizardTemplatePage({ params }: { params: Promise<{
     <WizardStepShell
       token={token}
       slug="template"
+      goals={event.wizardGoals}
       title="Template"
       description="Choose the look of your site. Every template uses the same sections — only colours, fonts, and animation style change."
     >

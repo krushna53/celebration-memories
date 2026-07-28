@@ -3,13 +3,17 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { WizardNav } from "@/features/start/wizard-nav";
 import { WizardSidebar } from "@/features/start/wizard-sidebar";
-import { WIZARD_STEPS, nextWizardStep, prevWizardStep, wizardStepHref } from "@/features/start/wizard-steps";
+import { nextWizardStep, prevWizardStep, wizardStepHref } from "@/features/start/wizard-steps";
 
 /**
  * Common chrome (step nav + heading + prev/next footer + sidebar) shared
  * by every wizard step page — see app/start/[token]/*\/page.tsx. Steps
  * aren't gated in order, so "Next" is always available; it's just a
- * shortcut to the next step in WIZARD_STEPS, not a validation gate.
+ * shortcut to the next step in the resolved list (see
+ * resolveWizardSteps), not a validation gate. The step list itself
+ * depends on `goals` — pass the draft's event.wizardGoals through from
+ * every page.tsx so the nav/sidebar/prev/next all agree on the same
+ * (possibly trimmed-down) list.
  *
  * Laid out as a two-column grid on large screens (main content + a
  * WizardSidebar of tips/what's-ahead) rather than a single narrow
@@ -19,6 +23,7 @@ import { WIZARD_STEPS, nextWizardStep, prevWizardStep, wizardStepHref } from "@/
 export function WizardStepShell({
   token,
   slug,
+  goals,
   title,
   description,
   children,
@@ -27,6 +32,7 @@ export function WizardStepShell({
 }: {
   token: string;
   slug: string;
+  goals?: string[] | null;
   title: string;
   description: string;
   children: React.ReactNode;
@@ -40,12 +46,12 @@ export function WizardStepShell({
    */
   headerAction?: React.ReactNode;
 }) {
-  const prev = prevWizardStep(slug);
-  const next = nextWizardStep(slug);
+  const prev = prevWizardStep(slug, goals);
+  const next = nextWizardStep(slug, goals);
 
   return (
     <div>
-      <WizardNav token={token} currentSlug={slug} />
+      <WizardNav token={token} currentSlug={slug} goals={goals} />
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:py-10 lg:grid-cols-[1fr_280px]">
         <div className="min-w-0">
           <div className="flex items-start justify-between gap-4">
@@ -82,11 +88,9 @@ export function WizardStepShell({
         </div>
 
         <aside className="lg:pt-1">
-          <WizardSidebar token={token} currentSlug={slug} />
+          <WizardSidebar token={token} currentSlug={slug} goals={goals} />
         </aside>
       </div>
     </div>
   );
 }
-
-export { WIZARD_STEPS };

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Check, Lightbulb } from "lucide-react";
 
-import { WIZARD_STEPS, wizardStepHref } from "@/features/start/wizard-steps";
+import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
 
 /**
  * Fills the sidebar column WizardStepShell renders beside each step's
@@ -12,9 +12,18 @@ import { WIZARD_STEPS, wizardStepHref } from "@/features/start/wizard-steps";
  * without having to guess from the top nav alone, and so the page
  * doesn't read as mostly empty space on wide screens.
  */
-export function WizardSidebar({ token, currentSlug }: { token: string; currentSlug: string }) {
-  const currentIndex = WIZARD_STEPS.findIndex((s) => s.slug === currentSlug);
-  const current = WIZARD_STEPS[currentIndex];
+export function WizardSidebar({
+  token,
+  currentSlug,
+  goals,
+}: {
+  token: string;
+  currentSlug: string;
+  goals?: string[] | null;
+}) {
+  const steps = resolveWizardSteps(goals);
+  const currentIndex = steps.findIndex((s) => s.slug === currentSlug);
+  const current = steps[currentIndex];
 
   return (
     <div className="grid gap-4">
@@ -36,7 +45,7 @@ export function WizardSidebar({ token, currentSlug }: { token: string; currentSl
       <div className="rounded-xl border border-navy-950/10 bg-white p-4">
         <div className="text-xs font-medium uppercase tracking-[0.1em] text-navy-700/50">What&rsquo;s Ahead</div>
         <ol className="mt-2.5 grid gap-2.5">
-          {WIZARD_STEPS.map((step, i) => {
+          {steps.map((step, i) => {
             const isCurrent = step.slug === currentSlug;
             const isDone = i < currentIndex;
             return (

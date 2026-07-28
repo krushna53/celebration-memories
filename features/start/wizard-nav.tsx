@@ -1,21 +1,32 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 
-import { WIZARD_STEPS, wizardStepHref } from "@/features/start/wizard-steps";
+import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
 
 /**
  * Horizontal step indicator for the onboarding wizard. Every step is
  * clickable — there's no hard gating between steps (a draft is just a
  * database row you can edit in any order), so a host can jump ahead or
- * back freely and come back later using the same link.
+ * back freely and come back later using the same link. The step list
+ * itself depends on `goals` (what the host chose on the Goals step) —
+ * see resolveWizardSteps.
  */
-export function WizardNav({ token, currentSlug }: { token: string; currentSlug: string }) {
-  const currentIndex = WIZARD_STEPS.findIndex((s) => s.slug === currentSlug);
+export function WizardNav({
+  token,
+  currentSlug,
+  goals,
+}: {
+  token: string;
+  currentSlug: string;
+  goals?: string[] | null;
+}) {
+  const steps = resolveWizardSteps(goals);
+  const currentIndex = steps.findIndex((s) => s.slug === currentSlug);
 
   return (
     <nav className="border-b border-white/10 bg-navy-950">
       <ol className="mx-auto flex max-w-4xl gap-1 overflow-x-auto px-4 py-3 sm:gap-2">
-        {WIZARD_STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const isCurrent = step.slug === currentSlug;
           const isDone = i < currentIndex;
           return (

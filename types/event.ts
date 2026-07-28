@@ -92,6 +92,15 @@ export interface EventRecord {
    * what's blocked). Validated both on save and again at render time.
    */
   customCss: string | null;
+  /**
+   * Which deliverables a self-serve wizard host wants — some subset of
+   * "invitation_card" | "slideshow" | "website" — chosen on the
+   * wizard's Goals step. Null for the pre-existing single production
+   * event and any draft still mid-wizard. See
+   * features/start/wizard-steps.ts's resolveWizardSteps for how this
+   * drives which steps even appear.
+   */
+  wizardGoals: string[] | null;
   createdAt: string;
   updatedAt: string;
 }

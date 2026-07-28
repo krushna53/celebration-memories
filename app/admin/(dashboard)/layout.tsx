@@ -29,6 +29,7 @@ import { signOutAction } from "@/features/admin/auth-actions";
 import { isPathAllowedForRole } from "@/lib/admin-roles";
 import { TOUR_STEP_COPY } from "@/lib/admin-tour-steps";
 import { AdminTourController, type TourStep } from "@/features/admin/tour/admin-tour-controller";
+import { FaqChatbot } from "@/features/admin/support/faq-chatbot";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -114,6 +115,8 @@ export default async function AdminDashboardLayout({
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+
+      <FaqChatbot />
     </div>
   );
 }

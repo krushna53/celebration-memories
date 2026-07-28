@@ -1,7 +1,10 @@
 "use server";
 
+import { redirect } from "next/navigation";
+
 import { requireDraftEvent } from "@/features/start/draft-auth";
 import { updateEvent, type EventUpdateInput } from "@/services/events";
+import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
 import type { AdminActionResult } from "@/features/admin/event-settings/actions";
 
 /**
@@ -58,4 +61,25 @@ export async function draftConfirmShareVideoUploadAction(
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed." };
   }
+}
+
+/**
+ * Upsell path from the light/free Review screen (card/slideshow-only
+ * goals) — adds "website" to the draft's goals so the rest of the
+ * wizard's steps unlock, then sends the host to whichever step they
+ * haven't already visited (Timeline, since Gallery/Timeline are the
+ * pieces a card-or-slideshow-only host is most likely to have skipped).
+ * See app/start/[token]/review/page.tsx.
+ */
+export async function draftAddWebsiteGoalAction(token: string, eventId: string): Promise<void> {
+  const event = await requireDraftEvent(token);
+  if (event.id !== eventId) redirect(wizardStepHref(token, "review"));
+
+  const goals = new Set(event.wizardGoals ?? []);
+  goals.add("website");
+  await updateEvent(eventId, { wizardGoals: Array.from(goals) });
+
+  const steps = resolveWizardSteps(Array.from(goals));
+  const timelineStep = steps.find((s) => s.slug === "timeline");
+  redirect(wizardStepHref(token, timelineStep?.slug ?? "review"));
 }

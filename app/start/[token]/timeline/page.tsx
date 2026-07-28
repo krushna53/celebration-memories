@@ -26,6 +26,7 @@ export default async function WizardTimelinePage({ params }: { params: Promise<{
     <WizardStepShell
       token={token}
       slug="timeline"
+      goals={event.wizardGoals}
       title="Timeline"
       description="Add the life milestones shown in your public Timeline section, in order."
     >

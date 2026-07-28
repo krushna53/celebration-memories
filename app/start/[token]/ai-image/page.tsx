@@ -33,12 +33,13 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
     "No readable text in the image — just the visual design, decorative elements, and mood. Elegant, high-quality, printable invitation card style.",
   ].join(" ");
 
-  const next = nextWizardStep("ai-image");
+  const next = nextWizardStep("ai-image", event.wizardGoals);
 
   return (
     <WizardStepShell
       token={token}
       slug="ai-image"
+      goals={event.wizardGoals}
       title="Invitation Card"
       description="Optional — describe an image and generate it with AI to use as your invitation card and link preview image. If you save it as your Link Preview Image, it'll also lead off your Slideshow. Skip it if you'd rather not, or come back to it later."
       headerAction={

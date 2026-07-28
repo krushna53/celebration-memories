@@ -36,6 +36,7 @@ export interface EventRow {
   additional_notes: string | null;
   wish_message: string | null;
   custom_css: string | null;
+  wizard_goals: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -73,6 +74,7 @@ export function mapEvent(row: EventRow): EventRecord {
     additionalNotes: row.additional_notes,
     wishMessage: row.wish_message,
     customCss: row.custom_css,
+    wizardGoals: row.wizard_goals,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -147,6 +149,7 @@ export interface EventUpdateInput {
   additionalNotes?: string | null;
   wishMessage?: string | null;
   customCss?: string | null;
+  wizardGoals?: string[] | null;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -178,6 +181,7 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.additionalNotes !== undefined) patch.additional_notes = input.additionalNotes;
   if (input.wishMessage !== undefined) patch.wish_message = input.wishMessage;
   if (input.customCss !== undefined) patch.custom_css = input.customCss;
+  if (input.wizardGoals !== undefined) patch.wizard_goals = input.wizardGoals;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

@@ -691,11 +691,74 @@ message instead of erroring.
   events are reachable at `/events/[slug]` and can be created directly
   in the `events` table, but there's no admin UI yet to create a new
   event or switch which one the dashboard manages.
-- Not yet built (deliberately deferred — see `docs/business-growth-guide.md`
-  for the reasoning on each): a developer-facing template marketplace
-  with paid listings and real checkout (Stripe/Razorpay), an AI
-  prompt-based site redesigner, self-serve customer signup + billing
-  (today every new event is onboarded manually), the "build free, pay to
-  publish" paywall gate, and custom-domain connection UI (the DNS steps
-  exist in the guide, but there's no in-app flow yet). These are on the
-  roadmap — see the "Coming Soon" section on `/platform`.
+- Self-serve customer signup + billing now exists — see "Self-Serve
+  Onboarding Wizard" below. Not yet built (deliberately deferred — see
+  `docs/business-growth-guide.md` for the reasoning): a developer-facing
+  template marketplace with paid listings, an AI prompt-based site
+  redesigner, and automatic per-client custom-domain routing (see
+  "Custom Domains" below for what exists today vs. what that would
+  take).
+
+### Self-Serve Onboarding Wizard
+
+`/start` lets a new host build an event with no account at all — a
+draft `events` row authorized by a long random URL token
+(`events.draft_token`), the same trust model as a per-guest invite
+link. The wizard opens with Occasion (sets `category`) and Goals
+(`invitation_card` / `slideshow` / `website`, any combination —
+`events.wizard_goals`), which decides which later steps even appear
+(see `features/start/wizard-steps.ts`'s `resolveWizardSteps`). Picking
+only Invitation Card and/or Slideshow (no Website) skips account
+creation entirely — the Review step just offers a direct download.
+Picking Website leads to account creation
+(`app/start/[token]/account`) and a payment step
+(`app/start/[token]/payment`) offering Stripe or Razorpay (owner
+picks which in `/admin/billing`) plus an optional promo code
+(`/admin/promo-codes`) that bypasses payment entirely.
+
+AI Image and Slideshow generation are capped per draft (5 images, 3
+renders — see `DRAFT_AI_IMAGE_LIMIT` / `DRAFT_SLIDESHOW_LIMIT` in
+`features/start/actions/`) since both call real, per-use-billed APIs
+and a draft link has no account/role to key a normal quota off of.
+
+Abandoned drafts never auto-delete — review and remove them manually
+from `/admin/drafts` (owner-only).
+
+### Custom Domains
+
+**What exists today:** a host can ask for a custom domain from the
+admin dashboard's FAQ chatbot (bottom-right, "Can I use my own custom
+domain?") — it emails you and saves the request to `/admin/inquiries`.
+There's no automatic routing yet, so getting an actual domain live
+still takes manual work on your end:
+
+1. In Netlify (Site settings → Domain management → Add a domain),
+   add the client's domain to **this** site.
+2. Give the client the DNS records Netlify shows you (usually an A
+   record to Netlify's load balancer IP, or a CNAME if it's a
+   subdomain) to add at their registrar. Netlify auto-provisions an
+   SSL certificate once DNS resolves.
+3. The catch: this app currently has one `EVENT_SLUG` (`lib/constants.ts`)
+   that the homepage and admin dashboard are hardcoded to, and every
+   other event only has a `/events/[slug]` path — there's no built-in
+   way yet for a second custom domain on the *same* deployment to show
+   a *different* event at `/`. Two ways to work around that today:
+   - **Quick, single-client:** point the domain at this same Netlify
+     site and change `EVENT_SLUG` to that client's event slug, then
+     redeploy. Only works for one "primary" custom-domain client at a
+     time on this deployment.
+   - **Scales per client:** deploy a second copy of this same
+     codebase as its own Netlify site (same repo, different branch or
+     a duplicate site pointing at the same Supabase project, with
+     `EVENT_SLUG` set to that client's slug), and point their domain
+     at that site instead. More Netlify sites to manage, but each
+     client's domain "just works" independently.
+
+The real fix — and the natural next step if you get more than a
+couple of custom-domain requests — is Next.js middleware that reads
+the incoming `Host` header, looks up the matching event by a new
+`events.custom_domain` column, and rewrites to `/events/[slug]`
+internally. That turns steps 1-2 above into the entire process (no
+`EVENT_SLUG` juggling, no extra Netlify sites), since every domain
+would route through the one deployment already checking the database
+on every request. Not built yet — ask if you'd like it added.

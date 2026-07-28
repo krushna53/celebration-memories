@@ -66,6 +66,7 @@ export default async function WizardSlideshowPage({ params }: { params: Promise<
     <WizardStepShell
       token={token}
       slug="slideshow"
+      goals={event.wizardGoals}
       title="Slideshow"
       description={
         shareImageUrl
