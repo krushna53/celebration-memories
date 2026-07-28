@@ -36,6 +36,7 @@ export default async function WizardTemplatePage({ params }: { params: Promise<{
         currentTemplateSlug={event.templateSlug}
         templates={templates}
         updateAction={draftUpdateEventAction.bind(null, token)}
+        occasion={event.category}
       />
     </WizardStepShell>
   );

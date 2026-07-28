@@ -1,0 +1,8 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#0b1220"/>
+  <rect y="220" width="400" height="80" fill="#f9fafc"/>
+  <line x1="150" y1="120" x2="250" y2="120" stroke="#5b7ea8" stroke-width="2"/>
+  <text x="200" y="100" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#a3b8d6" text-anchor="middle" letter-spacing="3">HOSTED BY</text>
+  <text x="200" y="150" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#f9fafc" text-anchor="middle">Corporate Slate</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#16233c" text-anchor="middle">Slate &amp; Steel Blue &#183; Inter</text>
+</svg>

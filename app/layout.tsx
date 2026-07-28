@@ -9,6 +9,8 @@ import {
   inter,
   righteous,
   ebGaramond,
+  cormorantGaramond,
+  quicksand,
 } from "@/lib/fonts";
 import { ACTIVE_EVENT, SITE_NAME, SITE_URL } from "@/lib/constants";
 import { ClarityScript } from "@/features/analytics/clarity-script";
@@ -40,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${poppins.variable} ${dancingScript.variable} ${baloo2.variable} ${bebasNeue.variable} ${inter.variable} ${righteous.variable} ${ebGaramond.variable}`}
+      className={`${playfair.variable} ${poppins.variable} ${dancingScript.variable} ${baloo2.variable} ${bebasNeue.variable} ${inter.variable} ${righteous.variable} ${ebGaramond.variable} ${cormorantGaramond.variable} ${quicksand.variable}`}
     >
       <body className="antialiased">
         {children}

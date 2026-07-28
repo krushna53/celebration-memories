@@ -1,0 +1,8 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#062626"/>
+  <rect y="220" width="400" height="80" fill="#fffdf9"/>
+  <line x1="150" y1="120" x2="250" y2="120" stroke="#ff8533" stroke-width="2"/>
+  <text x="200" y="100" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#ffbf8f" text-anchor="middle" letter-spacing="3">HOSTED BY</text>
+  <text x="200" y="150" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#fffdf9" text-anchor="middle">Bright Beginnings</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#155a5a" text-anchor="middle">Teal &amp; Amber &#183; Poppins</text>
+</svg>

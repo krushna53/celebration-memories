@@ -7,6 +7,8 @@ import { Check, Crown, Loader2 } from "lucide-react";
 import { updateEventAction } from "@/features/admin/event-settings/actions";
 import type { AdminActionResult } from "@/features/admin/event-settings/actions";
 import type { TemplateSummary } from "@/lib/template-catalog";
+import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
+import type { EventCategory } from "@/types/event";
 
 export type PickerTemplate = TemplateSummary & {
   designer?: { name: string; website: string | null };
@@ -20,6 +22,15 @@ interface TemplatePickerProps {
   currentTemplateSlug: string;
   templates: PickerTemplate[];
   updateAction?: UpdateTemplateAction;
+  /**
+   * The event's occasion (events.category) — when set, any template
+   * whose `occasions` list includes it is pulled into a "Recommended"
+   * group shown first. Purely a sort/label hint (see TemplateSummary.
+   * occasions); every template still works for any occasion. Optional so
+   * the admin Templates page (which doesn't know the occasion up front
+   * in the same way) can keep passing nothing and get the flat grid.
+   */
+  occasion?: EventCategory | null;
 }
 
 /**
@@ -35,6 +46,7 @@ export function TemplatePicker({
   currentTemplateSlug,
   templates,
   updateAction = updateEventAction,
+  occasion,
 }: TemplatePickerProps) {
   const [selected, setSelected] = useState(currentTemplateSlug);
   const [pending, startTransition] = useTransition();
@@ -53,10 +65,10 @@ export function TemplatePicker({
     });
   }
 
-  return (
-    <div>
+  function renderGrid(list: PickerTemplate[]) {
+    return (
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {templates.map((template) => {
+        {list.map((template) => {
           const isSelected = template.slug === selected;
           return (
             <button
@@ -113,6 +125,28 @@ export function TemplatePicker({
           );
         })}
       </div>
+    );
+  }
+
+  const recommended = occasion
+    ? templates.filter((t) => t.occasions?.includes(occasion))
+    : [];
+  const rest = recommended.length > 0 ? templates.filter((t) => !recommended.includes(t)) : templates;
+
+  return (
+    <div>
+      {recommended.length > 0 ? (
+        <>
+          <h3 className="mb-3 font-display text-sm text-navy-950">
+            Recommended for your {EVENT_CATEGORY_LABELS[occasion!]}
+          </h3>
+          {renderGrid(recommended)}
+          <h3 className="mb-3 mt-8 font-display text-sm text-navy-950">More Templates</h3>
+          {renderGrid(rest)}
+        </>
+      ) : (
+        renderGrid(rest)
+      )}
 
       {error ? (
         <p className="mt-4 text-sm text-red-600" role="alert">

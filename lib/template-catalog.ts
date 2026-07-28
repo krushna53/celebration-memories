@@ -1,3 +1,5 @@
+import type { EventCategory } from "@/types/event";
+
 /**
  * Pure template metadata — no component imports, no server-only code
  * anywhere in this file's module graph. This is what client components
@@ -67,7 +69,7 @@ export interface TemplateSummary {
   slug: string;
   name: string;
   description: string;
-  category: "general" | "kids" | "formal" | "festive" | "romantic";
+  category: "general" | "kids" | "formal" | "festive" | "romantic" | "baby" | "corporate" | "memorial";
   premium: boolean;
   /** INR. Only meaningful when `premium` is true. */
   price?: number;
@@ -75,6 +77,15 @@ export interface TemplateSummary {
   primaryColor: string;
   secondaryColor: string;
   fontFamily: string;
+  /**
+   * Occasions this template was designed for — used by the wizard's
+   * Template step (app/start/[token]/template/page.tsx) to surface a
+   * "Recommended for your <occasion>" group first. Purely a sorting/
+   * labeling hint: every template still works for any occasion, and
+   * templates without this field (the original ten) are treated as
+   * general-purpose and shown in their normal position.
+   */
+  occasions?: EventCategory[];
 }
 
 export const TEMPLATE_CATALOG: TemplateSummary[] = [
@@ -202,6 +213,114 @@ export const TEMPLATE_CATALOG: TemplateSummary[] = [
     primaryColor: "#c08a3e",
     secondaryColor: "#2e1f14",
     fontFamily: "EB Garamond",
+  },
+  {
+    id: "tpl-ivory-blush",
+    slug: "ivory-blush",
+    name: "Ivory Blush",
+    description: "Deep plum with rose-blush accents and a tall elegant serif — built for weddings.",
+    category: "romantic",
+    premium: true,
+    price: 699,
+    thumbnail: "/templates/ivory-blush.svg",
+    primaryColor: "#c97f92",
+    secondaryColor: "#2a1a22",
+    fontFamily: "Cormorant Garamond",
+    occasions: ["wedding", "anniversary"],
+  },
+  {
+    id: "tpl-emerald-vow",
+    slug: "emerald-vow",
+    name: "Emerald Vow",
+    description: "Deep emerald & gold foil, refined Playfair Display headings — built for anniversaries.",
+    category: "formal",
+    premium: true,
+    price: 599,
+    thumbnail: "/templates/emerald-vow.svg",
+    primaryColor: "#c9a227",
+    secondaryColor: "#04140f",
+    fontFamily: "Playfair Display",
+    occasions: ["anniversary", "wedding"],
+  },
+  {
+    id: "tpl-little-blessings",
+    slug: "little-blessings",
+    name: "Little Blessings",
+    description: "Dusty blue and soft apricot with a gentle rounded display face — built for baby showers.",
+    category: "baby",
+    premium: false,
+    thumbnail: "/templates/little-blessings.svg",
+    primaryColor: "#e88f68",
+    secondaryColor: "#2c3e4a",
+    fontFamily: "Quicksand",
+    occasions: ["baby_shower"],
+  },
+  {
+    id: "tpl-corporate-slate",
+    slug: "corporate-slate",
+    name: "Corporate Slate",
+    description: "Slate navy and steel-blue with clean grotesk type — built for corporate events, workshops, and livestreams.",
+    category: "corporate",
+    premium: true,
+    price: 399,
+    thumbnail: "/templates/corporate-slate.svg",
+    primaryColor: "#5b7ea8",
+    secondaryColor: "#0b1220",
+    fontFamily: "Inter",
+    occasions: ["corporate", "workshop", "education", "live_stream"],
+  },
+  {
+    id: "tpl-golden-farewell",
+    slug: "golden-farewell",
+    name: "Golden Farewell",
+    description: "Warm bronze and gold with dignified Playfair Display headings — built for retirement celebrations.",
+    category: "formal",
+    premium: false,
+    thumbnail: "/templates/golden-farewell.svg",
+    primaryColor: "#c2903a",
+    secondaryColor: "#1c130a",
+    fontFamily: "Playfair Display",
+    occasions: ["retirement"],
+  },
+  {
+    id: "tpl-in-loving-memory",
+    slug: "in-loving-memory",
+    name: "In Loving Memory",
+    description: "Soft charcoal and muted sand with a quiet antique serif — a respectful, understated memorial tribute.",
+    category: "memorial",
+    premium: false,
+    thumbnail: "/templates/in-loving-memory.svg",
+    primaryColor: "#ad9367",
+    secondaryColor: "#1b1c1e",
+    fontFamily: "EB Garamond",
+    occasions: ["obituary"],
+  },
+  {
+    id: "tpl-bright-beginnings",
+    slug: "bright-beginnings",
+    name: "Bright Beginnings",
+    description: "Deep teal and warm amber with friendly, energetic type — built for workshops and educational events.",
+    category: "general",
+    premium: false,
+    thumbnail: "/templates/bright-beginnings.svg",
+    primaryColor: "#ff8533",
+    secondaryColor: "#062626",
+    fontFamily: "Poppins",
+    occasions: ["workshop", "education"],
+  },
+  {
+    id: "tpl-live-signal",
+    slug: "live-signal",
+    name: "Live Signal",
+    description: "Deep indigo with electric violet accents and clean grotesk type — built for livestreamed and corporate events.",
+    category: "corporate",
+    premium: true,
+    price: 399,
+    thumbnail: "/templates/live-signal.svg",
+    primaryColor: "#7c5cf0",
+    secondaryColor: "#0d0a2b",
+    fontFamily: "Inter",
+    occasions: ["live_stream", "corporate"],
   },
 ];
 

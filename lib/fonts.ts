@@ -7,6 +7,8 @@ import {
   Inter,
   Righteous,
   EB_Garamond,
+  Cormorant_Garamond,
+  Quicksand,
 } from "next/font/google";
 
 /**
@@ -83,5 +85,21 @@ export const ebGaramond = EB_Garamond({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-eb-garamond",
+  display: "swap",
+});
+
+/** Elegant tall-waisted serif — used by the Ivory Blush wedding template. */
+export const cormorantGaramond = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-cormorant-garamond",
+  display: "swap",
+});
+
+/** Soft rounded display face — used by the Little Blessings baby shower template. */
+export const quicksand = Quicksand({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-quicksand",
   display: "swap",
 });
