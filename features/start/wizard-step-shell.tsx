@@ -17,6 +17,7 @@ export function WizardStepShell({
   description,
   children,
   hideFooter = false,
+  headerAction,
 }: {
   token: string;
   slug: string;
@@ -25,6 +26,13 @@ export function WizardStepShell({
   children: React.ReactNode;
   /** Set true on steps (like Event Basics) whose own form already handles "Save & Continue". */
   hideFooter?: boolean;
+  /**
+   * Small, deliberately understated element rendered beside the title —
+   * used by the Invitation Card step for its "Skip for now" link (see
+   * app/start/[token]/ai-image/page.tsx). Not styled as a button on
+   * purpose: it shouldn't compete with the step's real call to action.
+   */
+  headerAction?: React.ReactNode;
 }) {
   const prev = prevWizardStep(slug);
   const next = nextWizardStep(slug);
@@ -33,8 +41,13 @@ export function WizardStepShell({
     <div>
       <WizardNav token={token} currentSlug={slug} />
       <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
-        <h1 className="font-display text-2xl text-navy-950">{title}</h1>
-        <p className="mt-1 text-sm text-navy-700/60">{description}</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-2xl text-navy-950">{title}</h1>
+            <p className="mt-1 text-sm text-navy-700/60">{description}</p>
+          </div>
+          {headerAction ? <div className="shrink-0 pt-1">{headerAction}</div> : null}
+        </div>
         <div className="mt-6">{children}</div>
 
         {!hideFooter ? (

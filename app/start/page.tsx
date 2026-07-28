@@ -26,9 +26,10 @@ export default function StartPage() {
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-ivory-100/70 sm:text-base">
           A luxury invitation &amp; memory-sharing site for your birthday, wedding,
-          anniversary, or any celebration — no account needed to start. Add an
-          AI-generated invitation card, a timeline, photos, and a slideshow video,
-          then see the whole thing before you create an account or pay anything.
+          anniversary, or any celebration — no account needed to start. Add your
+          event details, a timeline, photos, and a slideshow video (an
+          AI-generated invitation card is optional), then see the whole thing
+          before you create an account or pay anything.
         </p>
         <form action={beginDraftAction} className="mt-8">
           <Button type="submit" size="lg" className="w-full sm:w-auto">
