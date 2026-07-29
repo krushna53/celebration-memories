@@ -29,9 +29,15 @@ export async function getEventForPublicMemories(slug: string): Promise<EventReco
  *
  * Trade-off worth knowing: since there's no de-duplication, one relative
  * visiting twice creates two invitee rows. That's fine here — the invitee
- * record only exists to carry an upload token and isn't shown as a guest
- * in the RSVP list in any way that matters (relationship is tagged below
- * so admins can tell these apart from real invitees at a glance).
+ * record only exists to carry an upload token.
+ *
+ * Deliberately does NOT set `relationship` — the Memory Wall shows
+ * `invitees.name`/`relationship` publicly under every card (see
+ * services/memory-wall.ts's `author` field and MemoryCard), so tagging
+ * this with an internal label like "Public Memory Upload" would leak
+ * onto the public page as e.g. "Priya · Public Memory Upload". Admins
+ * can still tell these apart in the Invitees list by the lack of a
+ * phone/email, which real invitees normally have.
  */
 export async function createPublicMemoryUploader(
   eventId: string,
@@ -42,8 +48,5 @@ export async function createPublicMemoryUploader(
     throw new Error("Please enter your name.");
   }
 
-  return createInvitee(eventId, {
-    name: trimmed,
-    relationship: "Public Memory Upload",
-  });
+  return createInvitee(eventId, { name: trimmed });
 }
