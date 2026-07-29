@@ -9,6 +9,7 @@ import {
   Settings,
   Clock,
   Users,
+  UserCog,
   Palette,
   HelpCircle,
   ImagePlus,
@@ -36,6 +37,7 @@ import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/events", label: "All Events", icon: Building2 },
+  { href: "/admin/members", label: "Members", icon: UserCog },
   { href: "/admin/event-settings", label: "Event Settings", icon: Settings },
   { href: "/admin/templates", label: "Templates", icon: Palette },
   { href: "/admin/template-submissions", label: "Template Submissions", icon: PenTool },
