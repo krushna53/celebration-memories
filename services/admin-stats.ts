@@ -22,7 +22,7 @@ export interface DashboardStats {
   mostActiveGuests: Array<{ id: string; name: string; visitCount: number }>;
 }
 
-async function countRows(table: string, eventId: string, filters?: Record<string, unknown>) {
+export async function countRows(table: string, eventId: string, filters?: Record<string, unknown>) {
   let query = supabaseAdmin()
     .from(table)
     .select("id", { count: "exact", head: true })

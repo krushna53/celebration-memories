@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowRight,
+  Check,
   Clock,
   Film,
   Image as ImageIcon,
@@ -15,6 +16,9 @@ import {
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { getDashboardStats } from "@/services/admin-stats";
+import { getSetupProgressCounts } from "@/services/admin-setup-progress";
+import { getLatestCompletedAiImageJob, getLatestUploadedAiImageJob } from "@/services/ai-image-jobs";
+import { getLatestCompletedSlideshowVideoJob } from "@/services/slideshow-video-jobs";
 import { signOutAction } from "@/features/admin/auth-actions";
 import { StatCard } from "@/features/admin/components/stat-card";
 import { QuickShareLinks } from "@/features/admin/simple/quick-share-links";
@@ -48,7 +52,13 @@ export default async function AdminSimplePage() {
     );
   }
 
-  const stats = await getDashboardStats(event.id);
+  const [stats, setupCounts, latestGeneratedAiImage, latestUploadedAiImage, latestSlideshowVideo] = await Promise.all([
+    getDashboardStats(event.id),
+    getSetupProgressCounts(event.id),
+    getLatestCompletedAiImageJob(event.id),
+    getLatestUploadedAiImageJob(event.id),
+    getLatestCompletedSlideshowVideoJob(event.id),
+  ]);
 
   const actionCards: Array<{
     href: string;
@@ -56,6 +66,7 @@ export default async function AdminSimplePage() {
     label: string;
     description: string;
     badge: number | null;
+    done: boolean;
   }> = [
     {
       href: "/admin/event-settings",
@@ -63,6 +74,7 @@ export default async function AdminSimplePage() {
       label: "Event Settings",
       description: "Date, venue, links, and page sections.",
       badge: null,
+      done: Boolean(event.venueName?.trim() && event.venueAddress?.trim()),
     },
     {
       href: "/admin/gallery",
@@ -70,6 +82,7 @@ export default async function AdminSimplePage() {
       label: "Gallery",
       description: "Your event photos, organized by category.",
       badge: null,
+      done: setupCounts.galleryPhotoCount > 0,
     },
     {
       href: "/admin/timeline",
@@ -77,6 +90,7 @@ export default async function AdminSimplePage() {
       label: "Timeline",
       description: "The story, milestone by milestone.",
       badge: null,
+      done: setupCounts.timelineMilestoneCount > 0,
     },
     {
       href: "/admin/memories",
@@ -84,6 +98,7 @@ export default async function AdminSimplePage() {
       label: "Memories",
       description: "Approve photos, videos, audio, and notes from guests.",
       badge: stats.uploads.pendingApproval > 0 ? stats.uploads.pendingApproval : null,
+      done: setupCounts.approvedMemoryCount > 0,
     },
     {
       href: "/admin/ai-image",
@@ -91,6 +106,7 @@ export default async function AdminSimplePage() {
       label: "AI Image",
       description: "Generate an invitation image from a text prompt.",
       badge: null,
+      done: Boolean(latestGeneratedAiImage || latestUploadedAiImage),
     },
     {
       href: "/admin/slideshow",
@@ -98,8 +114,12 @@ export default async function AdminSimplePage() {
       label: "Slideshow Video",
       description: "Turn your gallery into a music video.",
       badge: null,
+      done: Boolean(latestSlideshowVideo),
     },
   ];
+
+  const doneCount = actionCards.filter((c) => c.done).length;
+  const progressPercent = Math.round((doneCount / actionCards.length) * 100);
 
   return (
     <div className="min-h-screen bg-ivory-100">
@@ -159,16 +179,31 @@ export default async function AdminSimplePage() {
           </section>
 
           <section>
-            <h2 className="font-display text-lg text-navy-950">What would you like to do?</h2>
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="font-display text-lg text-navy-950">What would you like to do?</h2>
+              <span className="shrink-0 text-xs font-medium text-navy-700/50">
+                {doneCount} of {actionCards.length} set up
+              </span>
+            </div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-navy-950/8">
+              <div
+                className="h-full rounded-full bg-gold-500 transition-all duration-500 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {actionCards.map(({ href, icon: Icon, label, description, badge }) => (
+              {actionCards.map(({ href, icon: Icon, label, description, badge, done }) => (
                 <Link
                   key={href}
                   href={href}
                   className="group flex items-start gap-3 rounded-xl border border-navy-950/10 bg-white p-4 transition-luxury duration-200 hover:border-gold-500/40 hover:shadow-sm"
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold-500/10 text-gold-700">
-                    <Icon size={18} />
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                      done ? "bg-gold-500/20 text-gold-700" : "bg-gold-500/10 text-gold-700"
+                    }`}
+                  >
+                    {done ? <Check size={18} /> : <Icon size={18} />}
                   </span>
                   <span className="flex-1">
                     <span className="flex items-center gap-2">
@@ -176,6 +211,10 @@ export default async function AdminSimplePage() {
                       {badge ? (
                         <span className="rounded-full bg-gold-500 px-1.5 py-0.5 text-[10px] font-semibold text-navy-950">
                           {badge}
+                        </span>
+                      ) : done ? (
+                        <span className="rounded-full bg-gold-500/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gold-700">
+                          Done
                         </span>
                       ) : null}
                     </span>
