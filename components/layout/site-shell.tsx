@@ -15,6 +15,15 @@ interface SiteShellProps {
   navLinks?: readonly NavLink[];
   /** Shows a "Login" link in the nav — set on the platform homepage, off on event pages. */
   showLogin?: boolean;
+  /**
+   * Passed straight through to Navbar — only set this when `children`
+   * itself opens with a dark, full-bleed section directly under the nav
+   * (the event homepage templates' shared HeroSection, or the platform
+   * homepage's own dark intro section). Leave it off (the default) for
+   * every lighter-background page — see Navbar's doc comment for why
+   * getting this wrong makes the nav links unreadable.
+   */
+  transparentUntilScroll?: boolean;
 }
 
 /**
@@ -29,10 +38,16 @@ export function SiteShell({
   designerCredit,
   navLinks,
   showLogin,
+  transparentUntilScroll,
 }: SiteShellProps) {
   return (
     <>
-      <Navbar honoreeName={honoreeName} navLinks={navLinks} showLogin={showLogin} />
+      <Navbar
+        honoreeName={honoreeName}
+        navLinks={navLinks}
+        showLogin={showLogin}
+        transparentUntilScroll={transparentUntilScroll}
+      />
       <main>{children}</main>
       <Footer designerCredit={designerCredit} />
     </>

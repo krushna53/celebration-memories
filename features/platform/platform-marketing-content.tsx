@@ -84,7 +84,7 @@ const PLATFORM_NAV_LINKS = [
  */
 export function PlatformMarketingContent() {
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
+    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin transparentUntilScroll>
       <div className="bg-navy-950 pb-24 pt-32 text-ivory-50 sm:pt-40">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <Reveal>

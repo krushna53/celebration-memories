@@ -34,6 +34,7 @@ export default function CommunityTemplate({ submission, ...props }: CommunityTem
         <SiteShell
           honoreeName={props.displayData.honoreeName}
           designerCredit={{ name: submission.authorName, website: submission.authorWebsite }}
+          transparentUntilScroll
         >
           <EventSections
             event={props.event}

@@ -7,7 +7,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 export default function FloralPastel(props: BirthdayTemplateProps) {
   return (
     <TemplateThemeWrapper theme={floralPastelTheme}>
-      <SiteShell honoreeName={props.displayData.honoreeName}>
+      <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}
           displayData={props.displayData}
