@@ -7,11 +7,13 @@ import {
   bulkImportInvitees,
   createInvitee,
   deleteInvitee,
+  getRsvpExportRows,
   markInviteSent,
   setCheckedIn,
   updateInvitee,
   type InviteeInput,
 } from "@/services/admin-invitees";
+import { toCsv } from "@/lib/csv";
 
 export type AdminActionResult =
   | { success: true }
@@ -102,6 +104,42 @@ export async function markInviteSentAction(id: string, eventId: string): Promise
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+export type ExportRsvpCsvResult =
+  | { success: true; csv: string; filename: string }
+  | { success: false; error: string };
+
+/**
+ * Returns the CSV as plain text rather than writing a file anywhere —
+ * the browser turns it into a download client-side (see
+ * invitee-manager.tsx's handleExport, which builds a Blob and clicks a
+ * temporary <a download>). Available to owner and client roles, same as
+ * the rest of this file post-fix, scoped to the caller's own event.
+ */
+export async function exportRsvpCsvAction(eventId: string, eventSlug: string): Promise<ExportRsvpCsvResult> {
+  try {
+    await requireAdminForEvent(eventId);
+    const rows = await getRsvpExportRows(eventId);
+    const csv = toCsv(rows, [
+      { key: "name", label: "Name" },
+      { key: "phone", label: "Phone" },
+      { key: "email", label: "Email" },
+      { key: "relationship", label: "Relationship" },
+      { key: "rsvpStatus", label: "RSVP Status" },
+      { key: "adults", label: "Adults" },
+      { key: "children", label: "Children" },
+      { key: "mealPreference", label: "Meal Preference" },
+      { key: "comments", label: "Comments" },
+      { key: "submittedAt", label: "Submitted At" },
+      { key: "checkedIn", label: "Checked In" },
+      { key: "visitCount", label: "Visits" },
+      { key: "inviteSentAt", label: "Invite Sent At" },
+    ]);
+    return { success: true, csv, filename: `${eventSlug}-rsvps-${new Date().toISOString().slice(0, 10)}.csv` };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Export failed." };
   }
 }
 

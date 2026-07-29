@@ -28,6 +28,7 @@ export default async function AdminInviteesPage() {
       <div className="mt-6">
         <InviteeManager
           eventId={event.id}
+          eventSlug={event.slug}
           initialInvitees={invitees}
           hostedBy={event.hostedBy}
           honoreeName={event.honoreeName}

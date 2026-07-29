@@ -6,6 +6,7 @@ import {
   Check,
   CheckCheck,
   Copy,
+  Download,
   Loader2,
   Pencil,
   Plus,
@@ -24,6 +25,7 @@ import {
   bulkImportInviteesAction,
   createInviteeAction,
   deleteInviteeAction,
+  exportRsvpCsvAction,
   markInviteSentAction,
   updateInviteeAction,
 } from "@/features/admin/invitees/actions";
@@ -56,6 +58,7 @@ const EMPTY_FORM: EmptyForm = { name: "", phone: "", email: "", relationship: ""
 
 interface InviteeManagerProps {
   eventId: string;
+  eventSlug: string;
   initialInvitees: InviteeRecord[];
   hostedBy: string;
   honoreeName: string;
@@ -64,6 +67,7 @@ interface InviteeManagerProps {
 
 export function InviteeManager({
   eventId,
+  eventSlug,
   initialInvitees,
   hostedBy,
   honoreeName,
@@ -76,6 +80,7 @@ export function InviteeManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EmptyForm>(EMPTY_FORM);
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [importSummary, setImportSummary] = useState<string | null>(null);
   const [showBulkSend, setShowBulkSend] = useState(false);
@@ -163,6 +168,25 @@ export function InviteeManager({
     });
   }
 
+  async function handleExport() {
+    setExporting(true);
+    const result = await exportRsvpCsvAction(eventId, eventSlug);
+    setExporting(false);
+    if (!result.success) {
+      alert(result.error);
+      return;
+    }
+    const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = result.filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function handleCsvFile(file: File) {
     Papa.parse<Record<string, string>>(file, {
       header: true,
@@ -209,6 +233,9 @@ export function InviteeManager({
           />
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload size={15} /> Import CSV
+          </Button>
+          <Button variant="outline" onClick={handleExport} disabled={exporting || invitees.length === 0}>
+            {exporting ? <Loader2 className="animate-spin" size={15} /> : <Download size={15} />} Export CSV
           </Button>
           <Button variant="outline" onClick={() => setShowBulkSend((v) => !v)}>
             <Send size={15} /> Bulk Send
