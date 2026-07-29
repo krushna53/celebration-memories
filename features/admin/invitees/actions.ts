@@ -14,6 +14,7 @@ import {
   type InviteeInput,
 } from "@/services/admin-invitees";
 import { toCsv } from "@/lib/csv";
+import { inviteChannelLabel } from "@/lib/invite-channel";
 
 export type AdminActionResult =
   | { success: true }
@@ -122,7 +123,8 @@ export async function exportRsvpCsvAction(eventId: string, eventSlug: string): P
   try {
     await requireAdminForEvent(eventId);
     const rows = await getRsvpExportRows(eventId);
-    const csv = toCsv(rows, [
+    const csvRows = rows.map((row) => ({ ...row, inviteChannel: inviteChannelLabel(row.inviteChannel) }));
+    const csv = toCsv(csvRows, [
       { key: "name", label: "Name" },
       { key: "phone", label: "Phone" },
       { key: "email", label: "Email" },
@@ -136,6 +138,7 @@ export async function exportRsvpCsvAction(eventId: string, eventSlug: string): P
       { key: "checkedIn", label: "Checked In" },
       { key: "visitCount", label: "Visits" },
       { key: "inviteSentAt", label: "Invite Sent At" },
+      { key: "inviteChannel", label: "Invite Channel" },
     ]);
     return { success: true, csv, filename: `${eventSlug}-rsvps-${new Date().toISOString().slice(0, 10)}.csv` };
   } catch (err) {

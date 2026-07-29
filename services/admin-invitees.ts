@@ -18,6 +18,7 @@ interface InviteeRow {
   rsvp_status: RsvpStatus;
   checked_in: boolean;
   invite_sent_at: string | null;
+  invite_channel: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +38,7 @@ function mapInvitee(row: InviteeRow): InviteeRecord {
     rsvpStatus: row.rsvp_status,
     checkedIn: row.checked_in,
     inviteSentAt: row.invite_sent_at,
+    inviteChannel: row.invite_channel,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -71,6 +73,7 @@ export interface InviteeInput {
   phone?: string | null;
   email?: string | null;
   relationship?: string | null;
+  inviteChannel?: string | null;
 }
 
 export async function createInvitee(eventId: string, input: InviteeInput): Promise<InviteeRecord> {
@@ -85,6 +88,7 @@ export async function createInvitee(eventId: string, input: InviteeInput): Promi
       phone: input.phone || null,
       email: input.email || null,
       relationship: input.relationship || null,
+      invite_channel: input.inviteChannel || null,
     })
     .select("*")
     .single<InviteeRow>();
@@ -109,6 +113,7 @@ export async function updateInvitee(id: string, eventId: string, input: InviteeI
       phone: input.phone || null,
       email: input.email || null,
       relationship: input.relationship || null,
+      invite_channel: input.inviteChannel || null,
     })
     .eq("id", id)
     .eq("event_id", eventId)
@@ -169,6 +174,7 @@ export interface RsvpExportRow {
   checkedIn: boolean;
   visitCount: number;
   inviteSentAt: string | null;
+  inviteChannel: string | null;
 }
 
 interface RsvpEmbedRow {
@@ -193,7 +199,7 @@ export async function getRsvpExportRows(eventId: string): Promise<RsvpExportRow[
   const { data, error } = await supabaseAdmin()
     .from("invitees")
     .select(
-      "name, phone, email, relationship, rsvp_status, checked_in, visit_count, invite_sent_at, rsvps(adults, children, meal_preference, comments, submitted_at)",
+      "name, phone, email, relationship, rsvp_status, checked_in, visit_count, invite_sent_at, invite_channel, rsvps(adults, children, meal_preference, comments, submitted_at)",
     )
     .eq("event_id", eventId)
     .order("created_at", { ascending: false });
@@ -210,6 +216,7 @@ export async function getRsvpExportRows(eventId: string): Promise<RsvpExportRow[
       checked_in: boolean;
       visit_count: number;
       invite_sent_at: string | null;
+      invite_channel: string | null;
       rsvps: RsvpEmbedRow[] | RsvpEmbedRow | null;
     }>
   ).map((row) => {
@@ -231,6 +238,7 @@ export async function getRsvpExportRows(eventId: string): Promise<RsvpExportRow[
       checkedIn: row.checked_in,
       visitCount: row.visit_count,
       inviteSentAt: row.invite_sent_at,
+      inviteChannel: row.invite_channel,
     };
   });
 }

@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { buildWhatsAppInviteUrl } from "@/lib/whatsapp";
+import { INVITE_CHANNEL_OPTIONS, inviteChannelLabel } from "@/lib/invite-channel";
 import type { InviteeRecord } from "@/types/event";
 import {
   bulkImportInviteesAction,
@@ -53,8 +54,9 @@ interface EmptyForm {
   phone: string;
   email: string;
   relationship: string;
+  inviteChannel: string;
 }
-const EMPTY_FORM: EmptyForm = { name: "", phone: "", email: "", relationship: "" };
+const EMPTY_FORM: EmptyForm = { name: "", phone: "", email: "", relationship: "", inviteChannel: "" };
 
 interface InviteeManagerProps {
   eventId: string;
@@ -126,6 +128,7 @@ export function InviteeManager({
                 phone: editForm.phone || null,
                 email: editForm.email || null,
                 relationship: editForm.relationship || null,
+                inviteChannel: editForm.inviteChannel || null,
               }
             : inv,
         ),
@@ -291,6 +294,18 @@ export function InviteeManager({
             onChange={(e) => setCreateForm((f) => ({ ...f, relationship: e.target.value }))}
             className={inputClasses}
           />
+          <select
+            value={createForm.inviteChannel}
+            onChange={(e) => setCreateForm((f) => ({ ...f, inviteChannel: e.target.value }))}
+            className={inputClasses}
+          >
+            <option value="">How was this invite sent? (optional)</option>
+            {INVITE_CHANNEL_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
           <div className="flex gap-2 sm:col-span-2">
             <Button onClick={handleCreate} disabled={busy || !createForm.name.trim()}>
               {busy ? <Loader2 className="animate-spin" size={15} /> : "Create Invitee"}
@@ -347,6 +362,18 @@ export function InviteeManager({
                         className={inputClasses}
                         placeholder="Relationship"
                       />
+                      <select
+                        value={editForm.inviteChannel}
+                        onChange={(e) => setEditForm((f) => ({ ...f, inviteChannel: e.target.value }))}
+                        className={inputClasses}
+                      >
+                        <option value="">How was this invite sent?</option>
+                        {INVITE_CHANNEL_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="mt-2 flex gap-2">
                       <Button size="sm" onClick={() => handleUpdate(inv.id)} disabled={busy}>
@@ -362,6 +389,11 @@ export function InviteeManager({
                     <td className="px-4 py-3 font-medium text-navy-950">{inv.name}</td>
                     <td className="px-4 py-3 text-navy-700/70">
                       {inv.phone || inv.email || "—"}
+                      {inv.inviteChannel ? (
+                        <span className="ml-1.5 rounded-full bg-navy-950/5 px-1.5 py-0.5 text-[10px] text-navy-700/60">
+                          {inviteChannelLabel(inv.inviteChannel)}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -426,6 +458,7 @@ export function InviteeManager({
                               phone: inv.phone ?? "",
                               email: inv.email ?? "",
                               relationship: inv.relationship ?? "",
+                              inviteChannel: inv.inviteChannel ?? "",
                             });
                           }}
                           className="tap-target flex items-center justify-center text-navy-700/60 hover:text-gold-600"

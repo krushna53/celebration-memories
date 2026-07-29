@@ -141,6 +141,8 @@ export interface InviteeRecord {
   checkedIn: boolean;
   /** When the admin last tapped Send/WhatsApp for this guest — a "sent from here" marker, not a delivery receipt. */
   inviteSentAt: string | null;
+  /** Optional, admin-set record of how this guest's invite actually reached them — see INVITE_CHANNEL_OPTIONS in lib/invite-channel.ts. Purely informational. */
+  inviteChannel: string | null;
   createdAt: string;
   updatedAt: string;
 }
