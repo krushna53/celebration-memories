@@ -19,8 +19,10 @@ export function buildDisplaySlides(params: {
   galleryPhotos: GalleryPhotoRecord[];
   milestones: TimelineMilestoneRecord[];
   memories: MemoryItem[];
+  /** Resolved public URL for events.highlight_reel_path, if set — resolving storage paths to URLs is the caller's job (see app/events/[slug]/display/page.tsx) so this function stays pure/no-I/O. */
+  highlightReelUrl?: string | null;
 }): DisplaySlide[] {
-  const { event, galleryPhotos, milestones, memories } = params;
+  const { event, galleryPhotos, milestones, memories, highlightReelUrl } = params;
 
   const slides: DisplaySlide[] = [
     {
@@ -32,6 +34,10 @@ export function buildDisplaySlides(params: {
       occasionDate: event.occasionDate,
     },
   ];
+
+  if (highlightReelUrl) {
+    slides.push({ id: "highlight-reel", kind: "highlight-reel", url: highlightReelUrl });
+  }
 
   for (const photo of galleryPhotos) {
     slides.push({

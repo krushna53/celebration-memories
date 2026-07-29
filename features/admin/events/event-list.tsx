@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, Settings, UserPlus } from "lucide-react";
+import { CalendarCheck, Globe, MonitorPlay, Settings, UserPlus } from "lucide-react";
 
 import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
 import type { EventSummary } from "@/services/events";
@@ -32,6 +32,7 @@ export function EventList({ events, membersByEvent }: EventListProps) {
           <tr>
             <th className="px-4 py-3">Event</th>
             <th className="px-4 py-3">Occasion</th>
+            <th className="px-4 py-3">Links</th>
             <th className="px-4 py-3">Client</th>
             <th className="px-4 py-3">Created</th>
             <th className="px-4 py-3" />
@@ -47,6 +48,37 @@ export function EventList({ events, membersByEvent }: EventListProps) {
                 <div className="text-xs text-navy-700/50">{event.eventTitle}</div>
               </td>
               <td className="px-4 py-3 text-navy-700/70">{EVENT_CATEGORY_LABELS[event.category]}</td>
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-2.5 text-navy-700/50">
+                  <Link
+                    href={`/events/${event.slug}`}
+                    target="_blank"
+                    title="Web Page"
+                    aria-label="Open web page"
+                    className="hover:text-navy-950"
+                  >
+                    <Globe size={15} />
+                  </Link>
+                  <Link
+                    href={`/events/${event.slug}/rsvp`}
+                    target="_blank"
+                    title="RSVP Link"
+                    aria-label="Open RSVP link"
+                    className="hover:text-navy-950"
+                  >
+                    <CalendarCheck size={15} />
+                  </Link>
+                  <Link
+                    href={`/events/${event.slug}/display`}
+                    target="_blank"
+                    title="Big Screen Display"
+                    aria-label="Open Big Screen Display"
+                    className="hover:text-navy-950"
+                  >
+                    <MonitorPlay size={15} />
+                  </Link>
+                </div>
+              </td>
               <td className="px-4 py-3 text-navy-700/70">
                 {members.length > 0 ? (
                   <div className="flex flex-col gap-0.5">
@@ -75,13 +107,6 @@ export function EventList({ events, membersByEvent }: EventListProps) {
               </td>
               <td className="px-4 py-3 text-right">
                 <div className="flex items-center justify-end gap-3">
-                  <Link
-                    href={`/events/${event.slug}`}
-                    target="_blank"
-                    className="inline-flex items-center gap-1 text-xs text-navy-700/60 hover:text-navy-950"
-                  >
-                    <ExternalLink size={13} /> Preview
-                  </Link>
                   <form action={setActiveAdminEventAction.bind(null, event.id)}>
                     <button
                       type="submit"

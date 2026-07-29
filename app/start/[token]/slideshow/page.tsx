@@ -7,6 +7,7 @@ import { listMilestones } from "@/services/timeline";
 import { publicMediaUrl } from "@/services/uploads";
 import { SlideshowComposer } from "@/features/admin/slideshow/slideshow-composer";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
+import { SkipStepLink } from "@/features/start/skip-step-link";
 import { draftStartSlideshowVideoAction, draftRequestSlideshowMusicUploadUrlAction } from "@/features/start/actions/slideshow";
 import { draftConfirmShareVideoUploadAction } from "@/features/start/actions/event";
 import type { SlideSource } from "@/types/content";
@@ -73,6 +74,7 @@ export default async function WizardSlideshowPage({ params }: { params: Promise<
           ? "Turn your photos into a music-backed slideshow video — your Invitation Card leads it off, followed by Gallery and Timeline photos. Reorder or remove anything below."
           : "Turn your Gallery and Timeline photos into a music-backed slideshow video — pick photos, set the pace, optionally add a song, then render a real MP4."
       }
+      headerAction={<SkipStepLink token={token} slug="slideshow" goals={event.wizardGoals} />}
     >
       {slides.length === 0 ? (
         <p className="rounded-lg border border-navy-950/10 bg-white p-5 text-sm text-navy-700/70">

@@ -4,6 +4,7 @@ import { getDraftEventByToken } from "@/services/event-drafts";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { GalleryManager } from "@/features/admin/gallery/gallery-manager";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
+import { SkipStepLink } from "@/features/start/skip-step-link";
 import {
   draftRequestGalleryUploadUrlAction,
   draftConfirmGalleryUploadAction,
@@ -25,7 +26,8 @@ export default async function WizardGalleryPage({ params }: { params: Promise<{ 
       slug="gallery"
       goals={event.wizardGoals}
       title="Gallery"
-      description="Upload the photos shown in your public Gallery section, by category."
+      description="Optional — upload the photos shown in your public Gallery section, by category."
+      headerAction={<SkipStepLink token={token} slug="gallery" goals={event.wizardGoals} />}
     >
       <GalleryManager
         eventId={event.id}

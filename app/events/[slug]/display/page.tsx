@@ -6,6 +6,7 @@ import { getEventBySlug } from "@/services/events";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listMilestones } from "@/services/timeline";
 import { getMemoryWallItems } from "@/services/memory-wall";
+import { publicMediaUrl } from "@/services/uploads";
 import { buildDisplaySlides } from "@/lib/build-display-slides";
 import { BigScreenSlideshow } from "@/features/display/big-screen-slideshow";
 
@@ -57,7 +58,11 @@ export default async function BigScreenDisplayPage({ params }: BigScreenDisplayP
     getMemoryWallItems(event.id, 100).catch(() => []),
   ]);
 
-  const slides = buildDisplaySlides({ event, galleryPhotos, milestones, memories });
+  const highlightReelUrl = event.highlightReelPath
+    ? publicMediaUrl("gallery", event.highlightReelPath)
+    : null;
+
+  const slides = buildDisplaySlides({ event, galleryPhotos, milestones, memories, highlightReelUrl });
 
   return <BigScreenSlideshow slides={slides} />;
 }

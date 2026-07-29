@@ -418,4 +418,43 @@ export async function createSignedSlideshowMusicUpload(params: {
   return { bucket: "audio", path, token: data.token, signedUrl: data.signedUrl };
 }
 
+/**
+ * Same signed-upload pattern, for an admin-supplied "highlight reel" —
+ * a single, already-edited video (e.g. all the guest videos combined
+ * with name labels using an outside tool) that plays as its own slide
+ * on the Big Screen Display (see lib/build-display-slides.ts). Capped
+ * the same as a guest video upload — a compiled reel can reasonably run
+ * a few minutes, unlike the tiny og:video link-preview clip.
+ */
+export async function createSignedHighlightReelUpload(params: {
+  eventId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { eventId, fileName, contentType, fileSize } = params;
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.video;
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported video type: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS.video;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `${eventId}/highlight-reel/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage
+    .from("gallery")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+}
+
 export type { MemoryKind };

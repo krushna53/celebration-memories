@@ -4,6 +4,7 @@ import { getDraftEventByToken } from "@/services/event-drafts";
 import { listMilestones } from "@/services/timeline";
 import { TimelineManager } from "@/features/admin/timeline/timeline-manager";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
+import { SkipStepLink } from "@/features/start/skip-step-link";
 import {
   draftCreateMilestoneAction,
   draftDeleteMilestoneAction,
@@ -28,7 +29,8 @@ export default async function WizardTimelinePage({ params }: { params: Promise<{
       slug="timeline"
       goals={event.wizardGoals}
       title="Timeline"
-      description="Add the life milestones shown in your public Timeline section, in order."
+      description="Optional — add the life milestones shown in your public Timeline section, in order."
+      headerAction={<SkipStepLink token={token} slug="timeline" goals={event.wizardGoals} />}
     >
       <TimelineManager
         eventId={event.id}

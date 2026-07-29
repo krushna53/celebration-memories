@@ -16,6 +16,9 @@ export default async function AdminEventSettingsPage() {
 
   const shareImageUrl = event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null;
   const shareVideoUrl = event.shareVideoPath ? publicMediaUrl("gallery", event.shareVideoPath) : null;
+  const highlightReelUrl = event.highlightReelPath
+    ? publicMediaUrl("gallery", event.highlightReelPath)
+    : null;
 
   const isClient = admin?.role === "client";
   const aiCssUsed = isClient ? await countAiCssGenerations(event.id) : 0;
@@ -32,6 +35,7 @@ export default async function AdminEventSettingsPage() {
           event={event}
           shareImageUrl={shareImageUrl}
           shareVideoUrl={shareVideoUrl}
+          highlightReelUrl={highlightReelUrl}
           aiCssConfigured={AI_CSS_CONFIGURED}
           aiCssQuota={isClient ? { used: aiCssUsed, limit: aiCssLimit } : null}
         />

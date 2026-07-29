@@ -3,6 +3,51 @@ import { Check, Lightbulb } from "lucide-react";
 
 import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
 
+const RING_RADIUS = 28;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+/**
+ * Circular "how far through the wizard am I" indicator — steps strictly
+ * before the current one count as done, same definition WizardNav and
+ * the step list below already use. Shown once at the top of the
+ * sidebar so it's visible without scrolling on every step.
+ */
+function CircularProgress({ completed, total }: { completed: number; total: number }) {
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const offset = RING_CIRCUMFERENCE * (1 - percent / 100);
+
+  return (
+    <div className="flex items-center gap-4 rounded-xl border border-navy-950/10 bg-white p-4">
+      <div className="relative h-16 w-16 shrink-0">
+        <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90">
+          <circle cx="32" cy="32" r={RING_RADIUS} fill="none" stroke="currentColor" strokeWidth="6" className="text-navy-950/8" />
+          <circle
+            cx="32"
+            cy="32"
+            r={RING_RADIUS}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={RING_CIRCUMFERENCE}
+            strokeDashoffset={offset}
+            className="text-gold-500 transition-all duration-500 ease-out"
+          />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center font-display text-sm text-navy-950">
+          {percent}%
+        </span>
+      </div>
+      <div>
+        <div className="text-xs font-medium uppercase tracking-[0.1em] text-navy-700/50">Your Progress</div>
+        <div className="mt-1 text-sm text-navy-950">
+          Step {Math.min(completed + 1, total)} of {total}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Fills the sidebar column WizardStepShell renders beside each step's
  * main content — a compact "what's ahead" outline of the whole wizard
@@ -27,6 +72,8 @@ export function WizardSidebar({
 
   return (
     <div className="grid gap-4">
+      <CircularProgress completed={Math.max(currentIndex, 0)} total={steps.length} />
+
       {current && current.tips.length > 0 ? (
         <div className="rounded-xl border border-gold-500/20 bg-gold-500/5 p-4">
           <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.1em] text-gold-700">
@@ -66,8 +113,15 @@ export function WizardSidebar({
                     {isDone ? <Check size={9} /> : i + 1}
                   </span>
                   <span>
-                    <span className={`block text-xs ${isCurrent ? "font-medium text-navy-950" : "text-navy-700/70"}`}>
-                      {step.label}
+                    <span className="flex items-center gap-1.5">
+                      <span className={`block text-xs ${isCurrent ? "font-medium text-navy-950" : "text-navy-700/70"}`}>
+                        {step.label}
+                      </span>
+                      {step.optional ? (
+                        <span className="rounded-full border border-dashed border-gold-500/40 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-gold-700">
+                          Skip OK
+                        </span>
+                      ) : null}
                     </span>
                     <span className="block text-[11px] text-navy-700/45">{step.description}</span>
                   </span>

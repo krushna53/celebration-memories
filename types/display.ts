@@ -9,6 +9,7 @@
  */
 export type DisplaySlideKind =
   | "title"
+  | "highlight-reel"
   | "gallery-photo"
   | "timeline"
   | "memory-photo"
@@ -26,6 +27,11 @@ export interface TitleSlide extends BaseSlide {
   eventTitle: string;
   hostedBy: string;
   occasionDate: string | null;
+}
+
+export interface HighlightReelSlide extends BaseSlide {
+  kind: "highlight-reel";
+  url: string;
 }
 
 export interface GalleryPhotoSlide extends BaseSlide {
@@ -71,6 +77,7 @@ export interface MemoryNoteSlide extends BaseSlide {
 
 export type DisplaySlide =
   | TitleSlide
+  | HighlightReelSlide
   | GalleryPhotoSlide
   | TimelineSlide
   | MemoryPhotoSlide

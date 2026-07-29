@@ -18,11 +18,14 @@ import { Button } from "@/components/ui/button";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import {
+  confirmHighlightReelUploadAction,
   confirmShareImageUploadAction,
   confirmShareVideoUploadAction,
   generateCustomCssAction,
+  removeHighlightReelAction,
   removeShareImageAction,
   removeShareVideoAction,
+  requestHighlightReelUploadUrlAction,
   requestShareImageUploadUrlAction,
   requestShareVideoUploadUrlAction,
   updateEventAction,
@@ -45,6 +48,7 @@ interface EventSettingsFormProps {
   event: EventRecord;
   shareImageUrl: string | null;
   shareVideoUrl: string | null;
+  highlightReelUrl: string | null;
   aiCssConfigured: boolean;
   aiCssQuota: { used: number; limit: number } | null;
 }
@@ -60,6 +64,7 @@ export function EventSettingsForm({
   event,
   shareImageUrl,
   shareVideoUrl,
+  highlightReelUrl,
   aiCssConfigured,
   aiCssQuota,
 }: EventSettingsFormProps) {
@@ -106,6 +111,9 @@ export function EventSettingsForm({
   const [uploadingShareVideo, setUploadingShareVideo] = useState(false);
   const [shareVideoError, setShareVideoError] = useState<string | null>(null);
   const shareVideoInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingHighlightReel, setUploadingHighlightReel] = useState(false);
+  const [highlightReelError, setHighlightReelError] = useState<string | null>(null);
+  const highlightReelInputRef = useRef<HTMLInputElement>(null);
   const [aiCssPrompt, setAiCssPrompt] = useState("");
   const [generatingCss, setGeneratingCss] = useState(false);
   const [aiCssGenError, setAiCssGenError] = useState<string | null>(null);
@@ -232,6 +240,46 @@ export function EventSettingsForm({
     } else {
       setShareVideoError(result.error);
       setUploadingShareVideo(false);
+    }
+  }
+
+  async function handleHighlightReelFile(file: File) {
+    setUploadingHighlightReel(true);
+    setHighlightReelError(null);
+    try {
+      if (file.type !== "video/mp4" && file.type !== "video/quicktime") {
+        throw new Error("MP4 or MOV video only.");
+      }
+      if (file.size > 250 * 1024 * 1024) {
+        throw new Error("File is too large — highlight reels are limited to 250MB.");
+      }
+
+      const signed = await requestHighlightReelUploadUrlAction(event.id, file.name, file.type, file.size);
+      if (!signed.success) throw new Error(signed.error);
+
+      const { bucket, path, token } = signed.data;
+      const { error: uploadError } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, token, file);
+      if (uploadError) throw new Error(uploadError.message);
+
+      const confirmed = await confirmHighlightReelUploadAction(event.id, path);
+      if (!confirmed.success) throw new Error(confirmed.error);
+
+      window.location.reload();
+    } catch (err) {
+      setHighlightReelError(err instanceof Error ? err.message : "Upload failed.");
+      setUploadingHighlightReel(false);
+    }
+  }
+
+  async function handleRemoveHighlightReel() {
+    if (!confirm("Remove the highlight reel from the Big Screen Display?")) return;
+    setUploadingHighlightReel(true);
+    const result = await removeHighlightReelAction(event.id);
+    if (result.success) {
+      window.location.reload();
+    } else {
+      setHighlightReelError(result.error);
+      setUploadingHighlightReel(false);
     }
   }
 
@@ -900,6 +948,65 @@ export function EventSettingsForm({
             </div>
           </div>
         ) : null}
+
+        <div className="border-t border-navy-950/10 pt-4">
+          <label className={labelClasses}>Highlight Reel (optional)</label>
+          <p className="mt-1.5 text-xs leading-relaxed text-navy-700/60">
+            Already combined the guest videos into one clip with an outside editor — name labels
+            and all? Upload the finished file here and it&rsquo;ll play as its own slide on the
+            Big Screen Display, right after the opening title card.
+          </p>
+          <div className="mt-3 flex items-center gap-4">
+            {highlightReelUrl ? (
+              <video
+                src={highlightReelUrl}
+                controls
+                className="h-20 w-36 rounded-lg border border-navy-950/10 object-cover"
+              />
+            ) : (
+              <div className="flex h-20 w-36 items-center justify-center rounded-lg border border-dashed border-navy-950/15 text-navy-700/30">
+                <Film size={22} />
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              <input
+                ref={highlightReelInputRef}
+                type="file"
+                accept="video/mp4,video/quicktime"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleHighlightReelFile(e.target.files[0])}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploadingHighlightReel}
+                onClick={() => highlightReelInputRef.current?.click()}
+              >
+                {uploadingHighlightReel ? (
+                  <Loader2 className="animate-spin" size={14} />
+                ) : (
+                  <Upload size={14} />
+                )}
+                {highlightReelUrl ? "Replace" : "Upload"}
+              </Button>
+              {highlightReelUrl ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={uploadingHighlightReel}
+                  onClick={handleRemoveHighlightReel}
+                  className="text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 size={14} /> Remove
+                </Button>
+              ) : null}
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-navy-700/50">MP4 or MOV, up to 250MB.</p>
+          {highlightReelError ? <p className="text-sm text-red-600">{highlightReelError}</p> : null}
+        </div>
       </section>
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">

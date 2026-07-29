@@ -31,6 +31,7 @@ export interface EventRow {
   public_memories_enabled: boolean;
   share_image_path: string | null;
   share_video_path: string | null;
+  highlight_reel_path: string | null;
   section_config: SectionConfigItem[] | null;
   ai_image_generation_limit: number;
   ai_css_generation_limit: number;
@@ -70,6 +71,7 @@ export function mapEvent(row: EventRow): EventRecord {
     publicMemoriesEnabled: row.public_memories_enabled ?? false,
     shareImagePath: row.share_image_path,
     shareVideoPath: row.share_video_path,
+    highlightReelPath: row.highlight_reel_path,
     sectionConfig: row.section_config,
     aiImageGenerationLimit: row.ai_image_generation_limit ?? 5,
     aiCssGenerationLimit: row.ai_css_generation_limit ?? 20,
@@ -233,6 +235,7 @@ export interface EventUpdateInput {
   publicMemoriesEnabled?: boolean;
   shareImagePath?: string | null;
   shareVideoPath?: string | null;
+  highlightReelPath?: string | null;
   sectionConfig?: SectionConfigItem[] | null;
   additionalNotes?: string | null;
   wishMessage?: string | null;
@@ -267,6 +270,7 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
     patch.public_memories_enabled = input.publicMemoriesEnabled;
   if (input.shareImagePath !== undefined) patch.share_image_path = input.shareImagePath;
   if (input.shareVideoPath !== undefined) patch.share_video_path = input.shareVideoPath;
+  if (input.highlightReelPath !== undefined) patch.highlight_reel_path = input.highlightReelPath;
   if (input.sectionConfig !== undefined) patch.section_config = input.sectionConfig;
   if (input.additionalNotes !== undefined) patch.additional_notes = input.additionalNotes;
   if (input.wishMessage !== undefined) patch.wish_message = input.wishMessage;

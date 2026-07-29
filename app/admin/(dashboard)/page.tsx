@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MonitorPlay } from "lucide-react";
+import { CalendarCheck, Globe, MonitorPlay } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
@@ -26,17 +26,34 @@ export default async function AdminOverviewPage() {
           <h1 className="font-display text-2xl text-navy-950">Overview</h1>
           <p className="mt-1 text-sm text-navy-700/60">{event.honoreeName} — {event.eventTitle}</p>
         </div>
-        <Link
-          href={`/events/${event.slug}/display`}
-          target="_blank"
-          className="inline-flex shrink-0 items-center gap-2 rounded-full border border-gold-500/30 bg-navy-950 px-4 py-2 text-sm font-medium text-gold-300 transition-luxury duration-300 hover:brightness-125"
-        >
-          <MonitorPlay size={15} /> Open Big Screen Display
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/events/${event.slug}`}
+            target="_blank"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-navy-950/15 px-4 py-2 text-sm font-medium text-navy-700 transition-luxury duration-300 hover:border-navy-950/30 hover:text-navy-950"
+          >
+            <Globe size={15} /> Web Page
+          </Link>
+          <Link
+            href={`/events/${event.slug}/rsvp`}
+            target="_blank"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-navy-950/15 px-4 py-2 text-sm font-medium text-navy-700 transition-luxury duration-300 hover:border-navy-950/30 hover:text-navy-950"
+          >
+            <CalendarCheck size={15} /> RSVP Link
+          </Link>
+          <Link
+            href={`/events/${event.slug}/display`}
+            target="_blank"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-gold-500/30 bg-navy-950 px-4 py-2 text-sm font-medium text-gold-300 transition-luxury duration-300 hover:brightness-125"
+          >
+            <MonitorPlay size={15} /> Open Big Screen Display
+          </Link>
+        </div>
       </div>
       <p className="-mt-4 text-xs text-navy-700/50">
-        A chrome-free slideshow of the Gallery, Timeline, and memories shared by relatives —
-        opens full-screen, made for a TV or projector at the venue.
+        Web Page is the full site; RSVP Link opens the shared RSVP form if you&rsquo;ve turned it
+        on (Event Settings); Big Screen Display is the chrome-free slideshow for a TV or projector
+        at the venue.
       </p>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

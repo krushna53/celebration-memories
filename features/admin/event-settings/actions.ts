@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { getEventBySlug, updateEvent, type EventUpdateInput } from "@/services/events";
-import { createSignedShareImageUpload, createSignedShareVideoUpload } from "@/services/uploads";
+import {
+  createSignedHighlightReelUpload,
+  createSignedShareImageUpload,
+  createSignedShareVideoUpload,
+} from "@/services/uploads";
 import { validateCustomCss } from "@/lib/custom-css";
 import { AiCssError, generateCustomCssFromPrompt } from "@/lib/ai-css";
 import { countAiCssGenerations, recordAiCssGeneration } from "@/services/ai-css-generations";
@@ -149,6 +153,55 @@ export async function confirmShareVideoUploadAction(
     revalidatePath("/admin/event-settings");
     revalidatePath("/");
     revalidatePath("/invite/[token]", "page");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+export async function requestHighlightReelUploadUrlAction(
+  eventId: string,
+  fileName: string,
+  contentType: string,
+  fileSize: number,
+) {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false as const, error: "Not authorized." };
+
+  try {
+    const upload = await createSignedHighlightReelUpload({ eventId, fileName, contentType, fileSize });
+    return { success: true as const, data: upload };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/** Saves the just-uploaded path as the event's Big Screen Display highlight reel. */
+export async function confirmHighlightReelUploadAction(
+  eventId: string,
+  path: string,
+): Promise<AdminActionResult> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: "Not authorized." };
+
+  try {
+    await updateEvent(eventId, { highlightReelPath: path });
+    revalidatePath("/admin/event-settings");
+    revalidatePath("/events/[slug]/display", "page");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+export async function removeHighlightReelAction(eventId: string): Promise<AdminActionResult> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: "Not authorized." };
+
+  try {
+    await updateEvent(eventId, { highlightReelPath: null });
+    revalidatePath("/admin/event-settings");
+    revalidatePath("/events/[slug]/display", "page");
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed." };

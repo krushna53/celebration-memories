@@ -83,6 +83,16 @@ export interface EventRecord {
    * back to shareImagePath. See lib/event-metadata.ts.
    */
   shareVideoPath: string | null;
+  /**
+   * Storage path (gallery bucket) of an optional, already-edited
+   * "highlight reel" video — e.g. all the guest videos combined with
+   * name labels using an outside editing tool, then uploaded here as
+   * one finished file. Plays as its own slide on the Big Screen
+   * Display (see lib/build-display-slides.ts) right after the title
+   * card. This is the manual alternative to automatic in-app video
+   * clubbing, which the platform doesn't do yet.
+   */
+  highlightReelPath: string | null;
   /** Homepage section order/visibility, admin-editable. Null = default (all sections, standard order). See lib/section-registry.ts. */
   sectionConfig: SectionConfigItem[] | null;
   /** Max AI Image generations a client-role admin may make for this event. Owner is exempt. See services/ai-image-generations.ts. */

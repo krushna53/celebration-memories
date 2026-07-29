@@ -32,6 +32,7 @@ const DURATIONS_MS: Record<string, number> = {
 const MEDIA_FALLBACK_MS: Record<string, number> = {
   "memory-video": 60_000,
   "memory-audio": 45_000,
+  "highlight-reel": 300_000,
 };
 
 function noteDurationMs(message: string): number {
@@ -74,7 +75,7 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
 
     let ms = DURATIONS_MS[slide.kind];
     if (slide.kind === "memory-note") ms = noteDurationMs(slide.message);
-    if (slide.kind === "memory-video" || slide.kind === "memory-audio") {
+    if (slide.kind === "memory-video" || slide.kind === "memory-audio" || slide.kind === "highlight-reel") {
       ms = MEDIA_FALLBACK_MS[slide.kind];
     }
     if (!ms) return;
@@ -255,6 +256,24 @@ function Slide({
             {formatEventDate(slide.occasionDate)}
           </p>
         ) : null}
+      </div>
+    );
+  }
+
+  if (slide.kind === "highlight-reel") {
+    return (
+      <div className="relative h-full w-full bg-navy-950">
+        <video
+          key={slide.url}
+          src={slide.url}
+          autoPlay={active}
+          playsInline
+          onEnded={onMediaEnded}
+          className="h-full w-full object-contain"
+        />
+        <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-navy-950/80 to-transparent px-10 pb-16 pt-8">
+          <SlideEyebrow>Highlight Reel</SlideEyebrow>
+        </div>
       </div>
     );
   }

@@ -41,6 +41,17 @@ export interface WizardStep {
   description: string;
   /** Short, encouraging tips shown in the step sidebar (WizardStepShell) — see features/start/wizard-sidebar.tsx. */
   tips: string[];
+  /**
+   * True for steps that add optional content and can be safely skipped
+   * without leaving the wizard in a broken state — Invitation Card,
+   * Timeline, Gallery, Slideshow. These get a visible "Skip for now"
+   * link (features/start/skip-step-link.tsx) and a "Skip OK" badge in
+   * WizardSidebar's step list, so a host in a hurry can tell at a
+   * glance which steps they can come back to later. Occasion, Goals,
+   * Event Details, Template, and Review are NOT optional — everything
+   * downstream depends on them, so they're left unmarked.
+   */
+  optional?: boolean;
 }
 
 /**
@@ -83,6 +94,7 @@ const STEP_REGISTRY = {
       "A handful of milestones goes a long way — 4 or 5 well-chosen moments usually read better than a long list.",
       "Add a photo to a milestone and it becomes eligible for your Slideshow automatically.",
     ],
+    optional: true,
   },
   gallery: {
     slug: "gallery",
@@ -92,6 +104,7 @@ const STEP_REGISTRY = {
       "Sort photos into categories now — guests browse the Gallery by category on the live site.",
       "Higher-resolution photos look sharper both in the Gallery and if you use them in your Slideshow.",
     ],
+    optional: true,
   },
   template: {
     slug: "template",
@@ -111,6 +124,7 @@ const STEP_REGISTRY = {
       "You can download the generated image immediately, even if you don't save it as your Link Preview Image or continue further.",
       "Save it as your Link Preview Image and it automatically becomes the first slide in your Slideshow, too.",
     ],
+    optional: true,
   },
   slideshow: {
     slug: "slideshow",
@@ -120,6 +134,7 @@ const STEP_REGISTRY = {
       "Add background music for a noticeably more polished result — most phone/piano recordings work fine.",
       "You can re-render as many times as your plan allows, so it's fine to experiment with pacing and photo order.",
     ],
+    optional: true,
   },
   review: {
     slug: "review",
