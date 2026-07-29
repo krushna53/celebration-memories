@@ -96,8 +96,10 @@ export function EventSettingsForm({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedWebPageLink, setCopiedWebPageLink] = useState(false);
   const [copiedRsvpLink, setCopiedRsvpLink] = useState(false);
   const [copiedMemoriesLink, setCopiedMemoriesLink] = useState(false);
+  const [copiedDisplayLink, setCopiedDisplayLink] = useState(false);
   const [uploadingShareImage, setUploadingShareImage] = useState(false);
   const [shareImageError, setShareImageError] = useState<string | null>(null);
   const shareImageInputRef = useRef<HTMLInputElement>(null);
@@ -111,10 +113,28 @@ export function EventSettingsForm({
     aiCssQuota ? Math.max(aiCssQuota.limit - aiCssQuota.used, 0) : null,
   );
 
+  function copyWebPageLink() {
+    navigator.clipboard.writeText(`${origin}/events/${event.slug}`);
+    setCopiedWebPageLink(true);
+    setTimeout(() => setCopiedWebPageLink(false), 1500);
+  }
+
+  function shareWebPageLinkViaWhatsApp() {
+    const link = `${origin}/events/${event.slug}`;
+    const text = `${event.hostedBy} warmly invites you to celebrate ${event.honoreeName}'s ${event.eventTitle}: ${link}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+  }
+
   function copyRsvpLink() {
     navigator.clipboard.writeText(`${origin}/events/${event.slug}/rsvp`);
     setCopiedRsvpLink(true);
     setTimeout(() => setCopiedRsvpLink(false), 1500);
+  }
+
+  function shareRsvpLinkViaWhatsApp() {
+    const link = `${origin}/events/${event.slug}/rsvp`;
+    const text = `Please RSVP for ${event.honoreeName}'s ${event.eventTitle} here: ${link}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   }
 
   function copyMemoriesLink() {
@@ -126,6 +146,18 @@ export function EventSettingsForm({
   function shareMemoriesLinkViaWhatsApp() {
     const link = `${origin}/events/${event.slug}/memories`;
     const text = `${event.hostedBy} would love a photo or video memory of ${event.honoreeName} — upload one here: ${link}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+  }
+
+  function copyDisplayLink() {
+    navigator.clipboard.writeText(`${origin}/events/${event.slug}/display`);
+    setCopiedDisplayLink(true);
+    setTimeout(() => setCopiedDisplayLink(false), 1500);
+  }
+
+  function shareDisplayLinkViaWhatsApp() {
+    const link = `${origin}/events/${event.slug}/display`;
+    const text = `Open this on the TV/projector at the venue for a full-screen slideshow of ${event.honoreeName}'s photos, timeline, and shared memories: ${link}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   }
 
@@ -685,6 +717,33 @@ export function EventSettingsForm({
       </section>
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Your Event Page</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          The main site — hero, event details, gallery, timeline, RSVP, and Memory Wall all in
+          one link. This is the one to put in a WhatsApp broadcast, on social media, or anywhere
+          you&rsquo;d share the celebration itself.
+        </p>
+        {origin ? (
+          <div>
+            <label className={labelClasses}>Event Page Link</label>
+            <div className="mt-1.5 flex items-center gap-2">
+              <input
+                readOnly
+                value={`${origin}/events/${event.slug}`}
+                className={`${inputClasses} bg-navy-950/[0.02] text-navy-700/80`}
+              />
+              <Button type="button" variant="outline" onClick={copyWebPageLink}>
+                {copiedWebPageLink ? <Check size={15} /> : <Copy size={15} />}
+              </Button>
+              <Button type="button" variant="outline" onClick={shareWebPageLinkViaWhatsApp}>
+                <MessageCircle size={15} />
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Public RSVP Link</h2>
         <p className="text-xs leading-relaxed text-navy-700/60">
           By default, RSVPs only work through each guest&rsquo;s personal
@@ -739,6 +798,9 @@ export function EventSettingsForm({
               />
               <Button type="button" variant="outline" onClick={copyRsvpLink}>
                 {copiedRsvpLink ? <Check size={15} /> : <Copy size={15} />}
+              </Button>
+              <Button type="button" variant="outline" onClick={shareRsvpLinkViaWhatsApp}>
+                <MessageCircle size={15} />
               </Button>
             </div>
             <p className="mt-1.5 text-xs text-navy-700/50">
@@ -808,6 +870,34 @@ export function EventSettingsForm({
               Opens straight to a video upload button — relatives just tap,
               record or choose a file, and send.
             </p>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Big Screen Display</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          A chrome-free, full-screen slideshow of your Gallery, Timeline, and memories shared by
+          relatives — no header, footer, or navigation, just the slides on a loop. Made for a TV
+          or projector at the venue: open this link there, tap to begin, and it&rsquo;ll play on
+          its own.
+        </p>
+        {origin ? (
+          <div>
+            <label className={labelClasses}>Big Screen Display Link</label>
+            <div className="mt-1.5 flex items-center gap-2">
+              <input
+                readOnly
+                value={`${origin}/events/${event.slug}/display`}
+                className={`${inputClasses} bg-navy-950/[0.02] text-navy-700/80`}
+              />
+              <Button type="button" variant="outline" onClick={copyDisplayLink}>
+                {copiedDisplayLink ? <Check size={15} /> : <Copy size={15} />}
+              </Button>
+              <Button type="button" variant="outline" onClick={shareDisplayLinkViaWhatsApp}>
+                <MessageCircle size={15} />
+              </Button>
+            </div>
           </div>
         ) : null}
       </section>
