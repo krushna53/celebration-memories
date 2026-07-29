@@ -2,6 +2,8 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { isValidSlug } from "@/lib/slug";
+import { EVENT_SLUG } from "@/lib/constants";
 import type { SectionConfigItem } from "@/lib/section-registry";
 import type { EventRecord } from "@/types/event";
 
@@ -213,6 +215,14 @@ export async function createOwnerEvent(): Promise<{ id: string; slug: string }> 
 }
 
 export interface EventUpdateInput {
+  /**
+   * Changing this changes the event's public URL — every already-shared
+   * /events/{slug} or /events/{slug}/rsvp link breaks. Validated and
+   * uniqueness-checked in updateEvent below; never set automatically —
+   * see lib/slug.ts's buildEventSlugSuggestion, which only ever
+   * populates a form field for the admin to review before saving.
+   */
+  slug?: string;
   category?: EventRecord["category"];
   occasion?: string | null;
   honoreeName?: string;
@@ -246,6 +256,51 @@ export interface EventUpdateInput {
 /** Admin-facing update for the event settings form. */
 export async function updateEvent(id: string, input: EventUpdateInput): Promise<void> {
   const patch: Record<string, unknown> = {};
+
+  if (input.slug !== undefined) {
+    const slug = input.slug.trim().toLowerCase();
+    if (!isValidSlug(slug)) {
+      throw new Error(
+        "URL slug must be 3-80 characters: lowercase letters, numbers, and hyphens only (no leading, trailing, or double hyphens).",
+      );
+    }
+
+    // The flagship event is looked up by its hardcoded slug (EVENT_SLUG)
+    // in a few places that need "the one original production event"
+    // rather than a specific caller's eventId — the owner dashboard's
+    // fallback (lib/admin-event.ts, services/admin-users.ts) and the
+    // media export route. Changing that event's slug out from under
+    // those would silently break owner access rather than just this
+    // event's public link, so it's blocked here rather than left as a
+    // trap. Every other (client-created) event has no such constraint.
+    const { data: currentRow } = await supabaseAdmin()
+      .from("events")
+      .select("slug")
+      .eq("id", id)
+      .maybeSingle<{ slug: string }>();
+    if (currentRow?.slug === EVENT_SLUG && slug !== EVENT_SLUG) {
+      throw new Error(
+        "This is the flagship event's address and can't be changed here — some parts of the platform still look it up by its original URL. Contact a developer if this needs to change.",
+      );
+    }
+
+    // Case-insensitively unique across every other event — checked here
+    // rather than relying solely on the DB's unique index so the admin
+    // gets a clear message instead of a raw constraint-violation error;
+    // the DB constraint (events_slug_key) remains the real backstop
+    // against a race between this check and the insert below.
+    const { data: existing } = await supabaseAdmin()
+      .from("events")
+      .select("id")
+      .eq("slug", slug)
+      .neq("id", id)
+      .maybeSingle<{ id: string }>();
+    if (existing) {
+      throw new Error(`"${slug}" is already used by another event — try a different one.`);
+    }
+    patch.slug = slug;
+  }
+
   if (input.category !== undefined) patch.category = input.category;
   if (input.occasion !== undefined) patch.occasion = input.occasion;
   if (input.honoreeName !== undefined) patch.honoree_name = input.honoreeName;

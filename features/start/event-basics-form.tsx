@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EVENT_CATEGORY_OPTIONS } from "@/lib/event-category";
+import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
 import { istInputValueToUtcIso, utcIsoToIstInputValue } from "@/lib/timezone";
 import type { EventRecord } from "@/types/event";
 import type { EventUpdateInput } from "@/services/events";
@@ -44,6 +45,7 @@ interface EventBasicsFormProps {
 export function EventBasicsForm({ token, event, updateAction, nextHref }: EventBasicsFormProps) {
   const router = useRouter();
   const [form, setForm] = useState({
+    slug: event.slug,
     category: event.category,
     occasion: event.occasion ?? "",
     honoreeName: event.honoreeName,
@@ -63,6 +65,12 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slugError, setSlugError] = useState<string | null>(null);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -72,9 +80,19 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const normalizedSlug = form.slug.trim().toLowerCase();
+    if (!isValidSlug(normalizedSlug)) {
+      setSlugError(
+        "URL slug must be 3-80 characters: lowercase letters, numbers, and hyphens only (no leading, trailing, or double hyphens).",
+      );
+      return;
+    }
+    setSlugError(null);
     setSaving(true);
 
     const result = await updateAction(token, event.id, {
+      slug: normalizedSlug,
       category: form.category,
       occasion: form.occasion || null,
       honoreeName: form.honoreeName,
@@ -173,6 +191,50 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
             </select>
           </div>
         </div>
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">URL Slug</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          This is your event&rsquo;s public web address — worth setting to
+          something readable now, before you start sharing links. You can
+          still change it later in Event Settings, but any link you&rsquo;ve
+          already shared by then will stop working.
+        </p>
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex-1">
+            <label className={labelClasses}>Slug</label>
+            <input
+              className={`${inputClasses} mt-1.5`}
+              value={form.slug}
+              onChange={(e) => {
+                set("slug", e.target.value);
+                setSlugError(null);
+              }}
+              required
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              set("slug", buildEventSlugSuggestion(form.honoreeName, form.occasion || form.eventTitle));
+              setSlugError(null);
+            }}
+          >
+            Generate from Name
+          </Button>
+        </div>
+        {slugError ? <p className="text-sm text-red-600">{slugError}</p> : null}
+        {origin ? (
+          <p className="text-xs text-navy-700/50">
+            Your event&rsquo;s address will be{" "}
+            <code className="rounded bg-navy-950/5 px-1.5 py-0.5">
+              {origin}/events/{form.slug || "..."}
+            </code>
+          </p>
+        ) : null}
       </section>
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">

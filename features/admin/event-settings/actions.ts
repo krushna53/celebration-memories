@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
-import { getEventBySlug, updateEvent, type EventUpdateInput } from "@/services/events";
+import { getEventById, updateEvent, type EventUpdateInput } from "@/services/events";
 import {
   createSignedHighlightReelUpload,
   createSignedShareImageUpload,
@@ -12,7 +12,6 @@ import {
 import { validateCustomCss } from "@/lib/custom-css";
 import { AiCssError, generateCustomCssFromPrompt } from "@/lib/ai-css";
 import { countAiCssGenerations, recordAiCssGeneration } from "@/services/ai-css-generations";
-import { EVENT_SLUG } from "@/lib/constants";
 import type { SectionConfigItem } from "@/lib/section-registry";
 
 export type AdminActionResult = { success: true } | { success: false; error: string };
@@ -235,8 +234,17 @@ export async function generateCustomCssAction(
 
   let remaining: number | null = null;
 
+  // Looked up by the eventId the caller passed (this event, not
+  // necessarily the flagship EVENT_SLUG one) — a client admin could be
+  // scoped to any event created through the wizard. This used to always
+  // check/describe the flagship event regardless of which event the
+  // client was actually working on — same class of bug as the
+  // slideshow quota fix in features/admin/slideshow/actions.ts, just
+  // for AI CSS's quota *and* prompt context (honoree/tagline/category)
+  // instead of a render quota.
+  const event = await getEventById(eventId);
+
   if (admin.role === "client") {
-    const event = await getEventBySlug(EVENT_SLUG);
     const limit = event?.aiCssGenerationLimit ?? 20;
     const used = await countAiCssGenerations(eventId);
 
@@ -250,7 +258,6 @@ export async function generateCustomCssAction(
   }
 
   try {
-    const event = await getEventBySlug(EVENT_SLUG);
     const css = await generateCustomCssFromPrompt({
       prompt: prompt.trim(),
       honoreeName: event?.honoreeName ?? "the honoree",

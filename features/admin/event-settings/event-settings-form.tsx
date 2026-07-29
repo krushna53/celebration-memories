@@ -39,7 +39,9 @@ import {
 import { EVENT_CATEGORY_OPTIONS, getWishSectionCopy } from "@/lib/event-category";
 import { validateCustomCss } from "@/lib/custom-css";
 import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
+import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
 import { istInputValueToUtcIso, utcIsoToIstInputValue } from "@/lib/timezone";
+import { EVENT_SLUG } from "@/lib/constants";
 import type { EventRecord } from "@/types/event";
 
 const inputClasses =
@@ -68,6 +70,7 @@ export function EventSettingsForm({
   aiCssQuota,
 }: EventSettingsFormProps) {
   const [form, setForm] = useState({
+    slug: event.slug,
     category: event.category,
     occasion: event.occasion ?? "",
     honoreeName: event.honoreeName,
@@ -92,6 +95,7 @@ export function EventSettingsForm({
     customCss: event.customCss ?? "",
   });
   const [customCssError, setCustomCssError] = useState<string | null>(null);
+  const [slugError, setSlugError] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
@@ -316,9 +320,19 @@ export function EventSettingsForm({
       }
     }
     setCustomCssError(null);
+
+    const normalizedSlug = form.slug.trim().toLowerCase();
+    if (!isValidSlug(normalizedSlug)) {
+      setSlugError(
+        "URL slug must be 3-80 characters: lowercase letters, numbers, and hyphens only (no leading, trailing, or double hyphens).",
+      );
+      return;
+    }
+    setSlugError(null);
     setSaving(true);
 
     const result = await updateEventAction(event.id, {
+      slug: normalizedSlug,
       category: form.category,
       occasion: form.occasion || null,
       honoreeName: form.honoreeName,
@@ -413,6 +427,59 @@ export function EventSettingsForm({
             />
           </div>
         </div>
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">URL Slug</h2>
+        {event.slug === EVENT_SLUG ? (
+          <p className="text-xs leading-relaxed text-navy-700/60">
+            This is the flagship event and its address can&rsquo;t be changed
+            here — a few other parts of the platform still look it up by
+            this exact URL.
+          </p>
+        ) : (
+          <p className="text-xs leading-relaxed text-navy-700/60">
+            Changing this changes your event&rsquo;s public web address — any link
+            you&rsquo;ve already shared (WhatsApp, printed invitations, etc.) using
+            the old address will stop working. Only change it if you&rsquo;re sure.
+          </p>
+        )}
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex-1">
+            <label className={labelClasses}>Slug</label>
+            <input
+              className={`${inputClasses} mt-1.5`}
+              value={form.slug}
+              onChange={(e) => {
+                set("slug", e.target.value);
+                setSlugError(null);
+              }}
+              disabled={event.slug === EVENT_SLUG}
+              required
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={event.slug === EVENT_SLUG}
+            onClick={() => {
+              set("slug", buildEventSlugSuggestion(form.honoreeName, form.occasion || form.eventTitle));
+              setSlugError(null);
+            }}
+          >
+            Generate from Name
+          </Button>
+        </div>
+        {slugError ? <p className="text-sm text-red-600">{slugError}</p> : null}
+        {origin ? (
+          <p className="text-xs text-navy-700/50">
+            Your event&rsquo;s address will be{" "}
+            <code className="rounded bg-navy-950/5 px-1.5 py-0.5">
+              {origin}/events/{form.slug || "..."}
+            </code>
+          </p>
+        ) : null}
       </section>
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
