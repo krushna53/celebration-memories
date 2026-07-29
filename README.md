@@ -757,6 +757,15 @@ message instead of erroring.
   redesigner, and automatic per-client custom-domain routing (see
   "Custom Domains" below for what exists today vs. what that would
   take).
+- **TODO:** Supabase auth email templates (e.g. the "Confirm your
+  signup" email) are not configurable from code for this hosted
+  project — no `config.toml`, and none of the available tooling here
+  can reach Supabase's project-level auth config (that's a Dashboard/
+  Management-API-only setting, distinct from the Postgres schema).
+  Until it's set manually, new admin signups get Supabase's generic
+  "Confirm your signup" email instead of the branded one. The branded
+  version is ready to paste in — see "Auth email templates (branding)"
+  in `supabase/README.md` for the exact copy and Dashboard link.
 
 ### Self-Serve Onboarding Wizard
 
