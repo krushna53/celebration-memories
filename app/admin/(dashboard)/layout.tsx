@@ -113,7 +113,7 @@ export default async function AdminDashboardLayout({
             </form>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2 sm:px-6">
+        <nav className="no-scrollbar mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2 sm:px-6">
           {visibleNav.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}

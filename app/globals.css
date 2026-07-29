@@ -94,6 +94,18 @@ h1, h2, h3, h4, h5, h6 {
   transition-timing-function: var(--ease-luxury);
 }
 
+/* Hides the scrollbar track on an overflow-x-auto/overflow-y-auto
+   element while keeping scroll behavior fully intact — used on the
+   admin dashboard's nav bar (app/admin/(dashboard)/layout.tsx), which
+   needs horizontal scroll for its ~20 tabs but not a visible track. */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge/IE */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, new Edge */
+}
+
 /* Glassmorphism card used across the hero + invitation surfaces */
 .glass-card {
   background: color-mix(in srgb, var(--color-navy-900) 55%, transparent);
