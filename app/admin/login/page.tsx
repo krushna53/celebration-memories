@@ -111,10 +111,11 @@ function AdminLoginForm() {
       </form>
 
       <p className="mt-6 text-sm text-ivory-100/60">
-        Organising this event?{" "}
-        <Link href="/admin/register" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
-          Create an account
-        </Link>
+        New here?{" "}
+        <Link href="/start" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
+          Build your event site
+        </Link>{" "}
+        — no account needed to start.
       </p>
     </div>
   );
