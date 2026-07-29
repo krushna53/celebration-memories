@@ -70,9 +70,21 @@ export function buildDisplaySlides(params: {
         caption: memory.caption,
       });
     } else if (memory.kind === "video") {
-      slides.push({ id: `memory-${memory.id}`, kind: "memory-video", url: memory.url, authorName });
+      slides.push({
+        id: `memory-${memory.id}`,
+        kind: "memory-video",
+        url: memory.url,
+        authorName,
+        caption: memory.caption,
+      });
     } else if (memory.kind === "audio") {
-      slides.push({ id: `memory-${memory.id}`, kind: "memory-audio", url: memory.url, authorName });
+      slides.push({
+        id: `memory-${memory.id}`,
+        kind: "memory-audio",
+        url: memory.url,
+        authorName,
+        caption: memory.caption,
+      });
     } else if (memory.kind === "guestbook" && memory.message) {
       slides.push({
         id: `memory-${memory.id}`,

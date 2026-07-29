@@ -59,12 +59,15 @@ export interface MemoryVideoSlide extends BaseSlide {
   kind: "memory-video";
   url: string;
   authorName: string;
+  /** Caption the relative left with their upload, if any — shown under their name so the video plays with context instead of just a name. */
+  caption: string | null;
 }
 
 export interface MemoryAudioSlide extends BaseSlide {
   kind: "memory-audio";
   url: string;
   authorName: string;
+  caption: string | null;
 }
 
 export interface MemoryNoteSlide extends BaseSlide {

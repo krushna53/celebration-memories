@@ -330,6 +330,7 @@ function Slide({
           className="h-full w-full object-contain"
         />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-12 pt-24">
+          {slide.caption ? <SlideCaption>{slide.caption}</SlideCaption> : null}
           <AuthorTag name={slide.authorName} />
         </div>
       </div>
@@ -341,6 +342,9 @@ function Slide({
       <div className="flex h-full w-full flex-col items-center justify-center gap-8 bg-gradient-to-b from-navy-900 to-navy-950 px-10 text-center">
         <SlideEyebrow>A voice message</SlideEyebrow>
         <p className="font-display text-4xl text-ivory-50 sm:text-5xl">{slide.authorName}</p>
+        {slide.caption ? (
+          <p className="max-w-xl text-base italic leading-relaxed text-ivory-100/75">&ldquo;{slide.caption}&rdquo;</p>
+        ) : null}
         <audio key={slide.url} src={slide.url} autoPlay={active} onEnded={onMediaEnded} className="w-full max-w-md" controls />
       </div>
     );
