@@ -109,7 +109,7 @@ export function InviteeManager({
 
   async function handleUpdate(id: string) {
     setBusy(true);
-    const result = await updateInviteeAction(id, editForm);
+    const result = await updateInviteeAction(id, eventId, editForm);
     setBusy(false);
     if (result.success) {
       setInvitees((prev) =>
@@ -134,7 +134,7 @@ export function InviteeManager({
   async function handleDelete(id: string) {
     if (!confirm("Delete this invitee? This cannot be undone.")) return;
     setBusy(true);
-    const result = await deleteInviteeAction(id);
+    const result = await deleteInviteeAction(id, eventId);
     setBusy(false);
     if (result.success) {
       setInvitees((prev) => prev.filter((inv) => inv.id !== id));
@@ -158,7 +158,7 @@ export function InviteeManager({
     setInvitees((prev) =>
       prev.map((inv) => (inv.id === id ? { ...inv, inviteSentAt: new Date().toISOString() } : inv)),
     );
-    markInviteSentAction(id).catch(() => {
+    markInviteSentAction(id, eventId).catch(() => {
       // Non-critical — the guest's WhatsApp tab already opened either way.
     });
   }

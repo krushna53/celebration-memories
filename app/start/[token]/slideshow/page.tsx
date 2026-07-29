@@ -5,6 +5,7 @@ import { getTemplateBySlug } from "@/lib/templates";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listMilestones } from "@/services/timeline";
 import { publicMediaUrl } from "@/services/uploads";
+import { getLatestCompletedSlideshowVideoJob } from "@/services/slideshow-video-jobs";
 import { SlideshowComposer } from "@/features/admin/slideshow/slideshow-composer";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
 import { SkipStepLink } from "@/features/start/skip-step-link";
@@ -63,6 +64,9 @@ export default async function WizardSlideshowPage({ params }: { params: Promise<
     }));
   const slides = [...invitationSlide, ...gallerySlides, ...timelineSlides];
 
+  const latestJob = await getLatestCompletedSlideshowVideoJob(event.id);
+  const initialVideoUrl = latestJob ? publicMediaUrl("gallery", latestJob.resultPath) : null;
+
   return (
     <WizardStepShell
       token={token}
@@ -96,6 +100,7 @@ export default async function WizardSlideshowPage({ params }: { params: Promise<
             useAsShareVideo: draftConfirmShareVideoUploadAction.bind(null, token),
           }}
           anonAuthKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}
+          initialVideoUrl={initialVideoUrl}
         />
       )}
     </WizardStepShell>

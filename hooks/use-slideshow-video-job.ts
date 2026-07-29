@@ -44,10 +44,19 @@ const MAX_POLLS = 90;
 export function useSlideshowVideoJob(
   startAction: (eventId: string) => Promise<StartSlideshowVideoResult> = startSlideshowVideoAction,
   anonAuthKey?: string,
+  /**
+   * The most recently completed render for this event, if any — see
+   * getLatestCompletedSlideshowVideoJob in
+   * services/slideshow-video-jobs.ts. Without this, `videoUrl` started
+   * at null on every mount, so a finished video vanished from the
+   * preview the moment the admin left the page, even though the MP4 was
+   * still in Storage.
+   */
+  initialVideoUrl?: string | null,
 ) {
   const [status, setStatus] = useState<SlideshowVideoStatus>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(initialVideoUrl ?? null);
   const [remaining, setRemaining] = useState<number | null>(null);
 
   const cancelledRef = useRef(false);

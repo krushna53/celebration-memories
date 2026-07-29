@@ -1,8 +1,7 @@
 "use server";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
-import { getEventBySlug } from "@/services/events";
-import { EVENT_SLUG } from "@/lib/constants";
+import { getEventById } from "@/services/events";
 import { createSlideshowVideoJob } from "@/services/slideshow-video-jobs";
 import { countSlideshowVideoGenerations } from "@/services/slideshow-video-generations";
 import { createSignedSlideshowMusicUpload, UploadValidationError } from "@/services/uploads";
@@ -38,7 +37,15 @@ export async function startSlideshowVideoAction(eventId: string): Promise<StartS
   let remaining: number | null = null;
 
   if (admin.role === "client") {
-    const event = await getEventBySlug(EVENT_SLUG);
+    // Re-fetch by the eventId the caller passed (this event, not
+    // necessarily the flagship EVENT_SLUG one) — mirrors
+    // generateAiImageAction's pattern. This used to look up
+    // getEventBySlug(EVENT_SLUG) unconditionally, which meant a client
+    // scoped to any other event got the flagship event's limit checked
+    // instead of their own — same class of bug as the resolveAdminEvent
+    // fix (lib/admin-event.ts), just for a quota check rather than data
+    // access.
+    const event = await getEventById(eventId);
     const limit = event?.slideshowVideoGenerationLimit ?? 3;
     const used = await countSlideshowVideoGenerations(eventId);
 

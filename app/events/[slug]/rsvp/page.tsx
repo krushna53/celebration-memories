@@ -6,6 +6,8 @@ import type { Metadata } from "next";
 import { getEventBySlug } from "@/services/events";
 import { formatEventDate, formatEventTime } from "@/lib/format";
 import { buildEventMetadata } from "@/lib/event-metadata";
+import { getTemplateBySlug } from "@/lib/templates";
+import { templateAccentStyle } from "@/lib/template-theme-css";
 import { PublicRsvpForm } from "@/features/rsvp/public-rsvp-form";
 import { PageViewBeacon } from "@/features/analytics/page-view-beacon";
 import { Reveal } from "@/components/motion/reveal";
@@ -42,10 +44,12 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
     notFound();
   }
 
+  const template = getTemplateBySlug(event.templateSlug);
+
   return (
     <SiteShell honoreeName={event.honoreeName}>
       <PageViewBeacon eventId={event.id} page="public_rsvp" />
-      <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
+      <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32" style={templateAccentStyle(template)}>
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
           <Reveal>
             <p className="text-xs uppercase tracking-[0.35em] text-gold-500">

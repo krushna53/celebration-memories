@@ -77,6 +77,14 @@ interface AiImageGeneratorProps {
   configured: boolean;
   /** Non-null only for client-role admins — owner has no cap. */
   quota: { used: number; limit: number } | null;
+  /**
+   * The most recently completed generation/upload for this event, if
+   * any — fetched server-side via getLatestCompletedAiImageJob so the
+   * preview panel isn't empty just because the admin reloaded the page
+   * or came back later. See that function's doc comment for why this
+   * was previously lost.
+   */
+  initialResult?: { url: string; path: string } | null;
   actions?: AiImageActions;
   /**
    * The wizard has no Supabase Auth session to send with the Edge
@@ -96,6 +104,7 @@ export function AiImageGenerator({
   defaultPrompt,
   configured,
   quota,
+  initialResult = null,
   actions = DEFAULT_ACTIONS,
   anonAuthKey,
 }: AiImageGeneratorProps) {
@@ -104,7 +113,7 @@ export function AiImageGenerator({
   const [busy, setBusy] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ url: string; path: string } | null>(null);
+  const [result, setResult] = useState<{ url: string; path: string } | null>(initialResult);
   const [category, setCategory] = useState<GalleryCategory>("family");
   const [savedTo, setSavedTo] = useState<"share" | "gallery" | null>(null);
   const [remainingOverride, setRemainingOverride] = useState<number | null>(null);

@@ -93,8 +93,16 @@ export async function createInvitee(eventId: string, input: InviteeInput): Promi
   return mapInvitee(data);
 }
 
-export async function updateInvitee(id: string, input: InviteeInput): Promise<void> {
-  const { error } = await supabaseAdmin()
+/**
+ * Scoped by eventId (not just id) so a client-role admin can never touch
+ * another client's invitee even if they tampered with the id — this
+ * update/delete/markInviteSent trio double-check the row actually
+ * belongs to the caller's event at the query level rather than trusting
+ * a separate pre-check, same defense-in-depth reasoning as
+ * requireAdminForEvent's doc comment in services/admin-auth.ts.
+ */
+export async function updateInvitee(id: string, eventId: string, input: InviteeInput): Promise<void> {
+  const { data, error } = await supabaseAdmin()
     .from("invitees")
     .update({
       name: input.name,
@@ -102,14 +110,24 @@ export async function updateInvitee(id: string, input: InviteeInput): Promise<vo
       email: input.email || null,
       relationship: input.relationship || null,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("event_id", eventId)
+    .select("id");
 
   if (error) throw new Error(`Failed to update invitee: ${error.message}`);
+  if (!data || data.length === 0) throw new Error("Invitee not found for this event.");
 }
 
-export async function deleteInvitee(id: string): Promise<void> {
-  const { error } = await supabaseAdmin().from("invitees").delete().eq("id", id);
+export async function deleteInvitee(id: string, eventId: string): Promise<void> {
+  const { data, error } = await supabaseAdmin()
+    .from("invitees")
+    .delete()
+    .eq("id", id)
+    .eq("event_id", eventId)
+    .select("id");
+
   if (error) throw new Error(`Failed to delete invitee: ${error.message}`);
+  if (!data || data.length === 0) throw new Error("Invitee not found for this event.");
 }
 
 export async function setCheckedIn(id: string, checkedIn: boolean): Promise<void> {
@@ -126,12 +144,15 @@ export async function setCheckedIn(id: string, checkedIn: boolean): Promise<void
  * wa.me links open WhatsApp client-side, so there's no server-side
  * confirmation the message actually went through.
  */
-export async function markInviteSent(id: string): Promise<void> {
-  const { error } = await supabaseAdmin()
+export async function markInviteSent(id: string, eventId: string): Promise<void> {
+  const { data, error } = await supabaseAdmin()
     .from("invitees")
     .update({ invite_sent_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("event_id", eventId)
+    .select("id");
   if (error) throw new Error(`Failed to record invite as sent: ${error.message}`);
+  if (!data || data.length === 0) throw new Error("Invitee not found for this event.");
 }
 
 /** Bulk-creates invitees from parsed CSV rows, skipping rows without a name. */

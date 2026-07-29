@@ -32,6 +32,8 @@ interface SlideshowComposerProps {
   actions?: SlideshowActions;
   /** See ai-image-generator.tsx's matching prop for why the wizard needs this. */
   anonAuthKey?: string;
+  /** See useSlideshowVideoJob's matching parameter. */
+  initialVideoUrl?: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -46,6 +48,7 @@ export function SlideshowComposer({
   theme,
   actions = DEFAULT_ACTIONS,
   anonAuthKey,
+  initialVideoUrl = null,
 }: SlideshowComposerProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>(slides.slice(0, 8).map((p) => p.id));
   const [secondsPerPhoto, setSecondsPerPhoto] = useState(3);
@@ -59,6 +62,7 @@ export function SlideshowComposer({
   const { status, error, videoUrl, remaining, generate, cancel, reset } = useSlideshowVideoJob(
     actions.start,
     anonAuthKey,
+    initialVideoUrl,
   );
 
   const selectedSlides = selectedIds

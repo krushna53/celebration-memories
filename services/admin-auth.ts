@@ -75,15 +75,36 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
 }
 
 /**
- * For Server Actions that are owner-only (Invitees, Referrals,
- * Inquiries, Check-In). Throws rather than returning a boolean so
- * callers can't accidentally ignore the result — every owner-only
- * action must call this before doing anything.
+ * For Server Actions that are owner-only (Referrals, Inquiries,
+ * Check-In). Throws rather than returning a boolean so callers can't
+ * accidentally ignore the result — every owner-only action must call
+ * this before doing anything.
  */
 export async function requireOwner(): Promise<CurrentAdmin> {
   const admin = await getCurrentAdmin();
   if (!admin) throw new Error("Not authorized.");
   if (admin.role !== "owner") throw new Error("This action is restricted to the site owner.");
+  return admin;
+}
+
+/**
+ * For Server Actions available to both roles but scoped to one event
+ * (Invitees) — owner can manage any event's invitees (consistent with
+ * "step into any event" elsewhere), a client can only manage the one
+ * event tied to their own admins.event_id. Throws rather than returning
+ * a boolean for the same reason as requireOwner. Callers that only have
+ * a resource id (an invitee id, not an eventId) should still look up
+ * that resource's own event_id and scope their query by it directly —
+ * see services/admin-invitees.ts — rather than relying on this check
+ * alone, so a client can never affect another client's row even if they
+ * tamper with the eventId this receives.
+ */
+export async function requireAdminForEvent(eventId: string): Promise<CurrentAdmin> {
+  const admin = await getCurrentAdmin();
+  if (!admin) throw new Error("Not authorized.");
+  if (admin.role !== "owner" && admin.eventId !== eventId) {
+    throw new Error("You don't have access to this event.");
+  }
   return admin;
 }
 

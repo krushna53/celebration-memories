@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireOwner } from "@/services/admin-auth";
+import { requireOwner, requireAdminForEvent } from "@/services/admin-auth";
 import {
   bulkImportInvitees,
   createInvitee,
@@ -21,9 +21,11 @@ export type AdminActionResult =
  * Every admin Server Action re-checks the `admins` allowlist itself.
  * Server Actions are independently callable HTTP endpoints — relying
  * only on the dashboard layout's redirect would leave these mutations
- * reachable by anyone who guesses the action's endpoint. Invitees is
- * owner-only (agency-managed), so these call requireOwner() rather than
- * just checking that some admin is signed in.
+ * reachable by anyone who guesses the action's endpoint. Invitees used
+ * to be owner-only; a client host now manages their own event's guest
+ * list too, so these call requireAdminForEvent(eventId) — owner-or-
+ * matching-client — instead of requireOwner(). Check-In
+ * (toggleCheckInAction below) stays owner-only, unaffected by this.
  */
 
 export async function createInviteeAction(
@@ -31,7 +33,7 @@ export async function createInviteeAction(
   input: InviteeInput,
 ): Promise<AdminActionResult> {
   try {
-    await requireOwner();
+    await requireAdminForEvent(eventId);
     if (!input.name?.trim()) {
       return { success: false, error: "Name is required." };
     }
@@ -46,11 +48,12 @@ export async function createInviteeAction(
 
 export async function updateInviteeAction(
   id: string,
+  eventId: string,
   input: InviteeInput,
 ): Promise<AdminActionResult> {
   try {
-    await requireOwner();
-    await updateInvitee(id, input);
+    await requireAdminForEvent(eventId);
+    await updateInvitee(id, eventId, input);
     revalidatePath("/admin/invitees");
     return { success: true };
   } catch (err) {
@@ -58,10 +61,10 @@ export async function updateInviteeAction(
   }
 }
 
-export async function deleteInviteeAction(id: string): Promise<AdminActionResult> {
+export async function deleteInviteeAction(id: string, eventId: string): Promise<AdminActionResult> {
   try {
-    await requireOwner();
-    await deleteInvitee(id);
+    await requireAdminForEvent(eventId);
+    await deleteInvitee(id, eventId);
     revalidatePath("/admin/invitees");
     revalidatePath("/admin");
     return { success: true };
@@ -91,10 +94,10 @@ export async function toggleCheckInAction(
  * receipt. Failures here shouldn't block the guest's WhatsApp tab, so
  * the manager UI opens WhatsApp first and calls this in the background.
  */
-export async function markInviteSentAction(id: string): Promise<AdminActionResult> {
+export async function markInviteSentAction(id: string, eventId: string): Promise<AdminActionResult> {
   try {
-    await requireOwner();
-    await markInviteSent(id);
+    await requireAdminForEvent(eventId);
+    await markInviteSent(id, eventId);
     revalidatePath("/admin/invitees");
     return { success: true };
   } catch (err) {
@@ -109,7 +112,7 @@ export async function bulkImportInviteesAction(
   { success: true; created: number; skipped: number } | { success: false; error: string }
 > {
   try {
-    await requireOwner();
+    await requireAdminForEvent(eventId);
     const result = await bulkImportInvitees(eventId, rows);
     revalidatePath("/admin/invitees");
     revalidatePath("/admin");

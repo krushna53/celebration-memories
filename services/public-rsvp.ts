@@ -53,7 +53,7 @@ export async function findOrCreateSelfInvitee(
   const match = existing.find((inv) => inv.phone && normalizePhone(inv.phone) === normalized);
 
   if (match) {
-    await updateInvitee(match.id, {
+    await updateInvitee(match.id, eventId, {
       name: identity.name,
       phone: match.phone,
       email: identity.email ?? match.email,

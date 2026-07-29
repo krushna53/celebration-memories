@@ -3,6 +3,8 @@ import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
+import { getLatestCompletedAiImageJob } from "@/services/ai-image-jobs";
+import { publicMediaUrl } from "@/services/uploads";
 import { AiImageGenerator } from "@/features/admin/ai-image/ai-image-generator";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +38,11 @@ export default async function AdminAiImagePage() {
   const used = isClient ? await countAiImageGenerations(event.id) : 0;
   const limit = event.aiImageGenerationLimit;
 
+  const latestJob = await getLatestCompletedAiImageJob(event.id);
+  const initialResult = latestJob
+    ? { url: publicMediaUrl("gallery", latestJob.resultPath), path: latestJob.resultPath }
+    : null;
+
   return (
     <div>
       <h1 className="font-display text-2xl text-navy-950">AI Image</h1>
@@ -58,6 +65,7 @@ export default async function AdminAiImagePage() {
           defaultPrompt={defaultPrompt}
           configured={AI_IMAGE_CONFIGURED}
           quota={isClient ? { used, limit } : null}
+          initialResult={initialResult}
         />
       </div>
     </div>

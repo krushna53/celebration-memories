@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getDraftEventByToken } from "@/services/event-drafts";
 import { getTemplateBySlug } from "@/lib/templates";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
+import { getLatestCompletedAiImageJob } from "@/services/ai-image-jobs";
+import { publicMediaUrl } from "@/services/uploads";
 import { AiImageGenerator } from "@/features/admin/ai-image/ai-image-generator";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
 import { SkipStepLink } from "@/features/start/skip-step-link";
@@ -32,6 +34,11 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
     "No readable text in the image — just the visual design, decorative elements, and mood. Elegant, high-quality, printable invitation card style.",
   ].join(" ");
 
+  const latestJob = await getLatestCompletedAiImageJob(event.id);
+  const initialResult = latestJob
+    ? { url: publicMediaUrl("gallery", latestJob.resultPath), path: latestJob.resultPath }
+    : null;
+
   return (
     <WizardStepShell
       token={token}
@@ -46,6 +53,7 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
         defaultPrompt={defaultPrompt}
         configured={AI_IMAGE_CONFIGURED}
         quota={null}
+        initialResult={initialResult}
         actions={{
           generate: draftGenerateAiImageAction.bind(null, token),
           requestUpload: draftRequestAiImageUploadUrlAction.bind(null, token),

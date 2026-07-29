@@ -4,6 +4,8 @@ import { getTemplateBySlug } from "@/lib/templates";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listMilestones } from "@/services/timeline";
 import { countSlideshowVideoGenerations } from "@/services/slideshow-video-generations";
+import { getLatestCompletedSlideshowVideoJob } from "@/services/slideshow-video-jobs";
+import { publicMediaUrl } from "@/services/uploads";
 import { SlideshowComposer } from "@/features/admin/slideshow/slideshow-composer";
 import type { SlideSource } from "@/types/content";
 
@@ -54,6 +56,9 @@ export default async function AdminSlideshowPage() {
   const used = isClient ? await countSlideshowVideoGenerations(event.id) : 0;
   const limit = event.slideshowVideoGenerationLimit;
 
+  const latestJob = await getLatestCompletedSlideshowVideoJob(event.id);
+  const initialVideoUrl = latestJob ? publicMediaUrl("gallery", latestJob.resultPath) : null;
+
   return (
     <div>
       <h1 className="font-display text-2xl text-navy-950">Slideshow Video</h1>
@@ -78,6 +83,7 @@ export default async function AdminSlideshowPage() {
             secondaryColor: template.secondaryColor,
             fontFamily: template.fontFamily,
           }}
+          initialVideoUrl={initialVideoUrl}
         />
       </div>
     </div>
