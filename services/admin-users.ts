@@ -12,6 +12,14 @@ export interface AdminUserSummary {
   role: AdminRole;
   /** Which event this account's dashboard resolves to — see lib/admin-event.ts's resolveAdminEvent. Null only if the event itself couldn't be found (e.g. deleted). */
   eventLabel: string | null;
+  /**
+   * The same event, as an id rather than a display label — null for
+   * owner rows (an owner isn't "the" client of any one event) and for
+   * client rows whose event genuinely couldn't be resolved. Used by
+   * /admin/events (features/admin/events/event-list.tsx) to show which
+   * client email(s) are attached to each event in the list.
+   */
+  resolvedEventId: string | null;
   createdAt: string;
 }
 
@@ -59,14 +67,19 @@ export async function listAdmins(): Promise<AdminUserSummary[]> {
 
   const flagship = await getEventBySlug(EVENT_SLUG);
 
-  return rows.map((row) => ({
-    id: row.id,
-    email: row.email,
-    name: row.name,
-    role: row.role,
-    eventLabel: row.role === "owner" ? null : row.event_id ? (eventLabels.get(row.event_id) ?? null) : (flagship?.honoreeName ?? null),
-    createdAt: row.created_at,
-  }));
+  return rows.map((row) => {
+    const resolvedEventId = row.role === "owner" ? null : (row.event_id ?? flagship?.id ?? null);
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      role: row.role,
+      eventLabel:
+        row.role === "owner" ? null : row.event_id ? (eventLabels.get(row.event_id) ?? null) : (flagship?.honoreeName ?? null),
+      resolvedEventId,
+      createdAt: row.created_at,
+    };
+  });
 }
 
 /**

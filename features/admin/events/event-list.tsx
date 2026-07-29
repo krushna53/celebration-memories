@@ -14,7 +14,13 @@ import { setActiveAdminEventAction } from "@/features/admin/events/actions";
  * No client-side JS needed — plain form posts, same as the sign-out
  * button in the dashboard layout.
  */
-export function EventList({ events }: { events: EventSummary[] }) {
+interface EventListProps {
+  events: EventSummary[];
+  /** Client admin email(s) attached to each event, keyed by event id — see app/admin/(dashboard)/events/page.tsx, which builds this from listAdmins(). */
+  membersByEvent: Map<string, string[]>;
+}
+
+export function EventList({ events, membersByEvent }: EventListProps) {
   if (events.length === 0) {
     return <p className="text-sm text-navy-700/60">No live events yet.</p>;
   }
@@ -26,18 +32,34 @@ export function EventList({ events }: { events: EventSummary[] }) {
           <tr>
             <th className="px-4 py-3">Event</th>
             <th className="px-4 py-3">Occasion</th>
+            <th className="px-4 py-3">Client</th>
             <th className="px-4 py-3">Created</th>
             <th className="px-4 py-3" />
           </tr>
         </thead>
         <tbody className="divide-y divide-navy-950/5">
-          {events.map((event) => (
+          {events.map((event) => {
+            const members = membersByEvent.get(event.id) ?? [];
+            return (
             <tr key={event.id}>
               <td className="px-4 py-3">
                 <div className="font-medium text-navy-950">{event.honoreeName}</div>
                 <div className="text-xs text-navy-700/50">{event.eventTitle}</div>
               </td>
               <td className="px-4 py-3 text-navy-700/70">{EVENT_CATEGORY_LABELS[event.category]}</td>
+              <td className="px-4 py-3 text-navy-700/70">
+                {members.length > 0 ? (
+                  <div className="flex flex-col gap-0.5">
+                    {members.map((email) => (
+                      <span key={email} className="text-xs">
+                        {email}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-navy-700/40">No client login yet</span>
+                )}
+              </td>
               <td className="px-4 py-3 text-navy-700/70">
                 {new Date(event.createdAt).toLocaleDateString("en-US", {
                   month: "short",
@@ -65,7 +87,8 @@ export function EventList({ events }: { events: EventSummary[] }) {
                 </div>
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

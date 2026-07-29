@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { listAllActiveEvents } from "@/services/events";
+import { listAdmins } from "@/services/admin-users";
 import { EventList } from "@/features/admin/events/event-list";
 import { createOwnerEventAction } from "@/features/admin/events/actions";
 
@@ -20,7 +21,15 @@ export default async function AdminEventsPage() {
   const admin = await getCurrentAdmin();
   if (admin?.role !== "owner") redirect("/admin");
 
-  const events = await listAllActiveEvents();
+  const [events, admins] = await Promise.all([listAllActiveEvents(), listAdmins()]);
+
+  const membersByEvent = new Map<string, string[]>();
+  for (const member of admins) {
+    if (member.role !== "client" || !member.resolvedEventId) continue;
+    const existing = membersByEvent.get(member.resolvedEventId) ?? [];
+    existing.push(member.email);
+    membersByEvent.set(member.resolvedEventId, existing);
+  }
 
   return (
     <div>
@@ -45,7 +54,7 @@ export default async function AdminEventsPage() {
       </div>
 
       <div className="mt-6">
-        <EventList events={events} />
+        <EventList events={events} membersByEvent={membersByEvent} />
       </div>
 
       <p className="mt-4 text-xs text-navy-700/50">
