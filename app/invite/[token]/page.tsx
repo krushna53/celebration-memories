@@ -9,7 +9,6 @@ import { formatEventDate, formatEventTime } from "@/lib/format";
 import { buildEventMetadata } from "@/lib/event-metadata";
 import { RsvpForm } from "@/features/rsvp/rsvp-form";
 import { MediaUploadsSection } from "@/features/uploads/media-uploads-section";
-import { GuestbookForm } from "@/features/guestbook/guestbook-form";
 import { Reveal } from "@/components/motion/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SiteShell } from "@/components/layout/site-shell";
@@ -105,20 +104,11 @@ export default async function InvitePage({ params }: InvitePageProps) {
             <SectionHeading
               eyebrow="Add To The Celebration"
               title="Share Your Memories"
-              description="Photos, videos, or a short voice message — however you'd like to celebrate."
+              description="Photos, videos, a voice message, or a written note — however you'd like to celebrate."
             />
           </Reveal>
           <Reveal delay={0.1} className="mt-8">
             <MediaUploadsSection token={token} />
-          </Reveal>
-        </div>
-
-        <div className="mx-auto mt-16 max-w-xl px-4 sm:px-6">
-          <Reveal>
-            <SectionHeading eyebrow="Leave A Note" title="Guest Book" />
-          </Reveal>
-          <Reveal delay={0.1} className="mt-8">
-            <GuestbookForm token={token} />
           </Reveal>
         </div>
       </div>
