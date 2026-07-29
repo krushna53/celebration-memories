@@ -329,6 +329,43 @@ restricted page, and a `requireOwner()` check inside every owner-only
 Server Action/route — so a client account can't reach restricted data
 even by guessing a URL or replaying a form submission.
 
+### Managing every client's event as the owner
+
+Every admin page (Overview, Event Settings, Gallery, Timeline, Memories,
+Templates, AI Image, Slideshow, Share Image, Domain Search, Invitees,
+Check-In) resolves which event to show via `resolveAdminEvent()` in
+`lib/admin-event.ts`, not a hardcoded event. What that resolves to:
+
+- A **client** admin always sees their own event (`admins.event_id`) —
+  never anything else, regardless of anything below.
+- The **owner** sees whichever event they've most recently picked from
+  **`/admin/events`** — a directory of every live client event. Hitting
+  "Manage" on a row sets a cookie (`lib/admin-active-event.ts`) and
+  drops you into that event's Overview page; every other admin page now
+  applies to it too, until you hit "Exit to All Events" in the banner
+  that appears at the top of the dashboard while this is active.
+- With no selection made (or after exiting), the owner falls back to
+  the original flagship event, same as before this existed.
+
+**"New Event"** on `/admin/events` creates a brand-new event directly
+(status `active`, no wizard/payment step — you're vouching for this
+client yourself) with the same placeholder content the `/start` wizard
+uses, and immediately switches you into managing it on Event Settings.
+This only creates the event row — creating an actual login for that
+client is the separate step described above (`/admin/register` or the
+manual SQL method).
+
+**Section order/visibility per event** (the "just show Header,
+Invitation, and RSVP" kind of request) was already possible before this
+— it doesn't need a separate builder. Open Event Settings for any event
+(your own, or any client's via the flow above) and use the drag-and-drop
+list there (`features/admin/event-settings/section-order-manager.tsx`,
+backed by `events.section_config`): drag to reorder, tap the eye icon to
+hide a section. Hero always shows first and can't be hidden or reordered
+— everything else (Countdown, Invitation, Event Details, Gallery,
+Timeline, RSVP, Wish Message, Memory Wall) can be hidden or reordered
+freely, independently per event.
+
 ### WhatsApp invites: custom message + bulk sending
 
 **Custom message wording** — Event Settings has a "WhatsApp Invite
@@ -410,6 +447,13 @@ the owner is exempt. Raise or lower it per event with:
 ```sql
 update events set ai_image_generation_limit = 30 where slug = 'your-event-slug';
 ```
+
+**Don't want to generate one?** The same page has an "Upload Your Own"
+tab — pick an existing image (from a designer, from the client, etc.)
+and it's uploaded straight to Storage with no OpenAI call, no quota
+impact, and no `OPENAI_API_KEY` required. Once uploaded it behaves
+identically to a generated image (Download, Use as Link Preview Image,
+Add to Gallery). See `createSignedAiImageUpload` in `services/uploads.ts`.
 
 **Getting an API key** (you do this yourself — account creation and
 billing setup aren't something Claude can do on your behalf):

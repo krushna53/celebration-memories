@@ -1,7 +1,6 @@
-import { EVENT_SLUG } from "@/lib/constants";
-import { getEventBySlug } from "@/services/events";
 import { publicMediaUrl } from "@/services/uploads";
 import { getCurrentAdmin } from "@/services/admin-auth";
+import { resolveAdminEvent } from "@/lib/admin-event";
 import { AI_CSS_CONFIGURED } from "@/lib/ai-css";
 import { countAiCssGenerations } from "@/services/ai-css-generations";
 import { EventSettingsForm } from "@/features/admin/event-settings/event-settings-form";
@@ -9,7 +8,8 @@ import { EventSettingsForm } from "@/features/admin/event-settings/event-setting
 export const dynamic = "force-dynamic";
 
 export default async function AdminEventSettingsPage() {
-  const event = await getEventBySlug(EVENT_SLUG);
+  const admin = await getCurrentAdmin();
+  const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event found. Check your Supabase seed data.</p>;
   }
@@ -17,7 +17,6 @@ export default async function AdminEventSettingsPage() {
   const shareImageUrl = event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null;
   const shareVideoUrl = event.shareVideoPath ? publicMediaUrl("gallery", event.shareVideoPath) : null;
 
-  const admin = await getCurrentAdmin();
   const isClient = admin?.role === "client";
   const aiCssUsed = isClient ? await countAiCssGenerations(event.id) : 0;
   const aiCssLimit = event.aiCssGenerationLimit;

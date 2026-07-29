@@ -6,7 +6,7 @@ import { getTemplateBySlug } from "@/lib/templates";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { AiImageGenerator } from "@/features/admin/ai-image/ai-image-generator";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
-import { draftGenerateAiImageAction } from "@/features/start/actions/ai-image";
+import { draftGenerateAiImageAction, draftRequestAiImageUploadUrlAction } from "@/features/start/actions/ai-image";
 import { draftConfirmShareImageUploadAction } from "@/features/start/actions/event";
 import { draftConfirmGalleryUploadAction } from "@/features/start/actions/gallery";
 import { nextWizardStep, wizardStepHref } from "@/features/start/wizard-steps";
@@ -60,6 +60,7 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
         quota={null}
         actions={{
           generate: draftGenerateAiImageAction.bind(null, token),
+          requestUpload: draftRequestAiImageUploadUrlAction.bind(null, token),
           useAsShareImage: draftConfirmShareImageUploadAction.bind(null, token),
           addToGallery: draftConfirmGalleryUploadAction.bind(null, token),
         }}

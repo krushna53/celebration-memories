@@ -1,14 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Download, ImagePlus, Loader2, Sparkles } from "lucide-react";
+import { Check, Download, ImagePlus, Loader2, Sparkles, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { generateAiImageAction, type StartAiImageResult } from "@/features/admin/ai-image/actions";
+import {
+  generateAiImageAction,
+  requestAiImageUploadUrlAction,
+  type StartAiImageResult,
+  type RequestUploadUrlResult,
+} from "@/features/admin/ai-image/actions";
 import { confirmShareImageUploadAction, type AdminActionResult } from "@/features/admin/event-settings/actions";
 import { confirmGalleryUploadAction } from "@/features/admin/gallery/actions";
 import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/image-compression";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -43,6 +49,12 @@ const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
  */
 export interface AiImageActions {
   generate: (eventId: string, prompt: string) => Promise<StartAiImageResult>;
+  requestUpload: (
+    eventId: string,
+    fileName: string,
+    contentType: string,
+    fileSize: number,
+  ) => Promise<RequestUploadUrlResult>;
   useAsShareImage: (eventId: string, path: string) => Promise<AdminActionResult>;
   addToGallery: (
     eventId: string,
@@ -54,6 +66,7 @@ export interface AiImageActions {
 
 const DEFAULT_ACTIONS: AiImageActions = {
   generate: generateAiImageAction,
+  requestUpload: requestAiImageUploadUrlAction,
   useAsShareImage: confirmShareImageUploadAction,
   addToGallery: confirmGalleryUploadAction,
 };
@@ -86,6 +99,7 @@ export function AiImageGenerator({
   actions = DEFAULT_ACTIONS,
   anonAuthKey,
 }: AiImageGeneratorProps) {
+  const [mode, setMode] = useState<"generate" | "upload">("generate");
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [busy, setBusy] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -95,6 +109,7 @@ export function AiImageGenerator({
   const [savedTo, setSavedTo] = useState<"share" | "gallery" | null>(null);
   const [remainingOverride, setRemainingOverride] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const remaining = remainingOverride ?? (quota ? quota.limit - quota.used : null);
   const atLimit = remaining !== null && remaining <= 0;
@@ -195,6 +210,32 @@ export function AiImageGenerator({
     }
   }
 
+  async function handleUpload(file: File) {
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    setSavedTo(null);
+
+    try {
+      const compressed = await compressImage(file);
+      const signed = await actions.requestUpload(eventId, compressed.name, compressed.type, compressed.size);
+      if (!signed.success) throw new Error(signed.error);
+
+      const { bucket, path, token } = signed.data;
+      const { error: uploadError } = await supabaseBrowser()
+        .storage.from(bucket)
+        .uploadToSignedUrl(path, token, compressed);
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { data } = supabaseBrowser().storage.from(bucket).getPublicUrl(path);
+      setResult({ url: data.publicUrl, path });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleUseAsShareImage() {
     if (!result) return;
     setBusy(true);
@@ -219,65 +260,126 @@ export function AiImageGenerator({
     }
   }
 
-  if (!configured) {
-    return (
-      <div className="rounded-xl border border-dashed border-navy-950/15 bg-white p-8 text-center">
-        <Sparkles className="mx-auto text-navy-700/30" size={28} />
-        <h3 className="mt-3 font-display text-lg text-navy-950">AI Image isn&rsquo;t set up yet</h3>
-        <p className="mx-auto mt-2 max-w-md text-sm text-navy-700/60">
-          Add an <code className="rounded bg-navy-950/5 px-1.5 py-0.5">OPENAI_API_KEY</code> to your
-          environment to enable this. It calls OpenAI&rsquo;s image API, which is billed per image
-          (roughly $0.02&ndash;$0.19 depending on quality) — see the README for setup steps and cost
-          details.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="grid gap-4">
-        <div>
-          <label className="text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70">
-            Describe the image
-          </label>
-          <textarea
-            className={`${inputClasses} mt-1.5 min-h-[160px] resize-y`}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="e.g. A royal gold birthday invitation with soft floral borders, elegant script, warm candlelight glow..."
-          />
-          <p className="mt-1.5 text-xs text-navy-700/50">
-            Pre-filled with your event details — edit freely. Be specific about
-            colors, mood, and motifs for the best result.
-          </p>
+        <div className="inline-flex w-fit rounded-full border border-navy-950/10 bg-navy-950/[0.03] p-1">
+          <button
+            type="button"
+            onClick={() => setMode("generate")}
+            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-luxury duration-200 ${
+              mode === "generate" ? "bg-white text-navy-950 shadow-sm" : "text-navy-700/60"
+            }`}
+          >
+            <Sparkles size={13} /> Generate with AI
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("upload")}
+            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-luxury duration-200 ${
+              mode === "upload" ? "bg-white text-navy-950 shadow-sm" : "text-navy-700/60"
+            }`}
+          >
+            <Upload size={13} /> Upload Your Own
+          </button>
         </div>
 
-        <Button
-          onClick={handleGenerate}
-          disabled={busy || !prompt.trim() || atLimit}
-          size="lg"
-          className="w-full sm:w-auto"
-        >
-          {busy ? (
-            <>
-              <Loader2 className="animate-spin" size={16} /> {LOADING_STEPS[loadingStep]}
-            </>
+        {mode === "generate" ? (
+          !configured ? (
+            <div className="rounded-xl border border-dashed border-navy-950/15 bg-white p-8 text-center">
+              <Sparkles className="mx-auto text-navy-700/30" size={28} />
+              <h3 className="mt-3 font-display text-lg text-navy-950">AI Image isn&rsquo;t set up yet</h3>
+              <p className="mx-auto mt-2 max-w-md text-sm text-navy-700/60">
+                Add an <code className="rounded bg-navy-950/5 px-1.5 py-0.5">OPENAI_API_KEY</code> to
+                your environment to enable this, or use the &ldquo;Upload Your Own&rdquo; tab instead —
+                no API key needed for that.
+              </p>
+            </div>
           ) : (
             <>
-              <Sparkles size={16} /> Generate Image
-            </>
-          )}
-        </Button>
+              <div>
+                <label className="text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70">
+                  Describe the image
+                </label>
+                <textarea
+                  className={`${inputClasses} mt-1.5 min-h-[160px] resize-y`}
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="e.g. A royal gold birthday invitation with soft floral borders, elegant script, warm candlelight glow..."
+                />
+                <p className="mt-1.5 text-xs text-navy-700/50">
+                  Pre-filled with your event details — edit freely. Be specific about
+                  colors, mood, and motifs for the best result.
+                </p>
+              </div>
 
-        {atLimit ? (
-          <p className="text-sm text-amber-700">
-            You&rsquo;ve used all {quota?.limit} AI image generations for this event. Contact
-            your site admin to raise the limit.
-          </p>
-        ) : remaining !== null ? (
-          <p className="text-xs text-navy-700/50">{remaining} generation{remaining === 1 ? "" : "s"} remaining.</p>
-        ) : null}
+              <Button
+                onClick={handleGenerate}
+                disabled={busy || !prompt.trim() || atLimit}
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                {busy ? (
+                  <>
+                    <Loader2 className="animate-spin" size={16} /> {LOADING_STEPS[loadingStep]}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} /> Generate Image
+                  </>
+                )}
+              </Button>
+
+              {atLimit ? (
+                <p className="text-sm text-amber-700">
+                  You&rsquo;ve used all {quota?.limit} AI image generations for this event. Contact
+                  your site admin to raise the limit.
+                </p>
+              ) : remaining !== null ? (
+                <p className="text-xs text-navy-700/50">
+                  {remaining} generation{remaining === 1 ? "" : "s"} remaining.
+                </p>
+              ) : null}
+            </>
+          )
+        ) : (
+          <div>
+            <label className="text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70">
+              Upload an image
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleUpload(file);
+                e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => fileInputRef.current?.click()}
+              className="mt-1.5 flex w-full flex-col items-center gap-2 rounded-xl border border-dashed border-navy-950/20 bg-navy-950/[0.02] px-6 py-10 text-center hover:border-gold-500/50 disabled:cursor-wait"
+            >
+              {busy ? (
+                <Loader2 className="animate-spin text-navy-700/50" size={22} />
+              ) : (
+                <Upload className="text-navy-700/40" size={22} />
+              )}
+              <span className="text-sm text-navy-700/70">
+                {busy ? "Uploading..." : "Tap to choose a photo"}
+              </span>
+              <span className="text-xs text-navy-700/40">JPEG, PNG, WEBP, or HEIC — up to 50MB</span>
+            </button>
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              Already have an invitation design? Upload it here instead of generating one — it&rsquo;s
+              treated exactly the same afterward (download, use as Link Preview, or add to Gallery).
+            </p>
+          </div>
+        )}
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </div>
@@ -288,7 +390,7 @@ export function AiImageGenerator({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={result.url}
-              alt="AI-generated invitation"
+              alt="Invitation"
               className="w-full rounded-xl border border-navy-950/10 object-cover"
             />
             <div className="flex flex-wrap items-center gap-2">
@@ -327,7 +429,11 @@ export function AiImageGenerator({
           </div>
         ) : (
           <div className="flex h-full min-h-[220px] items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
-            {busy ? "Generating..." : "Your generated image will appear here."}
+            {busy
+              ? mode === "upload"
+                ? "Uploading..."
+                : "Generating..."
+              : "Your image will appear here."}
           </div>
         )}
       </div>

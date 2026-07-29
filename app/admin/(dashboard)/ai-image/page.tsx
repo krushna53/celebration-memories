@@ -1,7 +1,6 @@
-import { EVENT_SLUG } from "@/lib/constants";
-import { getEventBySlug } from "@/services/events";
 import { getTemplateBySlug } from "@/lib/templates";
 import { getCurrentAdmin } from "@/services/admin-auth";
+import { resolveAdminEvent } from "@/lib/admin-event";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
 import { AiImageGenerator } from "@/features/admin/ai-image/ai-image-generator";
@@ -13,7 +12,7 @@ export const dynamic = "force-dynamic";
 // this calls a real per-image-cost API; owner is exempt from the cap.
 export default async function AdminAiImagePage() {
   const admin = await getCurrentAdmin();
-  const event = await getEventBySlug(EVENT_SLUG);
+  const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event found. Check your Supabase seed data.</p>;
   }

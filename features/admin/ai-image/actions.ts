@@ -1,11 +1,11 @@
 "use server";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
-import { getEventBySlug } from "@/services/events";
-import { EVENT_SLUG } from "@/lib/constants";
+import { getEventById } from "@/services/events";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { createAiImageJob } from "@/services/ai-image-jobs";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
+import { createSignedAiImageUpload } from "@/services/uploads";
 
 export type StartAiImageResult =
   | { success: true; jobId: string; remaining: number | null }
@@ -55,8 +55,11 @@ export async function generateAiImageAction(eventId: string, prompt: string): Pr
     // Re-fetch the event server-side for the limit rather than trusting
     // a client-supplied number — mirrors the pattern used elsewhere
     // (e.g. re-resolving an invitee from a token) so nothing about
-    // authorization depends on values the browser sent.
-    const event = await getEventBySlug(EVENT_SLUG);
+    // authorization depends on values the browser sent. Looked up by
+    // the eventId the caller passed (this event, not necessarily the
+    // flagship EVENT_SLUG one — a client admin could be scoped to any
+    // event created through the wizard).
+    const event = await getEventById(eventId);
     const limit = event?.aiImageGenerationLimit ?? 5;
     const used = await countAiImageGenerations(eventId);
 
@@ -75,5 +78,35 @@ export async function generateAiImageAction(eventId: string, prompt: string): Pr
   } catch (err) {
     console.error("generateAiImageAction: failed to create job row:", err);
     return { success: false, error: "Something went wrong starting the generation. Please try again." };
+  }
+}
+
+export type RequestUploadUrlResult =
+  | { success: true; data: { bucket: string; path: string; token: string } }
+  | { success: false; error: string };
+
+/**
+ * The "Upload your own" alternative to generateAiImageAction — for an
+ * admin who already has an invitation image (designed elsewhere, sent
+ * by the client, etc.) and doesn't want to spend an AI generation
+ * making one. Issues a signed Storage upload URL; the browser uploads
+ * directly to it (see handleUpload in ai-image-generator.tsx), then the
+ * uploaded file's public URL is used exactly like a generated one — no
+ * quota/cap applies since no paid API call happens here.
+ */
+export async function requestAiImageUploadUrlAction(
+  eventId: string,
+  fileName: string,
+  contentType: string,
+  fileSize: number,
+): Promise<RequestUploadUrlResult> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: "Not authorized." };
+
+  try {
+    const upload = await createSignedAiImageUpload({ eventId, fileName, contentType, fileSize });
+    return { success: true, data: upload };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Upload failed." };
   }
 }

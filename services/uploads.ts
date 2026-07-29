@@ -196,6 +196,46 @@ export async function createSignedShareImageUpload(params: {
 }
 
 /**
+ * Same signed-upload pattern, for an admin who'd rather upload their own
+ * invitation image than generate one with AI (see the "Upload your own"
+ * tab in features/admin/ai-image/ai-image-generator.tsx). Stored under
+ * its own prefix in the `gallery` bucket, same as the AI-generated
+ * counterpart (uploadGeneratedImage below) — the two are treated
+ * identically once uploaded: same {url, path} shape, same "Use as Link
+ * Preview Image" / "Add to Gallery" / Download actions.
+ */
+export async function createSignedAiImageUpload(params: {
+  eventId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { eventId, fileName, contentType, fileSize } = params;
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported image type: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS.photo;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `${eventId}/ai-image-upload/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage
+    .from("gallery")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+}
+
+/**
  * Uploads an already-in-memory image (e.g. from OpenAI's image API —
  * see lib/ai-image.ts) directly to the `gallery` bucket, server-side.
  * Unlike the signed-upload flow above, there's no browser round trip:

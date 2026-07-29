@@ -4,7 +4,8 @@ import { requireDraftEvent } from "@/features/start/draft-auth";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { createAiImageJob } from "@/services/ai-image-jobs";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
-import type { StartAiImageResult } from "@/features/admin/ai-image/actions";
+import { createSignedAiImageUpload } from "@/services/uploads";
+import type { StartAiImageResult, RequestUploadUrlResult } from "@/features/admin/ai-image/actions";
 
 /**
  * Real per-image cost applies (OpenAI) — a draft has no admin/client
@@ -45,5 +46,29 @@ export async function draftGenerateAiImageAction(token: string, eventId: string,
     return { success: true, jobId, remaining: null };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Something went wrong." };
+  }
+}
+
+/**
+ * Draft-token-gated mirror of requestAiImageUploadUrlAction — same
+ * shape, but authorizes via requireDraftEvent(token) instead of
+ * getCurrentAdmin(). No generation-quota check here since uploading
+ * doesn't call any paid API.
+ */
+export async function draftRequestAiImageUploadUrlAction(
+  token: string,
+  eventId: string,
+  fileName: string,
+  contentType: string,
+  fileSize: number,
+): Promise<RequestUploadUrlResult> {
+  try {
+    const event = await requireDraftEvent(token);
+    if (event.id !== eventId) return { success: false, error: "This link doesn't match that event." };
+
+    const upload = await createSignedAiImageUpload({ eventId: event.id, fileName, contentType, fileSize });
+    return { success: true, data: upload };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Upload failed." };
   }
 }

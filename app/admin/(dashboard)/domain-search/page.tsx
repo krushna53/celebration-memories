@@ -1,5 +1,5 @@
-import { EVENT_SLUG } from "@/lib/constants";
-import { getEventBySlug } from "@/services/events";
+import { getCurrentAdmin } from "@/services/admin-auth";
+import { resolveAdminEvent } from "@/lib/admin-event";
 import { GODADDY_CONFIGURED } from "@/lib/godaddy";
 import { DomainSearchForm } from "@/features/admin/domain-search/domain-search-form";
 
@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 // happens here: it only checks GoDaddy availability/pricing, purchase
 // happens on GoDaddy's own site via a deep link.
 export default async function AdminDomainSearchPage() {
-  const event = await getEventBySlug(EVENT_SLUG);
+  const admin = await getCurrentAdmin();
+  const event = admin ? await resolveAdminEvent(admin) : null;
   const suggestion = event ? event.slug.replace(/[^a-z0-9-]/gi, "") : "";
 
   return (

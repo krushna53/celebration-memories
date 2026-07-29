@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { EVENT_SLUG } from "@/lib/constants";
-import { getEventBySlug } from "@/services/events";
+import { getCurrentAdmin } from "@/services/admin-auth";
+import { resolveAdminEvent } from "@/lib/admin-event";
 import { listApprovedTemplateSubmissions } from "@/services/template-submissions";
 import { communitySubmissionToTemplateSummary } from "@/lib/community-theme";
 import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
@@ -10,8 +10,9 @@ import { TemplatePicker, type PickerTemplate } from "@/features/admin/templates/
 export const dynamic = "force-dynamic";
 
 export default async function AdminTemplatesPage() {
+  const admin = await getCurrentAdmin();
   const [event, approvedSubmissions] = await Promise.all([
-    getEventBySlug(EVENT_SLUG),
+    admin ? resolveAdminEvent(admin) : Promise.resolve(null),
     listApprovedTemplateSubmissions(),
   ]);
   if (!event) {

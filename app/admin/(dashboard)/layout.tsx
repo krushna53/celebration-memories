@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
+  Building2,
   CalendarCheck,
   Image as ImageIcon,
   LayoutDashboard,
@@ -30,9 +31,11 @@ import { isPathAllowedForRole } from "@/lib/admin-roles";
 import { TOUR_STEP_COPY } from "@/lib/admin-tour-steps";
 import { AdminTourController, type TourStep } from "@/features/admin/tour/admin-tour-controller";
 import { FaqChatbot } from "@/features/admin/support/faq-chatbot";
+import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/events", label: "All Events", icon: Building2 },
   { href: "/admin/event-settings", label: "Event Settings", icon: Settings },
   { href: "/admin/templates", label: "Templates", icon: Palette },
   { href: "/admin/template-submissions", label: "Template Submissions", icon: PenTool },
@@ -113,6 +116,8 @@ export default async function AdminDashboardLayout({
           ))}
         </nav>
       </header>
+
+      <ActiveEventBanner admin={admin} />
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
 

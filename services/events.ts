@@ -1,4 +1,5 @@
 import "server-only";
+import { randomBytes } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { SectionConfigItem } from "@/lib/section-registry";
@@ -121,6 +122,90 @@ export async function listPublicEvents(): Promise<EventRecord[]> {
 
   if (error) throw new Error(`Failed to list public events: ${error.message}`);
   return (data as EventRow[]).map(mapEvent);
+}
+
+export interface EventSummary {
+  id: string;
+  slug: string;
+  honoreeName: string;
+  eventTitle: string;
+  category: EventRecord["category"];
+  createdAt: string;
+}
+
+/**
+ * Every live (status = 'active') event, newest first — powers the
+ * owner-only "All Events" admin page (app/admin/(dashboard)/events),
+ * which is how the owner reaches any client's dashboard (see
+ * lib/admin-event.ts's resolveAdminEvent and
+ * lib/admin-active-event.ts). Drafts (status = 'draft', still mid
+ * wizard, unpaid) intentionally excluded — they already have their own
+ * view at /admin/drafts (see listDraftEvents in services/event-drafts.ts).
+ */
+export async function listAllActiveEvents(): Promise<EventSummary[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("events")
+    .select("id, slug, honoree_name, event_title, category, created_at")
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(`Failed to list events: ${error.message}`);
+  return (
+    data as {
+      id: string;
+      slug: string;
+      honoree_name: string;
+      event_title: string;
+      category: EventRecord["category"];
+      created_at: string;
+    }[]
+  ).map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    honoreeName: row.honoree_name,
+    eventTitle: row.event_title,
+    category: row.category,
+    createdAt: row.created_at,
+  }));
+}
+
+function slugSuffix(): string {
+  return randomBytes(4).toString("hex");
+}
+
+/**
+ * Owner-initiated event creation (features/admin/events/actions.ts) —
+ * for a client the owner is onboarding directly (e.g. over phone/email)
+ * rather than through the self-serve /start wizard. Goes straight to
+ * status='active' (no draft/payment step — the owner is vouching for
+ * this client), with the same placeholder content the wizard's
+ * createDraftEvent uses, so the owner lands on a normal Event Settings
+ * page and fills in real details immediately after creating it.
+ */
+export async function createOwnerEvent(): Promise<{ id: string; slug: string }> {
+  const slug = `event-${slugSuffix()}`;
+  const now = new Date();
+  const startAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const endAt = new Date(startAt.getTime() + 4 * 60 * 60 * 1000);
+
+  const { data, error } = await supabaseAdmin()
+    .from("events")
+    .insert({
+      slug,
+      status: "active",
+      category: "birthday",
+      honoree_name: "New Event",
+      event_title: "My Celebration",
+      hosted_by: "",
+      start_at: startAt.toISOString(),
+      end_at: endAt.toISOString(),
+      template_slug: "royal-gold",
+    })
+    .select("id, slug")
+    .single<{ id: string; slug: string }>();
+
+  if (error || !data) throw new Error(`Failed to create event: ${error?.message}`);
+  return data;
 }
 
 export interface EventUpdateInput {

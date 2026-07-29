@@ -1,5 +1,5 @@
-import { EVENT_SLUG } from "@/lib/constants";
-import { getEventBySlug } from "@/services/events";
+import { getCurrentAdmin } from "@/services/admin-auth";
+import { resolveAdminEvent } from "@/lib/admin-event";
 import { toEventDisplayData } from "@/lib/event-display";
 import { getTemplateBySlug } from "@/lib/templates";
 import { ShareImageGenerator } from "@/features/admin/share-image/share-image-generator";
@@ -11,7 +11,8 @@ import { ShareImageGenerator } from "@/features/admin/share-image/share-image-ge
 export const dynamic = "force-dynamic";
 
 export default async function AdminShareImagePage() {
-  const event = await getEventBySlug(EVENT_SLUG);
+  const admin = await getCurrentAdmin();
+  const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event found. Check your Supabase seed data.</p>;
   }

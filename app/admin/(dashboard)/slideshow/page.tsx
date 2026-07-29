@@ -1,6 +1,5 @@
-import { EVENT_SLUG } from "@/lib/constants";
-import { getEventBySlug } from "@/services/events";
 import { getCurrentAdmin } from "@/services/admin-auth";
+import { resolveAdminEvent } from "@/lib/admin-event";
 import { getTemplateBySlug } from "@/lib/templates";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listMilestones } from "@/services/timeline";
@@ -16,12 +15,12 @@ export const dynamic = "force-dynamic";
 // Shotstack's paid, per-minute-billed API — see the README's "Slideshow
 // Video" section for why this moved off free client-side rendering.
 export default async function AdminSlideshowPage() {
-  const event = await getEventBySlug(EVENT_SLUG);
+  const admin = await getCurrentAdmin();
+  const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event found. Check your Supabase seed data.</p>;
   }
 
-  const admin = await getCurrentAdmin();
   const template = getTemplateBySlug(event.templateSlug);
 
   const [photos, milestones] = await Promise.all([
