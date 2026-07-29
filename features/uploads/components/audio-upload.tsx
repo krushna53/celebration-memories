@@ -10,6 +10,8 @@ import { UploadQueue } from "@/features/uploads/components/upload-queue";
 
 interface AudioUploadProps {
   token: string;
+  /** Which mode to land in immediately — set to "record" so tapping the Record Audio icon in MediaUploadsSection's menu skips straight to the mic view instead of requiring a second tap. Defaults to "upload". The toggle below still lets the guest switch either way after landing. */
+  initialMode?: "upload" | "record";
 }
 
 function formatSeconds(total: number): string {
@@ -19,9 +21,9 @@ function formatSeconds(total: number): string {
 }
 
 /** Audio upload — an existing file, or record a voice message in-browser. */
-export function AudioUpload({ token }: AudioUploadProps) {
+export function AudioUpload({ token, initialMode = "upload" }: AudioUploadProps) {
   const { items, addFiles, setCaption, remove, uploadAll } = useMediaUpload(token, "audio");
-  const [mode, setMode] = useState<"upload" | "record">("upload");
+  const [mode, setMode] = useState<"upload" | "record">(initialMode);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { isRecording, seconds, error, start, stop } = useMediaRecorder({

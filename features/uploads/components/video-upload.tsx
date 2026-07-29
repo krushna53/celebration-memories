@@ -10,6 +10,8 @@ import { UploadQueue } from "@/features/uploads/components/upload-queue";
 
 interface VideoUploadProps {
   token: string;
+  /** Which mode to land in immediately — set to "record" so tapping the Record Video icon in MediaUploadsSection's menu skips straight to the camera view instead of requiring a second tap. Defaults to "upload". The toggle below still lets the guest switch either way after landing. */
+  initialMode?: "upload" | "record";
 }
 
 function formatSeconds(total: number): string {
@@ -19,9 +21,9 @@ function formatSeconds(total: number): string {
 }
 
 /** Video upload — an existing file, or record directly from the browser. */
-export function VideoUpload({ token }: VideoUploadProps) {
+export function VideoUpload({ token, initialMode = "upload" }: VideoUploadProps) {
   const { items, addFiles, setCaption, remove, uploadAll } = useMediaUpload(token, "video");
-  const [mode, setMode] = useState<"upload" | "record">("upload");
+  const [mode, setMode] = useState<"upload" | "record">(initialMode);
   const inputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLVideoElement>(null);
 

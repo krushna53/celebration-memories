@@ -73,7 +73,7 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
           <HeartHandshake className="shrink-0 text-gold-500" size={18} />
           Thanks, {identified.firstName} — upload as many memories as you&rsquo;d like below.
         </div>
-        <MediaUploadsSection token={identified.token} defaultTab="video" />
+        <MediaUploadsSection token={identified.token} />
       </div>
     );
   }
