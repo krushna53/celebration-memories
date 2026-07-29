@@ -8,7 +8,13 @@ import { formatEventDate, formatEventTime } from "@/lib/format";
 import { buildEventMetadata } from "@/lib/event-metadata";
 import { getTemplateBySlug } from "@/lib/templates";
 import { templateAccentStyle } from "@/lib/template-theme-css";
+import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
+import { communitySubmissionToTemplateSummary } from "@/lib/community-theme";
+import { listApprovedTemplateSubmissions } from "@/services/template-submissions";
+import { getCurrentAdmin } from "@/services/admin-auth";
+import { isAdminForEvent } from "@/lib/admin-event";
 import { PublicRsvpForm } from "@/features/rsvp/public-rsvp-form";
+import { RsvpTemplateSwitcher } from "@/features/admin/templates/rsvp-template-switcher";
 import { PageViewBeacon } from "@/features/analytics/page-view-beacon";
 import { Reveal } from "@/components/motion/reveal";
 import { SiteShell } from "@/components/layout/site-shell";
@@ -46,10 +52,38 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
 
   const template = getTemplateBySlug(event.templateSlug);
 
+  // Only fetched/rendered for the event's own admin (owner, or the
+  // client scoped to this event) — a real guest incurs no extra query
+  // and never sees this bar. See isAdminForEvent's doc comment for why
+  // an unscoped client-role admin deliberately doesn't count.
+  const admin = await getCurrentAdmin();
+  const isAdmin = isAdminForEvent(admin, event.id);
+  const templateOptions = isAdmin
+    ? [
+        ...TEMPLATE_CATALOG,
+        ...(await listApprovedTemplateSubmissions()).map(communitySubmissionToTemplateSummary),
+      ]
+    : [];
+
   return (
     <SiteShell honoreeName={event.honoreeName}>
       <PageViewBeacon eventId={event.id} page="public_rsvp" />
+      {/*
+        Rendered as the first child of the already-pt-28/32-padded div
+        below (which exists to clear the fixed Navbar) rather than above
+        it — Navbar is `fixed`, so anything placed before that padding
+        would render at the very top of the page, hidden underneath it.
+      */}
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32" style={templateAccentStyle(template)}>
+        {isAdmin ? (
+          <div className="mb-6">
+            <RsvpTemplateSwitcher
+              eventId={event.id}
+              currentTemplateSlug={event.templateSlug}
+              templates={templateOptions}
+            />
+          </div>
+        ) : null}
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
           <Reveal>
             <p className="text-xs uppercase tracking-[0.35em] text-gold-500">

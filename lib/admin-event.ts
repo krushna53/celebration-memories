@@ -52,3 +52,18 @@ export async function resolveAdminEvent(admin: CurrentAdmin): Promise<EventRecor
 
   return getEventBySlug(EVENT_SLUG);
 }
+
+/**
+ * Whether `admin` is allowed to manage the given event — the owner can
+ * manage any event; a client can only manage the one event scoped to
+ * their own admins.eventId (never null-fallback to the flagship event,
+ * see resolveAdminEvent's doc comment above for why that matters).
+ * A non-throwing boolean sibling of requireAdminForEvent
+ * (services/admin-auth.ts), for page components that should just skip
+ * rendering an admin-only affordance — e.g. the template switcher on
+ * the public RSVP page — rather than error out for a normal visitor.
+ */
+export function isAdminForEvent(admin: CurrentAdmin | null, eventId: string): boolean {
+  if (!admin) return false;
+  return admin.role === "owner" || admin.eventId === eventId;
+}
