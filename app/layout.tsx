@@ -12,18 +12,29 @@ import {
   cormorantGaramond,
   quicksand,
 } from "@/lib/fonts";
-import { ACTIVE_EVENT, SITE_NAME, SITE_URL } from "@/lib/constants";
+import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import { ClarityScript } from "@/features/analytics/clarity-script";
 
 import "./globals.css";
 
+/**
+ * Platform-generic defaults only — deliberately NOT tied to any one
+ * client's event (previously hardcoded to ACTIVE_EVENT / "Mahesh J.
+ * Shah", which leaked that client's name and details into the <title>
+ * and Open Graph tags of every route that doesn't set its own metadata,
+ * including the platform homepage). Every event page already generates
+ * its own per-event metadata (see app/events/[slug]/page.tsx's
+ * generateMetadata) which fully overrides this; this is purely the
+ * fallback for platform-level routes like /, /events, /roles, /contact.
+ */
 export const metadata: Metadata = {
-  title: `${ACTIVE_EVENT.honoreeName} — ${ACTIVE_EVENT.eventTitle} | ${SITE_NAME}`,
-  description: `Join us in celebrating ${ACTIVE_EVENT.honoreeName}'s 75th birthday, hosted by ${ACTIVE_EVENT.hostedBy}. ${ACTIVE_EVENT.dayOfWeek}, ${ACTIVE_EVENT.date}.`,
+  title: `${SITE_NAME} — Digital Invitations & Guest Memories`,
+  description:
+    "A premium, mobile-first invitation platform for birthdays, weddings, anniversaries, memorials, and more — unique guest links, live RSVP, and a shared wall of photos, videos, and messages.",
   metadataBase: new URL(SITE_URL),
   openGraph: {
-    title: `${ACTIVE_EVENT.honoreeName} — ${ACTIVE_EVENT.eventTitle}`,
-    description: `Hosted by ${ACTIVE_EVENT.hostedBy} · ${ACTIVE_EVENT.dayOfWeek}, ${ACTIVE_EVENT.date}`,
+    title: SITE_NAME,
+    description: "Premium digital invitations and shared guest memories for any celebration.",
     type: "website",
   },
 };

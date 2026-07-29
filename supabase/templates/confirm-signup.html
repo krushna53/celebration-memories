@@ -1,0 +1,56 @@
+<!--
+  "Confirm signup" auth email template — Celebration Memories branding.
+
+  Supabase hosted projects (no config.toml in this repo — see
+  supabase/README.md) don't read this file automatically. It's the
+  source of truth to copy/paste into the Dashboard:
+
+    Authentication → Email Templates → Confirm signup
+    https://supabase.com/dashboard/project/ktbpnjrovzhjwardyime/auth/templates
+
+  Subject to set alongside it:
+    Confirm your email — Celebration Memories
+
+  Kept intentionally simple (table-based, inline styles only, no
+  external assets/fonts) for email client compatibility. {{ .ConfirmationURL }}
+  is the only Supabase template variable used — see
+  https://supabase.com/docs/guides/auth/auth-email-templates for the
+  full variable list if this needs to reference {{ .Data.name }} etc.
+  later (not used here since not every signup path sets that metadata
+  key, e.g. the self-serve wizard vs. /admin/register).
+-->
+<div style="background-color:#f7f5ef;padding:32px 16px;font-family:Georgia,'Playfair Display',serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;background-color:#0b1626;border-radius:16px;overflow:hidden;">
+    <tr>
+      <td style="padding:40px 32px 8px;text-align:center;">
+        <p style="margin:0;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#c9a227;font-family:Arial,sans-serif;">
+          Celebration Memories
+        </p>
+        <h1 style="margin:16px 0 0;font-size:24px;color:#faf7ee;font-weight:normal;">
+          Confirm your email
+        </h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:16px 32px 8px;text-align:center;">
+        <p style="margin:0;font-size:14px;line-height:1.6;color:rgba(250,247,238,0.75);font-family:Arial,sans-serif;">
+          You&rsquo;re almost set up. Confirm your email address to finish creating your Celebration Memories account and start building your event page.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:24px 32px 40px;text-align:center;">
+        <a href="{{ .ConfirmationURL }}"
+           style="display:inline-block;background-color:#c9a227;color:#0b1626;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;letter-spacing:0.5px;padding:14px 32px;border-radius:999px;">
+          Confirm Email Address
+        </a>
+        <p style="margin:20px 0 0;font-size:12px;color:rgba(250,247,238,0.45);font-family:Arial,sans-serif;">
+          If you didn&rsquo;t create this account, you can safely ignore this email.
+        </p>
+      </td>
+    </tr>
+  </table>
+  <p style="max-width:480px;margin:20px auto 0;text-align:center;font-size:11px;color:#9a9584;font-family:Arial,sans-serif;">
+    Celebration Memories &middot; Built by Krushna Web Works
+  </p>
+</div>

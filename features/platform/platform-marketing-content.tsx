@@ -14,7 +14,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
-import { BUILDER, SUPPORT, EVENT_SLUG } from "@/lib/constants";
+import { BUILDER, SUPPORT } from "@/lib/constants";
 
 const LIVE_FEATURES = [
   {
@@ -117,12 +117,8 @@ export function PlatformMarketingContent() {
                 See who can do what
               </Link>
               {" · "}
-              See it in action:{" "}
-              <Link
-                href={`/events/${EVENT_SLUG}`}
-                className="text-gold-300 underline underline-offset-2 hover:text-gold-200"
-              >
-                Mahesh&rsquo;s 75th Birthday
+              <Link href="/events" className="text-gold-300 underline underline-offset-2 hover:text-gold-200">
+                Browse live events
               </Link>
             </p>
           </Reveal>

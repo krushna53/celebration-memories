@@ -105,7 +105,7 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
           id="uploader-name"
           ref={inputRef}
           className={cn(inputClasses, "mt-1.5")}
-          placeholder="e.g. Priya (Mahesh's niece)"
+          placeholder={`e.g. Priya (${honoreeName.split(" ")[0]}'s niece)`}
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoFocus

@@ -20,3 +20,23 @@ All guest-facing reads/writes (RSVP, tracking) run server-side through the
 service-role client in `lib/supabase/admin.ts`. RLS is enabled with no
 public policies, so the anon key alone cannot read or write guest data —
 the invite token is the guest's credential, checked in application code.
+
+## Auth email templates (branding)
+
+This is a hosted Supabase project (no `config.toml` checked in), so auth
+email templates — the "Confirm your signup" email new admins/clients get
+from `supabaseBrowser().auth.signUp()` — are NOT configured from code.
+They default to generic Supabase wording ("Confirm your signup" from
+`noreply@mail.app.supabase.io`) unless set in the Dashboard.
+
+`templates/confirm-signup.html` in this folder is the source of truth for
+the branded version — copy/paste it (and the subject below) into:
+
+**Authentication → Email Templates → Confirm signup**
+https://supabase.com/dashboard/project/ktbpnjrovzhjwardyime/auth/templates
+
+Subject: `Confirm your email — Celebration Memories`
+
+The Dashboard also lets you set a custom "Sender email/name" on paid plans
+(Settings → Auth → SMTP) if you want the From address to say Celebration
+Memories too, rather than Supabase's shared sender.
