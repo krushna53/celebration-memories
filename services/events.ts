@@ -28,6 +28,7 @@ export interface EventRow {
   template_slug: string | null;
   invite_message_template: string | null;
   public_rsvp_enabled: boolean;
+  public_memories_enabled: boolean;
   share_image_path: string | null;
   share_video_path: string | null;
   section_config: SectionConfigItem[] | null;
@@ -66,6 +67,7 @@ export function mapEvent(row: EventRow): EventRecord {
     templateSlug: row.template_slug ?? "royal-gold",
     inviteMessageTemplate: row.invite_message_template,
     publicRsvpEnabled: row.public_rsvp_enabled ?? false,
+    publicMemoriesEnabled: row.public_memories_enabled ?? false,
     shareImagePath: row.share_image_path,
     shareVideoPath: row.share_video_path,
     sectionConfig: row.section_config,
@@ -228,6 +230,7 @@ export interface EventUpdateInput {
   templateSlug?: string;
   inviteMessageTemplate?: string | null;
   publicRsvpEnabled?: boolean;
+  publicMemoriesEnabled?: boolean;
   shareImagePath?: string | null;
   shareVideoPath?: string | null;
   sectionConfig?: SectionConfigItem[] | null;
@@ -260,6 +263,8 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.inviteMessageTemplate !== undefined)
     patch.invite_message_template = input.inviteMessageTemplate;
   if (input.publicRsvpEnabled !== undefined) patch.public_rsvp_enabled = input.publicRsvpEnabled;
+  if (input.publicMemoriesEnabled !== undefined)
+    patch.public_memories_enabled = input.publicMemoriesEnabled;
   if (input.shareImagePath !== undefined) patch.share_image_path = input.shareImagePath;
   if (input.shareVideoPath !== undefined) patch.share_video_path = input.shareVideoPath;
   if (input.sectionConfig !== undefined) patch.section_config = input.sectionConfig;

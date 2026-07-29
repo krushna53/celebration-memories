@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Film, ImagePlus, Loader2, Save, Sparkles, Trash2, Upload } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Film,
+  ImagePlus,
+  Loader2,
+  MessageCircle,
+  Save,
+  Sparkles,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -71,6 +82,7 @@ export function EventSettingsForm({
     occasionDate: event.occasionDate ?? "",
     inviteMessageTemplate: event.inviteMessageTemplate ?? "",
     publicRsvpEnabled: event.publicRsvpEnabled,
+    publicMemoriesEnabled: event.publicMemoriesEnabled,
     additionalNotes: event.additionalNotes ?? "",
     wishMessage: event.wishMessage ?? "",
     customCss: event.customCss ?? "",
@@ -85,6 +97,7 @@ export function EventSettingsForm({
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedRsvpLink, setCopiedRsvpLink] = useState(false);
+  const [copiedMemoriesLink, setCopiedMemoriesLink] = useState(false);
   const [uploadingShareImage, setUploadingShareImage] = useState(false);
   const [shareImageError, setShareImageError] = useState<string | null>(null);
   const shareImageInputRef = useRef<HTMLInputElement>(null);
@@ -102,6 +115,18 @@ export function EventSettingsForm({
     navigator.clipboard.writeText(`${origin}/events/${event.slug}/rsvp`);
     setCopiedRsvpLink(true);
     setTimeout(() => setCopiedRsvpLink(false), 1500);
+  }
+
+  function copyMemoriesLink() {
+    navigator.clipboard.writeText(`${origin}/events/${event.slug}/memories`);
+    setCopiedMemoriesLink(true);
+    setTimeout(() => setCopiedMemoriesLink(false), 1500);
+  }
+
+  function shareMemoriesLinkViaWhatsApp() {
+    const link = `${origin}/events/${event.slug}/memories`;
+    const text = `${event.hostedBy} would love a photo or video memory of ${event.honoreeName} — upload one here: ${link}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   }
 
   async function handleShareImageFile(rawFile: File) {
@@ -233,6 +258,7 @@ export function EventSettingsForm({
       occasionDate: form.occasionDate || null,
       inviteMessageTemplate: form.inviteMessageTemplate || null,
       publicRsvpEnabled: form.publicRsvpEnabled,
+      publicMemoriesEnabled: form.publicMemoriesEnabled,
       additionalNotes: form.additionalNotes || null,
       wishMessage: form.wishMessage || null,
       customCss: form.customCss || null,
@@ -718,6 +744,69 @@ export function EventSettingsForm({
             <p className="mt-1.5 text-xs text-navy-700/50">
               Share this on WhatsApp status, a flyer, or anywhere else — every
               visitor can RSVP themselves.
+            </p>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Share-a-Memory Link</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          A single link relatives can open to upload a photo, video, or audio
+          memory — no personal invitation link needed. Perfect for texting to
+          family who won&rsquo;t be sent a formal invite. Just like a personal
+          link, every upload waits for your approval on the Memories page
+          before it appears on the public Memory Wall.
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, publicMemoriesEnabled: false }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              !form.publicMemoriesEnabled
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            Off
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, publicMemoriesEnabled: true }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              form.publicMemoriesEnabled
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            On — shared memory link
+          </button>
+        </div>
+        {form.publicMemoriesEnabled && origin ? (
+          <div>
+            <label className={labelClasses}>Shareable Memories Link</label>
+            <div className="mt-1.5 flex items-center gap-2">
+              <input
+                readOnly
+                value={`${origin}/events/${event.slug}/memories`}
+                className={`${inputClasses} bg-navy-950/[0.02] text-navy-700/80`}
+              />
+              <Button type="button" variant="outline" onClick={copyMemoriesLink}>
+                {copiedMemoriesLink ? <Check size={15} /> : <Copy size={15} />}
+              </Button>
+              <Button type="button" variant="outline" onClick={shareMemoriesLinkViaWhatsApp}>
+                <MessageCircle size={15} />
+              </Button>
+            </div>
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              Opens straight to a video upload button — relatives just tap,
+              record or choose a file, and send.
             </p>
           </div>
         ) : null}

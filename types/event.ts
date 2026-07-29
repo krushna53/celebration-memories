@@ -65,6 +65,15 @@ export interface EventRecord {
    * Off by default: RSVP stays locked to personal /invite/[token] links.
    */
   publicRsvpEnabled: boolean;
+  /**
+   * When true, /events/[slug]/memories is open to anyone — a single
+   * shareable link relatives can use to upload photos/videos/audio
+   * without a personal /invite/[token] link. Off by default. Visitors
+   * identify themselves by name only (see services/public-memories.ts);
+   * uploads still go through the normal approval queue before appearing
+   * on the public Memory Wall.
+   */
+  publicMemoriesEnabled: boolean;
   /** Storage path (gallery bucket) of the organizer-chosen link-preview image. See lib/event-metadata.ts. */
   shareImagePath: string | null;
   /**

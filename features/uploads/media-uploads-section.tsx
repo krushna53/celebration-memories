@@ -10,6 +10,8 @@ import { AudioUpload } from "@/features/uploads/components/audio-upload";
 
 interface MediaUploadsSectionProps {
   token: string;
+  /** Which tab is active on first render. Defaults to "photo". The public memories page (/events/[slug]/memories) passes "video" since that's what it's built for. */
+  defaultTab?: "photo" | "video" | "audio";
 }
 
 const TABS = [
@@ -23,8 +25,8 @@ const TABS = [
  * personalized invite page below the RSVP form. Uploads are queued for
  * admin approval before appearing on the public Memory Wall.
  */
-export function MediaUploadsSection({ token }: MediaUploadsSectionProps) {
-  const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("photo");
+export function MediaUploadsSection({ token, defaultTab = "photo" }: MediaUploadsSectionProps) {
+  const [tab, setTab] = useState<(typeof TABS)[number]["key"]>(defaultTab);
 
   return (
     <div className="rounded-2xl border border-gold-500/15 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8">

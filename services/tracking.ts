@@ -54,7 +54,7 @@ export async function logActivity(inviteeId: string, eventType: string) {
   }
 }
 
-export type PageViewType = "landing" | "public_rsvp";
+export type PageViewType = "landing" | "public_rsvp" | "public_memories";
 
 /**
  * Logs an anonymous page view (no invitee identity yet) — the homepage/
