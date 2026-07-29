@@ -24,6 +24,7 @@ import {
   FileClock,
   CreditCard,
   Ticket,
+  LayoutGrid,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -94,6 +95,13 @@ export default async function AdminDashboardLayout({
                 Host access
               </span>
             ) : null}
+            <Link
+              href="/admin/simple"
+              title="A simpler, single-page view with just the essentials"
+              className="hidden items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 text-xs text-ivory-100/70 transition-luxury duration-200 hover:border-gold-500/40 hover:text-gold-300 sm:flex"
+            >
+              <LayoutGrid size={13} /> Simple View
+            </Link>
             <AdminTourController steps={tourSteps} autoStart={!admin.hasSeenTour} />
             <form action={signOutAction}>
               <button

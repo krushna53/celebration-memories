@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarCheck, Globe, MonitorPlay } from "lucide-react";
+import { CalendarCheck, Globe, LayoutGrid, MonitorPlay } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
@@ -25,6 +25,12 @@ export default async function AdminOverviewPage() {
         <div>
           <h1 className="font-display text-2xl text-navy-950">Overview</h1>
           <p className="mt-1 text-sm text-navy-700/60">{event.honoreeName} — {event.eventTitle}</p>
+          <Link
+            href="/admin/simple"
+            className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-gold-700 underline underline-offset-4 hover:text-gold-800"
+          >
+            <LayoutGrid size={12} /> Prefer fewer tabs? Try the simplified view
+          </Link>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
