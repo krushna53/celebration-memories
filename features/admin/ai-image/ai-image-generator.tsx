@@ -1,16 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Download, ImagePlus, Loader2, Sparkles, Upload } from "lucide-react";
+import { Check, Download, ImagePlus, Loader2, Sparkles, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+  confirmAiImageUploadAction,
   generateAiImageAction,
   requestAiImageUploadUrlAction,
   type StartAiImageResult,
   type RequestUploadUrlResult,
 } from "@/features/admin/ai-image/actions";
-import { confirmShareImageUploadAction, type AdminActionResult } from "@/features/admin/event-settings/actions";
+import {
+  confirmShareImageUploadAction,
+  removeShareImageAction,
+  type AdminActionResult,
+} from "@/features/admin/event-settings/actions";
 import { confirmGalleryUploadAction } from "@/features/admin/gallery/actions";
 import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -40,6 +45,8 @@ const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
   (c): c is { value: GalleryCategory; label: string } => c.value !== "all",
 );
 
+type ImageResult = { url: string; path: string };
+
 /**
  * Every action this component needs, defaulting to the real admin
  * actions (getCurrentAdmin()-gated) — the self-serve onboarding wizard
@@ -55,7 +62,11 @@ export interface AiImageActions {
     contentType: string,
     fileSize: number,
   ) => Promise<RequestUploadUrlResult>;
+  /** Persists a just-uploaded path so it survives a reload — see recordAiImageUpload's doc comment. */
+  recordUpload: (eventId: string, path: string) => Promise<AdminActionResult>;
   useAsShareImage: (eventId: string, path: string) => Promise<AdminActionResult>;
+  /** Clears the event's Link Preview Image selection. */
+  removeShareImage: (eventId: string) => Promise<AdminActionResult>;
   addToGallery: (
     eventId: string,
     category: GalleryCategory,
@@ -67,7 +78,9 @@ export interface AiImageActions {
 const DEFAULT_ACTIONS: AiImageActions = {
   generate: generateAiImageAction,
   requestUpload: requestAiImageUploadUrlAction,
+  recordUpload: confirmAiImageUploadAction,
   useAsShareImage: confirmShareImageUploadAction,
+  removeShareImage: removeShareImageAction,
   addToGallery: confirmGalleryUploadAction,
 };
 
@@ -78,13 +91,23 @@ interface AiImageGeneratorProps {
   /** Non-null only for client-role admins — owner has no cap. */
   quota: { used: number; limit: number } | null;
   /**
-   * The most recently completed generation/upload for this event, if
-   * any — fetched server-side via getLatestCompletedAiImageJob so the
-   * preview panel isn't empty just because the admin reloaded the page
-   * or came back later. See that function's doc comment for why this
-   * was previously lost.
+   * The most recently completed AI generation for this event, if any —
+   * fetched server-side via getLatestCompletedAiImageJob so the
+   * "Generate with AI" preview isn't empty just because the admin
+   * reloaded the page or came back later.
    */
-  initialResult?: { url: string; path: string } | null;
+  initialGeneratedResult?: ImageResult | null;
+  /**
+   * The most recently uploaded "Upload Your Own" image for this event,
+   * if any — fetched server-side via getLatestUploadedAiImageJob. Kept
+   * entirely separate from initialGeneratedResult: generating a new
+   * image no longer erases an already-uploaded one and vice versa (both
+   * used to share one `result` slot, so switching tabs — or generating
+   * after uploading — would silently drop whichever wasn't current).
+   */
+  initialUploadedResult?: ImageResult | null;
+  /** The event's current Link Preview Image path, if any — lets either panel show "Currently used as Link Preview" and persists across reloads. */
+  currentShareImagePath?: string | null;
   actions?: AiImageActions;
   /**
    * The wizard has no Supabase Auth session to send with the Edge
@@ -104,18 +127,24 @@ export function AiImageGenerator({
   defaultPrompt,
   configured,
   quota,
-  initialResult = null,
+  initialGeneratedResult = null,
+  initialUploadedResult = null,
+  currentShareImagePath = null,
   actions = DEFAULT_ACTIONS,
   anonAuthKey,
 }: AiImageGeneratorProps) {
   const [mode, setMode] = useState<"generate" | "upload">("generate");
   const [prompt, setPrompt] = useState(defaultPrompt);
-  const [busy, setBusy] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ url: string; path: string } | null>(initialResult);
+  const [generatedResult, setGeneratedResult] = useState<ImageResult | null>(initialGeneratedResult);
+  const [uploadedResult, setUploadedResult] = useState<ImageResult | null>(initialUploadedResult);
   const [category, setCategory] = useState<GalleryCategory>("family");
-  const [savedTo, setSavedTo] = useState<"share" | "gallery" | null>(null);
+  const [shareImagePath, setShareImagePath] = useState<string | null>(currentShareImagePath);
+  const [savedToGallery, setSavedToGallery] = useState<"generated" | "upload" | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
   const [remainingOverride, setRemainingOverride] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,14 +160,12 @@ export function AiImageGenerator({
 
   function stopLoadingSteps() {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    setBusy(false);
+    setGenerating(false);
   }
 
   async function handleGenerate() {
-    setBusy(true);
+    setGenerating(true);
     setError(null);
-    setResult(null);
-    setSavedTo(null);
     setLoadingStep(0);
     intervalRef.current = setInterval(() => {
       setLoadingStep((s) => Math.min(s + 1, LOADING_STEPS.length - 1));
@@ -208,7 +235,7 @@ export function AiImageGenerator({
         return;
       }
 
-      setResult({ url: outcome.resultUrl, path: outcome.resultPath });
+      setGeneratedResult({ url: outcome.resultUrl, path: outcome.resultPath });
     } catch (err) {
       stopLoadingSteps();
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -220,10 +247,8 @@ export function AiImageGenerator({
   }
 
   async function handleUpload(file: File) {
-    setBusy(true);
+    setUploading(true);
     setError(null);
-    setResult(null);
-    setSavedTo(null);
 
     try {
       const compressed = await compressImage(file);
@@ -237,36 +262,104 @@ export function AiImageGenerator({
       if (uploadError) throw new Error(uploadError.message);
 
       const { data } = supabaseBrowser().storage.from(bucket).getPublicUrl(path);
-      setResult({ url: data.publicUrl, path });
+      setUploadedResult({ url: data.publicUrl, path });
+
+      // Best-effort persistence — if this fails, the upload still shows
+      // in this session, it just won't survive a reload. Not worth
+      // failing the whole upload over.
+      const recorded = await actions.recordUpload(eventId, path);
+      if (!recorded.success) {
+        console.error("Failed to persist uploaded image:", recorded.error);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
-      setBusy(false);
+      setUploading(false);
     }
   }
 
-  async function handleUseAsShareImage() {
-    if (!result) return;
-    setBusy(true);
+  async function handleUseAsShareImage(result: ImageResult) {
+    setActionBusy(true);
     const outcome = await actions.useAsShareImage(eventId, result.path);
-    setBusy(false);
+    setActionBusy(false);
     if (outcome.success) {
-      setSavedTo("share");
+      setShareImagePath(result.path);
     } else {
       setError(outcome.error);
     }
   }
 
-  async function handleAddToGallery() {
-    if (!result) return;
-    setBusy(true);
-    const outcome = await actions.addToGallery(eventId, category, result.path, "AI-generated");
-    setBusy(false);
+  async function handleRemoveShareImage() {
+    setActionBusy(true);
+    const outcome = await actions.removeShareImage(eventId);
+    setActionBusy(false);
     if (outcome.success) {
-      setSavedTo("gallery");
+      setShareImagePath(null);
     } else {
       setError(outcome.error);
     }
+  }
+
+  async function handleAddToGallery(result: ImageResult, source: "generated" | "upload") {
+    setActionBusy(true);
+    const outcome = await actions.addToGallery(
+      eventId,
+      category,
+      result.path,
+      source === "generated" ? "AI-generated" : "Uploaded",
+    );
+    setActionBusy(false);
+    if (outcome.success) {
+      setSavedToGallery(source);
+    } else {
+      setError(outcome.error);
+    }
+  }
+
+  function renderResultPanel(result: ImageResult, source: "generated" | "upload") {
+    const isShareImage = shareImagePath === result.path;
+    return (
+      <div className="grid gap-3">
+        <p className="text-xs font-medium uppercase tracking-[0.15em] text-navy-700/50">
+          {source === "generated" ? "AI Generated" : "Your Upload"}
+        </p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={result.url}
+          alt={source === "generated" ? "AI-generated invitation" : "Uploaded invitation"}
+          className="w-full rounded-xl border border-navy-950/10 object-cover"
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <a href={result.url} download target="_blank" rel="noopener noreferrer">
+              <Download size={14} /> Download
+            </a>
+          </Button>
+          {isShareImage ? (
+            <Button variant="outline" size="sm" onClick={handleRemoveShareImage} disabled={actionBusy}>
+              <Trash2 size={14} /> Remove as Link Preview
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => handleUseAsShareImage(result)} disabled={actionBusy}>
+              <ImagePlus size={14} /> Use as Link Preview Image
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleAddToGallery(result, source)}
+            disabled={actionBusy}
+          >
+            {savedToGallery === source ? <Check size={14} /> : <ImagePlus size={14} />}
+            Add to Gallery
+          </Button>
+        </div>
+        {isShareImage ? (
+          <p className="text-xs text-green-700">Currently used as your Link Preview Image.</p>
+        ) : null}
+        {savedToGallery === source ? <p className="text-xs text-green-700">Added to Gallery.</p> : null}
+      </div>
+    );
   }
 
   return (
@@ -324,11 +417,11 @@ export function AiImageGenerator({
 
               <Button
                 onClick={handleGenerate}
-                disabled={busy || !prompt.trim() || atLimit}
+                disabled={generating || !prompt.trim() || atLimit}
                 size="lg"
                 className="w-full sm:w-auto"
               >
-                {busy ? (
+                {generating ? (
                   <>
                     <Loader2 className="animate-spin" size={16} /> {LOADING_STEPS[loadingStep]}
                   </>
@@ -369,80 +462,59 @@ export function AiImageGenerator({
             />
             <button
               type="button"
-              disabled={busy}
+              disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
               className="mt-1.5 flex w-full flex-col items-center gap-2 rounded-xl border border-dashed border-navy-950/20 bg-navy-950/[0.02] px-6 py-10 text-center hover:border-gold-500/50 disabled:cursor-wait"
             >
-              {busy ? (
+              {uploading ? (
                 <Loader2 className="animate-spin text-navy-700/50" size={22} />
               ) : (
                 <Upload className="text-navy-700/40" size={22} />
               )}
               <span className="text-sm text-navy-700/70">
-                {busy ? "Uploading..." : "Tap to choose a photo"}
+                {uploading ? "Uploading..." : "Tap to choose a photo"}
               </span>
               <span className="text-xs text-navy-700/40">JPEG, PNG, WEBP, or HEIC — up to 50MB</span>
             </button>
             <p className="mt-1.5 text-xs text-navy-700/50">
               Already have an invitation design? Upload it here instead of generating one — it&rsquo;s
-              treated exactly the same afterward (download, use as Link Preview, or add to Gallery).
+              treated exactly the same afterward (download, use as Link Preview, or add to Gallery), and
+              shows up in its own preview alongside any AI-generated image below.
             </p>
           </div>
         )}
 
+        <div className="flex items-center gap-1.5">
+          <label className="text-xs text-navy-700/50">Gallery category:</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as GalleryCategory)}
+            className="rounded-lg border border-navy-950/15 bg-white px-2 py-1.5 text-xs"
+          >
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </div>
 
-      <div>
-        {result ? (
-          <div className="grid gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={result.url}
-              alt="Invitation"
-              className="w-full rounded-xl border border-navy-950/10 object-cover"
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              <Button asChild variant="outline" size="sm">
-                <a href={result.url} download target="_blank" rel="noopener noreferrer">
-                  <Download size={14} /> Download
-                </a>
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleUseAsShareImage} disabled={busy}>
-                {savedTo === "share" ? <Check size={14} /> : <ImagePlus size={14} />}
-                Use as Link Preview Image
-              </Button>
-              <div className="flex items-center gap-1.5">
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as GalleryCategory)}
-                  className="rounded-lg border border-navy-950/15 bg-white px-2 py-1.5 text-xs"
-                >
-                  {CATEGORY_OPTIONS.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-                <Button variant="outline" size="sm" onClick={handleAddToGallery} disabled={busy}>
-                  {savedTo === "gallery" ? <Check size={14} /> : <ImagePlus size={14} />}
-                  Add to Gallery
-                </Button>
-              </div>
-            </div>
-            {savedTo ? (
-              <p className="text-xs text-green-700">
-                Saved {savedTo === "share" ? "as your Link Preview Image" : "to Gallery"}.
-              </p>
-            ) : null}
-          </div>
+      <div className="grid gap-6">
+        {generatedResult ? (
+          renderResultPanel(generatedResult, "generated")
         ) : (
-          <div className="flex h-full min-h-[220px] items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
-            {busy
-              ? mode === "upload"
-                ? "Uploading..."
-                : "Generating..."
-              : "Your image will appear here."}
+          <div className="flex h-full min-h-[180px] items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
+            {generating ? "Generating..." : "Your AI-generated image will appear here."}
+          </div>
+        )}
+        {uploadedResult ? (
+          renderResultPanel(uploadedResult, "upload")
+        ) : (
+          <div className="flex h-full min-h-[180px] items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
+            {uploading ? "Uploading..." : "Your uploaded image will appear here."}
           </div>
         )}
       </div>

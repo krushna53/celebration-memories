@@ -3,13 +3,17 @@ import { notFound } from "next/navigation";
 import { getDraftEventByToken } from "@/services/event-drafts";
 import { getTemplateBySlug } from "@/lib/templates";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
-import { getLatestCompletedAiImageJob } from "@/services/ai-image-jobs";
+import { getLatestCompletedAiImageJob, getLatestUploadedAiImageJob } from "@/services/ai-image-jobs";
 import { publicMediaUrl } from "@/services/uploads";
 import { AiImageGenerator } from "@/features/admin/ai-image/ai-image-generator";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
 import { SkipStepLink } from "@/features/start/skip-step-link";
-import { draftGenerateAiImageAction, draftRequestAiImageUploadUrlAction } from "@/features/start/actions/ai-image";
-import { draftConfirmShareImageUploadAction } from "@/features/start/actions/event";
+import {
+  draftConfirmAiImageUploadAction,
+  draftGenerateAiImageAction,
+  draftRequestAiImageUploadUrlAction,
+} from "@/features/start/actions/ai-image";
+import { draftConfirmShareImageUploadAction, draftRemoveShareImageAction } from "@/features/start/actions/event";
 import { draftConfirmGalleryUploadAction } from "@/features/start/actions/gallery";
 
 export const dynamic = "force-dynamic";
@@ -34,9 +38,15 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
     "No readable text in the image — just the visual design, decorative elements, and mood. Elegant, high-quality, printable invitation card style.",
   ].join(" ");
 
-  const latestJob = await getLatestCompletedAiImageJob(event.id);
-  const initialResult = latestJob
-    ? { url: publicMediaUrl("gallery", latestJob.resultPath), path: latestJob.resultPath }
+  const [latestGeneratedJob, latestUploadedJob] = await Promise.all([
+    getLatestCompletedAiImageJob(event.id),
+    getLatestUploadedAiImageJob(event.id),
+  ]);
+  const initialGeneratedResult = latestGeneratedJob
+    ? { url: publicMediaUrl("gallery", latestGeneratedJob.resultPath), path: latestGeneratedJob.resultPath }
+    : null;
+  const initialUploadedResult = latestUploadedJob
+    ? { url: publicMediaUrl("gallery", latestUploadedJob.resultPath), path: latestUploadedJob.resultPath }
     : null;
 
   return (
@@ -53,11 +63,15 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
         defaultPrompt={defaultPrompt}
         configured={AI_IMAGE_CONFIGURED}
         quota={null}
-        initialResult={initialResult}
+        initialGeneratedResult={initialGeneratedResult}
+        initialUploadedResult={initialUploadedResult}
+        currentShareImagePath={event.shareImagePath}
         actions={{
           generate: draftGenerateAiImageAction.bind(null, token),
           requestUpload: draftRequestAiImageUploadUrlAction.bind(null, token),
+          recordUpload: draftConfirmAiImageUploadAction.bind(null, token),
           useAsShareImage: draftConfirmShareImageUploadAction.bind(null, token),
+          removeShareImage: draftRemoveShareImageAction.bind(null, token),
           addToGallery: draftConfirmGalleryUploadAction.bind(null, token),
         }}
         anonAuthKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}

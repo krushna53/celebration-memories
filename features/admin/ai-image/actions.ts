@@ -3,9 +3,10 @@
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { getEventById } from "@/services/events";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
-import { createAiImageJob } from "@/services/ai-image-jobs";
+import { createAiImageJob, recordAiImageUpload } from "@/services/ai-image-jobs";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
 import { createSignedAiImageUpload } from "@/services/uploads";
+import type { AdminActionResult } from "@/features/admin/event-settings/actions";
 
 export type StartAiImageResult =
   | { success: true; jobId: string; remaining: number | null }
@@ -108,5 +109,24 @@ export async function requestAiImageUploadUrlAction(
     return { success: true, data: upload };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Upload failed." };
+  }
+}
+
+/**
+ * Called right after the browser finishes uploading a file straight to
+ * Storage via the signed URL from requestAiImageUploadUrlAction — records
+ * it as a completed job row (is_upload: true) so the "Upload Your Own"
+ * preview slot survives a page reload the same way generated images do.
+ * See recordAiImageUpload's doc comment for why this reuses ai_image_jobs.
+ */
+export async function confirmAiImageUploadAction(eventId: string, path: string): Promise<AdminActionResult> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return { success: false, error: "Not authorized." };
+
+  try {
+    await recordAiImageUpload({ eventId, adminId: admin.id, path });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed." };
   }
 }

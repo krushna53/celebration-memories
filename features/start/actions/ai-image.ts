@@ -2,10 +2,11 @@
 
 import { requireDraftEvent } from "@/features/start/draft-auth";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
-import { createAiImageJob } from "@/services/ai-image-jobs";
+import { createAiImageJob, recordAiImageUpload } from "@/services/ai-image-jobs";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
 import { createSignedAiImageUpload } from "@/services/uploads";
 import type { StartAiImageResult, RequestUploadUrlResult } from "@/features/admin/ai-image/actions";
+import type { AdminActionResult } from "@/features/admin/event-settings/actions";
 
 /**
  * Real per-image cost applies (OpenAI) — a draft has no admin/client
@@ -70,5 +71,21 @@ export async function draftRequestAiImageUploadUrlAction(
     return { success: true, data: upload };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Upload failed." };
+  }
+}
+
+/** Draft-token-gated mirror of confirmAiImageUploadAction. */
+export async function draftConfirmAiImageUploadAction(
+  token: string,
+  eventId: string,
+  path: string,
+): Promise<AdminActionResult> {
+  try {
+    const event = await requireDraftEvent(token);
+    if (event.id !== eventId) return { success: false, error: "This link doesn't match that event." };
+    await recordAiImageUpload({ eventId: event.id, adminId: null, path });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed." };
   }
 }

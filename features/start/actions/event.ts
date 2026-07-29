@@ -47,6 +47,18 @@ export async function draftConfirmShareImageUploadAction(
   }
 }
 
+/** Draft-token-gated mirror of removeShareImageAction — clears the "Use as Link Preview Image" selection. */
+export async function draftRemoveShareImageAction(token: string, eventId: string): Promise<AdminActionResult> {
+  try {
+    const event = await requireDraftEvent(token);
+    if (event.id !== eventId) return { success: false, error: "This link doesn't match that event." };
+    await updateEvent(eventId, { shareImagePath: null });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
 /** Draft-token-gated mirror of confirmShareVideoUploadAction — used by the Slideshow step's "Use as Link Preview Video" save. */
 export async function draftConfirmShareVideoUploadAction(
   token: string,

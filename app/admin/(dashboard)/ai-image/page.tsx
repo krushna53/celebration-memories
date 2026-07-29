@@ -3,7 +3,7 @@ import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
-import { getLatestCompletedAiImageJob } from "@/services/ai-image-jobs";
+import { getLatestCompletedAiImageJob, getLatestUploadedAiImageJob } from "@/services/ai-image-jobs";
 import { publicMediaUrl } from "@/services/uploads";
 import { AiImageGenerator } from "@/features/admin/ai-image/ai-image-generator";
 
@@ -38,9 +38,15 @@ export default async function AdminAiImagePage() {
   const used = isClient ? await countAiImageGenerations(event.id) : 0;
   const limit = event.aiImageGenerationLimit;
 
-  const latestJob = await getLatestCompletedAiImageJob(event.id);
-  const initialResult = latestJob
-    ? { url: publicMediaUrl("gallery", latestJob.resultPath), path: latestJob.resultPath }
+  const [latestGeneratedJob, latestUploadedJob] = await Promise.all([
+    getLatestCompletedAiImageJob(event.id),
+    getLatestUploadedAiImageJob(event.id),
+  ]);
+  const initialGeneratedResult = latestGeneratedJob
+    ? { url: publicMediaUrl("gallery", latestGeneratedJob.resultPath), path: latestGeneratedJob.resultPath }
+    : null;
+  const initialUploadedResult = latestUploadedJob
+    ? { url: publicMediaUrl("gallery", latestUploadedJob.resultPath), path: latestUploadedJob.resultPath }
     : null;
 
   return (
@@ -65,7 +71,9 @@ export default async function AdminAiImagePage() {
           defaultPrompt={defaultPrompt}
           configured={AI_IMAGE_CONFIGURED}
           quota={isClient ? { used, limit } : null}
-          initialResult={initialResult}
+          initialGeneratedResult={initialGeneratedResult}
+          initialUploadedResult={initialUploadedResult}
+          currentShareImagePath={event.shareImagePath}
         />
       </div>
     </div>
