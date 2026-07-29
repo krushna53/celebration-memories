@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CalendarCheck, Globe, LayoutGrid, MonitorPlay } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -9,8 +10,25 @@ import { BarChart } from "@/features/admin/components/bar-chart";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminOverviewPage() {
+interface AdminOverviewPageProps {
+  searchParams: Promise<{ from?: string }>;
+}
+
+export default async function AdminOverviewPage({ searchParams }: AdminOverviewPageProps) {
   const admin = await getCurrentAdmin();
+
+  // Right after signing in (see app/admin/login/page.tsx's ?from=login),
+  // a client-role admin lands on the simplified single-page view instead
+  // of the full tab-heavy Overview — the owner's default is unchanged.
+  // Deliberately gated on the query param rather than always redirecting
+  // client-role admins away from /admin, since that would break the
+  // "Overview" nav link and /admin/simple's own "Full Dashboard" link
+  // for them (both point at plain /admin).
+  const { from } = await searchParams;
+  if (admin?.role === "client" && from === "login") {
+    redirect("/admin/simple");
+  }
+
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;

@@ -1,18 +1,20 @@
 import Link from "next/link";
-import { CalendarCheck, Globe, MonitorPlay, Settings, UserPlus } from "lucide-react";
+import { CalendarCheck, Eye, Globe, MonitorPlay, Settings, UserPlus } from "lucide-react";
 
 import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
 import type { EventSummary } from "@/services/events";
-import { setActiveAdminEventAction } from "@/features/admin/events/actions";
+import { setActiveAdminEventAction, viewAsClientAction } from "@/features/admin/events/actions";
 
 /**
  * Owner-only table of every live client event (app/admin/(dashboard)/events)
  * — the "go manage any client's site" entry point. Each row's "Manage"
- * button just posts to setActiveAdminEventAction, which sets the
+ * button posts to setActiveAdminEventAction, which sets the
  * cm_admin_active_event cookie and sends the owner into the normal
- * admin dashboard now scoped to that event (see lib/admin-event.ts).
- * No client-side JS needed — plain form posts, same as the sign-out
- * button in the dashboard layout.
+ * (full, tab-heavy) admin dashboard now scoped to that event (see
+ * lib/admin-event.ts). "View as Client" does the same but lands on
+ * /admin/simple instead — the exact page that client's own login sends
+ * them to. No client-side JS needed for either — plain form posts, same
+ * as the sign-out button in the dashboard layout.
  */
 interface EventListProps {
   events: EventSummary[];
@@ -106,7 +108,16 @@ export function EventList({ events, membersByEvent }: EventListProps) {
                 })}
               </td>
               <td className="px-4 py-3 text-right">
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex items-center justify-end gap-2">
+                  <form action={viewAsClientAction.bind(null, event.id)}>
+                    <button
+                      type="submit"
+                      title="See exactly what this client sees — the simplified single-page view"
+                      className="inline-flex items-center gap-1 rounded-full border border-navy-950/15 px-3 py-1.5 text-xs font-medium text-navy-700 hover:border-navy-950/30 hover:text-navy-950"
+                    >
+                      <Eye size={13} /> View as Client
+                    </button>
+                  </form>
                   <form action={setActiveAdminEventAction.bind(null, event.id)}>
                     <button
                       type="submit"

@@ -31,6 +31,24 @@ export async function setActiveAdminEventAction(eventId: string): Promise<void> 
   redirect("/admin");
 }
 
+/**
+ * Same "step into a client's event" mechanism as setActiveAdminEventAction
+ * above, but lands the owner on /admin/simple — the exact page that
+ * client's own login sends them to (see the ?from=login redirect in
+ * app/admin/(dashboard)/page.tsx) — instead of the full tab-heavy
+ * dashboard. Lets the owner see precisely what that client sees, e.g.
+ * for support/troubleshooting, without needing that client's own
+ * credentials. ActiveEventBanner (rendered on /admin/simple too) shows
+ * "Managing X — Exit" the whole time this is active.
+ */
+export async function viewAsClientAction(eventId: string): Promise<void> {
+  await requireOwner();
+  await setActiveEventOverrideId(eventId);
+  revalidatePath("/admin", "layout");
+  revalidatePath("/admin/simple");
+  redirect("/admin/simple");
+}
+
 /** Owner-only — stops managing a specific client's event, back to the owner's own default (flagship) event. See setActiveAdminEventAction's comment for why revalidatePath is needed here too. */
 export async function clearActiveAdminEventAction(): Promise<void> {
   await requireOwner();

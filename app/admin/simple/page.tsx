@@ -22,6 +22,7 @@ import { getLatestCompletedSlideshowVideoJob } from "@/services/slideshow-video-
 import { signOutAction } from "@/features/admin/auth-actions";
 import { StatCard } from "@/features/admin/components/stat-card";
 import { QuickShareLinks } from "@/features/admin/simple/quick-share-links";
+import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -146,6 +147,8 @@ export default async function AdminSimplePage() {
           </div>
         </div>
       </header>
+
+      <ActiveEventBanner admin={admin} />
 
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         <div className="grid gap-8">

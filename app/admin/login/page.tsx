@@ -46,7 +46,14 @@ function AdminLoginForm() {
     // grant dashboard access — the (dashboard) layout will bounce back
     // here if there's no matching `admins` row (e.g. email not yet
     // verified, so the auto-admin trigger hasn't fired).
-    router.replace("/admin");
+    //
+    // The ?from=login marker lets the Overview page (app/admin/(dashboard)/page.tsx)
+    // send client-role admins on to the simplified /admin/simple view
+    // ONLY right after signing in, without turning /admin itself into a
+    // permanent redirect — the "Overview" nav link and /admin/simple's
+    // own "Full Dashboard" link both point at plain /admin and need to
+    // keep working normally.
+    router.replace("/admin?from=login");
     router.refresh();
   }
 
