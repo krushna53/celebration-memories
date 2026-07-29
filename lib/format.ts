@@ -1,9 +1,7 @@
-import { format } from "date-fns";
-
-export function formatEventDate(iso: string): string {
-  return format(new Date(iso), "EEEE, MMMM d, yyyy");
-}
-
-export function formatEventTime(iso: string): string {
-  return format(new Date(iso), "h:mm a");
-}
+/**
+ * Re-exported from lib/timezone.ts, which pins these to India Standard
+ * Time explicitly instead of the ambient server timezone — see that
+ * file's header comment for why. Kept as a separate module so existing
+ * `@/lib/format` imports across the app don't need to change.
+ */
+export { formatEventDate, formatEventTime } from "@/lib/timezone";

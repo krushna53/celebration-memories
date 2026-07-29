@@ -38,6 +38,8 @@ import {
 } from "@/lib/whatsapp";
 import { EVENT_CATEGORY_OPTIONS, getWishSectionCopy } from "@/lib/event-category";
 import { validateCustomCss } from "@/lib/custom-css";
+import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
+import { istInputValueToUtcIso, utcIsoToIstInputValue } from "@/lib/timezone";
 import type { EventRecord } from "@/types/event";
 
 const inputClasses =
@@ -53,12 +55,9 @@ interface EventSettingsFormProps {
   aiCssQuota: { used: number; limit: number } | null;
 }
 
-/** Converts an ISO timestamp to the value a <input type="datetime-local"> expects. */
-function toLocalInputValue(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+// Event start/end datetime-local fields are pinned to IST (see
+// lib/timezone.ts) rather than the admin's browser timezone — otherwise
+// the same event shows different times to admins in different zones.
 
 export function EventSettingsForm({
   event,
@@ -74,8 +73,8 @@ export function EventSettingsForm({
     honoreeName: event.honoreeName,
     eventTitle: event.eventTitle,
     hostedBy: event.hostedBy,
-    startAt: toLocalInputValue(event.startAt),
-    endAt: toLocalInputValue(event.endAt),
+    startAt: utcIsoToIstInputValue(event.startAt),
+    endAt: utcIsoToIstInputValue(event.endAt),
     venueName: event.venueName ?? "",
     venueAddress: event.venueAddress ?? "",
     mapsUrl: event.mapsUrl ?? "",
@@ -325,8 +324,8 @@ export function EventSettingsForm({
       honoreeName: form.honoreeName,
       eventTitle: form.eventTitle,
       hostedBy: form.hostedBy,
-      startAt: new Date(form.startAt).toISOString(),
-      endAt: new Date(form.endAt).toISOString(),
+      startAt: istInputValueToUtcIso(form.startAt),
+      endAt: istInputValueToUtcIso(form.endAt),
       venueName: form.venueName || null,
       venueAddress: form.venueAddress || null,
       mapsUrl: form.mapsUrl || null,
@@ -424,6 +423,8 @@ export function EventSettingsForm({
           shows on the site. If the actual occasion (e.g. a real birthdate or
           anniversary date) falls on a different day than the party, add it
           separately below — it&rsquo;s optional and purely informational.
+          Times are in India Standard Time (IST), regardless of your own
+          device&rsquo;s timezone.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -483,21 +484,49 @@ export function EventSettingsForm({
           </div>
           <div>
             <label className={labelClasses}>Google Maps Directions URL</label>
-            <input
-              className={`${inputClasses} mt-1.5`}
-              placeholder="https://maps.google.com/..."
-              value={form.mapsUrl}
-              onChange={(e) => set("mapsUrl", e.target.value)}
-            />
+            <div className="mt-1.5 flex gap-2">
+              <input
+                className={inputClasses}
+                placeholder="https://maps.google.com/..."
+                value={form.mapsUrl}
+                onChange={(e) => set("mapsUrl", e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                disabled={!form.venueAddress.trim()}
+                onClick={() => set("mapsUrl", buildMapsSearchUrl(form.venueAddress))}
+              >
+                Generate
+              </Button>
+            </div>
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              &ldquo;Generate&rdquo; builds this from the Venue Address above — no API key needed. Overwrites
+              whatever&rsquo;s in this field.
+            </p>
           </div>
           <div>
             <label className={labelClasses}>Google Maps Embed URL</label>
-            <input
-              className={`${inputClasses} mt-1.5`}
-              placeholder="https://www.google.com/maps/embed?..."
-              value={form.mapsEmbedUrl}
-              onChange={(e) => set("mapsEmbedUrl", e.target.value)}
-            />
+            <div className="mt-1.5 flex gap-2">
+              <input
+                className={inputClasses}
+                placeholder="https://www.google.com/maps/embed?..."
+                value={form.mapsEmbedUrl}
+                onChange={(e) => set("mapsEmbedUrl", e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                disabled={!form.venueAddress.trim()}
+                onClick={() => set("mapsEmbedUrl", buildMapsEmbedUrl(form.venueAddress))}
+              >
+                Generate
+              </Button>
+            </div>
           </div>
           <div>
             <label className={labelClasses}>Parking Info</label>

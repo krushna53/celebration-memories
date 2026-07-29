@@ -6,6 +6,7 @@ import { Loader2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EVENT_CATEGORY_OPTIONS } from "@/lib/event-category";
+import { istInputValueToUtcIso, utcIsoToIstInputValue } from "@/lib/timezone";
 import type { EventRecord } from "@/types/event";
 import type { EventUpdateInput } from "@/services/events";
 
@@ -13,12 +14,10 @@ const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70";
 
-/** Converts an ISO timestamp to the value a <input type="datetime-local"> expects. */
-function toLocalInputValue(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+// Event start/end datetime-local fields are pinned to IST (see
+// lib/timezone.ts) rather than the wizard host's browser timezone —
+// otherwise the same event shows different times depending on where
+// it's edited/viewed.
 
 export type DraftUpdateEventAction = (
   token: string,
@@ -50,8 +49,8 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
     honoreeName: event.honoreeName,
     eventTitle: event.eventTitle,
     hostedBy: event.hostedBy,
-    startAt: toLocalInputValue(event.startAt),
-    endAt: toLocalInputValue(event.endAt),
+    startAt: utcIsoToIstInputValue(event.startAt),
+    endAt: utcIsoToIstInputValue(event.endAt),
     venueName: event.venueName ?? "",
     venueAddress: event.venueAddress ?? "",
     mapsUrl: event.mapsUrl ?? "",
@@ -81,8 +80,8 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
       honoreeName: form.honoreeName,
       eventTitle: form.eventTitle,
       hostedBy: form.hostedBy,
-      startAt: new Date(form.startAt).toISOString(),
-      endAt: new Date(form.endAt).toISOString(),
+      startAt: istInputValueToUtcIso(form.startAt),
+      endAt: istInputValueToUtcIso(form.endAt),
       venueName: form.venueName || null,
       venueAddress: form.venueAddress || null,
       mapsUrl: form.mapsUrl || null,
@@ -178,6 +177,10 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Date &amp; Time</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          Times are in India Standard Time (IST), regardless of your own
+          device&rsquo;s timezone.
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={labelClasses}>Starts</label>
