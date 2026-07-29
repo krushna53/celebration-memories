@@ -68,9 +68,9 @@ export function utcIsoToIstInputValue(iso: string): string {
  * the string using the browser's ambient local timezone instead of IST.
  */
 export function istInputValueToUtcIso(localValue: string): string {
-  const [datePart, timePart] = localValue.split("T");
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hour, minute] = (timePart ?? "00:00").split(":").map(Number);
+  const [datePart = "", timePart = "00:00"] = localValue.split("T");
+  const [year = 0, month = 1, day = 1] = datePart.split("-").map(Number);
+  const [hour = 0, minute = 0] = timePart.split(":").map(Number);
   const utcMs = Date.UTC(year, month - 1, day, hour, minute) - IST_OFFSET_MINUTES * 60_000;
   return new Date(utcMs).toISOString();
 }
