@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, Settings } from "lucide-react";
+import { ExternalLink, Settings, UserPlus } from "lucide-react";
 
 import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
 import type { EventSummary } from "@/services/events";
@@ -57,7 +57,13 @@ export function EventList({ events, membersByEvent }: EventListProps) {
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-navy-700/40">No client login yet</span>
+                  <Link
+                    href={`/admin/register?event=${event.id}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs text-gold-600 hover:text-gold-700"
+                  >
+                    <UserPlus size={12} /> Create Login
+                  </Link>
                 )}
               </td>
               <td className="px-4 py-3 text-navy-700/70">

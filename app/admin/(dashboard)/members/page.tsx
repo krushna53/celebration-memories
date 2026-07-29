@@ -30,12 +30,13 @@ export default async function AdminMembersPage() {
         <MemberList initialMembers={members} />
       </div>
       <p className="mt-4 text-xs text-navy-700/50">
-        To add a new member, send them{" "}
-        <Link href="/admin/register" className="text-gold-600 underline underline-offset-2">
-          /admin/register
+        To add a new client login, use the &ldquo;Create Login&rdquo; link on that event&rsquo;s
+        row in{" "}
+        <Link href="/admin/events" className="text-gold-600 underline underline-offset-2">
+          All Events
         </Link>{" "}
-        or use the manual SQL method in the README — creating a member here isn&rsquo;t supported
-        yet, only viewing and removing access.
+        (or the manual SQL method in the README) — creating a member here isn&rsquo;t supported
+        yet, only viewing, removing access, and permanently deleting.
       </p>
     </div>
   );

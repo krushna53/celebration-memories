@@ -60,8 +60,8 @@ export default async function AdminEventsPage() {
       <p className="mt-4 text-xs text-navy-700/50">
         In-progress wizard signups that haven&rsquo;t paid yet live at{" "}
         <code className="rounded bg-navy-950/5 px-1 py-0.5">/admin/drafts</code> instead — this
-        list is live events only. Creating a client login for a new event here is a separate step
-        (see /admin/register) — this only creates the event itself.
+        list is live events only. Creating an event here doesn&rsquo;t create a client login for it
+        — use the &ldquo;Create Login&rdquo; link on that row once it appears in the table.
       </p>
     </div>
   );

@@ -14,27 +14,40 @@ import type { EventRecord } from "@/types/event";
  * was the previously-pending "Phase 2" retrofit; it's now done.
  *
  * - Client-role admins with a non-null eventId (created via the wizard,
- *   see services/event-drafts.ts) always see their own event — the
+ *   or via an event-scoped /admin/register?event=<id> link — see
+ *   app/admin/register/page.tsx) always see their own event — the
  *   override below never applies to them, by design: a client should
  *   never be able to browse into someone else's event.
+ * - Client-role admins with NO eventId get NO event (null), full stop.
+ *   This used to fall back to the single EVENT_SLUG flagship event,
+ *   which meant *any* client-role admin missing an eventId — including
+ *   anyone who ever signed up through the old unscoped /admin/register
+ *   flow, before it required an event — landed on the real production
+ *   event's Gallery/Timeline/Settings/etc. with full edit access. That
+ *   was a genuine cross-client data leak (confirmed: 3 real accounts
+ *   were affected before this fix), not just a theoretical one — never
+ *   restore this fallback for client-role admins.
  * - Owner-role admins can "step into" managing any one client's event
  *   from /admin/events (see features/admin/events/actions.ts's
  *   setActiveAdminEventAction) — that selection is read here via a
- *   per-browser cookie (lib/admin-active-event.ts).
- * - Everyone else (owner with no active selection) falls back to the
- *   single EVENT_SLUG event, unchanged from the original behaviour.
+ *   per-browser cookie (lib/admin-active-event.ts). With no active
+ *   selection, the owner falls back to the single EVENT_SLUG event —
+ *   this part is intentional and unchanged: the owner account is
+ *   trusted with every event by definition, so there's no leak here.
  */
 export async function resolveAdminEvent(admin: CurrentAdmin): Promise<EventRecord | null> {
   if (admin.eventId) {
     return getEventById(admin.eventId);
   }
 
-  if (admin.role === "owner") {
-    const overrideId = await getActiveEventOverrideId();
-    if (overrideId) {
-      const overridden = await getEventById(overrideId);
-      if (overridden) return overridden;
-    }
+  if (admin.role !== "owner") {
+    return null;
+  }
+
+  const overrideId = await getActiveEventOverrideId();
+  if (overrideId) {
+    const overridden = await getEventById(overrideId);
+    if (overridden) return overridden;
   }
 
   return getEventBySlug(EVENT_SLUG);

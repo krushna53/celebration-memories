@@ -13,7 +13,7 @@ export default async function AdminCheckinPage() {
 
   const event = await resolveAdminEvent(admin);
   if (!event) {
-    return <p className="text-navy-700">No event found. Check your Supabase seed data.</p>;
+    return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
   }
 
   const invitees = await listInvitees(event.id);

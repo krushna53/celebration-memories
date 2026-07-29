@@ -288,19 +288,31 @@ payouts, contact inquiries, event-day check-in, bulk media export).
 
 There are two ways to create a client account for a host:
 
-**Self-registration (recommended)** — send them `/admin/register`. They
-fill in their name, email, and a password, and Supabase emails them a
-verification link. Nothing happens until they click it: a database
-trigger (`auto_admin_on_email_confirm` migration) only creates their
-`admins` row — always with `role = 'client'` — the moment
-`auth.users.email_confirmed_at` gets set. An unverified signup has a
-Supabase Auth account but no `admins` row, so `/admin/login` just
-bounces them back with no dashboard access. This means anyone who finds
-`/admin/register` *can* create an account and become a client admin for
-the active event once they verify their email — there's no invite
-step gating who's allowed to register. If you'd rather pre-approve
-specific people, use the manual SQL method below instead and don't
-publicize the register link.
+**Self-registration (recommended)** — generate a per-event link from
+**`/admin/events`**: the "Create Login" link on any event's row (shown
+whenever that event has no client login yet) is
+`/admin/register?event=<eventId>`. They fill in their name, email, and
+a password, and Supabase emails them a verification link. Nothing
+happens until they click it: a database trigger
+(`handle_new_confirmed_admin`, fired by the `on_auth_user_email_confirmed`
+trigger) only creates their `admins` row — always with `role =
+'client'` — the moment `auth.users.email_confirmed_at` gets set, and it
+reads the event id straight out of `raw_user_meta_data->>'draft_event_id'`,
+which the register page sets from the `?event=` param. An unverified
+signup has a Supabase Auth account but no `admins` row, so
+`/admin/login` just bounces them back with no dashboard access.
+
+⚠️ **`/admin/register` with no `?event=` param refuses to show the
+signup form at all** — this used to be silently allowed, and it was a
+real security bug: a client-role admin with no event assigned fell
+back to the single production event in `resolveAdminEvent()`
+(`lib/admin-event.ts`), so *anyone* who found the bare `/admin/register`
+URL and verified an email got full edit access to the live client's
+real Gallery/Timeline/Settings/etc. Both sides are fixed now — the
+register page requires a valid event id, and `resolveAdminEvent()` no
+longer has a flagship fallback for client-role admins under any
+circumstance. Always generate registration links from a specific
+event's "Create Login" link, never share the bare `/admin/register` URL.
 
 ⚠️ This depends on Supabase's **Confirm email** setting being ON
 (Authentication → Providers → Email in the Supabase dashboard — it's
@@ -309,13 +321,16 @@ signups get a session immediately without verifying anything, and the
 trigger fires right away.
 
 **Manual (SQL)** — for pre-approving a specific person, or creating
-another owner account:
+another owner account. Always set `event_id` for a client row — a
+`null` event_id now means that account can see no event at all, not
+"the active event":
 
 1. **Authentication → Users → Add user** in Supabase.
 2. In the SQL Editor:
    ```sql
-   insert into admins (id, email, name, role)
-   select id, email, 'Host Name', 'client' from auth.users where email = 'host@example.com';
+   insert into admins (id, email, name, role, event_id)
+   select id, email, 'Host Name', 'client', '<event-uuid-here>'
+   from auth.users where email = 'host@example.com';
    ```
 
 Either way, once they're in: send them the `/admin/login` URL. Their
@@ -352,8 +367,8 @@ Check-In) resolves which event to show via `resolveAdminEvent()` in
 client yourself) with the same placeholder content the `/start` wizard
 uses, and immediately switches you into managing it on Event Settings.
 This only creates the event row — creating an actual login for that
-client is the separate step described above (`/admin/register` or the
-manual SQL method).
+client is the separate step described above: the "Create Login" link
+on that event's row in the table (or the manual SQL method).
 
 **Section order/visibility per event** (the "just show Header,
 Invitation, and RSVP" kind of request) was already possible before this

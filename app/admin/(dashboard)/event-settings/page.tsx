@@ -11,7 +11,7 @@ export default async function AdminEventSettingsPage() {
   const admin = await getCurrentAdmin();
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return <p className="text-navy-700">No event found. Check your Supabase seed data.</p>;
+    return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
   }
 
   const shareImageUrl = event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null;

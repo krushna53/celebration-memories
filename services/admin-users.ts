@@ -82,6 +82,18 @@ export async function listAdmins(): Promise<AdminUserSummary[]> {
   });
 }
 
+/** Single-row lookup used to verify a "type the email to confirm" prompt before a destructive action (see features/admin/members/actions.ts's deleteAdminAccountAction). */
+export async function getAdminEmailById(id: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("admins")
+    .select("email")
+    .eq("id", id)
+    .maybeSingle<{ email: string }>();
+
+  if (error) throw new Error(`Failed to look up admin account: ${error.message}`);
+  return data?.email ?? null;
+}
+
 /**
  * Revokes a client's dashboard access by deleting their `admins` row.
  * Deliberately does NOT delete their Supabase Auth user — this is an
