@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { MonitorPlay } from "lucide-react";
+
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { getDashboardStats, getVisitorFunnel } from "@/services/admin-stats";
@@ -18,10 +21,23 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="grid gap-8">
-      <div>
-        <h1 className="font-display text-2xl text-navy-950">Overview</h1>
-        <p className="mt-1 text-sm text-navy-700/60">{event.honoreeName} — {event.eventTitle}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl text-navy-950">Overview</h1>
+          <p className="mt-1 text-sm text-navy-700/60">{event.honoreeName} — {event.eventTitle}</p>
+        </div>
+        <Link
+          href={`/events/${event.slug}/display`}
+          target="_blank"
+          className="inline-flex shrink-0 items-center gap-2 rounded-full border border-gold-500/30 bg-navy-950 px-4 py-2 text-sm font-medium text-gold-300 transition-luxury duration-300 hover:brightness-125"
+        >
+          <MonitorPlay size={15} /> Open Big Screen Display
+        </Link>
       </div>
+      <p className="-mt-4 text-xs text-navy-700/50">
+        A chrome-free slideshow of the Gallery, Timeline, and memories shared by relatives —
+        opens full-screen, made for a TV or projector at the venue.
+      </p>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard label="Total Invitations" value={stats.invitations.total} />
