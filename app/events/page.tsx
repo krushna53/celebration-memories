@@ -7,6 +7,7 @@ import { listPublicEvents } from "@/services/events";
 import { getCoverPhoto } from "@/services/gallery-photos";
 import { formatEventDate } from "@/lib/format";
 import { EVENT_CATEGORY_LABELS as CATEGORY_LABELS } from "@/lib/event-category";
+import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 export const revalidate = 60;
 
@@ -37,7 +38,7 @@ export default async function PublicEventsDirectoryPage() {
   );
 
   return (
-    <SiteShell honoreeName="Celebration Memories">
+    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading

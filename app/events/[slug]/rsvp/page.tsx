@@ -66,7 +66,7 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
     : [];
 
   return (
-    <SiteShell honoreeName={event.honoreeName}>
+    <SiteShell honoreeName={event.honoreeName} footerVariant="minimal">
       <PageViewBeacon eventId={event.id} page="public_rsvp" />
       {/*
         Rendered as the first child of the already-pt-28/32-padded div

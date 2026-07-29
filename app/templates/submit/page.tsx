@@ -2,6 +2,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { SubmitTemplateForm } from "@/features/templates/submit-template-form";
+import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 export const metadata = {
   title: "Submit a Template | Celebration Memories",
@@ -17,7 +18,7 @@ export const metadata = {
  */
 export default function SubmitTemplatePage() {
   return (
-    <SiteShell honoreeName="Celebration Memories">
+    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <SectionHeading

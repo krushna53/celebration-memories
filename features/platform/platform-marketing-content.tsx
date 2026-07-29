@@ -67,8 +67,18 @@ const LIVE_FEATURES = [
   },
 ];
 
-const PLATFORM_NAV_LINKS = [
+/**
+ * Shared nav for every platform-level (non-event) page — Pricing,
+ * Roles, Events directory, Template submission, Contact, Privacy, and
+ * the Visitor Guide. These pages have no #hero/#details/... sections,
+ * so they must never fall back to Navbar's default event-page anchors
+ * (see components/layout/navbar.tsx's NAV_LINKS) — that mismatch used
+ * to leave every platform page's header pointing at anchors that don't
+ * exist on it.
+ */
+export const PLATFORM_NAV_LINKS = [
   { label: "Browse Events", href: "/events" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Templates", href: "/templates/submit" },
   { label: "Who Can Do What", href: "/roles" },
   { label: "Contact", href: "/contact" },

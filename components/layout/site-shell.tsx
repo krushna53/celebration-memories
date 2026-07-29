@@ -24,6 +24,8 @@ interface SiteShellProps {
    * getting this wrong makes the nav links unreadable.
    */
   transparentUntilScroll?: boolean;
+  /** Passed straight through to Footer — see its doc comment for "full" vs "minimal". Defaults to "full". */
+  footerVariant?: "full" | "minimal";
 }
 
 /**
@@ -39,6 +41,7 @@ export function SiteShell({
   navLinks,
   showLogin,
   transparentUntilScroll,
+  footerVariant,
 }: SiteShellProps) {
   return (
     <>
@@ -49,7 +52,7 @@ export function SiteShell({
         transparentUntilScroll={transparentUntilScroll}
       />
       <main>{children}</main>
-      <Footer designerCredit={designerCredit} />
+      <Footer designerCredit={designerCredit} variant={footerVariant} />
     </>
   );
 }

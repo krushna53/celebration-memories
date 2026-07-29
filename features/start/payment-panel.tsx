@@ -1,11 +1,14 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import { CheckCircle2, ChevronDown, Loader2, Repeat, Zap } from "lucide-react";
+import { CheckCircle2, ChevronDown, Loader2, QrCode, Repeat, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { createCheckoutSessionAction, type BillingPlan, type CheckoutPrereqs } from "@/features/start/actions/payment";
 import { redeemPromoCodeAction } from "@/features/start/actions/promo";
+import { QrPaymentBlock } from "@/features/pay/qr-payment-block";
+import { PayForm } from "@/features/pay/pay-form";
+import type { PaymentSettingsRecord } from "@/types/payment";
 
 /**
  * Renders the "pay once" / "subscribe" choice on the wizard's payment
@@ -19,16 +22,24 @@ export function PaymentPanel({
   token,
   eventId,
   prereqs,
+  paymentSettings,
+  qrImageUrl,
+  initialPromoCode,
 }: {
   token: string;
   eventId: string;
   prereqs: CheckoutPrereqs;
+  /** Shown as a fallback ("scan to pay") when Stripe/Razorpay isn't configured — see /admin/payment-settings. */
+  paymentSettings?: PaymentSettingsRecord;
+  qrImageUrl?: string | null;
+  /** Prefills and auto-opens the promo field — set from the cm_promo_code cookie a /pricing tier's CTA leaves behind. */
+  initialPromoCode?: string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const [pendingPlan, setPendingPlan] = useState<BillingPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [promoOpen, setPromoOpen] = useState(false);
-  const [promoCode, setPromoCode] = useState("");
+  const [promoOpen, setPromoOpen] = useState(Boolean(initialPromoCode));
+  const [promoCode, setPromoCode] = useState(initialPromoCode ?? "");
   const [promoPending, setPromoPending] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
 
@@ -98,9 +109,23 @@ export function PaymentPanel({
         ) : null}
 
         {!prereqs.configured || (!prereqs.oneTimeConfigured && !prereqs.subscriptionConfigured) ? (
-          <p className="text-sm text-navy-700/60 sm:col-span-2">
-            Payments aren&rsquo;t configured yet on this site. Please contact the site owner.
-          </p>
+          <div className="sm:col-span-2">
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-gold-500/20 bg-gold-500/5 p-3 text-sm text-navy-700/80">
+              <QrCode size={16} className="mt-0.5 shrink-0 text-gold-600" />
+              <p>
+                Card checkout isn&rsquo;t set up on this site yet — scan the QR code below to pay directly, then
+                confirm your payment underneath so we can verify it.
+              </p>
+            </div>
+            {paymentSettings ? (
+              <div className="grid gap-5">
+                <QrPaymentBlock settings={paymentSettings} qrImageUrl={qrImageUrl ?? null} />
+                <PayForm />
+              </div>
+            ) : (
+              <p className="text-sm text-navy-700/60">Payments aren&rsquo;t configured yet on this site. Please contact the site owner.</p>
+            )}
+          </div>
         ) : null}
 
         {error ? (
@@ -109,10 +134,12 @@ export function PaymentPanel({
           </p>
         ) : null}
 
-        <p className="flex items-center gap-1.5 text-xs text-navy-700/50 sm:col-span-2">
-          <CheckCircle2 size={13} /> Secure checkout handled entirely by{" "}
-          {prereqs.provider === "razorpay" ? "Razorpay" : "Stripe"} — your card details never touch this site.
-        </p>
+        {prereqs.configured && (prereqs.oneTimeConfigured || prereqs.subscriptionConfigured) ? (
+          <p className="flex items-center gap-1.5 text-xs text-navy-700/50 sm:col-span-2">
+            <CheckCircle2 size={13} /> Secure checkout handled entirely by{" "}
+            {prereqs.provider === "razorpay" ? "Razorpay" : "Stripe"} — your card details never touch this site.
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-6 border-t border-navy-950/10 pt-4">

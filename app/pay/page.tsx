@@ -4,6 +4,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { PayForm } from "@/features/pay/pay-form";
+import { QrPaymentBlock } from "@/features/pay/qr-payment-block";
 import { getPaymentSettings } from "@/services/payments";
 import { publicMediaUrl } from "@/services/uploads";
 
@@ -29,33 +30,8 @@ export default async function PayPage() {
           />
 
           <Reveal>
-            <div className="mt-10 flex flex-col items-center gap-4 rounded-2xl border border-gold-500/15 bg-white px-6 py-8 text-center shadow-sm">
-              {qrImageUrl ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={qrImageUrl}
-                  alt="Payment QR code"
-                  className="h-56 w-56 rounded-lg border border-navy-950/10 object-contain"
-                />
-              ) : (
-                <p className="text-sm text-navy-700/60">
-                  Payment details haven&rsquo;t been set up yet — please check back soon.
-                </p>
-              )}
-              {settings.upiId ? (
-                <p className="text-sm text-navy-700/80">
-                  <span className="font-medium text-navy-950">UPI ID:</span> {settings.upiId}
-                </p>
-              ) : null}
-              {settings.bankDetails ? (
-                <div className="w-full rounded-lg border border-navy-950/10 bg-navy-950/[0.02] p-4 text-left text-sm text-navy-700/80">
-                  <p className="mb-1 font-medium text-navy-950">Bank Details</p>
-                  <p className="whitespace-pre-wrap">{settings.bankDetails}</p>
-                </div>
-              ) : null}
-              {settings.instructions ? (
-                <p className="text-sm leading-relaxed text-navy-700/70">{settings.instructions}</p>
-              ) : null}
+            <div className="mt-10">
+              <QrPaymentBlock settings={settings} qrImageUrl={qrImageUrl} />
             </div>
           </Reveal>
 

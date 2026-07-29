@@ -136,6 +136,41 @@ export async function sendCustomDomainRequestNotification(input: {
   });
 }
 
+/**
+ * Notifies the admin (ADMIN_NOTIFICATION_EMAIL, falling back to the
+ * platform's own email) whenever someone submits an "I've paid"
+ * confirmation on /pay or the wizard's QR fallback (see
+ * features/pay/actions.ts's submitPaymentAction). This is the only
+ * signal the admin gets for a QR/UPI payment — there's no webhook the
+ * way Stripe/Razorpay checkout has — so it doubles as their receipt
+ * notification / to-do to verify the payment in /admin/payments.
+ */
+export async function sendPaymentSubmissionNotification(input: {
+  payerName: string;
+  payerEmail: string | null;
+  payerPhone: string | null;
+  amount: number;
+  purpose: string | null;
+  referenceNote: string | null;
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "krushnawebworks@gmail.com";
+
+  await sendEmail({
+    to: adminEmail,
+    subject: `Payment confirmation from ${input.payerName} — ₹${input.amount.toFixed(2)}`,
+    html: `
+      <p><strong>${escapeHtml(input.payerName)}</strong> says they've made a payment of
+      <strong>₹${input.amount.toFixed(2)}</strong>${input.purpose ? ` for ${escapeHtml(input.purpose)}` : ""}.</p>
+      <ul style="padding-left:18px;color:#333;">
+        ${input.payerEmail ? `<li>Email: ${escapeHtml(input.payerEmail)}</li>` : ""}
+        ${input.payerPhone ? `<li>Phone: ${escapeHtml(input.payerPhone)}</li>` : ""}
+        ${input.referenceNote ? `<li>Reference / UTR: ${escapeHtml(input.referenceNote)}</li>` : ""}
+      </ul>
+      <p style="color:#888;font-size:12px;">Verify and mark this confirmed or rejected in /admin/payments.</p>
+    `,
+  });
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

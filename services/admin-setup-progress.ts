@@ -21,7 +21,7 @@ export async function getSetupProgressCounts(eventId: string): Promise<SetupProg
   const [galleryPhotoCount, timelineMilestoneCount, approvedPhotos, approvedVideos, approvedAudio, approvedMessages] =
     await Promise.all([
       countRows("gallery_photos", eventId),
-      countRows("milestones", eventId),
+      countRows("timeline_milestones", eventId),
       countRows("photos", eventId, { approved: true }),
       countRows("videos", eventId, { approved: true }),
       countRows("audio", eventId, { approved: true }),

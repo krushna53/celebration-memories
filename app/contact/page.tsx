@@ -3,10 +3,11 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { ContactForm } from "@/features/contact/contact-form";
 import { BUILDER } from "@/lib/constants";
+import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 export default function ContactPage() {
   return (
-    <SiteShell honoreeName="Celebration Memories">
+    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-xl px-4 sm:px-6">
           <SectionHeading

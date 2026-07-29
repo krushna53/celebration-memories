@@ -6,48 +6,72 @@ import { BUILDER } from "@/lib/constants";
 interface FooterProps {
   /** Set only when the active template is a community submission — see templates/CommunityTemplate. */
   designerCredit?: { name: string; website?: string | null };
+  /**
+   * "full" (default) shows every platform-acquisition link (Explore
+   * Public Events, Build Your Own, Submit a Template, Pricing, Who Can
+   * Do What) — right for the platform marketing pages and an event's
+   * own homepage, where "look what's possible" discovery fits naturally.
+   * "minimal" drops those and keeps just Privacy/Contact/the credit
+   * line — used on task-focused guest pages (RSVP, Memory upload, a
+   * personal invite link) where a guest just wants to finish one thing,
+   * not be pitched the platform — and matters even more for a somber
+   * event (an obituary-category site's RSVP page really shouldn't be
+   * next to "Build Your Own Celebration Site!").
+   */
+  variant?: "full" | "minimal";
 }
 
 /**
  * Global footer. Per spec, always credits Krushna Web Works and links
  * out to a pre-filled WhatsApp inquiry, opened in a new tab. Also
  * surfaces the platform-level pages (public events directory, marketing
- * page) that sit alongside any individual event's site.
+ * page) that sit alongside any individual event's site — see `variant`
+ * above for where that's dialed back.
  */
-export function Footer({ designerCredit }: FooterProps = {}) {
+export function Footer({ designerCredit, variant = "full" }: FooterProps = {}) {
   return (
     <footer className="border-t border-gold-500/20 bg-navy-950 py-10 text-center text-ivory-100/70">
       <p className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs tracking-wide">
-        <Link
-          href="/guide"
-          className="transition-luxury duration-300 hover:text-gold-300"
-        >
-          Visitor Guide
-        </Link>
-        <Link
-          href="/events"
-          className="transition-luxury duration-300 hover:text-gold-300"
-        >
-          Explore Public Events
-        </Link>
-        <Link
-          href="/"
-          className="transition-luxury duration-300 hover:text-gold-300"
-        >
-          Build Your Own Celebration Site
-        </Link>
-        <Link
-          href="/templates/submit"
-          className="transition-luxury duration-300 hover:text-gold-300"
-        >
-          Submit a Template
-        </Link>
-        <Link
-          href="/roles"
-          className="transition-luxury duration-300 hover:text-gold-300"
-        >
-          Who Can Do What
-        </Link>
+        {variant === "full" ? (
+          <>
+            <Link
+              href="/guide"
+              className="transition-luxury duration-300 hover:text-gold-300"
+            >
+              Visitor Guide
+            </Link>
+            <Link
+              href="/events"
+              className="transition-luxury duration-300 hover:text-gold-300"
+            >
+              Explore Public Events
+            </Link>
+            <Link
+              href="/"
+              className="transition-luxury duration-300 hover:text-gold-300"
+            >
+              Build Your Own Celebration Site
+            </Link>
+            <Link
+              href="/pricing"
+              className="transition-luxury duration-300 hover:text-gold-300"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/templates/submit"
+              className="transition-luxury duration-300 hover:text-gold-300"
+            >
+              Submit a Template
+            </Link>
+            <Link
+              href="/roles"
+              className="transition-luxury duration-300 hover:text-gold-300"
+            >
+              Who Can Do What
+            </Link>
+          </>
+        ) : null}
         <Link
           href="/privacy"
           className="transition-luxury duration-300 hover:text-gold-300"

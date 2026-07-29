@@ -6,6 +6,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
 import { BUILDER } from "@/lib/constants";
+import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 interface Persona {
   eyebrow: string;
@@ -110,7 +111,7 @@ const PERSONAS: Persona[] = [
  */
 export default function RolesPage() {
   return (
-    <SiteShell honoreeName="Celebration Memories">
+    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <SectionHeading
