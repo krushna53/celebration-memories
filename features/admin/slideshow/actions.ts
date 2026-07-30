@@ -1,6 +1,6 @@
 "use server";
 
-import { getCurrentAdmin } from "@/services/admin-auth";
+import { requireAdminForEvent } from "@/services/admin-auth";
 import { getEventById } from "@/services/events";
 import { createSlideshowVideoJob } from "@/services/slideshow-video-jobs";
 import { countSlideshowVideoGenerations } from "@/services/slideshow-video-generations";
@@ -31,8 +31,12 @@ export type StartSlideshowVideoResult =
  * force it into one synchronous call like AI Image.
  */
 export async function startSlideshowVideoAction(eventId: string): Promise<StartSlideshowVideoResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  let admin;
+  try {
+    admin = await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
 
   let remaining: number | null = null;
 
@@ -78,8 +82,11 @@ export async function requestSlideshowMusicUploadUrlAction(
   contentType: string,
   fileSize: number,
 ): Promise<RequestSlideshowMusicUploadResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
 
   try {
     const upload = await createSignedSlideshowMusicUpload({ eventId, fileName, contentType, fileSize });

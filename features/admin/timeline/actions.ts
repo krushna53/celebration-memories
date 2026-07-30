@@ -2,18 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getCurrentAdmin } from "@/services/admin-auth";
-import { createMilestone, deleteMilestone, updateMilestone } from "@/services/timeline";
+import { requireAdminForEvent } from "@/services/admin-auth";
+import { createMilestone, deleteMilestone, getMilestoneById, updateMilestone } from "@/services/timeline";
 import { createSignedTimelineImageUpload } from "@/services/uploads";
-
-async function requireAdmin() {
-  const admin = await getCurrentAdmin();
-  if (!admin) throw new Error("Not authorized.");
-}
 
 function revalidateTimelinePaths() {
   revalidatePath("/admin/timeline");
   revalidatePath("/");
+}
+
+/** Looks up which event a milestone belongs to and confirms the caller is allowed to manage it — closes the gap where any logged-in admin could edit/delete another client's timeline by milestone id alone. */
+async function requireAdminForMilestone(id: string) {
+  const milestone = await getMilestoneById(id);
+  if (!milestone) throw new Error("Milestone not found.");
+  await requireAdminForEvent(milestone.eventId);
+  return milestone;
 }
 
 export async function createMilestoneAction(input: {
@@ -24,7 +27,7 @@ export async function createMilestoneAction(input: {
   sortOrder: number;
 }) {
   try {
-    await requireAdmin();
+    await requireAdminForEvent(input.eventId);
     await createMilestone(input);
     revalidateTimelinePaths();
     return { success: true as const };
@@ -44,7 +47,7 @@ export async function updateMilestoneAction(
   },
 ) {
   try {
-    await requireAdmin();
+    await requireAdminForMilestone(id);
     await updateMilestone(id, input);
     revalidateTimelinePaths();
     return { success: true as const };
@@ -60,7 +63,7 @@ export async function requestTimelineImageUploadUrlAction(
   fileSize: number,
 ) {
   try {
-    await requireAdmin();
+    await requireAdminForEvent(eventId);
     const upload = await createSignedTimelineImageUpload({ eventId, fileName, contentType, fileSize });
     return { success: true as const, data: upload };
   } catch (err) {
@@ -70,7 +73,7 @@ export async function requestTimelineImageUploadUrlAction(
 
 export async function confirmTimelineImageUploadAction(milestoneId: string, path: string) {
   try {
-    await requireAdmin();
+    await requireAdminForMilestone(milestoneId);
     await updateMilestone(milestoneId, { imagePath: path });
     revalidateTimelinePaths();
     return { success: true as const };
@@ -81,7 +84,7 @@ export async function confirmTimelineImageUploadAction(milestoneId: string, path
 
 export async function removeTimelineImageAction(milestoneId: string) {
   try {
-    await requireAdmin();
+    await requireAdminForMilestone(milestoneId);
     await updateMilestone(milestoneId, { imagePath: null });
     revalidateTimelinePaths();
     return { success: true as const };
@@ -92,7 +95,7 @@ export async function removeTimelineImageAction(milestoneId: string) {
 
 export async function deleteMilestoneAction(id: string) {
   try {
-    await requireAdmin();
+    await requireAdminForMilestone(id);
     await deleteMilestone(id);
     revalidateTimelinePaths();
     return { success: true as const };

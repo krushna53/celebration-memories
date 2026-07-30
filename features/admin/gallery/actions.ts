@@ -2,19 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getCurrentAdmin } from "@/services/admin-auth";
+import { requireAdminForEvent } from "@/services/admin-auth";
 import { createSignedGalleryUpload } from "@/services/uploads";
 import {
   createGalleryPhoto,
   deleteGalleryPhoto,
+  getGalleryPhotoById,
   updateGalleryPhoto,
 } from "@/services/gallery-photos";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
-
-async function requireAdmin() {
-  const admin = await getCurrentAdmin();
-  if (!admin) throw new Error("Not authorized.");
-}
 
 function revalidateGalleryPaths() {
   revalidatePath("/admin/gallery");
@@ -28,7 +24,7 @@ export async function requestGalleryUploadUrlAction(
   fileSize: number,
 ) {
   try {
-    await requireAdmin();
+    await requireAdminForEvent(eventId);
     const upload = await createSignedGalleryUpload({ eventId, fileName, contentType, fileSize });
     return { success: true as const, data: upload };
   } catch (err) {
@@ -43,7 +39,7 @@ export async function confirmGalleryUploadAction(
   caption: string,
 ) {
   try {
-    await requireAdmin();
+    await requireAdminForEvent(eventId);
     await createGalleryPhoto({ eventId, category, storagePath: path, caption });
     revalidateGalleryPaths();
     return { success: true as const };
@@ -52,12 +48,19 @@ export async function confirmGalleryUploadAction(
   }
 }
 
+/** Looks up which event a gallery photo belongs to and confirms the caller is allowed to manage it, before any mutation below — closes the gap where any logged-in admin could edit/delete another client's photos by id alone. */
+async function requireAdminForPhoto(id: string) {
+  const photo = await getGalleryPhotoById(id);
+  if (!photo) throw new Error("Photo not found.");
+  await requireAdminForEvent(photo.eventId);
+}
+
 export async function updateGalleryPhotoAction(
   id: string,
   input: { category?: GalleryCategory; caption?: string | null },
 ) {
   try {
-    await requireAdmin();
+    await requireAdminForPhoto(id);
     await updateGalleryPhoto(id, input);
     revalidateGalleryPaths();
     return { success: true as const };
@@ -68,7 +71,7 @@ export async function updateGalleryPhotoAction(
 
 export async function deleteGalleryPhotoAction(id: string) {
   try {
-    await requireAdmin();
+    await requireAdminForPhoto(id);
     await deleteGalleryPhoto(id);
     revalidateGalleryPaths();
     return { success: true as const };

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getCurrentAdmin } from "@/services/admin-auth";
+import { requireAdminForEvent } from "@/services/admin-auth";
 import { getEventById, updateEvent, type EventUpdateInput } from "@/services/events";
 import {
   createSignedHighlightReelUpload,
@@ -16,12 +16,19 @@ import type { SectionConfigItem } from "@/lib/section-registry";
 
 export type AdminActionResult = { success: true } | { success: false; error: string };
 
+function unauthorized(err: unknown): { success: false; error: string } {
+  return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+}
+
 export async function updateEventAction(
   eventId: string,
   input: EventUpdateInput,
 ): Promise<AdminActionResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return unauthorized(err);
+  }
 
   if (input.customCss) {
     const cssError = validateCustomCss(input.customCss);
@@ -44,8 +51,11 @@ export async function updateSectionConfigAction(
   eventId: string,
   config: SectionConfigItem[],
 ): Promise<AdminActionResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return unauthorized(err);
+  }
 
   try {
     await updateEvent(eventId, { sectionConfig: config });
@@ -64,8 +74,11 @@ export async function requestShareImageUploadUrlAction(
   contentType: string,
   fileSize: number,
 ) {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false as const, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Not authorized." };
+  }
 
   try {
     const upload = await createSignedShareImageUpload({ eventId, fileName, contentType, fileSize });
@@ -76,8 +89,11 @@ export async function requestShareImageUploadUrlAction(
 }
 
 export async function removeShareImageAction(eventId: string): Promise<AdminActionResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return unauthorized(err);
+  }
 
   try {
     await updateEvent(eventId, { shareImagePath: null });
@@ -94,8 +110,11 @@ export async function confirmShareImageUploadAction(
   eventId: string,
   path: string,
 ): Promise<AdminActionResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return unauthorized(err);
+  }
 
   try {
     await updateEvent(eventId, { shareImagePath: path });
@@ -114,8 +133,11 @@ export async function requestShareVideoUploadUrlAction(
   contentType: string,
   fileSize: number,
 ) {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false as const, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Not authorized." };
+  }
 
   try {
     const upload = await createSignedShareVideoUpload({ eventId, fileName, contentType, fileSize });
@@ -126,8 +148,11 @@ export async function requestShareVideoUploadUrlAction(
 }
 
 export async function removeShareVideoAction(eventId: string): Promise<AdminActionResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return unauthorized(err);
+  }
 
   try {
     await updateEvent(eventId, { shareVideoPath: null });
@@ -144,8 +169,11 @@ export async function confirmShareVideoUploadAction(
   eventId: string,
   path: string,
 ): Promise<AdminActionResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return unauthorized(err);
+  }
 
   try {
     await updateEvent(eventId, { shareVideoPath: path });
@@ -164,8 +192,11 @@ export async function requestHighlightReelUploadUrlAction(
   contentType: string,
   fileSize: number,
 ) {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false as const, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Not authorized." };
+  }
 
   try {
     const upload = await createSignedHighlightReelUpload({ eventId, fileName, contentType, fileSize });
@@ -180,8 +211,11 @@ export async function confirmHighlightReelUploadAction(
   eventId: string,
   path: string,
 ): Promise<AdminActionResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return unauthorized(err);
+  }
 
   try {
     await updateEvent(eventId, { highlightReelPath: path });
@@ -194,8 +228,11 @@ export async function confirmHighlightReelUploadAction(
 }
 
 export async function removeHighlightReelAction(eventId: string): Promise<AdminActionResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return unauthorized(err);
+  }
 
   try {
     await updateEvent(eventId, { highlightReelPath: null });
@@ -225,8 +262,12 @@ export async function generateCustomCssAction(
   eventId: string,
   prompt: string,
 ): Promise<GenerateCustomCssResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  let admin;
+  try {
+    admin = await requireAdminForEvent(eventId);
+  } catch (err) {
+    return unauthorized(err);
+  }
 
   if (!prompt.trim()) {
     return { success: false, error: "Please describe the style change you want." };

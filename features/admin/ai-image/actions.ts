@@ -1,6 +1,6 @@
 "use server";
 
-import { getCurrentAdmin } from "@/services/admin-auth";
+import { requireAdminForEvent } from "@/services/admin-auth";
 import { getEventById } from "@/services/events";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { createAiImageJob, recordAiImageUpload } from "@/services/ai-image-jobs";
@@ -39,8 +39,12 @@ export type StartAiImageResult =
  * Image section for the full history if this ever needs revisiting.
  */
 export async function generateAiImageAction(eventId: string, prompt: string): Promise<StartAiImageResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  let admin;
+  try {
+    admin = await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
 
   if (!AI_IMAGE_CONFIGURED) {
     return { success: false, error: "AI image generation isn't configured — add OPENAI_API_KEY to enable it." };
@@ -101,8 +105,11 @@ export async function requestAiImageUploadUrlAction(
   contentType: string,
   fileSize: number,
 ): Promise<RequestUploadUrlResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
 
   try {
     const upload = await createSignedAiImageUpload({ eventId, fileName, contentType, fileSize });
@@ -120,8 +127,12 @@ export async function requestAiImageUploadUrlAction(
  * See recordAiImageUpload's doc comment for why this reuses ai_image_jobs.
  */
 export async function confirmAiImageUploadAction(eventId: string, path: string): Promise<AdminActionResult> {
-  const admin = await getCurrentAdmin();
-  if (!admin) return { success: false, error: "Not authorized." };
+  let admin;
+  try {
+    admin = await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
 
   try {
     await recordAiImageUpload({ eventId, adminId: admin.id, path });

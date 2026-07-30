@@ -85,6 +85,21 @@ export async function listMemoriesForModeration(
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
+/** Looks up which event a moderation item belongs to, so admin actions can verify the caller is actually allowed to touch it before mutating — see features/admin/memories/actions.ts. */
+export async function getMemoryEventId(kind: ModerationKind, id: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin()
+    .from(TABLE[kind])
+    .select("event_id")
+    .eq("id", id)
+    .maybeSingle<{ event_id: string }>();
+
+  if (error) {
+    console.error(`getMemoryEventId(${kind}) failed:`, error.message);
+    return null;
+  }
+  return data?.event_id ?? null;
+}
+
 export async function setMemoryApproval(
   kind: ModerationKind,
   id: string,
