@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Check,
   Clock,
+  ExternalLink,
   Film,
   Image as ImageIcon,
   Images,
@@ -69,6 +70,8 @@ export default async function AdminSimplePage() {
     description: string;
     badge: number | null;
     done: boolean;
+    /** Opens in a new tab, rendered as a small link below the card rather than inside its <Link> (a card can't nest another link). Used by Memories to jump straight to the live, Pinterest-style Memory Wall instead of just the moderation queue. */
+    secondaryLink?: { label: string; href: string };
   }> = [
     {
       href: "/admin/event-settings",
@@ -101,6 +104,7 @@ export default async function AdminSimplePage() {
       description: "Approve photos, videos, audio, and notes from guests.",
       badge: stats.uploads.pendingApproval > 0 ? stats.uploads.pendingApproval : null,
       done: setupCounts.approvedMemoryCount > 0,
+      secondaryLink: { label: "View Memory Wall", href: `/events/${event.slug}#memories` },
     },
     {
       href: "/admin/ai-image",
@@ -197,39 +201,50 @@ export default async function AdminSimplePage() {
               />
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {actionCards.map(({ href, icon: Icon, label, description, badge, done }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="group flex items-start gap-3 rounded-xl border border-navy-950/10 bg-white p-4 transition-luxury duration-200 hover:border-gold-500/40 hover:shadow-sm"
-                >
-                  <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                      done ? "bg-gold-500/20 text-gold-700" : "bg-gold-500/10 text-gold-700"
-                    }`}
+              {actionCards.map(({ href, icon: Icon, label, description, badge, done, secondaryLink }) => (
+                <div key={href} className="grid gap-1.5">
+                  <Link
+                    href={href}
+                    className="group flex items-start gap-3 rounded-xl border border-navy-950/10 bg-white p-4 transition-luxury duration-200 hover:border-gold-500/40 hover:shadow-sm"
                   >
-                    {done ? <Check size={18} /> : <Icon size={18} />}
-                  </span>
-                  <span className="flex-1">
-                    <span className="flex items-center gap-2">
-                      <span className="font-medium text-navy-950">{label}</span>
-                      {badge ? (
-                        <span className="rounded-full bg-gold-500 px-1.5 py-0.5 text-[10px] font-semibold text-navy-950">
-                          {badge}
-                        </span>
-                      ) : done ? (
-                        <span className="rounded-full bg-gold-500/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gold-700">
-                          Done
-                        </span>
-                      ) : null}
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                        done ? "bg-gold-500/20 text-gold-700" : "bg-gold-500/10 text-gold-700"
+                      }`}
+                    >
+                      {done ? <Check size={18} /> : <Icon size={18} />}
                     </span>
-                    <span className="mt-0.5 block text-xs text-navy-700/60">{description}</span>
-                  </span>
-                  <ArrowRight
-                    size={16}
-                    className="mt-2 shrink-0 text-navy-950/20 transition-luxury duration-200 group-hover:translate-x-0.5 group-hover:text-gold-500"
-                  />
-                </Link>
+                    <span className="flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium text-navy-950">{label}</span>
+                        {badge ? (
+                          <span className="rounded-full bg-gold-500 px-1.5 py-0.5 text-[10px] font-semibold text-navy-950">
+                            {badge}
+                          </span>
+                        ) : done ? (
+                          <span className="rounded-full bg-gold-500/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gold-700">
+                            Done
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-navy-700/60">{description}</span>
+                    </span>
+                    <ArrowRight
+                      size={16}
+                      className="mt-2 shrink-0 text-navy-950/20 transition-luxury duration-200 group-hover:translate-x-0.5 group-hover:text-gold-500"
+                    />
+                  </Link>
+                  {secondaryLink ? (
+                    <a
+                      href={secondaryLink.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="tap-target ml-1 flex w-fit items-center gap-1 text-xs text-navy-700/50 hover:text-gold-700"
+                    >
+                      {secondaryLink.label} <ExternalLink size={11} />
+                    </a>
+                  ) : null}
+                </div>
               ))}
             </div>
           </section>
