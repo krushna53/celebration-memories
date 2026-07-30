@@ -1,4 +1,4 @@
-import { Camera, Heart, Images, Mic, PartyPopper, Share2, Video } from "lucide-react";
+import { Camera, Heart, Images, Mic, Share2, Video } from "lucide-react";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -6,11 +6,6 @@ import { Reveal } from "@/components/motion/reveal";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 const STEPS = [
-  {
-    icon: PartyPopper,
-    title: "Open your personal invitation link",
-    body: "The link you received (by WhatsApp or email) is unique to you — opening it automatically recognizes your name. No account or password needed.",
-  },
   {
     icon: Heart,
     title: "RSVP",
