@@ -30,6 +30,29 @@
   --ease-luxury: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/*
+ * Browsers default a bare <button> to `cursor: default`, not
+ * `cursor: pointer` — only <a href> gets a hand cursor for free. Tailwind's
+ * preflight doesn't override this either, and this codebase has ~1000
+ * <button>/shadcn Button instances across the public site and admin
+ * dashboard, essentially none of which set cursor-pointer individually
+ * (confirmed by grep — a literal per-component fix would mean touching
+ * every one of them and re-drifting the next time someone adds a button).
+ * One global rule instead: every enabled button/role=button element gets
+ * a pointer cursor, and disabled ones keep the "not-allowed" cursor so
+ * that state stays visually distinct.
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
 :root {
   --background: var(--color-ivory-50);
   --foreground: var(--color-navy-950);
