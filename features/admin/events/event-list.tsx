@@ -4,6 +4,7 @@ import { CalendarCheck, Eye, Globe, MonitorPlay, Settings, UserPlus } from "luci
 import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
 import type { EventSummary } from "@/services/events";
 import { setActiveAdminEventAction, viewAsClientAction } from "@/features/admin/events/actions";
+import { VisibilityToggle } from "@/features/admin/events/visibility-toggle";
 
 /**
  * Owner-only table of every live client event (app/admin/(dashboard)/events)
@@ -34,6 +35,7 @@ export function EventList({ events, membersByEvent }: EventListProps) {
           <tr>
             <th className="px-4 py-3">Event</th>
             <th className="px-4 py-3">Occasion</th>
+            <th className="px-4 py-3">Visibility</th>
             <th className="px-4 py-3">Links</th>
             <th className="px-4 py-3">Client</th>
             <th className="px-4 py-3">Created</th>
@@ -50,6 +52,9 @@ export function EventList({ events, membersByEvent }: EventListProps) {
                 <div className="text-xs text-navy-700/50">{event.eventTitle}</div>
               </td>
               <td className="px-4 py-3 text-navy-700/70">{EVENT_CATEGORY_LABELS[event.category]}</td>
+              <td className="px-4 py-3">
+                <VisibilityToggle eventId={event.id} visibility={event.visibility} />
+              </td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2.5 text-navy-700/50">
                   <Link

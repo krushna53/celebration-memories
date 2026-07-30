@@ -23,6 +23,7 @@ import { signOutAction } from "@/features/admin/auth-actions";
 import { StatCard } from "@/features/admin/components/stat-card";
 import { QuickShareLinks } from "@/features/admin/simple/quick-share-links";
 import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
+import { VisibilityToggle } from "@/features/admin/events/visibility-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -179,6 +180,7 @@ export default async function AdminSimplePage() {
               publicRsvpEnabled={event.publicRsvpEnabled}
               publicMemoriesEnabled={event.publicMemoriesEnabled}
             />
+            <VisibilityToggle eventId={event.id} visibility={event.visibility} variant="full" />
           </section>
 
           <section>

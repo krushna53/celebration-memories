@@ -3,9 +3,38 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { requireOwner } from "@/services/admin-auth";
-import { createOwnerEvent } from "@/services/events";
+import { requireOwner, requireAdminForEvent } from "@/services/admin-auth";
+import { createOwnerEvent, updateEvent } from "@/services/events";
 import { setActiveEventOverrideId, clearActiveEventOverrideId } from "@/lib/admin-active-event";
+
+export type ToggleVisibilityResult = { success: true; visibility: "public" | "private" } | { success: false; error: string };
+
+/**
+ * One-click public/private flip — the same events.visibility field the
+ * full Event Settings form already edits (features/admin/event-settings/
+ * event-settings-form.tsx), but without opening that form or saving the
+ * rest of it. Used by both the owner's All Events list
+ * (features/admin/events/event-list.tsx) and the client's /admin/simple
+ * card, via requireAdminForEvent so an owner can flip any event and a
+ * client only their own (never trusts a client-supplied "next" value
+ * without that check).
+ */
+export async function toggleEventVisibilityAction(
+  eventId: string,
+  next: "public" | "private",
+): Promise<ToggleVisibilityResult> {
+  try {
+    await requireAdminForEvent(eventId);
+    await updateEvent(eventId, { visibility: next });
+    revalidatePath("/admin/events");
+    revalidatePath("/admin/simple");
+    revalidatePath("/admin/event-settings");
+    revalidatePath("/events");
+    return { success: true, visibility: next };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
 
 /**
  * Owner-only — sets which client's event the rest of the admin

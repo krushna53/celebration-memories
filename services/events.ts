@@ -136,6 +136,7 @@ export interface EventSummary {
   honoreeName: string;
   eventTitle: string;
   category: EventRecord["category"];
+  visibility: "public" | "private";
   createdAt: string;
 }
 
@@ -151,7 +152,7 @@ export interface EventSummary {
 export async function listAllActiveEvents(): Promise<EventSummary[]> {
   const { data, error } = await supabaseAdmin()
     .from("events")
-    .select("id, slug, honoree_name, event_title, category, created_at")
+    .select("id, slug, honoree_name, event_title, category, visibility, created_at")
     .eq("status", "active")
     .order("created_at", { ascending: false });
 
@@ -163,6 +164,7 @@ export async function listAllActiveEvents(): Promise<EventSummary[]> {
       honoree_name: string;
       event_title: string;
       category: EventRecord["category"];
+      visibility: "public" | "private";
       created_at: string;
     }[]
   ).map((row) => ({
@@ -171,6 +173,7 @@ export async function listAllActiveEvents(): Promise<EventSummary[]> {
     honoreeName: row.honoree_name,
     eventTitle: row.event_title,
     category: row.category,
+    visibility: row.visibility,
     createdAt: row.created_at,
   }));
 }
