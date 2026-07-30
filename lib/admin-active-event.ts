@@ -35,8 +35,25 @@ export async function setActiveEventOverrideId(eventId: string): Promise<void> {
   });
 }
 
-/** Mutates cookies — only callable from a Server Action or Route Handler. */
+/**
+ * Mutates cookies — only callable from a Server Action or Route Handler.
+ *
+ * Deliberately overwrites with an empty, already-expired cookie at the
+ * *same* path used in setActiveEventOverrideId, rather than calling
+ * store.delete(COOKIE_NAME). A bare delete-by-name defaults to path
+ * "/" — since the cookie was set at path "/admin", that mismatch means
+ * the browser treats them as two different cookies and never actually
+ * clears the "/admin"-scoped one. The practical symptom: "Exit to All
+ * Events" redirects to /admin/events, but the override cookie is still
+ * sitting there, so the very next admin page read sees it again and the
+ * owner looks stuck managing the same client's event.
+ */
 export async function clearActiveEventOverrideId(): Promise<void> {
   const store = await cookies();
-  store.delete(COOKIE_NAME);
+  store.set(COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/admin",
+    maxAge: 0,
+  });
 }
