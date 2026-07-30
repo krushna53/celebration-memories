@@ -75,6 +75,13 @@ export function QuickShareLinks({
         ]
       : []),
     {
+      key: "memory-wall",
+      label: "Memory Wall",
+      description: "The live, Pinterest-style wall of everything approved so far.",
+      path: `/events/${slug}#memories`,
+      message: (link) => `See all the photos, videos, and notes shared for ${honoreeName}'s ${eventTitle}: ${link}`,
+    },
+    {
       key: "display",
       label: "Big Screen Display",
       description: "Open on a TV or projector at the venue.",
