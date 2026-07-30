@@ -5,7 +5,7 @@ import { getDraftEventByToken } from "@/services/event-drafts";
 import { getCheckoutPrereqs } from "@/features/start/actions/payment";
 import { getPaymentSettings } from "@/services/payments";
 import { publicMediaUrl } from "@/services/uploads";
-import { PROMO_COOKIE } from "@/features/pricing/actions";
+import { PROMO_COOKIE } from "@/features/pricing/constants";
 import { PaymentPanel } from "@/features/start/payment-panel";
 
 export const dynamic = "force-dynamic";
