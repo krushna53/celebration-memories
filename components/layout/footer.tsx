@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Heart } from "lucide-react";
 
-import { BUILDER } from "@/lib/constants";
+import { BUILDER, SITE_NAME } from "@/lib/constants";
 
 interface FooterProps {
   /** Set only when the active template is a community submission — see templates/CommunityTemplate. */
@@ -115,6 +115,9 @@ export function Footer({ designerCredit, variant = "full" }: FooterProps = {}) {
         >
           {BUILDER.name}
         </a>
+      </p>
+      <p className="mt-2 text-xs text-ivory-100/40">
+        &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
       </p>
       {designerCredit ? (
         <p className="mt-2 text-xs text-ivory-100/50">
