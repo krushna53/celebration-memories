@@ -11,7 +11,8 @@ interface FooterProps {
    * Public Events, Build Your Own, Submit a Template, Pricing, Who Can
    * Do What) — right for the platform marketing pages and an event's
    * own homepage, where "look what's possible" discovery fits naturally.
-   * "minimal" drops those and keeps just Privacy/Contact/the credit
+   * "minimal" drops those and keeps just the legal pages (Terms,
+   * Privacy, Cancellation & Refunds, Shipping), Contact, and the credit
    * line — used on task-focused guest pages (RSVP, Memory upload, a
    * personal invite link) where a guest just wants to finish one thing,
    * not be pitched the platform — and matters even more for a somber
@@ -73,10 +74,28 @@ export function Footer({ designerCredit, variant = "full" }: FooterProps = {}) {
           </>
         ) : null}
         <Link
+          href="/terms"
+          className="transition-luxury duration-300 hover:text-gold-300"
+        >
+          Terms & Conditions
+        </Link>
+        <Link
           href="/privacy"
           className="transition-luxury duration-300 hover:text-gold-300"
         >
           Privacy Notice
+        </Link>
+        <Link
+          href="/refund-policy"
+          className="transition-luxury duration-300 hover:text-gold-300"
+        >
+          Cancellation & Refunds
+        </Link>
+        <Link
+          href="/shipping-policy"
+          className="transition-luxury duration-300 hover:text-gold-300"
+        >
+          Shipping Policy
         </Link>
         <Link
           href="/contact"
