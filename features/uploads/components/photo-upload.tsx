@@ -3,16 +3,23 @@
 import { useRef } from "react";
 import { ImagePlus } from "lucide-react";
 
-import { useMediaUpload } from "@/hooks/use-media-upload";
+import type { useMediaUpload } from "@/hooks/use-media-upload";
 import { UploadQueue } from "@/features/uploads/components/upload-queue";
 
 interface PhotoUploadProps {
-  token: string;
+  /**
+   * Owned by the parent (MediaUploadsSection) rather than called here
+   * directly — every upload kind's queue must survive navigating away
+   * to another action and back, which it can't do if each component
+   * holds its own local useMediaUpload state and gets unmounted when
+   * the guest switches views. See MediaUploadsSection's doc comment.
+   */
+  upload: ReturnType<typeof useMediaUpload>;
 }
 
 /** Multi-photo picker with preview captions, per CLAUDE.md → Guest Uploads. */
-export function PhotoUpload({ token }: PhotoUploadProps) {
-  const { items, addFiles, setCaption, remove, uploadAll } = useMediaUpload(token, "photo");
+export function PhotoUpload({ upload }: PhotoUploadProps) {
+  const { items, addFiles, setCaption, remove, uploadAll } = upload;
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronLeft, Circle, FileAudio, FileVideo, ImagePlus, Mic, PenLine, Video } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useMediaUpload } from "@/hooks/use-media-upload";
 import { PhotoUpload } from "@/features/uploads/components/photo-upload";
 import { VideoUpload } from "@/features/uploads/components/video-upload";
 import { AudioUpload } from "@/features/uploads/components/audio-upload";
@@ -52,32 +53,61 @@ const VIEW_TITLES: Record<Exclude<View, "menu">, string> = {
  * AudioUpload's `initialMode` prop), so recording is one tap away
  * instead of two. All six land in the same admin approval queue before
  * appearing on the public Memory Wall.
+ *
+ * The three useMediaUpload instances live here, one level above the
+ * views that render them, and get passed down as props rather than
+ * called inside PhotoUpload/VideoUpload/AudioUpload themselves.
+ * Previously each of those components owned its own upload queue
+ * locally, so picking photos, then switching to Video before hitting
+ * "Upload All", silently lost every picked-but-not-yet-uploaded photo
+ * when PhotoUpload unmounted. Owning the state here, in a component
+ * that stays mounted across every view change, means a pending queue
+ * in any of the three survives switching around and coming back.
  */
 export function MediaUploadsSection({ token }: MediaUploadsSectionProps) {
   const [view, setView] = useState<View>("menu");
+  const photoUpload = useMediaUpload(token, "photo");
+  const videoUpload = useMediaUpload(token, "video");
+  const audioUpload = useMediaUpload(token, "audio");
+
+  const pendingCountByView: Partial<Record<View, number>> = {
+    photo: photoUpload.items.filter((it) => it.status !== "done").length,
+    "video-upload": videoUpload.items.filter((it) => it.status !== "done").length,
+    "video-record": 0,
+    "audio-upload": audioUpload.items.filter((it) => it.status !== "done").length,
+    "audio-record": 0,
+  };
 
   if (view === "menu") {
     return (
       <div className="rounded-2xl border border-gold-500/15 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {ACTIONS.map(({ view: target, label, icon: Icon, isRecordAction }) => (
-            <button
-              key={target}
-              type="button"
-              onClick={() => setView(target)}
-              className="tap-target group relative flex flex-col items-center gap-2 rounded-xl border border-navy-950/10 bg-ivory-50 px-3 py-5 text-center transition-luxury duration-200 hover:border-gold-500 hover:bg-gold-500/5"
-            >
-              {isRecordAction ? (
-                <span className="absolute right-2 top-2 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500">
-                  <Circle size={6} className="fill-white text-white" />
+          {ACTIONS.map(({ view: target, label, icon: Icon, isRecordAction }) => {
+            const pending = pendingCountByView[target] ?? 0;
+            return (
+              <button
+                key={target}
+                type="button"
+                onClick={() => setView(target)}
+                className="tap-target group relative flex flex-col items-center gap-2 rounded-xl border border-navy-950/10 bg-ivory-50 px-3 py-5 text-center transition-luxury duration-200 hover:border-gold-500 hover:bg-gold-500/5"
+              >
+                {isRecordAction ? (
+                  <span className="absolute right-2 top-2 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500">
+                    <Circle size={6} className="fill-white text-white" />
+                  </span>
+                ) : null}
+                {pending > 0 ? (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-500 px-1 text-[10px] font-semibold text-navy-950">
+                    {pending}
+                  </span>
+                ) : null}
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-500/15 text-gold-600 transition-luxury duration-200 group-hover:bg-gold-500/25">
+                  <Icon size={20} />
                 </span>
-              ) : null}
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-500/15 text-gold-600 transition-luxury duration-200 group-hover:bg-gold-500/25">
-                <Icon size={20} />
-              </span>
-              <span className="text-xs font-medium text-navy-950 sm:text-sm">{label}</span>
-            </button>
-          ))}
+                <span className="text-xs font-medium text-navy-950 sm:text-sm">{label}</span>
+              </button>
+            );
+          })}
         </div>
 
         <p className="mt-6 text-center text-xs text-navy-700/50">
@@ -104,11 +134,11 @@ export function MediaUploadsSection({ token }: MediaUploadsSectionProps) {
       </div>
 
       <div className="mt-5">
-        {view === "photo" ? <PhotoUpload token={token} /> : null}
-        {view === "video-record" ? <VideoUpload token={token} initialMode="record" /> : null}
-        {view === "video-upload" ? <VideoUpload token={token} initialMode="upload" /> : null}
-        {view === "audio-record" ? <AudioUpload token={token} initialMode="record" /> : null}
-        {view === "audio-upload" ? <AudioUpload token={token} initialMode="upload" /> : null}
+        {view === "photo" ? <PhotoUpload upload={photoUpload} /> : null}
+        {view === "video-record" ? <VideoUpload upload={videoUpload} initialMode="record" /> : null}
+        {view === "video-upload" ? <VideoUpload upload={videoUpload} initialMode="upload" /> : null}
+        {view === "audio-record" ? <AudioUpload upload={audioUpload} initialMode="record" /> : null}
+        {view === "audio-upload" ? <AudioUpload upload={audioUpload} initialMode="upload" /> : null}
         {view === "note" ? <GuestbookForm token={token} /> : null}
       </div>
 

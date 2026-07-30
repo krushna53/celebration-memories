@@ -4,12 +4,13 @@ import { useRef, useState } from "react";
 import { Circle, Mic, Square, UploadCloud } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useMediaUpload } from "@/hooks/use-media-upload";
+import type { useMediaUpload } from "@/hooks/use-media-upload";
 import { useMediaRecorder } from "@/hooks/use-media-recorder";
 import { UploadQueue } from "@/features/uploads/components/upload-queue";
 
 interface AudioUploadProps {
-  token: string;
+  /** Owned by the parent (MediaUploadsSection) — see PhotoUpload's doc comment for why. */
+  upload: ReturnType<typeof useMediaUpload>;
   /** Which mode to land in immediately — set to "record" so tapping the Record Audio icon in MediaUploadsSection's menu skips straight to the mic view instead of requiring a second tap. Defaults to "upload". The toggle below still lets the guest switch either way after landing. */
   initialMode?: "upload" | "record";
 }
@@ -21,8 +22,8 @@ function formatSeconds(total: number): string {
 }
 
 /** Audio upload — an existing file, or record a voice message in-browser. */
-export function AudioUpload({ token, initialMode = "upload" }: AudioUploadProps) {
-  const { items, addFiles, setCaption, remove, uploadAll } = useMediaUpload(token, "audio");
+export function AudioUpload({ upload, initialMode = "upload" }: AudioUploadProps) {
+  const { items, addFiles, setCaption, remove, uploadAll } = upload;
   const [mode, setMode] = useState<"upload" | "record">(initialMode);
   const inputRef = useRef<HTMLInputElement>(null);
 
