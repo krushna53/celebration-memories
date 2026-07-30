@@ -20,11 +20,13 @@ import { getDashboardStats } from "@/services/admin-stats";
 import { getSetupProgressCounts } from "@/services/admin-setup-progress";
 import { getLatestCompletedAiImageJob, getLatestUploadedAiImageJob } from "@/services/ai-image-jobs";
 import { getLatestCompletedSlideshowVideoJob } from "@/services/slideshow-video-jobs";
+import { getOrCreateMobileAccessCode } from "@/services/admin-mobile-auth";
 import { signOutAction } from "@/features/admin/auth-actions";
 import { StatCard } from "@/features/admin/components/stat-card";
 import { QuickShareLinks } from "@/features/admin/simple/quick-share-links";
 import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
 import { VisibilityToggle } from "@/features/admin/events/visibility-toggle";
+import { MobileAccessCard } from "@/features/admin/mobile-access/mobile-access-card";
 
 export const dynamic = "force-dynamic";
 
@@ -55,13 +57,15 @@ export default async function AdminSimplePage() {
     );
   }
 
-  const [stats, setupCounts, latestGeneratedAiImage, latestUploadedAiImage, latestSlideshowVideo] = await Promise.all([
-    getDashboardStats(event.id),
-    getSetupProgressCounts(event.id),
-    getLatestCompletedAiImageJob(event.id),
-    getLatestUploadedAiImageJob(event.id),
-    getLatestCompletedSlideshowVideoJob(event.id),
-  ]);
+  const [stats, setupCounts, latestGeneratedAiImage, latestUploadedAiImage, latestSlideshowVideo, mobileAccessCode] =
+    await Promise.all([
+      getDashboardStats(event.id),
+      getSetupProgressCounts(event.id),
+      getLatestCompletedAiImageJob(event.id),
+      getLatestUploadedAiImageJob(event.id),
+      getLatestCompletedSlideshowVideoJob(event.id),
+      getOrCreateMobileAccessCode(admin.id),
+    ]);
 
   const actionCards: Array<{
     href: string;
@@ -186,6 +190,8 @@ export default async function AdminSimplePage() {
             />
             <VisibilityToggle eventId={event.id} visibility={event.visibility} variant="full" />
           </section>
+
+          <MobileAccessCard initialCode={mobileAccessCode} />
 
           <section>
             <div className="flex items-center justify-between gap-4">
