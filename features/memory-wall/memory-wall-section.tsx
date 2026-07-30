@@ -41,9 +41,18 @@ export async function MemoryWallSection({ eventId }: MemoryWallSectionProps) {
             </p>
           </div>
         ) : (
-          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          // Pinterest-style masonry via CSS multi-column (same technique
+          // as the Gallery section) rather than a CSS grid — a grid
+          // stretches every card in a row to match its tallest neighbor,
+          // which looks awkward when a one-line guestbook note sits next
+          // to a tall photo or video. Columns let each card be exactly
+          // as tall as its own content and stack independently per
+          // column, closing the gaps a uniform grid leaves behind.
+          <div className="mt-12 columns-1 gap-5 sm:columns-2 lg:columns-3 [column-fill:_balance]">
             {items.map((item) => (
-              <MemoryCard key={`${item.kind}-${item.id}`} item={item} />
+              <div key={`${item.kind}-${item.id}`} className="mb-5 break-inside-avoid">
+                <MemoryCard item={item} />
+              </div>
             ))}
           </div>
         )}
