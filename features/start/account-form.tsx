@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { wizardStepHref } from "@/features/start/wizard-steps";
+import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -160,6 +161,16 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
           {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Account"}
         </Button>
       </form>
+
+      <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-navy-700/40">
+        <span className="h-px flex-1 bg-navy-950/10" /> or <span className="h-px flex-1 bg-navy-950/10" />
+      </div>
+      <GoogleAuthButton
+        label="Continue with Google"
+        redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(
+          `${wizardStepHref(token, "payment")}?verified=1`,
+        )}&link_event_id=${encodeURIComponent(eventId)}`}
+      />
 
       <p className="mt-6 text-center text-sm text-navy-700/60">
         Already have an account?{" "}
