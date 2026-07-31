@@ -33,6 +33,7 @@ export function InquiryList({ initialInquiries }: { initialInquiries: InquiryRec
               <a href={`mailto:${inquiry.email}`} className="text-sm text-gold-600 underline underline-offset-2">
                 {inquiry.email}
               </a>
+              {inquiry.phone ? <span className="ml-2 text-sm text-navy-700/60">{inquiry.phone}</span> : null}
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs text-navy-700/50">

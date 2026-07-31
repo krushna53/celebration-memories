@@ -6,6 +6,7 @@ export interface InquiryRecord {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
   message: string;
   status: "new" | "read";
   createdAt: string;
@@ -14,9 +15,12 @@ export interface InquiryRecord {
 export async function createInquiry(input: {
   name: string;
   email: string;
+  phone?: string;
   message: string;
 }): Promise<void> {
-  const { error } = await supabaseAdmin().from("inquiries").insert(input);
+  const { error } = await supabaseAdmin()
+    .from("inquiries")
+    .insert({ name: input.name, email: input.email, phone: input.phone || null, message: input.message });
   if (error) throw new Error(`Failed to save inquiry: ${error.message}`);
 }
 
@@ -31,6 +35,7 @@ export async function listInquiries(): Promise<InquiryRecord[]> {
     id: row.id,
     name: row.name,
     email: row.email,
+    phone: row.phone ?? null,
     message: row.message,
     status: row.status,
     createdAt: row.created_at,

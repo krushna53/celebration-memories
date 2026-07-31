@@ -57,23 +57,28 @@ async function sendEmail({ to, subject, html }: SendEmailParams): Promise<void> 
   }
 }
 
-/** Notifies the admin (ADMIN_NOTIFICATION_EMAIL) of a new Contact Us inquiry. */
+/**
+ * Notifies the admin (ADMIN_NOTIFICATION_EMAIL, falling back to the
+ * platform's own email) of a new inquiry — submitted either via the
+ * public Contact Us page or the site-wide support widget's "leave your
+ * details" form (features/support/support-chat-widget.tsx). Both share
+ * the same `inquiries` table/pipeline; the widget is effectively a
+ * second entry point into it, framed as "someone had trouble and
+ * reached out" rather than a general question.
+ */
 export async function sendInquiryNotification(input: {
   name: string;
   email: string;
+  phone?: string;
   message: string;
 }): Promise<void> {
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-  if (!adminEmail) {
-    console.info("[email skipped — ADMIN_NOTIFICATION_EMAIL not set] new inquiry from", input.email);
-    return;
-  }
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || "krushnawebworks@gmail.com";
 
   await sendEmail({
     to: adminEmail,
     subject: `New inquiry from ${input.name} — ${SITE_NAME}`,
     html: `
-      <p><strong>${escapeHtml(input.name)}</strong> (${escapeHtml(input.email)}) sent a message via Contact Us:</p>
+      <p><strong>${escapeHtml(input.name)}</strong> (${escapeHtml(input.email)}${input.phone ? `, ${escapeHtml(input.phone)}` : ""}) sent a message:</p>
       <blockquote style="border-left:3px solid #c9a227;margin:0;padding-left:12px;color:#333;">
         ${escapeHtml(input.message).replace(/\n/g, "<br />")}
       </blockquote>
