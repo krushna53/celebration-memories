@@ -159,10 +159,14 @@ export function GamesManager({
       </form>
 
       <div className="mt-6 grid gap-4">
-        {games.length === 0 ? (
-          <p className="text-sm text-navy-700/50">No games yet — create your first one above.</p>
+        {games.filter((g) => g.type === tab).length === 0 ? (
+          <p className="text-sm text-navy-700/50">
+            No {GAME_TYPE_LABEL[tab]} games yet — create your first one above.
+          </p>
         ) : (
-          games.map((game) => (
+          games
+            .filter((g) => g.type === tab)
+            .map((game) => (
             <GameCard
               key={game.id}
               eventId={eventId}
