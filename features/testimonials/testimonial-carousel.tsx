@@ -41,6 +41,7 @@ export function TestimonialCarousel({ testimonials }: { testimonials: Testimonia
   if (count === 0) return null;
 
   const current = testimonials[index];
+  if (!current) return null;
 
   function go(next: number) {
     setIndex(((next % count) + count) % count);
