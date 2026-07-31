@@ -113,9 +113,7 @@ export function PlatformMarketingContent() {
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>
-                <a href={BUILDER.whatsappUrl} target="_blank" rel="noopener noreferrer">
-                  Build Your Event Site
-                </a>
+                <Link href="/start">Build Your Event Site — Free to Try</Link>
               </Button>
               <Button size="lg" variant="outline" asChild className="border-gold-400/60 text-gold-200 hover:bg-gold-400/10">
                 <Link href="/events">Browse Public Events</Link>
