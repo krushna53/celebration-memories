@@ -5,6 +5,7 @@ import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
 import type { EventSummary } from "@/services/events";
 import { setActiveAdminEventAction, viewAsClientAction } from "@/features/admin/events/actions";
 import { VisibilityToggle } from "@/features/admin/events/visibility-toggle";
+import { DeleteEventButton } from "@/features/admin/events/delete-event-button";
 
 /**
  * Owner-only table of every live client event (app/admin/(dashboard)/events)
@@ -131,6 +132,13 @@ export function EventList({ events, membersByEvent }: EventListProps) {
                       <Settings size={13} /> Manage
                     </button>
                   </form>
+                  <DeleteEventButton
+                    eventId={event.id}
+                    slug={event.slug}
+                    honoreeName={event.honoreeName}
+                    eventTitle={event.eventTitle}
+                    hasClientLogin={members.length > 0}
+                  />
                 </div>
               </td>
             </tr>

@@ -4,8 +4,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { requireOwner, requireAdminForEvent } from "@/services/admin-auth";
-import { createOwnerEvent, updateEvent } from "@/services/events";
-import { setActiveEventOverrideId, clearActiveEventOverrideId } from "@/lib/admin-active-event";
+import { createOwnerEvent, updateEvent, getEventById } from "@/services/events";
+import { deleteEventAndAllAssets } from "@/services/admin-danger-zone";
+import {
+  setActiveEventOverrideId,
+  clearActiveEventOverrideId,
+  getActiveEventOverrideId,
+} from "@/lib/admin-active-event";
 
 export type ToggleVisibilityResult = { success: true; visibility: "public" | "private" } | { success: false; error: string };
 
@@ -84,6 +89,58 @@ export async function clearActiveAdminEventAction(): Promise<void> {
   await clearActiveEventOverrideId();
   revalidatePath("/admin", "layout");
   redirect("/admin/events");
+}
+
+export type DeleteEventResult = { success: true } | { success: false; error: string };
+
+/**
+ * Owner-only — permanently deletes an event and everything in it
+ * (photos, videos, audio, guestbook, invitees, RSVPs, timeline, any
+ * client login pointed at it — see deleteEventAndAllAssets's doc
+ * comment for the full list). Requires the caller to pass back the
+ * event's own slug as confirmation, checked server-side against the
+ * real value rather than trusting whatever the client claims was
+ * typed — same pattern as deleteAdminAccountAction
+ * (features/admin/members/actions.ts), just keyed by slug instead of
+ * email since an event doesn't always have a client login attached
+ * (see the "Create Login" rows on /admin/events) and honoreeName isn't
+ * guaranteed unique across events.
+ *
+ * Note: if this event does have a client login, deleting it here
+ * removes that login's `admins` row (cascades with the event) so it
+ * stops working immediately, but the underlying Supabase Auth account
+ * isn't removed — that email can't be reused via "Create Login" until
+ * it's also deleted from Members > Delete Permanently.
+ */
+export async function deleteEventAction(eventId: string, confirmSlug: string): Promise<DeleteEventResult> {
+  await requireOwner();
+
+  try {
+    const event = await getEventById(eventId);
+    if (!event) {
+      return { success: false, error: "Event not found — it may already be deleted." };
+    }
+    if (event.slug.trim().toLowerCase() !== confirmSlug.trim().toLowerCase()) {
+      return { success: false, error: "That doesn't match — nothing was deleted." };
+    }
+
+    await deleteEventAndAllAssets(eventId);
+
+    // If the owner just deleted whichever event they were actively
+    // "managing" via Manage/View as Client, clear that pointer so the
+    // next admin page load doesn't try to resolve a now-nonexistent
+    // event (see lib/admin-event.ts's resolveAdminEvent).
+    const activeId = await getActiveEventOverrideId();
+    if (activeId === eventId) {
+      await clearActiveEventOverrideId();
+    }
+
+    revalidatePath("/admin/events");
+    revalidatePath("/admin", "layout");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to delete event." };
+  }
 }
 
 /**
