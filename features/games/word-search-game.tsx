@@ -5,6 +5,7 @@ import { Loader2, Trophy, CheckCircle2 } from "lucide-react";
 
 import { readLine, lineCells } from "@/lib/word-search";
 import { startGameAttemptAction, completeGameAttemptAction } from "@/features/games/actions";
+import { HowToPlay } from "@/features/games/how-to-play";
 import type { WordSearchConfig } from "@/types/games";
 
 type Cell = { row: number; col: number };
@@ -145,7 +146,9 @@ export function WordSearchGame({ token, title, config }: { token: string; title:
 
   if (phase === "identify") {
     return (
-      <div className="mx-auto max-w-sm rounded-2xl border border-gold-500/20 bg-white p-6 text-center shadow-sm">
+      <div className="mx-auto max-w-sm">
+        <HowToPlay type="word_search" />
+        <div className="rounded-2xl border border-gold-500/20 bg-white p-6 text-center shadow-sm">
         <p className="font-display text-lg text-navy-950">{title}</p>
         <p className="mt-1 text-sm text-navy-700/60">Enter your name and phone to start — if you&rsquo;re on the guest list, we&rsquo;ll recognize you.</p>
         <form onSubmit={identify} className="mt-4 grid gap-2.5 text-left">
@@ -165,6 +168,7 @@ export function WordSearchGame({ token, title, config }: { token: string; title:
             {starting ? <Loader2 size={14} className="animate-spin" /> : null} Start Puzzle
           </button>
         </form>
+        </div>
       </div>
     );
   }

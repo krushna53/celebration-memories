@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { SiteShell } from "@/components/layout/site-shell";
 import { getGameByShareToken } from "@/services/games";
 import { WordSearchGame } from "@/features/games/word-search-game";
+import { HousieGame } from "@/features/games/housie-game";
+import type { WordSearchConfig } from "@/types/games";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +34,11 @@ export default async function PublicGamePage({ params }: { params: Promise<{ tok
     <SiteShell honoreeName="Celebration Memories" footerVariant="minimal">
       <div className="bg-ivory-50 px-4 py-10 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-xl">
-          <WordSearchGame token={token} title={game.title} config={game.config} />
+          {game.type === "word_search" ? (
+            <WordSearchGame token={token} title={game.title} config={game.config as WordSearchConfig} />
+          ) : (
+            <HousieGame token={token} type={game.type} title={game.title} />
+          )}
         </div>
       </div>
     </SiteShell>
