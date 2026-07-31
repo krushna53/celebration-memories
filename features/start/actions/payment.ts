@@ -8,7 +8,14 @@ import { getBillingProvider, type BillingProvider } from "@/services/billing-set
 import { recordWizardPayment } from "@/services/wizard-payments";
 import { requireStripeClient, isStripeConfigured, getStripePlansConfigured, StripeNotConfiguredError } from "@/lib/stripe";
 import { requireRazorpayClient, isRazorpayConfigured, getRazorpayPlansConfigured, RazorpayNotConfiguredError } from "@/lib/razorpay";
-import { getStripeSettings, getRazorpaySettings } from "@/services/payment-settings";
+import {
+  isCCAvenueConfigured,
+  isCCAvenueOneTimeConfigured,
+  getCCAvenueTransactionUrl,
+  buildCCAvenueRequestString,
+  encryptCCAvenue,
+} from "@/lib/ccavenue";
+import { getStripeSettings, getRazorpaySettings, getCCAvenueSettings } from "@/services/payment-settings";
 import { SITE_URL } from "@/lib/constants";
 import { wizardStepHref } from "@/features/start/wizard-steps";
 
@@ -30,10 +37,18 @@ export async function getCheckoutPrereqs(token: string, eventId: string): Promis
 
   const [admin, provider] = await Promise.all([getAdminByEventId(event.id), getBillingProvider()]);
 
-  const [plans, configured] =
-    provider === "stripe"
-      ? await Promise.all([getStripePlansConfigured(), isStripeConfigured()])
-      : await Promise.all([getRazorpayPlansConfigured(), isRazorpayConfigured()]);
+  let plans: { oneTime: boolean; subscription: boolean };
+  let configured: boolean;
+  if (provider === "stripe") {
+    [plans, configured] = await Promise.all([getStripePlansConfigured(), isStripeConfigured()]);
+  } else if (provider === "razorpay") {
+    [plans, configured] = await Promise.all([getRazorpayPlansConfigured(), isRazorpayConfigured()]);
+  } else {
+    [plans, configured] = await Promise.all([
+      isCCAvenueOneTimeConfigured().then((oneTime) => ({ oneTime, subscription: false })),
+      isCCAvenueConfigured(),
+    ]);
+  }
 
   return {
     provider,
@@ -44,19 +59,32 @@ export async function getCheckoutPrereqs(token: string, eventId: string): Promis
   };
 }
 
-export type CreateCheckoutResult = { success: false; error: string };
+export type CreateCheckoutResult =
+  | { success: false; error: string }
+  /**
+   * Only ever returned for CCAvenue: unlike Stripe/Razorpay (a hosted
+   * checkout URL this action redirects to directly), CCAvenue's kit
+   * requires the browser to HTML-form-POST the encrypted payload to
+   * their transaction endpoint — a server-side redirect() can't do a
+   * POST, so the caller (features/start/payment-panel.tsx) renders and
+   * auto-submits a hidden form with these fields instead.
+   */
+  | { success: true; formPost: { url: string; fields: Record<string, string> } };
 
 /**
  * Creates a checkout session with whichever processor is currently
- * active (services/billing-settings.ts) and redirects the browser
- * straight to its hosted checkout/payment page — no card data ever
- * touches this app's own code either way. On success, the processor
- * redirects to /start/success?slug=... (deliberately outside the
- * /start/[token]/... layout, since the webhook may have already
- * flipped this draft to 'active' by the time the browser gets there,
- * which would otherwise trip the "link no longer active" screen). See
- * app/api/webhooks/stripe/route.ts and app/api/webhooks/razorpay/route.ts
- * for what actually claims the draft and records the payment.
+ * active (services/billing-settings.ts). For Stripe/Razorpay, redirects
+ * the browser straight to their hosted checkout/payment page — no card
+ * data ever touches this app's own code either way; for CCAvenue,
+ * returns form-POST fields instead (see CreateCheckoutResult above). On
+ * success, the flow eventually lands on /start/success?slug=...
+ * (deliberately outside the /start/[token]/... layout, since the
+ * webhook/response handler may have already flipped this draft to
+ * 'active' by the time the browser gets there, which would otherwise
+ * trip the "link no longer active" screen). See
+ * app/api/webhooks/stripe/route.ts, app/api/webhooks/razorpay/route.ts,
+ * and app/api/webhooks/ccavenue/route.ts for what actually claims the
+ * draft and records the payment in each case.
  */
 export async function createCheckoutSessionAction(
   token: string,
@@ -86,6 +114,9 @@ export async function createCheckoutSessionAction(
 
   if (provider === "razorpay") {
     return createRazorpayCheckout({ token, eventId: event.id, plan, adminEmail: admin.email, adminName: admin.name, successUrl, cancelUrl });
+  }
+  if (provider === "ccavenue") {
+    return createCCAvenueCheckout({ token, eventId: event.id, plan, adminEmail: admin.email, adminName: admin.name, cancelUrl });
   }
   return createStripeCheckout({ token, eventId: event.id, plan, adminEmail: admin.email, successUrl, cancelUrl });
 }
@@ -213,6 +244,70 @@ async function createRazorpayCheckout(params: {
   }
 
   redirect(checkoutUrl);
+}
+
+async function createCCAvenueCheckout(params: {
+  token: string;
+  eventId: string;
+  plan: BillingPlan;
+  adminEmail: string;
+  adminName: string | null;
+  cancelUrl: string;
+}): Promise<CreateCheckoutResult> {
+  const { token, eventId, plan, adminEmail, adminName, cancelUrl } = params;
+
+  if (plan === "subscription") {
+    return {
+      success: false,
+      error: "Subscriptions aren't available with CCAvenue yet — choose the one-time plan, or switch processors in Admin > Billing.",
+    };
+  }
+
+  if (!(await isCCAvenueConfigured())) {
+    return { success: false, error: "CCAvenue isn't configured yet — add your Merchant ID, Access Code, and Working Key in Admin > Billing." };
+  }
+
+  const settings = await getCCAvenueSettings();
+  if (!settings.amountOneTime) {
+    return { success: false, error: "The one-time plan isn't configured yet." };
+  }
+  // CCAvenue's `amount` field is in the currency's major unit (e.g.
+  // "9999.00"), unlike Stripe/Razorpay's smallest-unit convention —
+  // ccavenue_amount_one_time is stored the same way as the other two
+  // (paise) for consistency across the settings table, so it's
+  // converted here rather than asking the owner to enter a different
+  // unit just for this one provider.
+  const amountMajor = (settings.amountOneTime / 100).toFixed(2);
+
+  // CCAvenue POSTs its encrypted response back to exactly this URL
+  // (see app/api/webhooks/ccavenue/route.ts) — draftToken travels in the
+  // query string since that response route needs to re-resolve the
+  // draft the same secure way every other draft-scoped action does
+  // (requireDraftEvent), rather than trusting eventId/merchant_param
+  // values pulled out of the decrypted body alone.
+  const responseUrl = `${SITE_URL}/api/webhooks/ccavenue?draftToken=${encodeURIComponent(token)}`;
+
+  const orderId = `${eventId.slice(0, 8)}-${Date.now()}`;
+  const requestString = buildCCAvenueRequestString({
+    merchant_id: settings.merchantId!,
+    order_id: orderId,
+    currency: settings.currency,
+    amount: amountMajor,
+    redirect_url: responseUrl,
+    cancel_url: cancelUrl,
+    language: "EN",
+    billing_name: adminName || adminEmail,
+    billing_email: adminEmail,
+    merchant_param1: eventId,
+  });
+
+  const encRequest = encryptCCAvenue(requestString, settings.workingKey!);
+  const url = await getCCAvenueTransactionUrl();
+
+  return {
+    success: true,
+    formPost: { url, fields: { encRequest, access_code: settings.accessCode! } },
+  };
 }
 
 /** Re-exported for the webhook route, which records the payment after actually confirming it. */

@@ -9,16 +9,19 @@ import type { BillingProvider } from "@/services/billing-settings";
 const OPTIONS: { value: BillingProvider; label: string; blurb: string }[] = [
   { value: "stripe", label: "Stripe", blurb: "Card checkout, global — the default." },
   { value: "razorpay", label: "Razorpay", blurb: "Popular in India, supports UPI/cards/netbanking." },
+  { value: "ccavenue", label: "CCAvenue", blurb: "India-based gateway, one-time payments only." },
 ];
 
 export function ProviderSwitcher({
   currentProvider,
   stripeConfigured,
   razorpayConfigured,
+  ccavenueConfigured,
 }: {
   currentProvider: BillingProvider;
   stripeConfigured: boolean;
   razorpayConfigured: boolean;
+  ccavenueConfigured: boolean;
 }) {
   const [provider, setProvider] = useState(currentProvider);
   const [pending, startTransition] = useTransition();
@@ -39,9 +42,10 @@ export function ProviderSwitcher({
 
   return (
     <div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         {OPTIONS.map((opt) => {
-          const configured = opt.value === "stripe" ? stripeConfigured : razorpayConfigured;
+          const configured =
+            opt.value === "stripe" ? stripeConfigured : opt.value === "razorpay" ? razorpayConfigured : ccavenueConfigured;
           const isSelected = opt.value === provider;
           return (
             <button

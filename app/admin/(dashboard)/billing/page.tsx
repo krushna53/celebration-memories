@@ -6,6 +6,7 @@ import { listWizardPayments } from "@/services/wizard-payments";
 import { getPaymentSettingsSummary } from "@/services/payment-settings";
 import { isStripeConfigured } from "@/lib/stripe";
 import { isRazorpayConfigured } from "@/lib/razorpay";
+import { isCCAvenueConfigured } from "@/lib/ccavenue";
 import { ProviderSwitcher } from "@/features/admin/billing/provider-switcher";
 import { ApiKeysForm } from "@/features/admin/billing/api-keys-form";
 
@@ -22,17 +23,23 @@ function formatAmount(amount: number, currency: string): string {
   }
 }
 
-const PROVIDER_LABEL: Record<string, string> = { stripe: "Stripe", razorpay: "Razorpay", promo: "Promo Code" };
+const PROVIDER_LABEL: Record<string, string> = {
+  stripe: "Stripe",
+  razorpay: "Razorpay",
+  ccavenue: "CCAvenue",
+  promo: "Promo Code",
+};
 
 export default async function AdminBillingPage() {
   const admin = await getCurrentAdmin();
   if (admin?.role !== "owner") redirect("/admin");
 
-  const [provider, payments, stripeConfigured, razorpayConfigured, keysSummary] = await Promise.all([
+  const [provider, payments, stripeConfigured, razorpayConfigured, ccavenueConfigured, keysSummary] = await Promise.all([
     getBillingProvider(),
     listWizardPayments(),
     isStripeConfigured(),
     isRazorpayConfigured(),
+    isCCAvenueConfigured(),
     getPaymentSettingsSummary(),
   ]);
 
@@ -52,6 +59,7 @@ export default async function AdminBillingPage() {
             currentProvider={provider}
             stripeConfigured={stripeConfigured}
             razorpayConfigured={razorpayConfigured}
+            ccavenueConfigured={ccavenueConfigured}
           />
         </div>
       </section>

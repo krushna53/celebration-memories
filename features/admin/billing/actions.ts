@@ -7,8 +7,10 @@ import { setBillingProvider, type BillingProvider } from "@/services/billing-set
 import {
   updateRazorpaySettings,
   updateStripeSettings,
+  updateCCAvenueSettings,
   type RazorpaySettingsInput,
   type StripeSettingsInput,
+  type CCAvenueSettingsInput,
 } from "@/services/payment-settings";
 
 export type AdminActionResult = { success: true } | { success: false; error: string };
@@ -51,5 +53,17 @@ export async function updateStripeSettingsAction(input: StripeSettingsInput): Pr
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to update Stripe settings." };
+  }
+}
+
+/** Owner-only — same as updateRazorpaySettingsAction, for CCAvenue. */
+export async function updateCCAvenueSettingsAction(input: CCAvenueSettingsInput): Promise<AdminActionResult> {
+  try {
+    await requireOwner();
+    await updateCCAvenueSettings(input);
+    revalidatePath("/admin/billing");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to update CCAvenue settings." };
   }
 }

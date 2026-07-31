@@ -4,7 +4,11 @@ import { useState, useTransition } from "react";
 import { Check, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { updateRazorpaySettingsAction, updateStripeSettingsAction } from "@/features/admin/billing/actions";
+import {
+  updateRazorpaySettingsAction,
+  updateStripeSettingsAction,
+  updateCCAvenueSettingsAction,
+} from "@/features/admin/billing/actions";
 import type { PaymentSettingsSummary } from "@/services/payment-settings";
 
 const inputClasses =
@@ -37,9 +41,10 @@ function SourceHint({ summary }: { summary: { value: string | null; source: "dat
  */
 export function ApiKeysForm({ summary }: { summary: PaymentSettingsSummary }) {
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 lg:grid-cols-3">
       <RazorpaySection summary={summary} />
       <StripeSection summary={summary} />
+      <CCAvenueSection summary={summary} />
     </div>
   );
 }
@@ -237,6 +242,109 @@ function StripeSection({ summary }: { summary: PaymentSettingsSummary }) {
       <div className="mt-4 flex items-center gap-3">
         <Button type="button" onClick={save} disabled={pending}>
           {pending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Save Stripe
+        </Button>
+        {status === "saved" ? <span className="text-sm text-emerald-600">Saved.</span> : null}
+        {status === "error" && error ? (
+          <span className="text-sm text-red-600" role="alert">
+            {error}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function CCAvenueSection({ summary }: { summary: PaymentSettingsSummary }) {
+  const [merchantId, setMerchantId] = useState(
+    summary.ccavenueMerchantId.source !== "none" ? summary.ccavenueMerchantId.value ?? "" : "",
+  );
+  const [accessCode, setAccessCode] = useState(
+    summary.ccavenueAccessCode.source !== "none" ? summary.ccavenueAccessCode.value ?? "" : "",
+  );
+  const [workingKey, setWorkingKey] = useState("");
+  const [amountOneTime, setAmountOneTime] = useState(
+    summary.ccavenueAmountOneTime.source !== "none" ? summary.ccavenueAmountOneTime.value ?? "" : "",
+  );
+  const [currency, setCurrency] = useState(summary.ccavenueCurrency.value ?? "INR");
+  const [testMode, setTestMode] = useState(summary.ccavenueTestMode);
+  const [pending, startTransition] = useTransition();
+  const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  function save() {
+    setStatus("idle");
+    setError(null);
+    startTransition(async () => {
+      const result = await updateCCAvenueSettingsAction({
+        ...(merchantId.trim() ? { merchantId: merchantId.trim() } : {}),
+        ...(accessCode.trim() ? { accessCode: accessCode.trim() } : {}),
+        ...(workingKey.trim() ? { workingKey: workingKey.trim() } : {}),
+        ...(amountOneTime.trim() ? { amountOneTime: Number(amountOneTime.trim()) } : {}),
+        ...(currency.trim() ? { currency: currency.trim().toUpperCase() } : {}),
+        testMode,
+      });
+      if (result.success) {
+        setStatus("saved");
+        setWorkingKey("");
+      } else {
+        setStatus("error");
+        setError(result.error);
+      }
+    });
+  }
+
+  return (
+    <div className="rounded-xl border border-navy-950/10 p-4">
+      <h3 className="font-medium text-navy-950">CCAvenue</h3>
+      <p className="mt-1 text-xs text-navy-700/50">One-time payments only — no subscription support yet.</p>
+
+      <div className="mt-3 grid gap-3">
+        <div>
+          <label className={labelClasses}>Merchant ID</label>
+          <input value={merchantId} onChange={(e) => setMerchantId(e.target.value)} className={`${inputClasses} mt-1`} />
+        </div>
+        <div>
+          <label className={labelClasses}>Access Code</label>
+          <input value={accessCode} onChange={(e) => setAccessCode(e.target.value)} className={`${inputClasses} mt-1`} />
+        </div>
+        <div>
+          <label className={labelClasses}>Working Key</label>
+          <input
+            type="password"
+            value={workingKey}
+            onChange={(e) => setWorkingKey(e.target.value)}
+            className={`${inputClasses} mt-1`}
+            placeholder="Leave blank to keep current"
+          />
+          <SourceHint summary={summary.ccavenueWorkingKey} />
+        </div>
+        <div>
+          <label className={labelClasses}>One-Time Amount (smallest unit, e.g. paise — 999900 = ₹9,999)</label>
+          <input
+            type="number"
+            min={0}
+            value={amountOneTime}
+            onChange={(e) => setAmountOneTime(e.target.value)}
+            className={`${inputClasses} mt-1`}
+          />
+        </div>
+        <div>
+          <label className={labelClasses}>Currency</label>
+          <input value={currency} onChange={(e) => setCurrency(e.target.value)} className={`${inputClasses} mt-1`} placeholder="INR" />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-navy-700/80">
+          <input type="checkbox" checked={testMode} onChange={(e) => setTestMode(e.target.checked)} />
+          Test mode (uses test.ccavenue.com)
+        </label>
+        <p className="text-xs text-navy-700/50">
+          Set your merchant dashboard&rsquo;s Response URL to{" "}
+          <code className="rounded bg-navy-950/5 px-1 py-0.5">/api/webhooks/ccavenue</code>.
+        </p>
+      </div>
+
+      <div className="mt-4 flex items-center gap-3">
+        <Button type="button" onClick={save} disabled={pending}>
+          {pending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Save CCAvenue
         </Button>
         {status === "saved" ? <span className="text-sm text-emerald-600">Saved.</span> : null}
         {status === "error" && error ? (

@@ -18,6 +18,16 @@ export interface StripeSettings {
   priceSubscription: string | null;
 }
 
+export interface CCAvenueSettings {
+  merchantId: string | null;
+  accessCode: string | null;
+  workingKey: string | null;
+  amountOneTime: number | null;
+  currency: string;
+  /** No subscriptions — CCAvenue's recurring-payment product is a separate, more involved API not wired up here (see lib/ccavenue.ts). */
+  testMode: boolean;
+}
+
 interface SettingsRow {
   razorpay_key_id: string | null;
   razorpay_key_secret: string | null;
@@ -29,6 +39,12 @@ interface SettingsRow {
   stripe_webhook_secret: string | null;
   stripe_price_one_time: string | null;
   stripe_price_subscription: string | null;
+  ccavenue_merchant_id: string | null;
+  ccavenue_access_code: string | null;
+  ccavenue_working_key: string | null;
+  ccavenue_amount_one_time: number | null;
+  ccavenue_currency: string;
+  ccavenue_test_mode: boolean;
 }
 
 /**
@@ -46,7 +62,7 @@ async function getRow(): Promise<SettingsRow | null> {
   const { data, error } = await supabaseAdmin()
     .from("payment_provider_settings")
     .select(
-      "razorpay_key_id, razorpay_key_secret, razorpay_webhook_secret, razorpay_plan_subscription, razorpay_amount_one_time, razorpay_currency, stripe_secret_key, stripe_webhook_secret, stripe_price_one_time, stripe_price_subscription",
+      "razorpay_key_id, razorpay_key_secret, razorpay_webhook_secret, razorpay_plan_subscription, razorpay_amount_one_time, razorpay_currency, stripe_secret_key, stripe_webhook_secret, stripe_price_one_time, stripe_price_subscription, ccavenue_merchant_id, ccavenue_access_code, ccavenue_working_key, ccavenue_amount_one_time, ccavenue_currency, ccavenue_test_mode",
     )
     .eq("id", true)
     .maybeSingle<SettingsRow>();
@@ -82,6 +98,19 @@ export async function getStripeSettings(): Promise<StripeSettings> {
   };
 }
 
+/** No environment-variable fallback for CCAvenue (it's a new addition, no pre-existing env-var deployments to preserve) — the database row is the only source. */
+export async function getCCAvenueSettings(): Promise<CCAvenueSettings> {
+  const row = await getRow();
+  return {
+    merchantId: row?.ccavenue_merchant_id ?? null,
+    accessCode: row?.ccavenue_access_code ?? null,
+    workingKey: row?.ccavenue_working_key ?? null,
+    amountOneTime: row?.ccavenue_amount_one_time ?? null,
+    currency: row?.ccavenue_currency || "INR",
+    testMode: row?.ccavenue_test_mode ?? true,
+  };
+}
+
 export interface PaymentSettingsFieldSummary {
   /** Non-secret values are shown in full; secret ones only as a masked preview. */
   value: string | null;
@@ -100,6 +129,12 @@ export interface PaymentSettingsSummary {
   stripeWebhookSecret: PaymentSettingsFieldSummary;
   stripePriceOneTime: PaymentSettingsFieldSummary;
   stripePriceSubscription: PaymentSettingsFieldSummary;
+  ccavenueMerchantId: PaymentSettingsFieldSummary;
+  ccavenueAccessCode: PaymentSettingsFieldSummary;
+  ccavenueWorkingKey: PaymentSettingsFieldSummary;
+  ccavenueAmountOneTime: PaymentSettingsFieldSummary;
+  ccavenueCurrency: PaymentSettingsFieldSummary;
+  ccavenueTestMode: boolean;
 }
 
 function maskSecret(value: string): string {
@@ -136,6 +171,16 @@ export async function getPaymentSettingsSummary(): Promise<PaymentSettingsSummar
     stripeWebhookSecret: fieldSummary(row?.stripe_webhook_secret, process.env.STRIPE_WEBHOOK_SECRET, true),
     stripePriceOneTime: fieldSummary(row?.stripe_price_one_time, process.env.STRIPE_PRICE_ONE_TIME, false),
     stripePriceSubscription: fieldSummary(row?.stripe_price_subscription, process.env.STRIPE_PRICE_SUBSCRIPTION, false),
+    ccavenueMerchantId: fieldSummary(row?.ccavenue_merchant_id, undefined, false),
+    // Access Code isn't actually secret — it's submitted as a plain,
+    // visible form field alongside the encrypted payload when the
+    // browser POSTs to CCAvenue, so it's shown in full like the
+    // Merchant ID rather than masked.
+    ccavenueAccessCode: fieldSummary(row?.ccavenue_access_code, undefined, false),
+    ccavenueWorkingKey: fieldSummary(row?.ccavenue_working_key, undefined, true),
+    ccavenueAmountOneTime: fieldSummary(row?.ccavenue_amount_one_time, undefined, false),
+    ccavenueCurrency: fieldSummary(row?.ccavenue_currency, undefined, false),
+    ccavenueTestMode: row?.ccavenue_test_mode ?? true,
   };
 }
 
@@ -185,4 +230,31 @@ export async function updateStripeSettings(input: StripeSettingsInput): Promise<
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", true);
   if (error) throw new Error(`Failed to update Stripe settings: ${error.message}`);
+}
+
+export interface CCAvenueSettingsInput {
+  merchantId?: string;
+  accessCode?: string;
+  workingKey?: string;
+  amountOneTime?: number;
+  currency?: string;
+  testMode?: boolean;
+}
+
+/** Owner-only (checked by the caller). Only fields present in `input` are changed; omit a field to leave it as-is. */
+export async function updateCCAvenueSettings(input: CCAvenueSettingsInput): Promise<void> {
+  const patch: Record<string, string | number | boolean> = {};
+  if (input.merchantId !== undefined) patch.ccavenue_merchant_id = input.merchantId;
+  if (input.accessCode !== undefined) patch.ccavenue_access_code = input.accessCode;
+  if (input.workingKey !== undefined) patch.ccavenue_working_key = input.workingKey;
+  if (input.amountOneTime !== undefined) patch.ccavenue_amount_one_time = input.amountOneTime;
+  if (input.currency !== undefined) patch.ccavenue_currency = input.currency;
+  if (input.testMode !== undefined) patch.ccavenue_test_mode = input.testMode;
+  if (Object.keys(patch).length === 0) return;
+
+  const { error } = await supabaseAdmin()
+    .from("payment_provider_settings")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", true);
+  if (error) throw new Error(`Failed to update CCAvenue settings: ${error.message}`);
 }
