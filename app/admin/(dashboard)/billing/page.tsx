@@ -3,9 +3,11 @@ import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { getBillingProvider } from "@/services/billing-settings";
 import { listWizardPayments } from "@/services/wizard-payments";
-import { STRIPE_CONFIGURED } from "@/lib/stripe";
-import { RAZORPAY_CONFIGURED } from "@/lib/razorpay";
+import { getPaymentSettingsSummary } from "@/services/payment-settings";
+import { isStripeConfigured } from "@/lib/stripe";
+import { isRazorpayConfigured } from "@/lib/razorpay";
 import { ProviderSwitcher } from "@/features/admin/billing/provider-switcher";
+import { ApiKeysForm } from "@/features/admin/billing/api-keys-form";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +28,13 @@ export default async function AdminBillingPage() {
   const admin = await getCurrentAdmin();
   if (admin?.role !== "owner") redirect("/admin");
 
-  const [provider, payments] = await Promise.all([getBillingProvider(), listWizardPayments()]);
+  const [provider, payments, stripeConfigured, razorpayConfigured, keysSummary] = await Promise.all([
+    getBillingProvider(),
+    listWizardPayments(),
+    isStripeConfigured(),
+    isRazorpayConfigured(),
+    getPaymentSettingsSummary(),
+  ]);
 
   return (
     <div>
@@ -42,9 +50,21 @@ export default async function AdminBillingPage() {
         <div className="mt-4">
           <ProviderSwitcher
             currentProvider={provider}
-            stripeConfigured={STRIPE_CONFIGURED}
-            razorpayConfigured={RAZORPAY_CONFIGURED}
+            stripeConfigured={stripeConfigured}
+            razorpayConfigured={razorpayConfigured}
           />
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">API Keys</h2>
+        <p className="mt-1 text-sm text-navy-700/60">
+          Set or update your Razorpay and Stripe credentials here — takes effect immediately, no redeploy needed.
+          Anything left blank keeps whatever is already set (a database value if you&rsquo;ve saved one here before,
+          otherwise the server&rsquo;s environment variable).
+        </p>
+        <div className="mt-4">
+          <ApiKeysForm summary={keysSummary} />
         </div>
       </section>
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { requireStripeClient, STRIPE_CONFIGURED } from "@/lib/stripe";
+import { requireStripeClient, isStripeConfigured } from "@/lib/stripe";
+import { getStripeSettings } from "@/services/payment-settings";
 import { claimDraftEvent } from "@/services/event-drafts";
 import { recordWizardPayment } from "@/services/wizard-payments";
 
@@ -26,19 +27,19 @@ export const runtime = "nodejs";
  * an already-claimed event is a harmless no-op.
  */
 export async function POST(request: Request): Promise<Response> {
-  if (!STRIPE_CONFIGURED) {
+  if (!(await isStripeConfigured())) {
     return NextResponse.json({ error: "Stripe isn't configured." }, { status: 503 });
   }
 
   const signature = request.headers.get("stripe-signature");
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const { webhookSecret } = await getStripeSettings();
   if (!signature || !webhookSecret) {
     return NextResponse.json({ error: "Missing webhook signature or secret." }, { status: 400 });
   }
 
   const rawBody = await request.text();
 
-  const stripe = requireStripeClient();
+  const stripe = await requireStripeClient();
   let event;
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);

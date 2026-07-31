@@ -6,8 +6,9 @@ import { requireDraftEvent } from "@/features/start/draft-auth";
 import { getAdminByEventId } from "@/services/admin-auth";
 import { getBillingProvider, type BillingProvider } from "@/services/billing-settings";
 import { recordWizardPayment } from "@/services/wizard-payments";
-import { requireStripeClient, STRIPE_CONFIGURED, STRIPE_PLANS_CONFIGURED, StripeNotConfiguredError } from "@/lib/stripe";
-import { requireRazorpayClient, RAZORPAY_CONFIGURED, RAZORPAY_PLANS_CONFIGURED, RazorpayNotConfiguredError } from "@/lib/razorpay";
+import { requireStripeClient, isStripeConfigured, getStripePlansConfigured, StripeNotConfiguredError } from "@/lib/stripe";
+import { requireRazorpayClient, isRazorpayConfigured, getRazorpayPlansConfigured, RazorpayNotConfiguredError } from "@/lib/razorpay";
+import { getStripeSettings, getRazorpaySettings } from "@/services/payment-settings";
 import { SITE_URL } from "@/lib/constants";
 import { wizardStepHref } from "@/features/start/wizard-steps";
 
@@ -29,11 +30,14 @@ export async function getCheckoutPrereqs(token: string, eventId: string): Promis
 
   const [admin, provider] = await Promise.all([getAdminByEventId(event.id), getBillingProvider()]);
 
-  const plans = provider === "stripe" ? STRIPE_PLANS_CONFIGURED : RAZORPAY_PLANS_CONFIGURED;
+  const [plans, configured] =
+    provider === "stripe"
+      ? await Promise.all([getStripePlansConfigured(), isStripeConfigured()])
+      : await Promise.all([getRazorpayPlansConfigured(), isRazorpayConfigured()]);
 
   return {
     provider,
-    configured: provider === "stripe" ? STRIPE_CONFIGURED : RAZORPAY_CONFIGURED,
+    configured,
     oneTimeConfigured: plans.oneTime,
     subscriptionConfigured: plans.subscription,
     accountEmail: admin?.email ?? null,
@@ -98,13 +102,14 @@ async function createStripeCheckout(params: {
 
   let stripe;
   try {
-    stripe = requireStripeClient();
+    stripe = await requireStripeClient();
   } catch (err) {
     if (err instanceof StripeNotConfiguredError) return { success: false, error: err.message };
     throw err;
   }
 
-  const priceId = plan === "one_time" ? process.env.STRIPE_PRICE_ONE_TIME : process.env.STRIPE_PRICE_SUBSCRIPTION;
+  const { priceOneTime, priceSubscription } = await getStripeSettings();
+  const priceId = plan === "one_time" ? priceOneTime : priceSubscription;
   if (!priceId) {
     return { success: false, error: `The ${plan === "one_time" ? "one-time" : "subscription"} plan isn't configured yet.` };
   }
@@ -149,12 +154,13 @@ async function createRazorpayCheckout(params: {
 
   let razorpay;
   try {
-    razorpay = requireRazorpayClient();
+    razorpay = await requireRazorpayClient();
   } catch (err) {
     if (err instanceof RazorpayNotConfiguredError) return { success: false, error: err.message };
     throw err;
   }
 
+  const razorpaySettings = await getRazorpaySettings();
   const customer = { name: adminName || adminEmail, email: adminEmail };
 
   // redirect() throws a special Next.js control-flow error that must
@@ -164,7 +170,7 @@ async function createRazorpayCheckout(params: {
   let checkoutUrl: string;
   try {
     if (plan === "subscription") {
-      const planId = process.env.RAZORPAY_PLAN_SUBSCRIPTION;
+      const planId = razorpaySettings.planSubscription;
       if (!planId) return { success: false, error: "The subscription plan isn't configured yet." };
 
       const subscription = await razorpay.subscriptions.create({
@@ -183,12 +189,12 @@ async function createRazorpayCheckout(params: {
       }
       checkoutUrl = subscription.short_url;
     } else {
-      const amount = Number(process.env.RAZORPAY_AMOUNT_ONE_TIME);
+      const amount = razorpaySettings.amountOneTime;
       if (!amount) return { success: false, error: "The one-time plan isn't configured yet." };
 
       const paymentLink = await razorpay.paymentLink.create({
         amount,
-        currency: process.env.RAZORPAY_CURRENCY || "INR",
+        currency: razorpaySettings.currency,
         description: "Celebration Memories — event site (one-time)",
         customer,
         notify: { email: true, sms: false },

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 
-import { RAZORPAY_CONFIGURED } from "@/lib/razorpay";
+import { isRazorpayConfigured } from "@/lib/razorpay";
+import { getRazorpaySettings } from "@/services/payment-settings";
 import { claimDraftEvent } from "@/services/event-drafts";
 import { recordWizardPayment } from "@/services/wizard-payments";
 
@@ -25,12 +26,12 @@ export const runtime = "nodejs";
  * for what was actually charged).
  */
 export async function POST(request: Request): Promise<Response> {
-  if (!RAZORPAY_CONFIGURED) {
+  if (!(await isRazorpayConfigured())) {
     return NextResponse.json({ error: "Razorpay isn't configured." }, { status: 503 });
   }
 
   const signature = request.headers.get("x-razorpay-signature");
-  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const { webhookSecret } = await getRazorpaySettings();
   if (!signature || !webhookSecret) {
     return NextResponse.json({ error: "Missing webhook signature or secret." }, { status: 400 });
   }
