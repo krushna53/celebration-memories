@@ -14,6 +14,7 @@ import {
   callNextItemAction,
   deleteGameAction,
 } from "@/features/admin/games/actions";
+import { AdminHowToPlay } from "@/features/admin/games/admin-how-to-play";
 import type { GameRecord, GameAttemptRecord, GameClaimRecord, GameType } from "@/types/games";
 
 const inputClasses =
@@ -100,7 +101,11 @@ export function GamesManager({
         ))}
       </div>
 
-      <form onSubmit={create} className="mt-4 grid gap-2.5 rounded-xl border border-navy-950/10 bg-white p-4">
+      <div className="mt-4">
+        <AdminHowToPlay type={tab} />
+      </div>
+
+      <form onSubmit={create} className="grid gap-2.5 rounded-xl border border-navy-950/10 bg-white p-4">
         <h2 className="font-display text-lg text-navy-950">New {GAME_TYPE_LABEL[tab]}</h2>
         <p className="text-xs text-navy-700/50">
           {tab === "word_search"
