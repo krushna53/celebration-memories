@@ -28,6 +28,7 @@ import {
   Tags,
   MessageSquareHeart,
   ListChecks,
+  Gamepad2,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -50,6 +51,7 @@ const NAV = [
   { href: "/admin/timeline", label: "Timeline", icon: Clock },
   { href: "/admin/memories", label: "Memories", icon: ImageIcon },
   { href: "/admin/planner", label: "Planner", icon: ListChecks },
+  { href: "/admin/games", label: "Games", icon: Gamepad2 },
   { href: "/admin/share-image", label: "Share Image", icon: ImagePlus },
   { href: "/admin/ai-image", label: "AI Image", icon: Sparkles },
   { href: "/admin/slideshow", label: "Slideshow Video", icon: Film },
