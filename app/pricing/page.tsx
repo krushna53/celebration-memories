@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Camera, FileImage, Images, QrCode, Sparkles, UserCheck } from "lucide-react";
+import { Camera, ImageIcon, MessagesSquare, Sparkles, Link2, BarChart3 } from "lucide-react";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { PhotographerPricingPlans } from "@/features/pricing/photographer-pricing-plans";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
+import { getDetectedCurrency } from "@/features/pricing/currency";
 
 export const metadata: Metadata = {
   title: "Pricing for Photographers & Studios — Celebration Memories",
@@ -12,13 +13,19 @@ export const metadata: Metadata = {
     "Deliver a full event website, guest gallery, RSVP, and AI slideshow for every client shoot — not just a photo download link. Plans for solo photographers up to full studios and agencies.",
 };
 
+/**
+ * Every highlight here maps to a real, shipped feature — see the audit
+ * notes in features/pricing/photographer-pricing-plans.tsx for what was
+ * removed (QR sharing, client photo approval, album/delivery management
+ * all don't exist yet) and why.
+ */
 const PHOTOGRAPHER_HIGHLIGHTS = [
-  { icon: Camera, label: "AI event website for every shoot" },
-  { icon: Images, label: "Client galleries with QR sharing" },
-  { icon: UserCheck, label: "Client photo selection & approval" },
+  { icon: Camera, label: "Full event website for every shoot" },
+  { icon: Link2, label: "One link — no app or login for guests" },
+  { icon: ImageIcon, label: "Gallery, Timeline & Guest Memories wall" },
   { icon: Sparkles, label: "AI invitation images & slideshow video" },
-  { icon: FileImage, label: "Album management, delivery-ready" },
-  { icon: QrCode, label: "One link — no app or login for clients" },
+  { icon: MessagesSquare, label: "Guest photo/video/voice uploads, moderated" },
+  { icon: BarChart3, label: "RSVP & analytics dashboard" },
 ];
 
 /**
@@ -30,7 +37,9 @@ const PHOTOGRAPHER_HIGHLIGHTS = [
  * many client events, not just one celebration, so pricing scales by
  * active events + AI credits rather than a single flat plan.
  */
-export default function PricingPage() {
+export default async function PricingPage() {
+  const initialCurrency = await getDetectedCurrency();
+
   return (
     <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
@@ -54,7 +63,7 @@ export default function PricingPage() {
           </div>
 
           <div className="mt-14">
-            <PhotographerPricingPlans />
+            <PhotographerPricingPlans initialCurrency={initialCurrency} />
           </div>
         </div>
       </div>

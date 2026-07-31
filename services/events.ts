@@ -254,6 +254,19 @@ export interface EventUpdateInput {
   wishMessage?: string | null;
   customCss?: string | null;
   wizardGoals?: string[] | null;
+  /**
+   * Per-event AI generation caps. Not currently owner-only-editable
+   * from any admin UI — the one real setter today is
+   * features/pricing/actions.ts's beginDraftWithPlanAction, which sets
+   * these once at draft creation based on the pricing tier chosen on
+   * /pricing, so a plan's "AI credits" claim is an enforced number
+   * rather than marketing copy. See services/ai-image-generations.ts /
+   * ai-css-generations.ts / slideshow-video-generations.ts for where
+   * the limit is actually checked against usage.
+   */
+  aiImageGenerationLimit?: number;
+  aiCssGenerationLimit?: number;
+  slideshowVideoGenerationLimit?: number;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -334,6 +347,10 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.wishMessage !== undefined) patch.wish_message = input.wishMessage;
   if (input.customCss !== undefined) patch.custom_css = input.customCss;
   if (input.wizardGoals !== undefined) patch.wizard_goals = input.wizardGoals;
+  if (input.aiImageGenerationLimit !== undefined) patch.ai_image_generation_limit = input.aiImageGenerationLimit;
+  if (input.aiCssGenerationLimit !== undefined) patch.ai_css_generation_limit = input.aiCssGenerationLimit;
+  if (input.slideshowVideoGenerationLimit !== undefined)
+    patch.slideshow_video_generation_limit = input.slideshowVideoGenerationLimit;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

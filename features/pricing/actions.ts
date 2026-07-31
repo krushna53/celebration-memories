@@ -4,22 +4,49 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { createDraftEvent } from "@/services/event-drafts";
+import { updateEvent } from "@/services/events";
 import { wizardStepHref } from "@/features/start/wizard-steps";
 import { PROMO_COOKIE } from "@/features/pricing/constants";
+
+/**
+ * The one real, enforced difference between /pricing tiers today: each
+ * plan's AI generation caps, actually checked against usage in
+ * features/admin/ai-image/actions.ts and
+ * features/admin/slideshow/actions.ts (client-role admins are blocked
+ * once they hit their event's limit; the owner is exempt). Every other
+ * dashboard feature (Templates, Gallery, Timeline, Memories, Domain
+ * Search, RSVP, guest uploads) is available on every event regardless
+ * of plan — there's no per-event "multiple events under one paid
+ * account" infrastructure yet, so tiers aren't differentiated by event
+ * count. Keep this in sync with the tier cards in
+ * features/pricing/photographer-pricing-plans.tsx.
+ */
+const PLAN_AI_LIMITS: Record<string, { aiImageGenerationLimit: number; slideshowVideoGenerationLimit: number }> = {
+  free: { aiImageGenerationLimit: 5, slideshowVideoGenerationLimit: 3 },
+  pro: { aiImageGenerationLimit: 20, slideshowVideoGenerationLimit: 10 },
+};
 
 /**
  * Entry point used by every /pricing tier's "Get Started" button —
  * functionally identical to features/start/actions/begin.ts's
  * beginDraftAction (creates a draft, redirects into the wizard's first
- * step), but also reads an optional `promoCode` field off the submitted
- * form so the Free tier's CTA can carry "FREE" all the way through
- * without a separate code path.
+ * step), but also reads an optional `promoCode` field (so the Free
+ * tier's CTA can carry "FREE" all the way through) and a `planId` field
+ * that sets this new draft's real AI credit limits — see
+ * PLAN_AI_LIMITS above.
  */
 export async function beginDraftWithPlanAction(formData: FormData): Promise<void> {
   const rawPromoCode = formData.get("promoCode");
   const promoCode = typeof rawPromoCode === "string" ? rawPromoCode.trim() : "";
+  const rawPlanId = formData.get("planId");
+  const planId = typeof rawPlanId === "string" ? rawPlanId : "";
 
   const draft = await createDraftEvent();
+
+  const limits = PLAN_AI_LIMITS[planId];
+  if (limits) {
+    await updateEvent(draft.id, limits);
+  }
 
   if (promoCode) {
     const jar = await cookies();

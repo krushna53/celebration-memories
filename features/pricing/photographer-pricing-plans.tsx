@@ -7,6 +7,7 @@ import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { beginDraftWithPlanAction } from "@/features/pricing/actions";
+import type { Currency } from "@/features/pricing/currency";
 
 interface Price {
   usd: number;
@@ -20,21 +21,32 @@ interface Tier {
   monthly: Price | null;
   annual: Price | null;
   cta: string;
-  /** Carried straight into the wizard's Payment step via a cookie — see features/pricing/actions.ts. Not used by the "Contact Us" (custom-priced) tier. */
+  /** Sent as a hidden form field and matched against PLAN_AI_LIMITS in features/pricing/actions.ts — the one real, enforced lever behind these tiers today. Omitted for the contact-only tier. */
+  planId?: string;
+  /** Carried straight into the wizard's Payment step via a cookie — see features/pricing/actions.ts. */
   promoCode?: string;
-  /** True for the one tier with no self-serve checkout — routes to a WhatsApp inquiry instead of the wizard. */
+  /** True for the tier with no self-serve checkout — routes to a WhatsApp inquiry instead of the wizard. */
   contactOnly?: boolean;
   highlight?: boolean;
   features: string[];
 }
 
 /**
- * Pricing benchmarked against the main photographer client-gallery
- * tools (Pixieset, ShootProof, Pic-Time — all roughly Free / $8-10 /
- * $20-25 / $50 tiers, scaled by storage). Ours scales by active
- * events + AI credits instead of raw storage, matching this platform's
- * actual differentiators (AI invitation images, AI slideshow video,
- * full event websites, not just galleries).
+ * Only three tiers, and every feature line below is something that
+ * actually exists and is actually enforced in the product today — see
+ * lib/admin-roles.ts's CLIENT_ALLOWED_PATHS for what a paying customer
+ * (client-role admin) can access, and features/admin/ai-image/actions.ts
+ * + features/admin/slideshow/actions.ts for the one real usage cap
+ * (AI credits). Earlier drafts of this page differentiated tiers by
+ * "number of active events," team members, white-labeling, and a
+ * client photo-approval workflow — none of that exists (there's no
+ * multi-event-per-account system, /admin/members and /admin/referrals
+ * are owner-only, footer.tsx has no branding toggle, and there's no
+ * proofing/approval feature), so those claims were removed rather than
+ * built out. What genuinely differs between Free and Pro is AI credits;
+ * Studio/Agency is intentionally a "let's talk" tier for anything
+ * beyond that, since there's no self-serve infrastructure to back a
+ * higher automated tier yet.
  */
 const TIERS: Tier[] = [
   {
@@ -44,95 +56,62 @@ const TIERS: Tier[] = [
     monthly: { usd: 0, inr: 0 },
     annual: { usd: 0, inr: 0 },
     cta: "Start Free",
+    planId: "free",
     promoCode: "FREE",
     features: [
-      "1 active event/gallery",
-      "Up to 100 guest photo/video uploads",
-      "3 standard templates",
-      "Basic RSVP & guest management",
-      "Shareable client link (no login for guests)",
-      "“Powered by” footer credit",
+      "Full event website (invitation, countdown, event details)",
+      "Any of the 10+ ready-made templates",
+      "RSVP tracking with per-guest links (no login for guests)",
+      "Guest photo, video & voice uploads, with a moderation queue",
+      "Gallery, Timeline, and Guest Memories wall",
+      "Invitee management with CSV import & one-tap WhatsApp sending",
+      "AI invitation image — 5 generations",
+      "AI slideshow video — 3 generations",
+      "Domain search tool (find & price a custom domain)",
     ],
   },
   {
-    id: "starter",
-    name: "Starter",
-    tagline: "For photographers just getting started",
-    monthly: { usd: 15, inr: 1199 },
-    annual: { usd: 129, inr: 9999 },
-    cta: "Get Starter",
-    features: [
-      "Everything in Free, plus:",
-      "Up to 3 active events / month",
-      "Unlimited guest photo, video & voice uploads",
-      "AI invitation image — 10 credits / month",
-      "Custom domain connect",
-      "Branding removed",
-    ],
-  },
-  {
-    id: "professional",
-    name: "Professional",
-    tagline: "For working photographers & small studios",
-    monthly: { usd: 39, inr: 2999 },
-    annual: { usd: 349, inr: 26999 },
-    cta: "Get Professional",
+    id: "pro",
+    name: "Pro",
+    tagline: "For working photographers & regular hosts",
+    monthly: { usd: 19, inr: 1499 },
+    annual: { usd: 179, inr: 13999 },
+    cta: "Get Pro",
+    planId: "pro",
     highlight: true,
     features: [
-      "Everything in Starter, plus:",
-      "Up to 15 active events / month",
-      "AI invitation image — 30 credits / month",
-      "AI slideshow video generator — 5 / month",
-      "Client photo selection & approval workflow",
-      "Advanced analytics & most-active-guest insights",
+      "Everything in Free, plus:",
+      "AI invitation image — 20 generations",
+      "AI slideshow video — 10 generations",
+      "Dashboard analytics: RSVP breakdown, upload counts, most active guests",
       "Priority email support",
     ],
   },
   {
     id: "studio",
-    name: "Studio",
-    tagline: "For high-volume studios & event planners",
-    monthly: { usd: 89, inr: 6999 },
-    annual: { usd: 799, inr: 62999 },
-    cta: "Get Studio",
-    features: [
-      "Everything in Professional, plus:",
-      "Unlimited active events",
-      "AI credits — unlimited (fair use)",
-      "Up to 5 team members",
-      "Fully white-labeled, no branding anywhere",
-      "Referral rewards program access",
-      "Dedicated WhatsApp support",
-    ],
-  },
-  {
-    id: "agency",
-    name: "Agency",
-    tagline: "For agencies & multi-studio operations",
+    name: "Studio & Agency",
+    tagline: "Running several events or shoots regularly? Let's talk",
     monthly: null,
     annual: null,
     cta: "Contact Us",
     contactOnly: true,
     features: [
-      "Everything in Studio, plus:",
-      "Unlimited team members",
-      "White-label platform + custom branding",
-      "Custom domain for your whole client base",
-      "API access",
-      "Dedicated account manager",
+      "Everything in Pro, plus:",
+      "Higher AI credit allowances, sized to your volume",
+      "Help setting up multiple events",
+      "Direct WhatsApp support line",
     ],
   },
 ];
 
-const AGENCY_WHATSAPP_URL =
-  "https://wa.me/919987982969?text=Hi%20Harshal%2C%20I%27d%20like%20to%20talk%20about%20the%20Agency%20plan%20for%20my%20studio.";
+const STUDIO_WHATSAPP_URL =
+  "https://wa.me/919987982969?text=Hi%20Harshal%2C%20I%27d%20like%20to%20talk%20about%20a%20Studio%2FAgency%20plan.";
 
-function formatUsd(n: number): string {
-  return n === 0 ? "$0" : `$${n.toLocaleString("en-US")}`;
-}
-
-function formatInr(n: number): string {
-  return n === 0 ? "₹0" : `₹${n.toLocaleString("en-IN")}`;
+function formatPrice(price: Price, currency: Currency): string {
+  if (currency === "INR") {
+    return price.inr === 0 ? "₹0" : `₹${price.inr.toLocaleString("en-IN")}`;
+  }
+  return price.usd === 0 ? "$0" : `$${price.usd.toLocaleString("en-US")}`;
 }
 
 function annualSavingsPercent(monthly: number, annual: number): number | null {
@@ -151,8 +130,9 @@ function StartButton({ label }: { label: string }) {
   );
 }
 
-export function PhotographerPricingPlans() {
+export function PhotographerPricingPlans({ initialCurrency }: { initialCurrency: Currency }) {
   const [period, setPeriod] = useState<"monthly" | "annual">("monthly");
+  const [currency, setCurrency] = useState<Currency>(initialCurrency);
   const [promoCode, setPromoCode] = useState("");
 
   return (
@@ -174,37 +154,73 @@ export function PhotographerPricingPlans() {
         <SubmitPromoButton disabled={!promoCode.trim()} />
       </form>
 
-      <div className="flex items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={() => setPeriod("monthly")}
-          className={cn(
-            "rounded-full px-4 py-1.5 text-sm font-medium transition-luxury duration-200",
-            period === "monthly" ? "bg-navy-950 text-ivory-50" : "text-navy-700/60 hover:text-navy-950",
-          )}
-        >
-          Monthly
-        </button>
-        <button
-          type="button"
-          onClick={() => setPeriod("annual")}
-          className={cn(
-            "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-luxury duration-200",
-            period === "annual" ? "bg-navy-950 text-ivory-50" : "text-navy-700/60 hover:text-navy-950",
-          )}
-        >
-          Annual
-          <span className="rounded-full bg-gold-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold-700">
-            Save
-          </span>
-        </button>
-      </div>
+      <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPeriod("monthly")}
+            className={cn(
+              "rounded-full px-4 py-1.5 text-sm font-medium transition-luxury duration-200",
+              period === "monthly" ? "bg-navy-950 text-ivory-50" : "text-navy-700/60 hover:text-navy-950",
+            )}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            onClick={() => setPeriod("annual")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-luxury duration-200",
+              period === "annual" ? "bg-navy-950 text-ivory-50" : "text-navy-700/60 hover:text-navy-950",
+            )}
+          >
+            Annual
+            <span className="rounded-full bg-gold-500/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold-700">
+              Save
+            </span>
+          </button>
+        </div>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="hidden h-5 w-px bg-navy-950/10 sm:block" />
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCurrency("USD")}
+            className={cn(
+              "rounded-full px-4 py-1.5 text-sm font-medium transition-luxury duration-200",
+              currency === "USD" ? "bg-navy-950 text-ivory-50" : "text-navy-700/60 hover:text-navy-950",
+            )}
+          >
+            USD ($)
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrency("INR")}
+            className={cn(
+              "rounded-full px-4 py-1.5 text-sm font-medium transition-luxury duration-200",
+              currency === "INR" ? "bg-navy-950 text-ivory-50" : "text-navy-700/60 hover:text-navy-950",
+            )}
+          >
+            INR (₹)
+          </button>
+        </div>
+      </div>
+      <p className="mt-2 text-center text-xs text-navy-700/45">
+        {currency === "INR" ? "Showing Indian pricing based on your location." : "Showing US-dollar pricing based on your location."}{" "}
+        Switch anytime above.
+      </p>
+
+      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {TIERS.map((tier) => {
           const price = tier.monthly && tier.annual ? (period === "monthly" ? tier.monthly : tier.annual) : null;
           const savings =
-            tier.monthly && tier.annual ? annualSavingsPercent(tier.monthly.usd, tier.annual.usd) : null;
+            tier.monthly && tier.annual
+              ? annualSavingsPercent(
+                  currency === "INR" ? tier.monthly.inr : tier.monthly.usd,
+                  currency === "INR" ? tier.annual.inr : tier.annual.usd,
+                )
+              : null;
 
           return (
             <div
@@ -223,16 +239,13 @@ export function PhotographerPricingPlans() {
               <h3 className="font-display text-xl text-navy-950">{tier.name}</h3>
               <p className="mt-1 text-sm text-navy-700/60">{tier.tagline}</p>
 
-              <div className="mt-5 min-h-[64px]">
+              <div className="mt-5 min-h-[56px]">
                 {price ? (
                   <>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="font-display text-3xl text-navy-950">{formatUsd(price.usd)}</span>
+                      <span className="font-display text-3xl text-navy-950">{formatPrice(price, currency)}</span>
                       <span className="text-sm text-navy-700/50">/ {period === "monthly" ? "mo" : "yr"}</span>
                     </div>
-                    <p className="mt-0.5 text-sm text-navy-700/60">
-                      or {formatInr(price.inr)} / {period === "monthly" ? "mo" : "yr"}
-                    </p>
                     {period === "annual" && savings ? (
                       <p className="mt-1 text-xs font-medium text-gold-700">Save ~{savings}% vs. monthly</p>
                     ) : null}
@@ -246,7 +259,7 @@ export function PhotographerPricingPlans() {
 
               {tier.contactOnly ? (
                 <a
-                  href={AGENCY_WHATSAPP_URL}
+                  href={STUDIO_WHATSAPP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-navy-950 px-4 py-2.5 text-sm font-medium text-ivory-50 transition-luxury duration-200 hover:bg-navy-900"
@@ -256,6 +269,7 @@ export function PhotographerPricingPlans() {
               ) : (
                 <form action={beginDraftWithPlanAction} className="mt-6">
                   {tier.promoCode ? <input type="hidden" name="promoCode" value={tier.promoCode} /> : null}
+                  {tier.planId ? <input type="hidden" name="planId" value={tier.planId} /> : null}
                   <StartButton label={tier.cta} />
                 </form>
               )}
@@ -274,10 +288,9 @@ export function PhotographerPricingPlans() {
       </div>
 
       <p className="mx-auto mt-10 max-w-xl text-center text-xs text-navy-700/50">
-        Prices shown are suggested list pricing in USD and INR. The exact amount charged at checkout is configured by
-        the platform owner and may differ; if card checkout isn&rsquo;t set up yet, you&rsquo;ll be offered a QR/UPI
-        payment option instead at the final step. Agency pricing is custom — reach out and we&rsquo;ll scope it to
-        your studio.
+        Prices shown are suggested list pricing. The exact amount charged at checkout is configured by the platform
+        owner and may differ; if card checkout isn&rsquo;t set up yet, you&rsquo;ll be offered a QR/UPI payment option
+        instead at the final step. Studio &amp; Agency pricing is custom — reach out and we&rsquo;ll scope it to you.
       </p>
     </div>
   );
