@@ -24,19 +24,44 @@ the invite token is the guest's credential, checked in application code.
 ## Auth email templates (branding)
 
 This is a hosted Supabase project (no `config.toml` checked in), so auth
-email templates — the "Confirm your signup" email new admins/clients get
-from `supabaseBrowser().auth.signUp()` — are NOT configured from code.
-They default to generic Supabase wording ("Confirm your signup" from
+email templates are NOT configured from code — they default to generic
+Supabase wording (e.g. "Confirm your signup" from
 `noreply@mail.app.supabase.io`) unless set in the Dashboard.
 
-`templates/confirm-signup.html` in this folder is the source of truth for
-the branded version — copy/paste it (and the subject below) into:
+Every file in `templates/` is the branded source of truth for one auth
+email — copy/paste each one's body (and the subject listed in its own
+header comment) into the matching Dashboard page:
 
-**Authentication → Email Templates → Confirm signup**
+**Authentication → Email Templates**
 https://supabase.com/dashboard/project/ktbpnjrovzhjwardyime/auth/templates
 
-Subject: `Confirm your email — Celebration Memories`
+| Template file | Dashboard page | Subject |
+| --- | --- | --- |
+| `confirm-signup.html` | Confirm signup | `Confirm your email — Celebration Memories` |
+| `invite-user.html` | Invite user | `You're invited to Celebration Memories` |
+| `magic-link.html` | Magic Link | `Your sign-in link — Celebration Memories` |
+| `reset-password.html` | Reset Password | `Reset your password — Celebration Memories` |
+| `change-email.html` | Change Email Address | `Confirm your new email — Celebration Memories` |
+| `reauthentication.html` | Reauthentication | `Your verification code — Celebration Memories` |
 
-The Dashboard also lets you set a custom "Sender email/name" on paid plans
-(Settings → Auth → SMTP) if you want the From address to say Celebration
-Memories too, rather than Supabase's shared sender.
+All six share the same dark navy / gold / ivory look as the rest of the
+site, are table-based with inline styles only (no external assets or
+fonts, for email client compatibility), and end with the same
+"Celebration Memories · Built by Krushna Web Works" footer line.
+
+**Now that the project is on a paid ("Pro") Supabase plan**, two more
+branding levers open up beyond just the template body/subject, both under
+**Settings → Auth → SMTP Settings**:
+
+1. **Custom SMTP** — point auth email delivery at your own sender (e.g.
+   Resend, the same provider `lib/email.ts` already uses for inquiry/
+   notification emails) so the From address reads
+   `Celebration Memories <noreply@yourdomain.com>` instead of Supabase's
+   shared `noreply@mail.app.supabase.io`. This also removes Supabase's
+   free-tier rate limit on auth emails (a handful per hour).
+2. **Sender name** — even without custom SMTP, the Pro plan lets you set
+   a display name for the shared sender, so recipients see "Celebration
+   Memories" in their inbox rather than a raw Supabase address.
+
+Neither of those two are template files — they're one-time Dashboard
+settings, not something to check into this repo.

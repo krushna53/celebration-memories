@@ -1,0 +1,49 @@
+<!--
+  "Invite user" auth email template — Celebration Memories branding.
+  Sent when an admin invites someone via supabase.auth.admin.inviteUserByEmail
+  (not currently wired into a feature, but kept branded for parity with
+  the other templates in case invite-based admin onboarding is added).
+
+  Paste into: Authentication → Email Templates → Invite user
+  https://supabase.com/dashboard/project/ktbpnjrovzhjwardyime/auth/templates
+
+  Subject to set alongside it:
+    You're invited to Celebration Memories
+
+  {{ .ConfirmationURL }} is the only template variable used.
+-->
+<div style="background-color:#f7f5ef;padding:32px 16px;font-family:Georgia,'Playfair Display',serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;background-color:#0b1626;border-radius:16px;overflow:hidden;">
+    <tr>
+      <td style="padding:40px 32px 8px;text-align:center;">
+        <p style="margin:0;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#c9a227;font-family:Arial,sans-serif;">
+          Celebration Memories
+        </p>
+        <h1 style="margin:16px 0 0;font-size:24px;color:#faf7ee;font-weight:normal;">
+          You&rsquo;ve been invited
+        </h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:16px 32px 8px;text-align:center;">
+        <p style="margin:0;font-size:14px;line-height:1.6;color:rgba(250,247,238,0.75);font-family:Arial,sans-serif;">
+          You&rsquo;ve been invited to join Celebration Memories. Accept the invitation below to set your password and get started.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:24px 32px 40px;text-align:center;">
+        <a href="{{ .ConfirmationURL }}"
+           style="display:inline-block;background-color:#c9a227;color:#0b1626;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;letter-spacing:0.5px;padding:14px 32px;border-radius:999px;">
+          Accept Invitation
+        </a>
+        <p style="margin:20px 0 0;font-size:12px;color:rgba(250,247,238,0.45);font-family:Arial,sans-serif;">
+          If you weren&rsquo;t expecting this invitation, you can safely ignore this email.
+        </p>
+      </td>
+    </tr>
+  </table>
+  <p style="max-width:480px;margin:20px auto 0;text-align:center;font-size:11px;color:#9a9584;font-family:Arial,sans-serif;">
+    Celebration Memories &middot; Built by Krushna Web Works
+  </p>
+</div>
