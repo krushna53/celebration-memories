@@ -14,6 +14,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
+import { TestimonialsSection } from "@/features/testimonials/testimonials-section";
 import { BUILDER, SUPPORT } from "@/lib/constants";
 
 const LIVE_FEATURES = [
@@ -132,6 +133,8 @@ export function PlatformMarketingContent() {
           </Reveal>
         </div>
       </div>
+
+      <TestimonialsSection />
 
       <div className="bg-ivory-50 py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">

@@ -339,6 +339,45 @@ export async function createSignedShareVideoUpload(params: {
   return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
 }
 
+/**
+ * Same signed-upload pattern as createSignedPaymentQrUpload — platform-
+ * level, not per-event, for the optional photo on a public testimonial
+ * submission (features/testimonials/share-experience-form.tsx). Anyone
+ * can call this (no admin/invitee check), same as the testimonial
+ * submission itself; the resulting row is unapproved until the owner
+ * reviews it at /admin/testimonials, so an unwanted image never goes
+ * public even though the upload itself is open.
+ */
+export async function createSignedTestimonialPhotoUpload(params: {
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { fileName, contentType, fileSize } = params;
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported image type: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS.photo;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `platform/testimonials/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage
+    .from("gallery")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+}
+
 /** Same signed-upload pattern, for an optional photo attached to a Timeline milestone (see services/timeline.ts, /admin/timeline). */
 export async function createSignedTimelineImageUpload(params: {
   eventId: string;
