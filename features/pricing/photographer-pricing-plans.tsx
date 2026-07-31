@@ -71,6 +71,8 @@ function buildTiers(planPrices: Record<PricingPlanId, PricingPlanSetting>): Tier
         "RSVP tracking with per-guest links (no login for guests)",
         "Guest photo, video & voice uploads, with a moderation queue",
         "Gallery, Timeline, and Guest Memories wall",
+        "Built-in event planner — to-dos & notes, shareable with family (no separate logins)",
+        "Digital party games — Word Search, Housie, and Movie Name Housie with QR guest access",
         "Invitee management with CSV import & one-tap WhatsApp sending",
         "AI invitation image — 5 generations",
         "AI slideshow video — 3 generations",

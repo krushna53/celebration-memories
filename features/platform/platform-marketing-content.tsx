@@ -2,8 +2,12 @@ import Link from "next/link";
 import {
   CalendarClock,
   Camera,
+  CreditCard,
+  Film,
+  Gamepad2,
   LayoutDashboard,
   Link2,
+  ListChecks,
   MessageCircle,
   Palette,
   ShieldCheck,
@@ -66,6 +70,30 @@ const LIVE_FEATURES = [
     description:
       "Describe the invitation image you want in a sentence and generate it right from the dashboard — available to every event.",
   },
+  {
+    icon: ListChecks,
+    title: "Built-in event planner",
+    description:
+      "To-do lists and notes for the whole planning process — share one link with family so everyone can pitch in on tasks, no separate logins needed.",
+  },
+  {
+    icon: Gamepad2,
+    title: "Digital party games",
+    description:
+      "Word Search, Housie (Tambola), and Movie Name Housie — guests join with a scan of a QR code, play on their own phone, and claim prizes live.",
+  },
+  {
+    icon: Film,
+    title: "Auto-generated slideshow video",
+    description:
+      "Turn your gallery into a music-backed highlight video in minutes — pick photos, captions, and a theme, and it renders automatically.",
+  },
+  {
+    icon: CreditCard,
+    title: "Pay your way",
+    description:
+      "Stripe, Razorpay, or CCAvenue for card and UPI checkout — or skip processor fees entirely with a manual UPI QR code and screenshot confirmation.",
+  },
 ];
 
 /**
@@ -109,8 +137,9 @@ export function PlatformMarketingContent() {
               A premium, mobile-first invitation site for the moments worth
               gathering for — birthdays, weddings, anniversaries, retirements,
               baby showers, memorials, workshops, and more. Unique guest
-              links, live RSVP tracking, and a shared wall of photos, videos,
-              and messages from everyone who came.
+              links, live RSVP tracking, a shared wall of photos, videos, and
+              messages, a built-in event planner for the whole family, and
+              digital party games guests can join by scanning a QR code.
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>
