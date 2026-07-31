@@ -27,6 +27,7 @@ import {
   LayoutGrid,
   Tags,
   MessageSquareHeart,
+  ListChecks,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -48,6 +49,7 @@ const NAV = [
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/admin/timeline", label: "Timeline", icon: Clock },
   { href: "/admin/memories", label: "Memories", icon: ImageIcon },
+  { href: "/admin/planner", label: "Planner", icon: ListChecks },
   { href: "/admin/share-image", label: "Share Image", icon: ImagePlus },
   { href: "/admin/ai-image", label: "AI Image", icon: Sparkles },
   { href: "/admin/slideshow", label: "Slideshow Video", icon: Film },

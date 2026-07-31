@@ -2,7 +2,7 @@ import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export type BillingProviderRecord = "stripe" | "razorpay" | "promo";
+export type BillingProviderRecord = "stripe" | "razorpay" | "ccavenue" | "promo";
 export type BillingPlanRecord = "one_time" | "subscription";
 
 export interface WizardPaymentRecord {
