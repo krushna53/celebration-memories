@@ -6,6 +6,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { PhotographerPricingPlans } from "@/features/pricing/photographer-pricing-plans";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 import { getDetectedCurrency } from "@/features/pricing/currency";
+import { getPricingPlanSettings } from "@/services/pricing-settings";
 
 export const metadata: Metadata = {
   title: "Pricing for Photographers & Studios — Celebration Memories",
@@ -38,7 +39,7 @@ const PHOTOGRAPHER_HIGHLIGHTS = [
  * active events + AI credits rather than a single flat plan.
  */
 export default async function PricingPage() {
-  const initialCurrency = await getDetectedCurrency();
+  const [initialCurrency, planPrices] = await Promise.all([getDetectedCurrency(), getPricingPlanSettings()]);
 
   return (
     <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
@@ -63,7 +64,7 @@ export default async function PricingPage() {
           </div>
 
           <div className="mt-14">
-            <PhotographerPricingPlans initialCurrency={initialCurrency} />
+            <PhotographerPricingPlans initialCurrency={initialCurrency} planPrices={planPrices} />
           </div>
         </div>
       </div>

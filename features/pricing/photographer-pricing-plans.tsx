@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { beginDraftWithPlanAction } from "@/features/pricing/actions";
 import type { Currency } from "@/features/pricing/currency";
+import type { PricingPlanId, PricingPlanSetting } from "@/services/pricing-settings";
 
 interface Price {
   usd: number;
@@ -47,62 +48,69 @@ interface Tier {
  * Studio/Agency is intentionally a "let's talk" tier for anything
  * beyond that, since there's no self-serve infrastructure to back a
  * higher automated tier yet.
+ *
+ * Free and Pro's actual monthly/annual numbers are NOT hardcoded here
+ * — they come from services/pricing-settings.ts (owner-editable at
+ * /admin/pricing-settings) and are merged in by buildTiers() below, so
+ * the platform owner can change them without a code deploy.
  */
-const TIERS: Tier[] = [
-  {
-    id: "free",
-    name: "Free",
-    tagline: "Try it with your next client shoot",
-    monthly: { usd: 0, inr: 0 },
-    annual: { usd: 0, inr: 0 },
-    cta: "Start Free",
-    planId: "free",
-    promoCode: "FREE",
-    features: [
-      "Full event website (invitation, countdown, event details)",
-      "Any of the 10+ ready-made templates",
-      "RSVP tracking with per-guest links (no login for guests)",
-      "Guest photo, video & voice uploads, with a moderation queue",
-      "Gallery, Timeline, and Guest Memories wall",
-      "Invitee management with CSV import & one-tap WhatsApp sending",
-      "AI invitation image — 5 generations",
-      "AI slideshow video — 3 generations",
-      "Domain search tool (find & price a custom domain)",
-    ],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    tagline: "For working photographers & regular hosts",
-    monthly: { usd: 19, inr: 1499 },
-    annual: { usd: 179, inr: 13999 },
-    cta: "Get Pro",
-    planId: "pro",
-    highlight: true,
-    features: [
-      "Everything in Free, plus:",
-      "AI invitation image — 20 generations",
-      "AI slideshow video — 10 generations",
-      "Dashboard analytics: RSVP breakdown, upload counts, most active guests",
-      "Priority email support",
-    ],
-  },
-  {
-    id: "studio",
-    name: "Studio & Agency",
-    tagline: "Running several events or shoots regularly? Let's talk",
-    monthly: null,
-    annual: null,
-    cta: "Contact Us",
-    contactOnly: true,
-    features: [
-      "Everything in Pro, plus:",
-      "Higher AI credit allowances, sized to your volume",
-      "Help setting up multiple events",
-      "Direct WhatsApp support line",
-    ],
-  },
-];
+function buildTiers(planPrices: Record<PricingPlanId, PricingPlanSetting>): Tier[] {
+  return [
+    {
+      id: "free",
+      name: "Free",
+      tagline: "Try it with your next client shoot",
+      monthly: { usd: planPrices.free.monthlyUsd, inr: planPrices.free.monthlyInr },
+      annual: { usd: planPrices.free.annualUsd, inr: planPrices.free.annualInr },
+      cta: "Start Free",
+      planId: "free",
+      promoCode: "FREE",
+      features: [
+        "Full event website (invitation, countdown, event details)",
+        "Any of the 10+ ready-made templates",
+        "RSVP tracking with per-guest links (no login for guests)",
+        "Guest photo, video & voice uploads, with a moderation queue",
+        "Gallery, Timeline, and Guest Memories wall",
+        "Invitee management with CSV import & one-tap WhatsApp sending",
+        "AI invitation image — 5 generations",
+        "AI slideshow video — 3 generations",
+        "Domain search tool (find & price a custom domain)",
+      ],
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      tagline: "For working photographers & regular hosts",
+      monthly: { usd: planPrices.pro.monthlyUsd, inr: planPrices.pro.monthlyInr },
+      annual: { usd: planPrices.pro.annualUsd, inr: planPrices.pro.annualInr },
+      cta: "Get Pro",
+      planId: "pro",
+      highlight: true,
+      features: [
+        "Everything in Free, plus:",
+        "AI invitation image — 20 generations",
+        "AI slideshow video — 10 generations",
+        "Dashboard analytics: RSVP breakdown, upload counts, most active guests",
+        "Priority email support",
+      ],
+    },
+    {
+      id: "studio",
+      name: "Studio & Agency",
+      tagline: "Running several events or shoots regularly? Let's talk",
+      monthly: null,
+      annual: null,
+      cta: "Contact Us",
+      contactOnly: true,
+      features: [
+        "Everything in Pro, plus:",
+        "Higher AI credit allowances, sized to your volume",
+        "Help setting up multiple events",
+        "Direct WhatsApp support line",
+      ],
+    },
+  ];
+}
 
 const STUDIO_WHATSAPP_URL =
   "https://wa.me/919987982969?text=Hi%20Harshal%2C%20I%27d%20like%20to%20talk%20about%20a%20Studio%2FAgency%20plan.";
@@ -130,10 +138,17 @@ function StartButton({ label }: { label: string }) {
   );
 }
 
-export function PhotographerPricingPlans({ initialCurrency }: { initialCurrency: Currency }) {
+export function PhotographerPricingPlans({
+  initialCurrency,
+  planPrices,
+}: {
+  initialCurrency: Currency;
+  planPrices: Record<PricingPlanId, PricingPlanSetting>;
+}) {
   const [period, setPeriod] = useState<"monthly" | "annual">("monthly");
   const [currency, setCurrency] = useState<Currency>(initialCurrency);
   const [promoCode, setPromoCode] = useState("");
+  const tiers = buildTiers(planPrices);
 
   return (
     <div>
@@ -212,7 +227,7 @@ export function PhotographerPricingPlans({ initialCurrency }: { initialCurrency:
       </p>
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {TIERS.map((tier) => {
+        {tiers.map((tier) => {
           const price = tier.monthly && tier.annual ? (period === "monthly" ? tier.monthly : tier.annual) : null;
           const savings =
             tier.monthly && tier.annual
