@@ -11,6 +11,10 @@ export interface PricingPlanSetting {
   monthlyInr: number;
   annualUsd: number;
   annualInr: number;
+  /** AI invitation-image generations granted to a new event on this plan — see beginDraftWithPlanAction in features/pricing/actions.ts, the only place these are actually applied (at draft creation, copied onto events.ai_image_generation_limit). */
+  aiImageGenerationLimit: number;
+  /** Same idea for AI slideshow video generations (events.slideshow_video_generation_limit). */
+  slideshowVideoGenerationLimit: number;
 }
 
 export interface PricingPlanInput {
@@ -18,6 +22,8 @@ export interface PricingPlanInput {
   monthlyInr: number;
   annualUsd: number;
   annualInr: number;
+  aiImageGenerationLimit: number;
+  slideshowVideoGenerationLimit: number;
 }
 
 /**
@@ -28,8 +34,26 @@ export interface PricingPlanInput {
  * since changed from /admin/pricing-settings).
  */
 const FALLBACKS: Record<PricingPlanId, PricingPlanSetting> = {
-  free: { id: "free", name: "Free", monthlyUsd: 0, monthlyInr: 0, annualUsd: 0, annualInr: 0 },
-  pro: { id: "pro", name: "Pro", monthlyUsd: 19, monthlyInr: 1499, annualUsd: 179, annualInr: 13999 },
+  free: {
+    id: "free",
+    name: "Free",
+    monthlyUsd: 0,
+    monthlyInr: 0,
+    annualUsd: 0,
+    annualInr: 0,
+    aiImageGenerationLimit: 5,
+    slideshowVideoGenerationLimit: 3,
+  },
+  pro: {
+    id: "pro",
+    name: "Pro",
+    monthlyUsd: 19,
+    monthlyInr: 1499,
+    annualUsd: 179,
+    annualInr: 13999,
+    aiImageGenerationLimit: 20,
+    slideshowVideoGenerationLimit: 10,
+  },
 };
 
 interface PricingPlanRow {
@@ -39,6 +63,8 @@ interface PricingPlanRow {
   monthly_inr: number | string;
   annual_usd: number | string;
   annual_inr: number | string;
+  ai_image_generation_limit: number | string;
+  slideshow_video_generation_limit: number | string;
 }
 
 function rowToSetting(row: PricingPlanRow): PricingPlanSetting {
@@ -49,6 +75,8 @@ function rowToSetting(row: PricingPlanRow): PricingPlanSetting {
     monthlyInr: Number(row.monthly_inr),
     annualUsd: Number(row.annual_usd),
     annualInr: Number(row.annual_inr),
+    aiImageGenerationLimit: Number(row.ai_image_generation_limit),
+    slideshowVideoGenerationLimit: Number(row.slideshow_video_generation_limit),
   };
 }
 
@@ -65,7 +93,9 @@ function rowToSetting(row: PricingPlanRow): PricingPlanSetting {
 export async function getPricingPlanSettings(): Promise<Record<PricingPlanId, PricingPlanSetting>> {
   const { data, error } = await supabaseAdmin()
     .from("pricing_plan_settings")
-    .select("id, name, monthly_usd, monthly_inr, annual_usd, annual_inr");
+    .select(
+      "id, name, monthly_usd, monthly_inr, annual_usd, annual_inr, ai_image_generation_limit, slideshow_video_generation_limit",
+    );
 
   if (error || !data || data.length === 0) {
     if (error) console.error("getPricingPlanSettings failed, using fallbacks:", error.message);
@@ -89,9 +119,26 @@ export async function updatePricingPlanSetting(id: PricingPlanId, input: Pricing
       monthly_inr: input.monthlyInr,
       annual_usd: input.annualUsd,
       annual_inr: input.annualInr,
+      ai_image_generation_limit: input.aiImageGenerationLimit,
+      slideshow_video_generation_limit: input.slideshowVideoGenerationLimit,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
 
   if (error) throw new Error(`Failed to update pricing for "${id}": ${error.message}`);
+}
+
+/**
+ * Reads just the AI generation caps for a plan — used by
+ * beginDraftWithPlanAction (features/pricing/actions.ts) at draft
+ * creation time, so a change made on /admin/pricing-settings takes
+ * effect for the next event started, with no code deploy.
+ */
+export async function getPlanAiLimits(
+  planId: string,
+): Promise<{ aiImageGenerationLimit: number; slideshowVideoGenerationLimit: number } | null> {
+  if (planId !== "free" && planId !== "pro") return null;
+  const settings = await getPricingPlanSettings();
+  const plan = settings[planId];
+  return { aiImageGenerationLimit: plan.aiImageGenerationLimit, slideshowVideoGenerationLimit: plan.slideshowVideoGenerationLimit };
 }

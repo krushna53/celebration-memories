@@ -22,7 +22,7 @@ interface Tier {
   monthly: Price | null;
   annual: Price | null;
   cta: string;
-  /** Sent as a hidden form field and matched against PLAN_AI_LIMITS in features/pricing/actions.ts — the one real, enforced lever behind these tiers today. Omitted for the contact-only tier. */
+  /** Sent as a hidden form field and looked up via getPlanAiLimits (services/pricing-settings.ts) in features/pricing/actions.ts — the one real, enforced lever behind these tiers today, and itself owner-editable at /admin/pricing-settings. Omitted for the contact-only tier. */
   planId?: string;
   /** Carried straight into the wizard's Payment step via a cookie — see features/pricing/actions.ts. */
   promoCode?: string;
@@ -74,9 +74,8 @@ function buildTiers(planPrices: Record<PricingPlanId, PricingPlanSetting>): Tier
         "Built-in event planner — to-dos & notes, shareable with family (no separate logins)",
         "Digital party games — Word Search, Housie, and Movie Name Housie with QR guest access",
         "Invitee management with CSV import & one-tap WhatsApp sending",
-        "AI invitation image — 5 generations",
-        "AI slideshow video — 3 generations",
-        "Domain search tool (find & price a custom domain)",
+        `AI invitation image — ${planPrices.free.aiImageGenerationLimit} generations`,
+        `AI slideshow video — ${planPrices.free.slideshowVideoGenerationLimit} generations`,
       ],
     },
     {
@@ -90,8 +89,8 @@ function buildTiers(planPrices: Record<PricingPlanId, PricingPlanSetting>): Tier
       highlight: true,
       features: [
         "Everything in Free, plus:",
-        "AI invitation image — 20 generations",
-        "AI slideshow video — 10 generations",
+        `AI invitation image — ${planPrices.pro.aiImageGenerationLimit} generations`,
+        `AI slideshow video — ${planPrices.pro.slideshowVideoGenerationLimit} generations`,
         "Dashboard analytics: RSVP breakdown, upload counts, most active guests",
         "Priority email support",
       ],

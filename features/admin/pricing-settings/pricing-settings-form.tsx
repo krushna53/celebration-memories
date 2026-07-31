@@ -11,6 +11,8 @@ interface FieldState {
   monthlyInr: string;
   annualUsd: string;
   annualInr: string;
+  aiImageGenerationLimit: string;
+  slideshowVideoGenerationLimit: string;
 }
 
 function toFieldState(plan: PricingPlanSetting): FieldState {
@@ -19,6 +21,8 @@ function toFieldState(plan: PricingPlanSetting): FieldState {
     monthlyInr: String(plan.monthlyInr),
     annualUsd: String(plan.annualUsd),
     annualInr: String(plan.annualInr),
+    aiImageGenerationLimit: String(plan.aiImageGenerationLimit),
+    slideshowVideoGenerationLimit: String(plan.slideshowVideoGenerationLimit),
   };
 }
 
@@ -39,6 +43,8 @@ function PlanEditor({ plan }: { plan: PricingPlanSetting }) {
       monthlyInr: Number(fields.monthlyInr),
       annualUsd: Number(fields.annualUsd),
       annualInr: Number(fields.annualInr),
+      aiImageGenerationLimit: Number(fields.aiImageGenerationLimit),
+      slideshowVideoGenerationLimit: Number(fields.slideshowVideoGenerationLimit),
     };
 
     if (Object.values(parsed).some((n) => !Number.isFinite(n) || n < 0)) {
@@ -72,6 +78,27 @@ function PlanEditor({ plan }: { plan: PricingPlanSetting }) {
         <PriceField label="Annual (USD)" prefix="$" value={fields.annualUsd} onChange={(v) => setField("annualUsd", v)} />
         <PriceField label="Annual (INR)" prefix="₹" value={fields.annualInr} onChange={(v) => setField("annualInr", v)} />
       </div>
+
+      <p className="mt-5 text-xs font-medium uppercase tracking-wide text-navy-700/50">
+        AI credits granted per new event on this plan
+      </p>
+      <div className="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <PriceField
+          label="AI images"
+          prefix="#"
+          value={fields.aiImageGenerationLimit}
+          onChange={(v) => setField("aiImageGenerationLimit", v)}
+        />
+        <PriceField
+          label="Slideshow videos"
+          prefix="#"
+          value={fields.slideshowVideoGenerationLimit}
+          onChange={(v) => setField("slideshowVideoGenerationLimit", v)}
+        />
+      </div>
+      <p className="mt-2 text-xs text-navy-700/50">
+        Only applies to events started after you save — it doesn&rsquo;t change limits already set on existing events.
+      </p>
 
       <div className="mt-4 flex items-center gap-3">
         <button

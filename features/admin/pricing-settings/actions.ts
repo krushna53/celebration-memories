@@ -18,9 +18,19 @@ export async function updatePricingPlanAction(
     return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
   }
 
-  const values = [input.monthlyUsd, input.monthlyInr, input.annualUsd, input.annualInr];
+  const values = [
+    input.monthlyUsd,
+    input.monthlyInr,
+    input.annualUsd,
+    input.annualInr,
+    input.aiImageGenerationLimit,
+    input.slideshowVideoGenerationLimit,
+  ];
   if (values.some((n) => !Number.isFinite(n) || n < 0)) {
-    return { success: false, error: "Prices must be zero or a positive number." };
+    return { success: false, error: "Prices and AI credit limits must be zero or a positive number." };
+  }
+  if (!Number.isInteger(input.aiImageGenerationLimit) || !Number.isInteger(input.slideshowVideoGenerationLimit)) {
+    return { success: false, error: "AI credit limits must be whole numbers." };
   }
 
   try {
