@@ -496,4 +496,41 @@ export async function createSignedHighlightReelUpload(params: {
   return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
 }
 
+/**
+ * Same signed-upload pattern, for a Marketplace vendor's own profile/
+ * cover/gallery photos (see features/business/*). Stored in the
+ * dedicated `business` bucket rather than reusing `gallery`, since
+ * vendor content is unrelated to any one event's Gallery/Storage
+ * lifecycle. Scoped by businessId (not eventId) in the storage path.
+ * Callers are responsible for checking requireBusinessAccount() and
+ * listing ownership (assertOwnsListing) before calling this.
+ */
+export async function createSignedBusinessImageUpload(params: {
+  businessId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { businessId, fileName, contentType, fileSize } = params;
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported image type: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS.photo;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `${businessId}/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage.from("business").createSignedUploadUrl(path);
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "business", path, token: data.token, signedUrl: data.signedUrl };
+}
+
 export type { MemoryKind };

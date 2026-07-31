@@ -106,6 +106,7 @@ const LIVE_FEATURES = [
  * exist on it.
  */
 export const PLATFORM_NAV_LINKS = [
+  { label: "Discover", href: "/discover" },
   { label: "Browse Events", href: "/events" },
   { label: "Pricing", href: "/pricing" },
   { label: "Templates", href: "/templates/submit" },
