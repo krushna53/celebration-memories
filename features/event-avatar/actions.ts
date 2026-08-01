@@ -4,8 +4,11 @@ import { getEventById } from "@/services/events";
 import { listEventGames } from "@/services/games";
 import { countTodayAvatarMessages, recordAvatarMessage } from "@/services/ai-avatar-messages";
 import { generateAvatarReply, type AvatarChatMessage } from "@/lib/ai-avatar-chat";
+import { generateAvatarSpeech } from "@/lib/ai-avatar-voice";
 
 export type AvatarChatResult = { success: true; reply: string } | { success: false; error: string };
+
+export type AvatarSpeechResult = { success: true; audioDataUrl: string } | { success: false; error: string };
 
 /**
  * Public, no-auth action backing the guest-facing AI Avatar widget (see
@@ -66,5 +69,34 @@ export async function sendAvatarMessageAction(
     return { success: true, reply };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Something went wrong — please try again." };
+  }
+}
+
+/**
+ * Synthesizes spoken audio for one already-generated avatar reply (see
+ * avatar-widget.tsx, which calls this right after a successful
+ * sendAvatarMessageAction). Deliberately a separate action rather than
+ * bundled into sendAvatarMessageAction — a guest can mute voice replies
+ * without that changing anything about the text path or its cap
+ * accounting. Still re-checks aiAvatarEnabled server-side so this
+ * endpoint can't be driven standalone once a host turns the feature off.
+ * Returns a data: URL (base64) rather than writing to Storage — replies
+ * are short and ephemeral, so there's nothing worth persisting.
+ */
+export async function synthesizeAvatarSpeechAction(eventId: string, text: string): Promise<AvatarSpeechResult> {
+  try {
+    const trimmed = text.trim();
+    if (!trimmed) return { success: false, error: "Nothing to speak." };
+
+    const event = await getEventById(eventId);
+    if (!event || !event.aiAvatarEnabled) {
+      return { success: false, error: "Voice replies aren't available for this event." };
+    }
+
+    const { buffer, contentType } = await generateAvatarSpeech(trimmed);
+    const audioDataUrl = `data:${contentType};base64,${buffer.toString("base64")}`;
+    return { success: true, audioDataUrl };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Couldn't generate voice audio." };
   }
 }

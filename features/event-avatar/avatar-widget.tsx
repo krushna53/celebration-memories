@@ -1,15 +1,36 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Gamepad2, Loader2, Send, Sparkles, X } from "lucide-react";
+import { Gamepad2, Loader2, Mic, Send, Sparkles, Volume2, VolumeX, X } from "lucide-react";
 
-import { sendAvatarMessageAction } from "@/features/event-avatar/actions";
+import { sendAvatarMessageAction, synthesizeAvatarSpeechAction } from "@/features/event-avatar/actions";
 import type { AvatarChatMessage } from "@/lib/ai-avatar-chat";
 
 interface AvatarGameLink {
   title: string;
   url: string;
 }
+
+/** Minimal shape of the Web Speech API's SpeechRecognition — not in TypeScript's built-in DOM lib, and only Chrome/Edge/Safari (webkit-prefixed) support it, so this is feature-detected at runtime, never assumed. */
+interface SpeechRecognitionLike extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: { results: { [index: number]: { [index: number]: { transcript: string } } } }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+}
+
+type SpeechRecognitionWindow = Window &
+  typeof globalThis & {
+    SpeechRecognition?: new () => SpeechRecognitionLike;
+    webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+  };
+
+/** Per-assistant-message voice playback state — kept separate from the AvatarChatMessage[] sent to the server, which stays plain {role, content}. */
+type AudioState = "loading" | { url: string; blocked: boolean };
 
 interface AvatarWidgetProps {
   eventId: string;
@@ -36,6 +57,16 @@ export function AvatarWidget({ eventId, honoreeName, games }: AvatarWidgetProps)
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Voice output (avatar speaks its replies)
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [audioByIndex, setAudioByIndex] = useState<Record<number, AudioState>>({});
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
+
+  // Voice input (guest can speak instead of typing)
+  const [speechInputSupported, setSpeechInputSupported] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
   useEffect(() => {
     const showTimer = setTimeout(() => setShowGreeting(true), 1400);
     const hideTimer = setTimeout(() => setShowGreeting(false), 9000);
@@ -49,16 +80,81 @@ export function AvatarWidget({ eventId, honoreeName, games }: AvatarWidgetProps)
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
 
+  useEffect(() => {
+    const w = window as SpeechRecognitionWindow;
+    setSpeechInputSupported(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
+
+  function toggleListening() {
+    const w = window as SpeechRecognitionWindow;
+    const RecognitionCtor = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!RecognitionCtor) return;
+
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+
+    const recognition = new RecognitionCtor();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript;
+      if (transcript) setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  }
+
+  async function speakReply(index: number, text: string) {
+    if (!voiceEnabled) return;
+    setAudioByIndex((prev) => ({ ...prev, [index]: "loading" }));
+    const result = await synthesizeAvatarSpeechAction(eventId, text);
+    if (!result.success) {
+      setAudioByIndex((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
+      return;
+    }
+
+    let blocked = false;
+    try {
+      const audio = new Audio(result.audioDataUrl);
+      audioElRef.current = audio;
+      await audio.play();
+    } catch {
+      blocked = true;
+    }
+    setAudioByIndex((prev) => ({ ...prev, [index]: { url: result.audioDataUrl, blocked } }));
+  }
+
+  function playStoredAudio(index: number) {
+    const entry = audioByIndex[index];
+    if (entry === "loading" || !entry) return;
+    const audio = new Audio(entry.url);
+    audioElRef.current = audio;
+    audio.play().catch(() => {
+      /* still blocked — the tap-to-play button just stays visible */
+    });
+  }
+
   function openChat() {
     setOpen(true);
     setShowGreeting(false);
     if (messages.length === 0) {
-      setMessages([
-        {
-          role: "assistant",
-          content: `Hi! I'm here to help with anything about ${honoreeName}'s celebration — the venue, timing, dress code, or anything else you're wondering about.`,
-        },
-      ]);
+      const greeting = `Hi! I'm here to help with anything about ${honoreeName}'s celebration — the venue, timing, dress code, or anything else you're wondering about.`;
+      setMessages([{ role: "assistant", content: greeting }]);
+      void speakReply(0, greeting);
     }
   }
 
@@ -76,7 +172,9 @@ export function AvatarWidget({ eventId, honoreeName, games }: AvatarWidgetProps)
     const result = await sendAvatarMessageAction(eventId, messages, text);
     setBusy(false);
     if (result.success) {
+      const replyIndex = nextMessages.length;
       setMessages((prev) => [...prev, { role: "assistant", content: result.reply }]);
+      void speakReply(replyIndex, result.reply);
     } else {
       setError(result.error);
     }
@@ -120,25 +218,55 @@ export function AvatarWidget({ eventId, honoreeName, games }: AvatarWidgetProps)
             </p>
           </div>
         </div>
-        <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="text-ivory-100/60 hover:text-ivory-50">
-          <X size={16} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setVoiceEnabled((v) => !v)}
+            aria-label={voiceEnabled ? "Mute voice replies" : "Unmute voice replies"}
+            className="text-ivory-100/60 hover:text-ivory-50"
+          >
+            {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </button>
+          <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="ml-1 text-ivory-100/60 hover:text-ivory-50">
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       <div ref={scrollRef} className="max-h-80 min-h-[10rem] flex-1 space-y-3 overflow-y-auto p-4">
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <p
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
-                m.role === "user"
-                  ? "rounded-br-sm bg-gold-500 text-navy-950"
-                  : "rounded-bl-sm bg-navy-900 text-ivory-100/90"
-              }`}
-            >
-              {m.content}
-            </p>
-          </div>
-        ))}
+        {messages.map((m, i) => {
+          const audio = audioByIndex[i];
+          return (
+            <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[85%] ${m.role === "user" ? "text-right" : "text-left"}`}>
+                <p
+                  className={`inline-block rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+                    m.role === "user"
+                      ? "rounded-br-sm bg-gold-500 text-navy-950"
+                      : "rounded-bl-sm bg-navy-900 text-ivory-100/90"
+                  }`}
+                >
+                  {m.content}
+                </p>
+                {m.role === "assistant" && audio ? (
+                  <div className="mt-1">
+                    {audio === "loading" ? (
+                      <Loader2 size={12} className="animate-spin text-ivory-100/40" />
+                    ) : audio.blocked ? (
+                      <button
+                        type="button"
+                        onClick={() => playStoredAudio(i)}
+                        className="flex items-center gap-1 text-[11px] text-gold-300 hover:text-gold-200"
+                      >
+                        <Volume2 size={11} /> Tap to hear
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
         {busy ? (
           <div className="flex justify-start">
             <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-navy-900 px-3.5 py-2.5 text-ivory-100/60">
@@ -163,10 +291,24 @@ export function AvatarWidget({ eventId, honoreeName, games }: AvatarWidgetProps)
       ) : null}
 
       <form onSubmit={handleSend} className="flex items-center gap-2 p-3">
+        {speechInputSupported ? (
+          <button
+            type="button"
+            onClick={toggleListening}
+            aria-label={listening ? "Stop recording" : "Speak your question"}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-luxury duration-300 ${
+              listening
+                ? "border-rose-400/60 bg-rose-500/20 text-rose-300"
+                : "border-gold-500/20 bg-navy-900/60 text-ivory-100/70 hover:border-gold-400/40"
+            }`}
+          >
+            <Mic size={14} className={listening ? "animate-pulse" : undefined} />
+          </button>
+        ) : null}
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask a question..."
+          placeholder={listening ? "Listening..." : "Ask a question..."}
           maxLength={500}
           className="flex-1 rounded-full border border-gold-500/20 bg-navy-900/60 px-3.5 py-2 text-sm text-ivory-50 placeholder:text-ivory-100/40 focus:border-gold-400 focus:outline-none"
         />
