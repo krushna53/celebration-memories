@@ -39,3 +39,31 @@ export interface TimelineMilestoneRecord {
   imageUrl: string | null;
   createdAt: string;
 }
+
+/** One time-blocked segment of the event-day run-of-show (see services/event-day.ts). */
+export interface ScheduleItemRecord {
+  id: string;
+  eventId: string;
+  /** Free-text display time, e.g. "11:00 AM" — not parsed/computed against, just shown in order. */
+  startLabel: string;
+  endLabel: string | null;
+  title: string;
+  description: string | null;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export type MenuDietaryTag = "veg" | "non_veg" | "vegan" | "jain";
+export type MenuStyle = "buffet" | "a_la_carte";
+
+/** One dish on the event-day menu, grouped for display by `category` (see services/event-day.ts). */
+export interface MenuItemRecord {
+  id: string;
+  eventId: string;
+  category: string;
+  name: string;
+  description: string | null;
+  dietaryTag: MenuDietaryTag | null;
+  sortOrder: number;
+  createdAt: string;
+}

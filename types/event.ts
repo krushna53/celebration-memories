@@ -120,6 +120,24 @@ export interface EventRecord {
    * drives which steps even appear.
    */
   wizardGoals: string[] | null;
+  /**
+   * Controls the event-day Schedule + Menu feature (see services/event-day.ts
+   * and features/event-day):
+   * - "off": feature unused, nothing shown anywhere.
+   * - "public": rendered as a section on the main public event page, right
+   *   after Timeline — same zero-verification model as every other section.
+   * - "private": NOT shown on the main page at all. Only reachable via
+   *   /event-day/[eventDayShareToken], which requires a guest to verify
+   *   themselves by phone number against this event's invitee list first
+   *   (same real check games/word-search and housie already do) — for
+   *   hosts who don't want the run-of-show/menu visible to just anyone
+   *   with the event URL.
+   */
+  eventDayMode: "off" | "public" | "private";
+  /** Share link token for "private" mode. Null until first generated (see ensureEventDayShareToken). */
+  eventDayShareToken: string | null;
+  /** Whether the event-day menu is served buffet-style or à la carte — shown as a banner above the item list, doesn't change the data model. */
+  menuStyle: "buffet" | "a_la_carte";
   createdAt: string;
   updatedAt: string;
 }

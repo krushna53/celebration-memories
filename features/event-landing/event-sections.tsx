@@ -6,6 +6,7 @@ import { InvitationSection } from "@/features/invitation/invitation-section";
 import { EventDetailsSection } from "@/features/event-details/event-details-section";
 import { GallerySection } from "@/features/gallery/gallery-section";
 import { TimelineSection } from "@/features/timeline/timeline-section";
+import { EventDayHomepageSection } from "@/features/event-day/event-day-homepage-section";
 import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
 import { WishMessageSection } from "@/features/event-landing/wish-message-section";
 import { MemoryWallSection } from "@/features/memory-wall/memory-wall-section";
@@ -65,6 +66,18 @@ export function EventSections({ event, displayData: data, galleryPhotos, milesto
         .map((item) => (
           <Fragment key={item.key}>{sectionsByKey[item.key]}</Fragment>
         ))}
+      {/*
+        Event Day (schedule + menu) deliberately sits outside the
+        reorderable section registry — it's opt-in per event via
+        events.event_day_mode (admin-managed at /admin/event-day) rather
+        than an always-present toggle, and only ever shows here when
+        that mode is "public" (see types/event.ts's doc comment). When
+        "private", it's reachable only via the phone-verified
+        /event-day/[token] link, never on this page.
+      */}
+      {event && event.eventDayMode === "public" ? (
+        <EventDayHomepageSection eventId={event.id} menuStyle={event.menuStyle} />
+      ) : null}
     </>
   );
 }

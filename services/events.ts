@@ -42,6 +42,9 @@ export interface EventRow {
   wish_message: string | null;
   custom_css: string | null;
   wizard_goals: string[] | null;
+  event_day_mode: "off" | "public" | "private";
+  event_day_share_token: string | null;
+  menu_style: "buffet" | "a_la_carte";
   created_at: string;
   updated_at: string;
 }
@@ -82,6 +85,9 @@ export function mapEvent(row: EventRow): EventRecord {
     wishMessage: row.wish_message,
     customCss: row.custom_css,
     wizardGoals: row.wizard_goals,
+    eventDayMode: row.event_day_mode ?? "off",
+    eventDayShareToken: row.event_day_share_token,
+    menuStyle: row.menu_style ?? "buffet",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -267,6 +273,9 @@ export interface EventUpdateInput {
   aiImageGenerationLimit?: number;
   aiCssGenerationLimit?: number;
   slideshowVideoGenerationLimit?: number;
+  eventDayMode?: "off" | "public" | "private";
+  eventDayShareToken?: string | null;
+  menuStyle?: "buffet" | "a_la_carte";
 }
 
 /** Admin-facing update for the event settings form. */
@@ -351,6 +360,9 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.aiCssGenerationLimit !== undefined) patch.ai_css_generation_limit = input.aiCssGenerationLimit;
   if (input.slideshowVideoGenerationLimit !== undefined)
     patch.slideshow_video_generation_limit = input.slideshowVideoGenerationLimit;
+  if (input.eventDayMode !== undefined) patch.event_day_mode = input.eventDayMode;
+  if (input.eventDayShareToken !== undefined) patch.event_day_share_token = input.eventDayShareToken;
+  if (input.menuStyle !== undefined) patch.menu_style = input.menuStyle;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);
