@@ -47,7 +47,7 @@ export function ReferralManager({ initialCodes }: ReferralManagerProps) {
   }
 
   function copyLink(code: string) {
-    const link = `${origin}/platform?ref=${code}`;
+    const link = `${origin}/?ref=${code}`;
     navigator.clipboard.writeText(link);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 1500);
@@ -135,7 +135,7 @@ function ReferralCard({
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const link = `${origin}/platform?ref=${code.code}`;
+  const link = `${origin}/?ref=${code.code}`;
   const whatsappShare = `https://wa.me/?text=${encodeURIComponent(
     `Check out Celebration Memories — premium digital invitations for birthdays, weddings, and more: ${link}`,
   )}`;
