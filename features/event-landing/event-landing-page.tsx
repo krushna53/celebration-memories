@@ -3,6 +3,7 @@ import { listMilestones } from "@/services/timeline";
 import { toEventDisplayData } from "@/lib/event-display";
 import { resolveTemplate } from "@/lib/templates";
 import { CustomCssBlock } from "@/features/event-landing/custom-css-block";
+import { AvatarWidgetLoader } from "@/features/event-avatar/avatar-widget-loader";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 
@@ -48,6 +49,9 @@ export async function EventLandingPage({ event }: EventLandingPageProps) {
         galleryPhotos={galleryPhotos}
         milestones={milestones}
       />
+      {event && event.aiAvatarEnabled ? (
+        <AvatarWidgetLoader eventId={event.id} honoreeName={event.honoreeName} />
+      ) : null}
     </>
   );
 }

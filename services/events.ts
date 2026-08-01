@@ -45,6 +45,8 @@ export interface EventRow {
   event_day_mode: "off" | "public" | "private";
   event_day_share_token: string | null;
   menu_style: "buffet" | "a_la_carte";
+  ai_avatar_enabled: boolean;
+  ai_avatar_daily_message_limit: number;
   created_at: string;
   updated_at: string;
 }
@@ -88,6 +90,8 @@ export function mapEvent(row: EventRow): EventRecord {
     eventDayMode: row.event_day_mode ?? "off",
     eventDayShareToken: row.event_day_share_token,
     menuStyle: row.menu_style ?? "buffet",
+    aiAvatarEnabled: row.ai_avatar_enabled ?? false,
+    aiAvatarDailyMessageLimit: row.ai_avatar_daily_message_limit ?? 150,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -276,6 +280,8 @@ export interface EventUpdateInput {
   eventDayMode?: "off" | "public" | "private";
   eventDayShareToken?: string | null;
   menuStyle?: "buffet" | "a_la_carte";
+  aiAvatarEnabled?: boolean;
+  aiAvatarDailyMessageLimit?: number;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -363,6 +369,9 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.eventDayMode !== undefined) patch.event_day_mode = input.eventDayMode;
   if (input.eventDayShareToken !== undefined) patch.event_day_share_token = input.eventDayShareToken;
   if (input.menuStyle !== undefined) patch.menu_style = input.menuStyle;
+  if (input.aiAvatarEnabled !== undefined) patch.ai_avatar_enabled = input.aiAvatarEnabled;
+  if (input.aiAvatarDailyMessageLimit !== undefined)
+    patch.ai_avatar_daily_message_limit = input.aiAvatarDailyMessageLimit;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

@@ -90,6 +90,8 @@ export function EventSettingsForm({
     inviteMessageTemplate: event.inviteMessageTemplate ?? "",
     publicRsvpEnabled: event.publicRsvpEnabled,
     publicMemoriesEnabled: event.publicMemoriesEnabled,
+    aiAvatarEnabled: event.aiAvatarEnabled,
+    aiAvatarDailyMessageLimit: event.aiAvatarDailyMessageLimit,
     additionalNotes: event.additionalNotes ?? "",
     wishMessage: event.wishMessage ?? "",
     customCss: event.customCss ?? "",
@@ -352,6 +354,8 @@ export function EventSettingsForm({
       inviteMessageTemplate: form.inviteMessageTemplate || null,
       publicRsvpEnabled: form.publicRsvpEnabled,
       publicMemoriesEnabled: form.publicMemoriesEnabled,
+      aiAvatarEnabled: form.aiAvatarEnabled,
+      aiAvatarDailyMessageLimit: form.aiAvatarDailyMessageLimit,
       additionalNotes: form.additionalNotes || null,
       wishMessage: form.wishMessage || null,
       customCss: form.customCss || null,
@@ -1013,6 +1017,66 @@ export function EventSettingsForm({
             <p className="mt-1.5 text-xs text-navy-700/50">
               Opens straight to a video upload button — relatives just tap,
               record or choose a file, and send.
+            </p>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">AI Avatar</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          A small floating host on your public event page that greets guests and answers questions about the
+          venue, timing, dress code, and anything else set on this page — grounded only in your own event
+          details, never invented. This calls a paid AI API per message, so it&rsquo;s off by default and capped
+          at a daily message limit you control below.
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, aiAvatarEnabled: false }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              !form.aiAvatarEnabled
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            Off
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, aiAvatarEnabled: true }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              form.aiAvatarEnabled
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            On — show the AI Avatar
+          </button>
+        </div>
+        {form.aiAvatarEnabled ? (
+          <div>
+            <label className={labelClasses}>Daily message limit (across all guests combined)</label>
+            <input
+              type="number"
+              min={1}
+              max={2000}
+              value={form.aiAvatarDailyMessageLimit}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, aiAvatarDailyMessageLimit: Number(e.target.value) || 1 }));
+                setSaved(false);
+              }}
+              className={`${inputClasses} max-w-[10rem]`}
+            />
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              Once this many messages have been answered today, the Avatar tells guests to check back tomorrow or
+              contact you directly — a safety cap on cost, not a guest-visible feature.
             </p>
           </div>
         ) : null}

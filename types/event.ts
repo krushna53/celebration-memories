@@ -138,6 +138,16 @@ export interface EventRecord {
   eventDayShareToken: string | null;
   /** Whether the event-day menu is served buffet-style or à la carte — shown as a banner above the item list, doesn't change the data model. */
   menuStyle: "buffet" | "a_la_carte";
+  /**
+   * Whether the guest-facing AI Avatar (a chat host grounded in this
+   * event's own details, plus a welcome greeting) shows on the public
+   * event page. Off by default — this calls a paid AI API per message,
+   * unlike the free static SupportChatWidget/FaqChatbot. See
+   * lib/ai-avatar-chat.ts and features/event-avatar.
+   */
+  aiAvatarEnabled: boolean;
+  /** Cost guard for the AI Avatar: max guest messages answered per calendar day, across all guests combined. See services/ai-avatar-messages.ts. */
+  aiAvatarDailyMessageLimit: number;
   createdAt: string;
   updatedAt: string;
 }
