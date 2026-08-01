@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { ListingCard } from "@/features/discover/listing-card";
+import { ListYourBusinessCard } from "@/features/discover/list-your-business-card";
 import { getCategoryBySlug, listAllCategories, listAllCities } from "@/services/marketplace-categories";
 import { searchListings } from "@/services/marketplace-listings";
 import type { ListingSearchFilters } from "@/types/marketplace";
@@ -163,27 +164,18 @@ export async function CategoryDirectory({
 
         <div className="mt-10">
           {results.listings.length === 0 ? (
+            <p className="text-sm text-navy-700/60">No listings here yet — be the first.</p>
+          ) : null}
+          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {results.listings.map((listing) => (
+              <Reveal key={listing.id}>
+                <ListingCard listing={listing} />
+              </Reveal>
+            ))}
             <Reveal>
-              <div className="rounded-2xl border border-navy-950/10 bg-white p-12 text-center">
-                <p className="font-display text-lg text-navy-950">No listings here yet</p>
-                <p className="mt-2 text-sm text-navy-700/60">
-                  Are you a {category.name.toLowerCase()}?{" "}
-                  <Link href="/business" className="text-gold-600 underline underline-offset-2">
-                    List your business
-                  </Link>
-                  .
-                </p>
-              </div>
+              <ListYourBusinessCard categoryName={category.name} />
             </Reveal>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {results.listings.map((listing) => (
-                <Reveal key={listing.id}>
-                  <ListingCard listing={listing} />
-                </Reveal>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
 
         {totalPages > 1 ? (
