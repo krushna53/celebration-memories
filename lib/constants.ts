@@ -20,6 +20,17 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://celebration
 /** Matches the `slug` seeded in supabase/seed.sql for the active event. */
 export const EVENT_SLUG = "mahesh-75th-birthday";
 
+/**
+ * Cookie name for referral attribution. Set by middleware.ts whenever a
+ * visitor lands on ANY page with a `?ref=` param (see
+ * features/admin/referrals for how codes are created/shared), so the
+ * attribution survives them browsing a few pages before starting the
+ * signup wizard. Read once, at draft-creation time, by
+ * services/event-drafts.ts's createDraftEvent — see
+ * features/start/actions/begin.ts and features/pricing/actions.ts.
+ */
+export const REF_COOKIE = "cm_ref_code";
+
 export const ACTIVE_EVENT = {
   honoreeName: "Mahesh J. Shah",
   eventTitle: "75 Years of Love",

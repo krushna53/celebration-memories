@@ -11,6 +11,16 @@ export interface ReferralConversion {
   createdAt: string;
 }
 
+/** An event whose draft was created while the visitor's browser carried this code's cookie — see middleware.ts and services/event-drafts.ts's createDraftEvent. Automatic; not the same as a manually-logged conversion below (which still requires the owner to decide on and log an actual reward). */
+export interface AttributedSignup {
+  eventId: string;
+  slug: string;
+  honoreeName: string;
+  eventTitle: string;
+  status: string;
+  createdAt: string;
+}
+
 export interface ReferralCode {
   id: string;
   code: string;
@@ -19,6 +29,7 @@ export interface ReferralCode {
   visitCount: number;
   createdAt: string;
   conversions: ReferralConversion[];
+  attributedSignups: AttributedSignup[];
 }
 
 function randomCode(): string {
@@ -40,6 +51,13 @@ export async function listReferralCodes(): Promise<ReferralCode[]> {
     .order("created_at", { ascending: false });
   if (convError) throw new Error(`Failed to list conversions: ${convError.message}`);
 
+  const { data: attributedEvents, error: eventsError } = await client
+    .from("events")
+    .select("id, slug, honoree_name, event_title, status, created_at, referred_by_code")
+    .not("referred_by_code", "is", null)
+    .order("created_at", { ascending: false });
+  if (eventsError) throw new Error(`Failed to list attributed signups: ${eventsError.message}`);
+
   return (codes ?? []).map((row) => ({
     id: row.id,
     code: row.code,
@@ -55,6 +73,16 @@ export async function listReferralCodes(): Promise<ReferralCode[]> {
         rewardAmount: c.reward_amount !== null ? Number(c.reward_amount) : null,
         payoutStatus: c.payout_status,
         createdAt: c.created_at,
+      })),
+    attributedSignups: (attributedEvents ?? [])
+      .filter((e) => e.referred_by_code === row.code)
+      .map((e) => ({
+        eventId: e.id,
+        slug: e.slug,
+        honoreeName: e.honoree_name,
+        eventTitle: e.event_title,
+        status: e.status,
+        createdAt: e.created_at,
       })),
   }));
 }
@@ -79,6 +107,7 @@ export async function createReferralCode(input: {
     visitCount: data.visit_count,
     createdAt: data.created_at,
     conversions: [],
+    attributedSignups: [],
   };
 }
 

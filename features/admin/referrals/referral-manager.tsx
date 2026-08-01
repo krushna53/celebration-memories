@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Copy, Loader2, MessageCircle, Plus } from "lucide-react";
+import { useRef, useState } from "react";
+import { Check, Copy, Loader2, MessageCircle, Plus, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -65,8 +65,10 @@ export function ReferralManager({ initialCodes }: ReferralManagerProps) {
   return (
     <div className="grid gap-8">
       <div className="rounded-xl border border-gold-500/20 bg-gold-500/5 p-4 text-sm text-navy-700/80">
-        Referrals here are tracked by link visits and manually-logged
-        conversions — there&rsquo;s no automated payment. Mark a conversion
+        Referrals here are tracked by link visits, plus automatic signup
+        detection (a 30-day cookie links anyone who starts the wizard back
+        to the link they clicked, even if they browsed around first) —
+        there&rsquo;s still no automated payment. Log a conversion and mark it
         &ldquo;Paid&rdquo; once you&rsquo;ve actually sent the reward yourself (bank
         transfer, UPI, etc). Total pending payouts:{" "}
         <strong>₹{totalPending.toFixed(2)}</strong>.
@@ -134,8 +136,14 @@ function ReferralCard({
   const [reward, setReward] = useState("");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const rewardInputRef = useRef<HTMLInputElement>(null);
 
   const link = `${origin}/?ref=${code.code}`;
+
+  function quickFillFromSignup(signup: (typeof code.attributedSignups)[number]) {
+    setNote(`${signup.eventTitle} — ${signup.honoreeName}`);
+    rewardInputRef.current?.focus();
+  }
   const whatsappShare = `https://wa.me/?text=${encodeURIComponent(
     `Check out Celebration Memories — premium digital invitations for birthdays, weddings, and more: ${link}`,
   )}`;
@@ -192,6 +200,36 @@ function ReferralCard({
         </div>
       </div>
 
+      {code.attributedSignups.length > 0 ? (
+        <div className="mt-4 rounded-lg border border-gold-500/20 bg-gold-500/5 p-3">
+          <p className="text-xs font-medium uppercase tracking-[0.1em] text-gold-700">
+            Automatic signups ({code.attributedSignups.length})
+          </p>
+          <p className="mt-1 text-xs text-navy-700/60">
+            Detected from this link&apos;s cookie at the moment they started the wizard — not yet a logged reward.
+          </p>
+          <ul className="mt-2 grid gap-1.5">
+            {code.attributedSignups.map((signup) => (
+              <li key={signup.eventId} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="text-navy-700/80">
+                  {signup.eventTitle} — {signup.honoreeName}{" "}
+                  <span className="text-xs text-navy-700/40">
+                    ({signup.status}, {new Date(signup.createdAt).toLocaleDateString()})
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => quickFillFromSignup(signup)}
+                  className="flex items-center gap-1 rounded-full border border-gold-500/40 px-2.5 py-1 text-xs font-medium text-gold-700 hover:bg-gold-500/10"
+                >
+                  <Sparkles size={11} /> Log as conversion
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {code.conversions.length > 0 ? (
         <ul className="mt-4 grid gap-2">
           {code.conversions.map((conv) => (
@@ -227,6 +265,7 @@ function ReferralCard({
           onChange={(e) => setNote(e.target.value)}
         />
         <input
+          ref={rewardInputRef}
           className={`${inputClasses} w-28`}
           type="number"
           min="0"

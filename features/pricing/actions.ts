@@ -8,6 +8,7 @@ import { updateEvent } from "@/services/events";
 import { wizardStepHref } from "@/features/start/wizard-steps";
 import { PROMO_COOKIE } from "@/features/pricing/constants";
 import { getPlanAiLimits } from "@/services/pricing-settings";
+import { REF_COOKIE } from "@/lib/constants";
 
 /**
  * Entry point used by every /pricing tier's "Get Started" button —
@@ -36,7 +37,8 @@ export async function beginDraftWithPlanAction(formData: FormData): Promise<void
   const rawPlanId = formData.get("planId");
   const planId = typeof rawPlanId === "string" ? rawPlanId : "";
 
-  const draft = await createDraftEvent();
+  const referredByCode = (await cookies()).get(REF_COOKIE)?.value ?? null;
+  const draft = await createDraftEvent(referredByCode);
 
   const limits = await getPlanAiLimits(planId);
   if (limits) {

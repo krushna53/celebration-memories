@@ -24,8 +24,17 @@ function randomSlugSuffix(): string {
   return randomBytes(4).toString("hex");
 }
 
-/** Creates a brand-new draft event with placeholder content — every field here gets overwritten in the wizard's Event Settings step. */
-export async function createDraftEvent(): Promise<{ id: string; token: string; slug: string }> {
+/**
+ * Creates a brand-new draft event with placeholder content — every field
+ * here gets overwritten in the wizard's Event Settings step.
+ *
+ * `referredByCode` is the visitor's cm_ref_code cookie value, if any
+ * (see middleware.ts) — passed in rather than read here, since this is a
+ * plain service function with no request context. Stamped once at
+ * creation and never overwritten; see services/referrals.ts for how the
+ * admin Referrals dashboard surfaces events attributed this way.
+ */
+export async function createDraftEvent(referredByCode?: string | null): Promise<{ id: string; token: string; slug: string }> {
   const token = generateDraftToken();
   const slug = `draft-${randomSlugSuffix()}`;
   const now = new Date();
@@ -45,6 +54,7 @@ export async function createDraftEvent(): Promise<{ id: string; token: string; s
       start_at: startAt.toISOString(),
       end_at: endAt.toISOString(),
       template_slug: "royal-gold",
+      referred_by_code: referredByCode || null,
     })
     .select("id")
     .single<{ id: string }>();

@@ -1,9 +1,11 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { createDraftEvent } from "@/services/event-drafts";
 import { wizardStepHref } from "@/features/start/wizard-steps";
+import { REF_COOKIE } from "@/lib/constants";
 
 /**
  * Entry point for the self-serve onboarding wizard (app/start/page.tsx).
@@ -13,6 +15,9 @@ import { wizardStepHref } from "@/features/start/wizard-steps";
  * so it works even before any client JS has hydrated.
  */
 export async function beginDraftAction(): Promise<void> {
-  const draft = await createDraftEvent();
+  const jar = await cookies();
+  const referredByCode = jar.get(REF_COOKIE)?.value ?? null;
+
+  const draft = await createDraftEvent(referredByCode);
   redirect(wizardStepHref(draft.token, "occasion"));
 }
