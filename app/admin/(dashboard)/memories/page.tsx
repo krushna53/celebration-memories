@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { listMemoriesForModeration } from "@/services/admin-memories";
@@ -31,18 +33,20 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm">
-          <a
+          <Link
             href="/admin/memories"
             className={`rounded-full px-3 py-1.5 ${!showAll ? "bg-gold-500 text-navy-950" : "border border-navy-950/15 text-navy-700/70"}`}
           >
             Pending
-          </a>
-          <a
+          </Link>
+          <Link
             href="/admin/memories?filter=all"
             className={`rounded-full px-3 py-1.5 ${showAll ? "bg-gold-500 text-navy-950" : "border border-navy-950/15 text-navy-700/70"}`}
           >
             All
-          </a>
+          </Link>
+          {/* Plain <a>, not <Link>: this is a file download served by an API route, not a client-side page navigation — Link would try to soft-navigate/prefetch a zip stream. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a
             href="/api/admin/media-export"
             className="rounded-full border border-navy-950/15 px-3 py-1.5 text-navy-700/70 hover:border-gold-500/50 hover:text-gold-700"

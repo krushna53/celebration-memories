@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
 import { ACTIVE_EVENT, NAV_LINKS } from "@/lib/constants";
@@ -77,22 +78,22 @@ export function Navbar({
         <ul className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (
             <li key={link.href}>
-              <a
+              <Link
                 href={link.href}
                 className="text-sm tracking-wide text-ivory-100/85 transition-luxury duration-300 hover:text-gold-300"
               >
                 {link.label}
-              </a>
+              </Link>
             </li>
           ))}
           {showLogin ? (
             <li>
-              <a
+              <Link
                 href="/admin/login"
                 className="rounded-full border border-gold-400/40 px-4 py-1.5 text-sm tracking-wide text-gold-300 transition-luxury duration-300 hover:border-gold-400 hover:bg-gold-400/10"
               >
                 Login
-              </a>
+              </Link>
             </li>
           ) : null}
         </ul>
@@ -117,24 +118,24 @@ export function Navbar({
         <ul className="flex flex-col gap-1 bg-navy-950/95 px-4 pb-4 sm:px-6 sm:pb-6">
           {navLinks.map((link) => (
             <li key={link.href}>
-              <a
+              <Link
                 href={link.href}
                 onClick={() => setOpen(false)}
                 className="tap-target flex items-center text-sm text-ivory-100/85 hover:text-gold-300"
               >
                 {link.label}
-              </a>
+              </Link>
             </li>
           ))}
           {showLogin ? (
             <li>
-              <a
+              <Link
                 href="/admin/login"
                 onClick={() => setOpen(false)}
                 className="tap-target flex items-center text-sm text-gold-300"
               >
                 Login
-              </a>
+              </Link>
             </li>
           ) : null}
         </ul>

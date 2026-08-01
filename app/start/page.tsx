@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Heart, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,9 +40,9 @@ export default function StartPage() {
         </form>
         <p className="mt-4 text-xs text-ivory-100/40">
           Already have an account?{" "}
-          <a href="/admin/login" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
+          <Link href="/admin/login" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
             Sign in
-          </a>
+          </Link>
         </p>
         <p className="mt-8 flex items-center justify-center gap-1.5 text-xs text-ivory-100/50">
           Made with <Heart size={12} className="fill-gold-400 text-gold-400" />{" "}
