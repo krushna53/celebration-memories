@@ -3,17 +3,24 @@
 import { useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
 import {
+  Baby,
   Check,
   CheckCheck,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
   Copy,
   Download,
   Loader2,
+  MailCheck,
   Pencil,
   Plus,
   Search,
   Send,
   Trash2,
   Upload,
+  User,
+  Users,
   X,
 } from "lucide-react";
 
@@ -59,6 +66,65 @@ interface EmptyForm {
 }
 const EMPTY_FORM: EmptyForm = { name: "", phone: "", email: "", relationship: "", inviteChannel: "" };
 
+type SortKey =
+  | "name"
+  | "phone"
+  | "email"
+  | "relationship"
+  | "rsvp"
+  | "party"
+  | "meal"
+  | "comments"
+  | "rsvpDate"
+  | "inviteSent"
+  | "visits"
+  | "checkedIn";
+
+/** Display order for RSVP-status sorting — "who's coming" first, declines last. */
+const RSVP_RANK: Record<InviteeRecord["rsvpStatus"], number> = {
+  coming: 0,
+  maybe: 1,
+  pending: 2,
+  not_coming: 3,
+};
+
+/** Per-row comparable value for each sortable column. Nulls sort last on ascending. */
+function sortValue(inv: InviteeWithRsvp, key: SortKey): string | number {
+  switch (key) {
+    case "name":
+      return inv.name.toLowerCase();
+    case "phone":
+      return inv.phone?.toLowerCase() ?? "￿";
+    case "email":
+      return inv.email?.toLowerCase() ?? "￿";
+    case "relationship":
+      return inv.relationship?.toLowerCase() ?? "￿";
+    case "rsvp":
+      return RSVP_RANK[inv.rsvpStatus];
+    case "party":
+      return inv.rsvpDetail ? inv.rsvpDetail.adults + inv.rsvpDetail.children : -1;
+    case "meal":
+      return inv.rsvpDetail?.mealPreference?.toLowerCase() ?? "￿";
+    case "comments":
+      return inv.rsvpDetail?.comments?.toLowerCase() ?? "￿";
+    case "rsvpDate":
+      return inv.rsvpDetail ? new Date(inv.rsvpDetail.submittedAt).getTime() : 0;
+    case "inviteSent":
+      return inv.inviteSentAt ? new Date(inv.inviteSentAt).getTime() : 0;
+    case "visits":
+      return inv.visitCount;
+    case "checkedIn":
+      return inv.checkedIn ? 1 : 0;
+  }
+}
+
+/** Fixed palette for the meal-preference donut — distinct hues that still sit comfortably in the site's warm luxury look. */
+const MEAL_COLORS = ["#c9a227", "#2fb8ac", "#c96a8c", "#5b7ea8", "#e88f68", "#7c5cf0", "#87a066", "#b3413a"];
+
+function mealLabel(raw: string): string {
+  return raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 interface InviteeManagerProps {
   eventId: string;
   eventSlug: string;
@@ -101,6 +167,51 @@ export function InviteeManager({
         inv.email?.toLowerCase().includes(q),
     );
   }, [invitees, search]);
+
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 } | null>(null);
+
+  function toggleSort(key: SortKey) {
+    setSort((prev) => (prev?.key === key ? (prev.dir === 1 ? { key, dir: -1 } : null) : { key, dir: 1 }));
+  }
+
+  const sorted = useMemo(() => {
+    if (!sort) return filtered;
+    const { key, dir } = sort;
+    return [...filtered].sort((a, b) => {
+      const va = sortValue(a, key);
+      const vb = sortValue(b, key);
+      if (va < vb) return -dir;
+      if (va > vb) return dir;
+      return 0;
+    });
+  }, [filtered, sort]);
+
+  /**
+   * Headcount + meal breakdown across the (search-filtered) list.
+   * Adults/children/meals only count guests marked "coming" — a
+   * declined or still-pending guest's old party size shouldn't inflate
+   * the catering numbers. Meal counts are weighted by party headcount
+   * (adults + children), since that's the number a caterer actually
+   * cooks for, not the number of form submissions.
+   */
+  const stats = useMemo(() => {
+    let adults = 0;
+    let children = 0;
+    let responses = 0;
+    const meals = new Map<string, number>();
+    for (const inv of filtered) {
+      if (inv.rsvpDetail) responses++;
+      if (inv.rsvpStatus !== "coming" || !inv.rsvpDetail) continue;
+      adults += inv.rsvpDetail.adults;
+      children += inv.rsvpDetail.children;
+      const meal = inv.rsvpDetail.mealPreference || "unspecified";
+      meals.set(meal, (meals.get(meal) ?? 0) + inv.rsvpDetail.adults + inv.rsvpDetail.children);
+    }
+    const mealData = Array.from(meals.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value);
+    return { adults, children, total: adults + children, responses, mealData };
+  }, [filtered]);
 
   async function handleCreate() {
     setBusy(true);
@@ -318,27 +429,35 @@ export function InviteeManager({
         </div>
       ) : null}
 
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(4,1fr)_auto]">
+        <StatCard icon={<User size={18} />} label="Adults Coming" value={stats.adults} />
+        <StatCard icon={<Baby size={18} />} label="Children Coming" value={stats.children} />
+        <StatCard icon={<Users size={18} />} label="Total Guests Coming" value={stats.total} />
+        <StatCard icon={<MailCheck size={18} />} label="RSVPs Received" value={stats.responses} />
+        <MealDonutCard data={stats.mealData} />
+      </div>
+
       <div className="mt-6 overflow-x-auto rounded-xl border border-navy-950/10 bg-white">
         <table className="w-full min-w-[1280px] text-left text-sm">
           <thead className="border-b border-navy-950/10 text-xs uppercase tracking-wide text-navy-700/50">
             <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Phone</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Relationship</th>
-              <th className="px-4 py-3">RSVP</th>
-              <th className="px-4 py-3">Party</th>
-              <th className="px-4 py-3">Meal</th>
-              <th className="px-4 py-3">Comments</th>
-              <th className="px-4 py-3">RSVP Date</th>
-              <th className="px-4 py-3">Invite Sent</th>
-              <th className="px-4 py-3">Visits</th>
-              <th className="px-4 py-3">Checked In</th>
+              <SortableTh label="Name" sortKey="name" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Phone" sortKey="phone" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Email" sortKey="email" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Relationship" sortKey="relationship" sort={sort} onSort={toggleSort} />
+              <SortableTh label="RSVP" sortKey="rsvp" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Party" sortKey="party" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Meal" sortKey="meal" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Comments" sortKey="comments" sort={sort} onSort={toggleSort} />
+              <SortableTh label="RSVP Date" sortKey="rsvpDate" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Invite Sent" sortKey="inviteSent" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Visits" sortKey="visits" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Checked In" sortKey="checkedIn" sort={sort} onSort={toggleSort} />
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((inv) => (
+            {sorted.map((inv) => (
               <tr key={inv.id} className="border-b border-navy-950/5 last:border-0">
                 {editingId === inv.id ? (
                   <td colSpan={13} className="px-4 py-3">
@@ -522,5 +641,108 @@ export function InviteeManager({
         ) : null}
       </div>
     </div>
+  );
+}
+
+function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+  return (
+    <div className="rounded-xl border border-navy-950/10 bg-white p-4">
+      <div className="flex items-center gap-2 text-gold-600">{icon}</div>
+      <p className="mt-2 font-display text-2xl text-navy-950">{value}</p>
+      <p className="text-xs text-navy-700/60">{label}</p>
+    </div>
+  );
+}
+
+/**
+ * Dependency-free SVG donut of guests-by-meal-preference — each segment
+ * is a circle stroke offset around the ring (no chart library needed
+ * for a single static donut). Counts are guest headcounts among
+ * "coming" RSVPs, matching the stat cards beside it.
+ */
+function MealDonutCard({ data }: { data: { label: string; value: number }[] }) {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  const R = 40;
+  const C = 2 * Math.PI * R;
+
+  let cumulative = 0;
+  const segments = data.map((d, i) => {
+    const dash = (d.value / total) * C;
+    const segment = { ...d, dash, offset: cumulative, color: MEAL_COLORS[i % MEAL_COLORS.length]! };
+    cumulative += dash;
+    return segment;
+  });
+
+  return (
+    <div className="rounded-xl border border-navy-950/10 bg-white p-4 sm:col-span-2 lg:col-span-1 lg:min-w-[260px]">
+      <p className="text-xs font-medium uppercase tracking-wide text-navy-700/50">Meal Preferences (guests coming)</p>
+      {total === 0 ? (
+        <p className="mt-3 text-sm text-navy-700/50">No meal preferences yet.</p>
+      ) : (
+        <div className="mt-2 flex items-center gap-4">
+          <svg viewBox="0 0 100 100" className="h-20 w-20 shrink-0" role="img" aria-label="Meal preference breakdown">
+            {segments.map((s) => (
+              <circle
+                key={s.label}
+                cx="50"
+                cy="50"
+                r={R}
+                fill="none"
+                stroke={s.color}
+                strokeWidth="16"
+                strokeDasharray={`${s.dash} ${C - s.dash}`}
+                strokeDashoffset={-s.offset}
+                transform="rotate(-90 50 50)"
+              />
+            ))}
+          </svg>
+          <ul className="grid gap-1 text-xs text-navy-700/80">
+            {segments.map((s) => (
+              <li key={s.label} className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+                {mealLabel(s.label)} — <strong>{s.value}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SortableTh({
+  label,
+  sortKey,
+  sort,
+  onSort,
+}: {
+  label: string;
+  sortKey: SortKey;
+  sort: { key: SortKey; dir: 1 | -1 } | null;
+  onSort: (key: SortKey) => void;
+}) {
+  const active = sort?.key === sortKey;
+  return (
+    <th className="px-4 py-3">
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={cn(
+          "flex items-center gap-1 uppercase tracking-wide hover:text-navy-950",
+          active ? "text-navy-950" : "text-navy-700/50",
+        )}
+      >
+        {label}
+        {active ? (
+          sort.dir === 1 ? (
+            <ChevronUp size={12} />
+          ) : (
+            <ChevronDown size={12} />
+          )
+        ) : (
+          <ChevronsUpDown size={12} className="opacity-40" />
+        )}
+      </button>
+    </th>
   );
 }
