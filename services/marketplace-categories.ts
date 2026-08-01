@@ -74,6 +74,17 @@ export async function listCategoryTree(): Promise<CategoryWithChildren[]> {
   return topLevel.map((top) => ({ ...top, children: byParent.get(top.id) ?? [] }));
 }
 
+/** Same as listAllCategories() but includes inactive categories too — the admin management UI needs to see (and re-activate) categories it previously deactivated. */
+export async function listAllCategoriesForAdmin(): Promise<MarketplaceCategory[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("marketplace_categories")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (error) throw new Error(`Failed to load categories: ${error.message}`);
+  return (data ?? []).map(mapCategory);
+}
+
 export async function getCategoryBySlug(slug: string): Promise<MarketplaceCategory | null> {
   const { data, error } = await supabaseAdmin()
     .from("marketplace_categories")
