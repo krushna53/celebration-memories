@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { buildWhatsAppInviteUrl } from "@/lib/whatsapp";
 import { INVITE_CHANNEL_OPTIONS, inviteChannelLabel } from "@/lib/invite-channel";
 import type { InviteeRecord } from "@/types/event";
+import type { InviteeWithRsvp } from "@/services/admin-invitees";
 import {
   bulkImportInviteesAction,
   createInviteeAction,
@@ -61,7 +62,7 @@ const EMPTY_FORM: EmptyForm = { name: "", phone: "", email: "", relationship: ""
 interface InviteeManagerProps {
   eventId: string;
   eventSlug: string;
-  initialInvitees: InviteeRecord[];
+  initialInvitees: InviteeWithRsvp[];
   hostedBy: string;
   honoreeName: string;
   inviteMessageTemplate: string | null;
@@ -318,12 +319,18 @@ export function InviteeManager({
       ) : null}
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-navy-950/10 bg-white">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[1280px] text-left text-sm">
           <thead className="border-b border-navy-950/10 text-xs uppercase tracking-wide text-navy-700/50">
             <tr>
               <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Contact</th>
+              <th className="px-4 py-3">Phone</th>
+              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Relationship</th>
               <th className="px-4 py-3">RSVP</th>
+              <th className="px-4 py-3">Party</th>
+              <th className="px-4 py-3">Meal</th>
+              <th className="px-4 py-3">Comments</th>
+              <th className="px-4 py-3">RSVP Date</th>
               <th className="px-4 py-3">Invite Sent</th>
               <th className="px-4 py-3">Visits</th>
               <th className="px-4 py-3">Checked In</th>
@@ -334,7 +341,7 @@ export function InviteeManager({
             {filtered.map((inv) => (
               <tr key={inv.id} className="border-b border-navy-950/5 last:border-0">
                 {editingId === inv.id ? (
-                  <td colSpan={7} className="px-4 py-3">
+                  <td colSpan={13} className="px-4 py-3">
                     <div className="grid gap-2 sm:grid-cols-4">
                       <input
                         value={editForm.name}
@@ -388,13 +395,17 @@ export function InviteeManager({
                   <>
                     <td className="px-4 py-3 font-medium text-navy-950">{inv.name}</td>
                     <td className="px-4 py-3 text-navy-700/70">
-                      {inv.phone || inv.email || "—"}
+                      {inv.phone || "—"}
                       {inv.inviteChannel ? (
                         <span className="ml-1.5 rounded-full bg-navy-950/5 px-1.5 py-0.5 text-[10px] text-navy-700/60">
                           {inviteChannelLabel(inv.inviteChannel)}
                         </span>
                       ) : null}
                     </td>
+                    <td className="max-w-[180px] truncate px-4 py-3 text-navy-700/70" title={inv.email ?? undefined}>
+                      {inv.email || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-navy-700/70">{inv.relationship || "—"}</td>
                     <td className="px-4 py-3">
                       <span
                         className={cn(
@@ -404,6 +415,31 @@ export function InviteeManager({
                       >
                         {RSVP_LABEL[inv.rsvpStatus]}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-navy-700/70">
+                      {inv.rsvpDetail ? (
+                        <span title={`${inv.rsvpDetail.adults} adult(s), ${inv.rsvpDetail.children} child(ren)`}>
+                          {inv.rsvpDetail.adults + inv.rsvpDetail.children}
+                          <span className="text-navy-700/40">
+                            {" "}
+                            ({inv.rsvpDetail.adults}A{inv.rsvpDetail.children > 0 ? ` + ${inv.rsvpDetail.children}C` : ""})
+                          </span>
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-3 capitalize text-navy-700/70">
+                      {inv.rsvpDetail?.mealPreference?.replace(/_/g, " ") || "—"}
+                    </td>
+                    <td
+                      className="max-w-[200px] truncate px-4 py-3 text-navy-700/70"
+                      title={inv.rsvpDetail?.comments ?? undefined}
+                    >
+                      {inv.rsvpDetail?.comments || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-navy-700/70">
+                      {inv.rsvpDetail ? new Date(inv.rsvpDetail.submittedAt).toLocaleDateString() : "—"}
                     </td>
                     <td className="px-4 py-3 text-navy-700/70">
                       {inv.inviteSentAt ? (

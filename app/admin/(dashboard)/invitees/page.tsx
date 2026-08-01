@@ -1,4 +1,4 @@
-import { listInvitees } from "@/services/admin-invitees";
+import { listInviteesWithRsvp } from "@/services/admin-invitees";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { InviteeManager } from "@/features/admin/invitees/invitee-manager";
@@ -17,7 +17,7 @@ export default async function AdminInviteesPage() {
     return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
   }
 
-  const invitees = await listInvitees(event.id);
+  const invitees = await listInviteesWithRsvp(event.id);
 
   return (
     <div>

@@ -160,6 +160,52 @@ export async function markInviteSent(id: string, eventId: string): Promise<void>
   if (!data || data.length === 0) throw new Error("Invitee not found for this event.");
 }
 
+/** Per-guest RSVP specifics that live in the `rsvps` table, not `invitees` — null when the guest hasn't RSVP'd yet. */
+export interface RsvpDetail {
+  adults: number;
+  children: number;
+  mealPreference: string;
+  comments: string | null;
+  submittedAt: string;
+}
+
+export interface InviteeWithRsvp extends InviteeRecord {
+  rsvpDetail: RsvpDetail | null;
+}
+
+/**
+ * listInvitees + each guest's full RSVP detail, for the /admin/invitees
+ * table — same left-join approach as getRsvpExportRows below (see its
+ * doc comment for why the join is needed at all), but keeping the full
+ * InviteeRecord shape (id/token/etc.) that the management UI needs and
+ * the export deliberately omits.
+ */
+export async function listInviteesWithRsvp(eventId: string): Promise<InviteeWithRsvp[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("invitees")
+    .select("*, rsvps(adults, children, meal_preference, comments, submitted_at)")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(`Failed to load invitees: ${error.message}`);
+
+  return ((data as Array<InviteeRow & { rsvps: RsvpEmbedRow[] | RsvpEmbedRow | null }>) ?? []).map((row) => {
+    const rsvp = Array.isArray(row.rsvps) ? (row.rsvps[0] ?? null) : row.rsvps;
+    return {
+      ...mapInvitee(row),
+      rsvpDetail: rsvp
+        ? {
+            adults: rsvp.adults,
+            children: rsvp.children,
+            mealPreference: rsvp.meal_preference,
+            comments: rsvp.comments,
+            submittedAt: rsvp.submitted_at,
+          }
+        : null,
+    };
+  });
+}
+
 export interface RsvpExportRow {
   name: string;
   phone: string | null;

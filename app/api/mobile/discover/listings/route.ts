@@ -2,6 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 
 import { searchListings } from "@/services/marketplace-listings";
+import { publicMediaUrl } from "@/services/uploads";
 import type { ListingSearchFilters } from "@/types/marketplace";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,12 @@ export const dynamic = "force-dynamic";
  * just as GET query params instead of a Server Component's searchParams.
  * Public, no auth; only ever returns approved + non-paused listings
  * (see searchListings).
+ *
+ * Resolves `profileImagePath` to a ready-to-use `profileImageUrl` before
+ * responding — same "mobile always gets full URLs, never raw storage
+ * paths" convention as services/memory-wall.ts's MemoryItem.url, since
+ * the web's own ListingCard resolves this at render time via a
+ * server-only helper the mobile app has no equivalent for.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -29,5 +36,10 @@ export async function GET(request: Request) {
   };
 
   const results = await searchListings(filters);
-  return NextResponse.json(results);
+  const listings = results.listings.map(({ profileImagePath, ...rest }) => ({
+    ...rest,
+    profileImageUrl: profileImagePath ? publicMediaUrl("business", profileImagePath) : null,
+  }));
+
+  return NextResponse.json({ ...results, listings });
 }
