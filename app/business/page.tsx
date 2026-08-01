@@ -108,7 +108,7 @@ export default async function BusinessHubPage() {
             <h3 className="font-display text-lg text-navy-950">Pricing & Commission</h3>
             <p className="mt-2 flex items-start gap-2 text-sm text-navy-700/80">
               <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-gold-600" />
-              Free to list. No commission on leads or bookings — you're contacted directly by hosts, and how you
+              Free to list. No commission on leads or bookings — you&apos;re contacted directly by hosts, and how you
               price and close the work is entirely between you and them.
             </p>
             <p className="mt-2 flex items-start gap-2 text-sm text-navy-700/80">
