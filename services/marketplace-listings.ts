@@ -57,6 +57,7 @@ interface ListingRow {
   linkedin_url: string | null;
   is_verified: boolean;
   is_featured: boolean;
+  is_paused: boolean;
   instant_booking: boolean;
   status: ListingStatus;
   rating_avg: number | string;
@@ -96,6 +97,7 @@ function mapListing(row: ListingRow): BusinessListing {
     linkedinUrl: row.linkedin_url,
     isVerified: row.is_verified,
     isFeatured: row.is_featured,
+    isPaused: row.is_paused,
     instantBooking: row.instant_booking,
     status: row.status,
     ratingAvg: Number(row.rating_avg),
@@ -227,6 +229,24 @@ export async function setListingImages(
   if (error) throw new Error(`Failed to update images: ${error.message}`);
 }
 
+/**
+ * Vendor-controlled "pause" — hides an otherwise-approved listing from
+ * Discover search and its own detail page without touching `status`
+ * (so un-pausing doesn't require re-approval). Exposed on both the web
+ * dashboard and the mobile app's lightweight vendor view (see
+ * app/api/mobile/business/pause/route.ts) — same ownership check either
+ * way via assertOwnsListing.
+ */
+export async function setListingPaused(listingId: string, accountId: string, paused: boolean): Promise<void> {
+  await assertOwnsListing(listingId, accountId);
+  const { error } = await supabaseAdmin()
+    .from("business_profiles")
+    .update({ is_paused: paused, updated_at: new Date().toISOString() })
+    .eq("id", listingId)
+    .eq("account_id", accountId);
+  if (error) throw new Error(`Failed to update listing: ${error.message}`);
+}
+
 /** Submits a draft listing for admin review — the only way a listing can move from draft into the public directory. */
 export async function submitListingForReview(listingId: string, accountId: string): Promise<void> {
   const { error } = await supabaseAdmin()
@@ -236,6 +256,17 @@ export async function submitListingForReview(listingId: string, accountId: strin
     .eq("account_id", accountId)
     .in("status", ["draft", "rejected"]);
   if (error) throw new Error(`Failed to submit listing: ${error.message}`);
+}
+
+/**
+ * Resolves the one listing the mobile app's lightweight Vendor view
+ * operates on — the same "first listing" simplification the web
+ * dashboard already makes (app/business/dashboard/page.tsx), since
+ * multi-listing vendor accounts aren't supported by either UI yet.
+ */
+export async function getPrimaryListingForAccount(accountId: string): Promise<BusinessListing | null> {
+  const listings = await listListingsForAccount(accountId);
+  return listings[0] ?? null;
 }
 
 export async function listListingsForAccount(accountId: string): Promise<BusinessListing[]> {
@@ -346,6 +377,7 @@ export async function getListingBySlug(slug: string): Promise<BusinessListingWit
     .select("*")
     .eq("slug", slug)
     .eq("status", "approved")
+    .eq("is_paused", false)
     .maybeSingle<ListingRow>();
   if (error) throw new Error(`Failed to load listing: ${error.message}`);
   if (!data) return null;
@@ -432,7 +464,11 @@ export async function searchListings(filters: ListingSearchFilters): Promise<Lis
     if (matchingBusinessIds.length === 0) return { listings: [], total: 0, page, pageSize };
   }
 
-  let query = supabaseAdmin().from("business_profiles").select("*", { count: "exact" }).eq("status", "approved");
+  let query = supabaseAdmin()
+    .from("business_profiles")
+    .select("*", { count: "exact" })
+    .eq("status", "approved")
+    .eq("is_paused", false);
   if (matchingBusinessIds) query = query.in("id", matchingBusinessIds);
   if (cityId) query = query.eq("city_id", cityId);
   if (filters.budgetMax !== undefined) query = query.lte("starting_price", filters.budgetMax);
@@ -481,6 +517,7 @@ export async function getRelatedListings(listingId: string, categoryId: string |
     .select("*")
     .in("id", ids)
     .eq("status", "approved")
+    .eq("is_paused", false)
     .order("rating_avg", { ascending: false })
     .limit(limit);
   if (error) return [];

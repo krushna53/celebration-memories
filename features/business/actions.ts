@@ -17,6 +17,7 @@ import {
   addFaq,
   deleteFaq,
   assertOwnsListing,
+  setListingPaused,
 } from "@/services/marketplace-listings";
 import { createSignedBusinessImageUpload } from "@/services/uploads";
 import { createLead } from "@/services/business-leads";
@@ -108,6 +109,19 @@ export async function submitListingForReviewAction(listingId: string): Promise<B
     return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to submit your listing." };
+  }
+}
+
+/** Vendor-controlled pause — see services/marketplace-listings.ts's setListingPaused. Shared by the web dashboard and the mobile app's pause toggle (app/api/mobile/business/pause/route.ts calls the same service function). */
+export async function setListingPausedAction(listingId: string, paused: boolean): Promise<BizActionResult<undefined>> {
+  try {
+    const account = await requireBusinessAccount();
+    await setListingPaused(listingId, account.id, paused);
+    revalidatePath("/business/dashboard");
+    revalidatePath("/discover");
+    return { success: true, data: undefined };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to update listing." };
   }
 }
 

@@ -1,6 +1,7 @@
 import { getCurrentBusinessAccount } from "@/services/business-auth";
 import { listListingsForAccount, getOwnListingBySlug } from "@/services/marketplace-listings";
 import { listAllCategories, listAllCities } from "@/services/marketplace-categories";
+import { getOrCreateBusinessMobileAccessCode } from "@/services/business-mobile-auth";
 import { CreateListingForm } from "@/features/business/create-listing-form";
 import { BusinessDashboardClient } from "@/features/business/dashboard-client";
 
@@ -22,10 +23,13 @@ export default async function BusinessDashboardPage() {
     return <CreateListingForm categories={categories} cities={cities} />;
   }
 
-  const listing = await getOwnListingBySlug(firstListing.slug, account.id);
+  const [listing, mobileAccessCode] = await Promise.all([
+    getOwnListingBySlug(firstListing.slug, account.id),
+    getOrCreateBusinessMobileAccessCode(account.id),
+  ]);
   if (!listing) {
     return <CreateListingForm categories={categories} cities={cities} />;
   }
 
-  return <BusinessDashboardClient listing={listing} categories={categories} cities={cities} />;
+  return <BusinessDashboardClient listing={listing} categories={categories} cities={cities} mobileAccessCode={mobileAccessCode} />;
 }

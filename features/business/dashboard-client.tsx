@@ -14,6 +14,8 @@ import {
   XCircle,
   Mail,
   Phone,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 
 import { ListingProfileForm } from "@/features/business/listing-profile-form";
@@ -31,7 +33,9 @@ import {
   generateAiSummaryAction,
   listLeadsForListingAction,
   setLeadStatusAction,
+  setListingPausedAction,
 } from "@/features/business/actions";
+import { MobileAccessCard } from "@/features/business/mobile-access/mobile-access-card";
 import type { BusinessListingWithRelations, MarketplaceCategory, MarketplaceCity, BusinessLead } from "@/types/marketplace";
 
 function storageUrl(path: string | null): string | null {
@@ -57,12 +61,15 @@ export function BusinessDashboardClient({
   listing,
   categories,
   cities,
+  mobileAccessCode,
 }: {
   listing: BusinessListingWithRelations;
   categories: MarketplaceCategory[];
   cities: MarketplaceCity[];
+  mobileAccessCode: string;
 }) {
   const [tab, setTab] = useState<Tab>("Profile");
+  const [isPaused, setIsPaused] = useState(listing.isPaused);
   const badge = STATUS_BADGE[listing.status];
 
   return (
@@ -76,6 +83,14 @@ export function BusinessDashboardClient({
           <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${badge.className}`}>
             <badge.icon size={13} /> {badge.label}
           </span>
+          {isPaused ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-navy-950/10 px-3 py-1 text-xs font-medium text-navy-700">
+              <PauseCircle size={13} /> Paused
+            </span>
+          ) : null}
+          {listing.status === "approved" ? (
+            <PauseToggleButton listingId={listing.id} isPaused={isPaused} onChange={setIsPaused} />
+          ) : null}
           <SubmitForReviewButton listingId={listing.id} status={listing.status} />
         </div>
       </div>
@@ -95,7 +110,9 @@ export function BusinessDashboardClient({
       </div>
 
       <div className="mt-6 rounded-2xl border border-navy-950/10 bg-white p-5 sm:p-6">
-        {tab === "Profile" ? <ProfileTab listing={listing} categories={categories} cities={cities} /> : null}
+        {tab === "Profile" ? (
+          <ProfileTab listing={listing} categories={categories} cities={cities} mobileAccessCode={mobileAccessCode} />
+        ) : null}
         {tab === "Photos" ? <PhotosTab listing={listing} /> : null}
         {tab === "Services" ? <ServicesTab listing={listing} /> : null}
         {tab === "FAQs" ? <FaqsTab listing={listing} /> : null}
@@ -130,14 +147,59 @@ function SubmitForReviewButton({ listingId, status }: { listingId: string; statu
   );
 }
 
+function PauseToggleButton({
+  listingId,
+  isPaused,
+  onChange,
+}: {
+  listingId: string;
+  isPaused: boolean;
+  onChange: (paused: boolean) => void;
+}) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle() {
+    setPending(true);
+    setError(null);
+    const next = !isPaused;
+    const result = await setListingPausedAction(listingId, next);
+    setPending(false);
+    if (result.success) onChange(next);
+    else setError(result.error);
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {error ? <span className="text-xs text-red-600">{error}</span> : null}
+      <button
+        disabled={pending}
+        onClick={toggle}
+        className="flex items-center gap-1.5 rounded-full border border-navy-950/15 px-3.5 py-2 text-sm font-medium text-navy-700 hover:border-navy-950/30 disabled:opacity-60"
+      >
+        {pending ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : isPaused ? (
+          <PlayCircle size={14} />
+        ) : (
+          <PauseCircle size={14} />
+        )}
+        {isPaused ? "Go Live" : "Pause Listing"}
+      </button>
+    </div>
+  );
+}
+
 function ProfileTab({
   listing,
   categories,
   cities,
+  mobileAccessCode,
 }: {
   listing: BusinessListingWithRelations;
   categories: MarketplaceCategory[];
   cities: MarketplaceCity[];
+  mobileAccessCode: string;
 }) {
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState<"profile" | "cover" | null>(null);
@@ -178,6 +240,8 @@ function ProfileTab({
 
   return (
     <div className="grid gap-6">
+      <MobileAccessCard initialCode={mobileAccessCode} />
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <p className="text-xs font-medium text-navy-700/60">Profile Image</p>

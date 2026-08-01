@@ -107,6 +107,7 @@ export interface BusinessListing {
   linkedinUrl: string | null;
   isVerified: boolean;
   isFeatured: boolean;
+  isPaused: boolean;
   instantBooking: boolean;
   status: ListingStatus;
   ratingAvg: number;
