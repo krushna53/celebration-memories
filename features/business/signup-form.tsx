@@ -7,6 +7,7 @@ import { CheckCircle2, Loader2, Store } from "lucide-react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { completeBusinessSignupAction } from "@/features/business/actions";
+import { TermsConsentCheckbox } from "@/components/legal/terms-consent-checkbox";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -28,11 +29,16 @@ export function BusinessSignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms and Conditions to continue.");
+      return;
+    }
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -114,6 +120,8 @@ export function BusinessSignupForm() {
           />
         </div>
 
+        <TermsConsentCheckbox checked={agreedToTerms} onChange={setAgreedToTerms} variant="dark" />
+
         {error ? (
           <p className="text-sm text-red-400" role="alert">
             {error}
@@ -122,7 +130,7 @@ export function BusinessSignupForm() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !agreedToTerms}
           className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 hover:brightness-110 disabled:opacity-60"
         >
           {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Vendor Account"}

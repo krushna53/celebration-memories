@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 interface GoogleAuthButtonProps {
@@ -13,6 +14,8 @@ interface GoogleAuthButtonProps {
    * comment) already appended as query params by the caller.
    */
   redirectTo: string;
+  /** Set true to block the OAuth flow from starting — used to require the Terms and Conditions checkbox before Google sign-up too, not just the email/password path. */
+  disabled?: boolean;
 }
 
 /**
@@ -26,7 +29,7 @@ interface GoogleAuthButtonProps {
  * the Supabase Dashboard, the same way creating the Stripe/Razorpay
  * accounts did.
  */
-export function GoogleAuthButton({ label = "Continue with Google", redirectTo }: GoogleAuthButtonProps) {
+export function GoogleAuthButton({ label = "Continue with Google", redirectTo, disabled = false }: GoogleAuthButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,8 +53,11 @@ export function GoogleAuthButton({ label = "Continue with Google", redirectTo }:
       <button
         type="button"
         onClick={handleClick}
-        disabled={loading}
-        className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm font-medium text-navy-950 shadow-sm transition-luxury duration-200 hover:bg-ivory-100 disabled:cursor-wait disabled:opacity-70"
+        disabled={loading || disabled}
+        className={cn(
+          "flex w-full items-center justify-center gap-2.5 rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm font-medium text-navy-950 shadow-sm transition-luxury duration-200 hover:bg-ivory-100 disabled:opacity-60",
+          loading ? "disabled:cursor-wait" : "disabled:cursor-not-allowed",
+        )}
       >
         {loading ? <Loader2 size={16} className="animate-spin" /> : <GoogleIcon />}
         {label}

@@ -38,12 +38,36 @@ const SECTIONS: { title: string; body: string }[] = [
     body: "Don't use the platform to upload unlawful, infringing, or harmful content, to harass anyone, or to attempt to access another host's event or account without authorization. We may suspend or remove content or accounts that violate this.",
   },
   {
+    title: "Our intellectual property",
+    body: `The platform's software, source code, system architecture, database design, admin dashboard, templates, visual designs, workflows, and underlying business methods (together, "Platform IP") are the exclusive property of ${BUILDER.name} and are protected by copyright, trade secret, and other applicable laws. Creating an account, publishing an event site, or listing a business on the platform gives you a limited right to use the hosted service as intended — it does not transfer, license, or grant any ownership interest in the Platform IP, and does not give you any right to the underlying code, design files, database structure, or business methods themselves.`,
+  },
+  {
+    title: "Confidentiality",
+    body: `Using the service — including the admin dashboard, analytics, pricing structure, or any other non-public information you're able to see — may expose you to information about how the platform is built and operated that isn't publicly available ("Confidential Information"). You agree to keep Confidential Information confidential, to use it only to operate your own event site or business listing, and not to disclose it to anyone else without our prior written consent. This obligation continues even after you stop using the service.`,
+  },
+  {
+    title: "No copying, reverse engineering, or competing use",
+    body: "You agree not to copy, scrape, decompile, reverse-engineer, or otherwise attempt to derive the source code, design, templates, database structure, or underlying business methods of the platform; not to use information or access gained through the service to build, operate, or materially assist a product or service that competes with the platform; and not to help or authorize anyone else to do either of those things. This applies for as long as the relevant information stays confidential or protected — not just while your account is active.",
+  },
+  {
+    title: "No solicitation",
+    body: "For 12 months after your account is closed, you agree not to use information gained through the service to knowingly solicit, for a competing purpose, any other client, vendor, or team member you became aware of through the platform.",
+  },
+  {
+    title: "Enforcement",
+    body: "Breaching the intellectual property, confidentiality, or non-circumvention terms above can cause harm that money alone may not fully repair, so we may seek an injunction or other equitable relief in addition to damages. We may also suspend or terminate an account immediately for a breach of this kind, without a refund.",
+  },
+  {
     title: "Service availability",
     body: "We aim for reliable uptime but don't guarantee the service will be uninterrupted or error-free, and we're not liable for losses arising from downtime, third-party service outages (hosting, storage, payment, or AI providers we depend on), or content lost due to circumstances outside our reasonable control. Keep your own copies of anything irreplaceable.",
   },
   {
     title: "Cancellation and refunds",
     body: "See our separate Cancellation & Refund Policy for how to cancel a plan and what's refundable.",
+  },
+  {
+    title: "Governing law and disputes",
+    body: "These terms are governed by the laws of India. We'll try to resolve any dispute informally first; failing that, it's subject to the exclusive jurisdiction of the courts of India, or arbitration under the Arbitration and Conciliation Act, 1996, at our election.",
   },
   {
     title: "Changes to these terms",
@@ -76,8 +100,15 @@ export default function TermsPage() {
           </div>
           <p className="mt-12 text-xs text-navy-700/50">
             This is a general template and not a substitute for legal advice — {BUILDER.name} recommends having these
-            terms reviewed by a qualified professional before relying on them for real transactions. Effective date:
-            the date this page was last updated.
+            terms reviewed by a qualified professional before relying on them for real transactions. In particular,
+            broad restrictions on competing after someone has stopped using the service aren&rsquo;t enforceable in
+            every jurisdiction — Indian contract law, for example, restricts many non-compete clauses under Section
+            27 of the Indian Contract Act, 1872. The confidentiality and non-circumvention terms above are written to
+            focus on protecting confidential information specifically, since that framing holds up far better than a
+            blanket &ldquo;you may never build anything similar&rdquo; clause, but a lawyer should confirm this for
+            your situation — especially before onboarding a client or vendor who&rsquo;ll see enough of the backend
+            or business model that a separately signed NDA would be worth having in addition to this click-through
+            agreement. Effective date: the date this page was last updated.
           </p>
         </div>
       </div>

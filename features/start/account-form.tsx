@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { wizardStepHref } from "@/features/start/wizard-steps";
 import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
+import { TermsConsentCheckbox } from "@/components/legal/terms-consent-checkbox";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -31,11 +32,16 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms and Conditions to continue.");
+      return;
+    }
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -151,13 +157,15 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
           />
         </div>
 
+        <TermsConsentCheckbox checked={agreedToTerms} onChange={setAgreedToTerms} variant="light" />
+
         {error ? (
           <p className="text-sm text-red-600" role="alert">
             {error}
           </p>
         ) : null}
 
-        <Button type="submit" size="lg" disabled={loading} className="mt-2 w-full">
+        <Button type="submit" size="lg" disabled={loading || !agreedToTerms} className="mt-2 w-full">
           {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Account"}
         </Button>
       </form>
@@ -167,6 +175,7 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
       </div>
       <GoogleAuthButton
         label="Continue with Google"
+        disabled={!agreedToTerms}
         redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(
           `${wizardStepHref(token, "payment")}?verified=1`,
         )}&link_event_id=${encodeURIComponent(eventId)}`}
