@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Pause, Play, RotateCcw, Square, SwitchCamera, UploadCloud, Video, X } from "lucide-react";
+import { CheckCircle2, ChevronUp, Pause, Play, RotateCcw, Square, SwitchCamera, UploadCloud, Video, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
@@ -406,9 +406,17 @@ export function VideoUpload({
               instead of visible text — a plain red-circle-in-a-ring is
               the near-universal record-button shape on both iOS and
               Android camera apps, so a single icon design reads
-              correctly on either platform without needing OS detection. */}
+              correctly on either platform without needing OS detection.
+              This hint line is what actually tells a first-time (often
+              senior) guest what the icon does — kept prominent (gold,
+              bold, with a bouncing arrow pointing at the button) rather
+              than a faint caption, since the icon alone isn't
+              self-explanatory to everyone. */}
           {!isRecording && !lastRecordedId ? (
-            <p className="mt-3 text-center text-xs text-ivory-100/50">Tap to start recording</p>
+            <div className="mt-2 flex flex-col items-center gap-0.5">
+              <ChevronUp size={18} className="animate-bounce text-gold-400" />
+              <p className="text-sm font-semibold text-gold-300">Tap to start recording</p>
+            </div>
           ) : null}
 
           {error ? <p className="mt-3 text-center text-xs text-red-400">{error}</p> : null}
