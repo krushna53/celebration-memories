@@ -15,6 +15,8 @@ interface AudioUploadProps {
   initialMode?: "upload" | "record";
   /** Passed straight through to UploadQueue — see its doc comment. */
   showCaption?: boolean;
+  /** Notified whenever isRecording changes — lets MediaUploadsSection's back-button guard catch a guest leaving mid-recording, before there's even a queued item to warn about. */
+  onRecordingChange?: (isRecording: boolean) => void;
 }
 
 function formatSeconds(total: number): string {
@@ -30,7 +32,12 @@ function formatSeconds(total: number): string {
  * consistency between the two, even though audio has no camera preview
  * to show — the big mic indicator fills the same role as the viewfinder.
  */
-export function AudioUpload({ upload, initialMode = "upload", showCaption = true }: AudioUploadProps) {
+export function AudioUpload({
+  upload,
+  initialMode = "upload",
+  showCaption = true,
+  onRecordingChange,
+}: AudioUploadProps) {
   const { items, addFiles, setCaption, remove, uploadAll } = upload;
   const [mode, setMode] = useState<"upload" | "record">(initialMode);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +53,17 @@ export function AudioUpload({ upload, initialMode = "upload", showCaption = true
       setLastRecordedId(id ?? null);
     },
   });
+
+  // Reports live recording state up to MediaUploadsSection so its
+  // back-button guard can catch a guest leaving mid-recording — before
+  // stop() has even run, there's no queued item yet to warn about
+  // otherwise. Reports false on unmount so the guard doesn't stay
+  // latched on if this view goes away some other way.
+  useEffect(() => {
+    onRecordingChange?.(isRecording);
+    return () => onRecordingChange?.(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRecording]);
 
   // Locks page scroll while the fullscreen record view is open, same as
   // any other fullscreen overlay (modal, lightbox) in the app.

@@ -1,9 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Circle, FileAudio, FileVideo, ImagePlus, Mic, PenLine, Video } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronLeft,
+  Circle,
+  FileAudio,
+  FileVideo,
+  ImagePlus,
+  Loader2,
+  Mic,
+  PenLine,
+  UploadCloud,
+  Video,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { useMediaUpload } from "@/hooks/use-media-upload";
 import { PhotoUpload } from "@/features/uploads/components/photo-upload";
 import { VideoUpload } from "@/features/uploads/components/video-upload";
@@ -99,6 +112,145 @@ export function MediaUploadsSection({ token, initialView = "menu", showCaption =
     "audio-record": 0,
   };
 
+  // Total items recorded/picked but not yet successfully uploaded, across
+  // all three kinds regardless of which view is currently showing — a
+  // guest who records a video, backs out to the menu, and never taps
+  // Upload All still has something at risk of being lost.
+  const pendingUploadCount =
+    photoUpload.items.filter((it) => it.status !== "done").length +
+    videoUpload.items.filter((it) => it.status !== "done").length +
+    audioUpload.items.filter((it) => it.status !== "done").length;
+
+  // Recording is live but not yet stopped, so there's no queued item at
+  // all yet — still needs guarding, just with different modal copy/
+  // buttons than "you have N unsaved items" (see leaveConfirmModal).
+  const [videoRecording, setVideoRecording] = useState(false);
+  const [audioRecording, setAudioRecording] = useState(false);
+  const isRecordingLive = videoRecording || audioRecording;
+
+  const hasPendingUploads = pendingUploadCount > 0 || isRecordingLive;
+
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [savingFromGuard, setSavingFromGuard] = useState(false);
+  // True for exactly the one popstate we trigger ourselves when the
+  // guest actually confirms "Leave without saving" — lets the handler
+  // tell "the guest pressed back again for real" apart from "our own
+  // history.back() call to let that navigation through unintercepted."
+  const leavingRef = useRef(false);
+
+  // Traps the mobile/browser back button while an unsaved recording or
+  // pick sits in the queue: pushes a same-URL decoy history entry, and
+  // when a back gesture pops it, re-shows this dialog instead of
+  // silently leaving with the memory never uploaded — a senior guest is
+  // exactly the person likely to hit the phone's back button rather
+  // than look for an in-page "cancel" affordance. Re-arms itself (pushes
+  // a fresh decoy) every time the guest chooses to stay, so it keeps
+  // catching back attempts until the queue is actually empty.
+  useEffect(() => {
+    if (!hasPendingUploads) return;
+
+    window.history.pushState({ mediaUploadGuard: true }, "");
+
+    function handlePopState() {
+      if (leavingRef.current) {
+        leavingRef.current = false;
+        return;
+      }
+      setShowLeaveConfirm(true);
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+    // Re-runs (and re-pushes a fresh decoy) whenever pendingUploadCount
+    // changes — including right after "Keep Editing" or a completed
+    // "Upload Now" — not just when hasPendingUploads first flips true.
+  }, [hasPendingUploads, pendingUploadCount]);
+
+  // Covers actually closing the tab / hard refresh / typing a new URL —
+  // browsers show their own generic prompt here rather than this app's
+  // dialog (custom text isn't permitted for beforeunload by any modern
+  // browser), but it's the only hook available for those cases.
+  useEffect(() => {
+    if (!hasPendingUploads) return;
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasPendingUploads]);
+
+  function handleKeepEditing() {
+    setShowLeaveConfirm(false);
+  }
+
+  async function handleUploadNowFromGuard() {
+    setSavingFromGuard(true);
+    try {
+      await Promise.all([photoUpload.uploadAll(), videoUpload.uploadAll(), audioUpload.uploadAll()]);
+    } finally {
+      setSavingFromGuard(false);
+      setShowLeaveConfirm(false);
+    }
+  }
+
+  function handleLeaveAnyway() {
+    setShowLeaveConfirm(false);
+    leavingRef.current = true;
+    window.history.back();
+  }
+
+  // Still actively recording with nothing queued yet needs different
+  // copy/buttons than "you have N unsaved items" — there's nothing to
+  // "Upload Now" until the guest stops, so that button doesn't apply.
+  const leaveConfirmModal = showLeaveConfirm ? (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-navy-950/60 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold-500/15 text-gold-600">
+          <AlertTriangle size={22} />
+        </div>
+        <h3 className="mt-4 font-display text-lg text-navy-950">
+          {pendingUploadCount > 0 ? "Save your memory first?" : "Still recording…"}
+        </h3>
+        <p className="mt-2 text-sm text-navy-700/70">
+          {pendingUploadCount > 0 ? (
+            <>
+              You have {pendingUploadCount} {pendingUploadCount === 1 ? "item" : "items"} that{" "}
+              {pendingUploadCount === 1 ? "hasn't" : "haven't"} been uploaded yet. Leaving now will lose{" "}
+              {pendingUploadCount === 1 ? "it" : "them"}.
+            </>
+          ) : (
+            "Your recording is still going. Leaving now will lose it — go back and tap Stop first to keep it."
+          )}
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          {pendingUploadCount > 0 ? (
+            <Button onClick={handleUploadNowFromGuard} disabled={savingFromGuard} className="w-full">
+              {savingFromGuard ? <Loader2 className="animate-spin" size={16} /> : <UploadCloud size={16} />}
+              Upload Now
+            </Button>
+          ) : null}
+          <button
+            type="button"
+            onClick={handleKeepEditing}
+            disabled={savingFromGuard}
+            className="tap-target text-xs font-medium text-navy-700/60 hover:text-navy-950"
+          >
+            {pendingUploadCount > 0 ? "Keep Editing" : "Keep Recording"}
+          </button>
+          <button
+            type="button"
+            onClick={handleLeaveAnyway}
+            disabled={savingFromGuard}
+            className="tap-target text-xs font-medium text-navy-700/40 hover:text-red-600"
+          >
+            Leave without saving
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   if (view === "menu") {
     return (
       <div className="rounded-2xl border border-gold-500/15 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8">
@@ -134,6 +286,8 @@ export function MediaUploadsSection({ token, initialView = "menu", showCaption =
         <p className="mt-6 text-center text-xs text-navy-700/50">
           Your memories are reviewed before appearing on the public Memory Wall.
         </p>
+
+        {leaveConfirmModal}
       </div>
     );
   }
@@ -157,16 +311,36 @@ export function MediaUploadsSection({ token, initialView = "menu", showCaption =
       <div className="mt-5">
         {view === "photo" ? <PhotoUpload upload={photoUpload} showCaption={showCaption} /> : null}
         {view === "video-record" ? (
-          <VideoUpload upload={videoUpload} initialMode="record" showCaption={showCaption} />
+          <VideoUpload
+            upload={videoUpload}
+            initialMode="record"
+            showCaption={showCaption}
+            onRecordingChange={setVideoRecording}
+          />
         ) : null}
         {view === "video-upload" ? (
-          <VideoUpload upload={videoUpload} initialMode="upload" showCaption={showCaption} />
+          <VideoUpload
+            upload={videoUpload}
+            initialMode="upload"
+            showCaption={showCaption}
+            onRecordingChange={setVideoRecording}
+          />
         ) : null}
         {view === "audio-record" ? (
-          <AudioUpload upload={audioUpload} initialMode="record" showCaption={showCaption} />
+          <AudioUpload
+            upload={audioUpload}
+            initialMode="record"
+            showCaption={showCaption}
+            onRecordingChange={setAudioRecording}
+          />
         ) : null}
         {view === "audio-upload" ? (
-          <AudioUpload upload={audioUpload} initialMode="upload" showCaption={showCaption} />
+          <AudioUpload
+            upload={audioUpload}
+            initialMode="upload"
+            showCaption={showCaption}
+            onRecordingChange={setAudioRecording}
+          />
         ) : null}
         {view === "note" ? <GuestbookForm token={token} /> : null}
       </div>
@@ -174,6 +348,8 @@ export function MediaUploadsSection({ token, initialView = "menu", showCaption =
       <p className="mt-6 text-center text-xs text-navy-700/50">
         Your memories are reviewed before appearing on the public Memory Wall.
       </p>
+
+      {leaveConfirmModal}
     </div>
   );
 }

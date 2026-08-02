@@ -15,6 +15,8 @@ interface VideoUploadProps {
   initialMode?: "upload" | "record";
   /** Passed straight through to UploadQueue — see its doc comment. */
   showCaption?: boolean;
+  /** Notified whenever isRecording changes — lets MediaUploadsSection's back-button guard catch a guest leaving mid-recording, before there's even a queued item to warn about. */
+  onRecordingChange?: (isRecording: boolean) => void;
 }
 
 function formatSeconds(total: number): string {
@@ -32,7 +34,12 @@ function formatSeconds(total: number): string {
  * (not overlaid on top of it), so they never obscure the shot and are
  * always easy to find regardless of what's on screen.
  */
-export function VideoUpload({ upload, initialMode = "upload", showCaption = true }: VideoUploadProps) {
+export function VideoUpload({
+  upload,
+  initialMode = "upload",
+  showCaption = true,
+  onRecordingChange,
+}: VideoUploadProps) {
   const { items, addFiles, setCaption, remove, uploadAll } = upload;
   const [mode, setMode] = useState<"upload" | "record">(initialMode);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +75,17 @@ export function VideoUpload({ upload, initialMode = "upload", showCaption = true
       previewRef.current.srcObject = previewStream;
     }
   }, [previewStream]);
+
+  // Reports live recording state up to MediaUploadsSection so its
+  // back-button guard can catch a guest leaving mid-recording — before
+  // stop() has even run, there's no queued item yet to warn about
+  // otherwise. Reports false on unmount so the guard doesn't stay
+  // latched on if this view goes away some other way.
+  useEffect(() => {
+    onRecordingChange?.(isRecording);
+    return () => onRecordingChange?.(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRecording]);
 
   // Opens the camera as soon as the guest lands on the record view —
   // shows a live preview with "Start Recording" below it, like a camera
