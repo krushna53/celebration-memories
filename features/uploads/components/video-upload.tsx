@@ -5,7 +5,7 @@ import { CheckCircle2, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } f
 
 import { cn } from "@/lib/utils";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
-import { useMediaRecorder } from "@/hooks/use-media-recorder";
+import { useMediaRecorder, type ZoomRange } from "@/hooks/use-media-recorder";
 import { UploadQueue } from "@/features/uploads/components/upload-queue";
 
 interface VideoUploadProps {
@@ -23,6 +23,22 @@ function formatSeconds(total: number): string {
   const m = Math.floor(total / 60);
   const s = total % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+/**
+ * Picks which zoom pill buttons to show from the camera's actual
+ * reported range — never hardcoded 0.5x/1x/2x, since most devices that
+ * support zoom at all only report a "zoom in" range starting at 1x (no
+ * zoom-out/ultra-wide switch available through the web camera API), and
+ * the real max varies by device. Always includes 1x when it's in range
+ * so there's a clear "back to normal" option.
+ */
+function getZoomPresets(range: ZoomRange): number[] {
+  const candidates = [0.5, 1, 1.5, 2, 3, 4, 5];
+  const inRange = candidates.filter((v) => v >= range.min && v <= range.max);
+  if (range.min <= 1 && range.max >= 1 && !inRange.includes(1)) inRange.push(1);
+  if (inRange.length === 0) inRange.push(range.min);
+  return Array.from(new Set(inRange)).sort((a, b) => a - b);
 }
 
 /**
@@ -55,6 +71,9 @@ export function VideoUpload({
     seconds,
     previewStream,
     error,
+    zoomRange,
+    zoomLevel,
+    setZoom,
     openPreview,
     closePreview,
     start,
@@ -188,6 +207,34 @@ export function VideoUpload({
               <CheckCircle2 size={14} />
               Captured &middot; {formatSeconds(seconds)}
             </p>
+          ) : null}
+
+          {/*
+            Real hardware zoom — only rendered where the camera/browser
+            actually reports a zoom range (zoomRange is null everywhere
+            else, notably every iOS Safari, since WebKit doesn't expose
+            camera zoom to the web at all). Deliberately no fallback
+            "fake" zoom control for unsupported devices — a zoom button
+            that silently does nothing is worse than no button.
+          */}
+          {previewStream && zoomRange ? (
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/50 p-1">
+              {getZoomPresets(zoomRange).map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setZoom(preset)}
+                  className={cn(
+                    "tap-target rounded-full px-2.5 py-1 text-xs font-medium tabular-nums transition-luxury duration-150",
+                    Math.abs(zoomLevel - preset) < 0.05
+                      ? "bg-gold-500 text-navy-950"
+                      : "text-ivory-100/80 hover:text-ivory-50",
+                  )}
+                >
+                  {preset % 1 === 0 ? preset : preset.toFixed(1)}x
+                </button>
+              ))}
+            </div>
           ) : null}
         </div>
 

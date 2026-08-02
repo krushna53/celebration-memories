@@ -8,6 +8,13 @@ interface UseMediaRecorderOptions {
   onCapture: (file: File) => void;
 }
 
+/** { min, max, step } from the video track's own reported zoom range — never hardcoded, since it comes straight from whatever the connected camera hardware/driver actually supports. */
+export interface ZoomRange {
+  min: number;
+  max: number;
+  step: number;
+}
+
 /**
  * Thin wrapper around the browser MediaRecorder API for the "or record
  * directly from the browser" upload option (audio + video). Produces a
@@ -25,6 +32,16 @@ interface UseMediaRecorderOptions {
  * that already-open stream if one exists rather than requesting
  * getUserMedia a second time, so tapping "Start Recording" after a
  * preview is instant instead of prompting for camera access twice.
+ *
+ * For "video", also exposes camera zoom (zoomRange/zoomLevel/setZoom)
+ * where the browser/hardware supports it — real hardware zoom via the
+ * non-standard MediaTrackConstraints `zoom` capability, Chromium-only
+ * (desktop Chrome/Edge, Android Chrome). iOS Safari never implements
+ * this — WebKit doesn't expose zoom to the web at all, and every
+ * browser on iOS is required to use WebKit, so there's no browser
+ * choice that fixes it there. zoomRange is null wherever unsupported;
+ * callers should hide zoom controls entirely in that case rather than
+ * show a control that silently does nothing.
  */
 export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
   const [isRecording, setIsRecording] = useState(false);
@@ -32,6 +49,11 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
   const [seconds, setSeconds] = useState(0);
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // null = "not supported on this device/browser" (e.g. every iOS
+  // Safari — see hooks/use-media-recorder.ts's module doc comment).
+  // Only ever populated for kind: "video".
+  const [zoomRange, setZoomRange] = useState<ZoomRange | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -46,10 +68,45 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     timerRef.current = null;
   };
 
+  /** Reads the connected camera's real zoom range off its video track, if the browser/hardware exposes one at all — see the module doc comment above for which browsers that is. */
+  const detectZoomRange = useCallback((stream: MediaStream) => {
+    if (kind !== "video") return;
+    const track = stream.getVideoTracks()[0];
+    if (!track || typeof track.getCapabilities !== "function") {
+      setZoomRange(null);
+      return;
+    }
+    const capabilities = track.getCapabilities() as MediaTrackCapabilities & {
+      zoom?: { min: number; max: number; step: number };
+    };
+    if (capabilities.zoom) {
+      setZoomRange(capabilities.zoom);
+      const settings = track.getSettings() as MediaTrackSettings & { zoom?: number };
+      setZoomLevel(settings.zoom ?? 1);
+    } else {
+      setZoomRange(null);
+    }
+  }, [kind]);
+
+  /** No-ops quietly if zoom isn't supported (zoomRange null) or the value is out of range — callers gate the UI on zoomRange already, this is just a second safety net. */
+  const setZoom = useCallback(async (value: number) => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track || !zoomRange) return;
+    const clamped = Math.min(zoomRange.max, Math.max(zoomRange.min, value));
+    try {
+      await track.applyConstraints({ advanced: [{ zoom: clamped } as MediaTrackConstraintSet] });
+      setZoomLevel(clamped);
+    } catch (err) {
+      console.error("Failed to apply zoom constraint:", err);
+    }
+  }, [zoomRange]);
+
   const teardownStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setPreviewStream(null);
+    setZoomRange(null);
+    setZoomLevel(1);
   }, []);
 
   /** Opens the camera/mic and shows a live preview without recording yet. Safe to call more than once — a no-op if a stream is already open. */
@@ -62,6 +119,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
       );
       streamRef.current = stream;
       setPreviewStream(stream);
+      detectZoomRange(stream);
     } catch {
       setError(
         kind === "video"
@@ -69,7 +127,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
           : "Microphone access was denied or unavailable.",
       );
     }
-  }, [kind]);
+  }, [kind, detectZoomRange]);
 
   /** Releases the camera/mic without recording anything — for leaving record mode after only previewing. Never tears down mid-recording. */
   const closePreview = useCallback(() => {
@@ -82,11 +140,13 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     try {
       // Reuse the already-open preview stream if openPreview() got there
       // first — avoids a second getUserMedia prompt/negotiation.
+      const reusedExisting = Boolean(streamRef.current);
       const stream = streamRef.current ?? (await navigator.mediaDevices.getUserMedia(
         kind === "video" ? { video: true, audio: true } : { audio: true },
       ));
       streamRef.current = stream;
       setPreviewStream(stream);
+      if (!reusedExisting) detectZoomRange(stream);
       chunksRef.current = [];
       discardRef.current = false;
 
@@ -132,7 +192,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
           : "Microphone access was denied or unavailable.",
       );
     }
-  }, [kind, onCapture]);
+  }, [kind, onCapture, detectZoomRange]);
 
   /**
    * Finalizes the recording and hands it to onCapture. Deliberately
@@ -183,6 +243,10 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     seconds,
     previewStream,
     error,
+    /** null on any device/browser that doesn't expose camera zoom (every iOS Safari, most non-Chromium browsers) — callers should hide zoom UI entirely rather than show a control that does nothing. */
+    zoomRange,
+    zoomLevel,
+    setZoom,
     openPreview,
     closePreview,
     start,
