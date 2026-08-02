@@ -44,13 +44,36 @@ export interface ZoomRange {
  * show a control that silently does nothing.
  *
  * Also exposes facingMode/flipCamera to switch between front and back
- * camera — standard across every browser (unlike zoom), but only
- * allowed while not actively recording; see flipCamera's own doc
- * comment for why.
+ * camera, and aspectRatioPreset/setAspectRatio to switch frame shape
+ * (9:16/1:1/4:3) — both standard across every browser (unlike zoom),
+ * but only allowed while not actively recording; see flipCamera's own
+ * doc comment for why.
  */
-/** getUserMedia's video constraint — a plain `{ facingMode }` object (not wrapped in `ideal`/`exact`) so a device that only has one camera still resolves fine rather than rejecting a constraint it can't satisfy exactly. */
-function buildConstraints(kind: "audio" | "video", facingMode: "user" | "environment"): MediaStreamConstraints {
-  return kind === "video" ? { video: { facingMode }, audio: true } : { audio: true };
+/** Presets offered in the record view — "9:16" (default, matches the fullscreen portrait camera view) mirrors a phone screen; "1:1" and "4:3" are the other common shapes native camera apps offer. */
+export const ASPECT_RATIO_PRESETS = ["9:16", "1:1", "4:3"] as const;
+export type AspectRatioPreset = (typeof ASPECT_RATIO_PRESETS)[number];
+
+const ASPECT_RATIO_VALUES: Record<AspectRatioPreset, number> = {
+  "9:16": 9 / 16,
+  "1:1": 1,
+  "4:3": 4 / 3,
+};
+
+/**
+ * getUserMedia's video constraint. `facingMode` and `aspectRatio` are
+ * both requested as `ideal` (not `exact`) so a device that can't fully
+ * satisfy one — a single-camera desktop, or a camera whose sensor
+ * doesn't natively do 1:1 — still resolves with its closest match
+ * instead of rejecting the whole request.
+ */
+function buildConstraints(
+  kind: "audio" | "video",
+  facingMode: "user" | "environment",
+  aspectRatioPreset: AspectRatioPreset,
+): MediaStreamConstraints {
+  return kind === "video"
+    ? { video: { facingMode, aspectRatio: { ideal: ASPECT_RATIO_VALUES[aspectRatioPreset] } }, audio: true }
+    : { audio: true };
 }
 
 export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
@@ -68,6 +91,10 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
   // message" feature — most guests are talking to the camera, not
   // filming something else. Only meaningful for kind: "video".
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  // "9:16" matches the fullscreen portrait camera view guests already
+  // see, so it's the sensible default rather than whatever the camera's
+  // native/landscape shape happens to be. Only meaningful for "video".
+  const [aspectRatioPreset, setAspectRatioPresetState] = useState<AspectRatioPreset>("9:16");
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -122,6 +149,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     setZoomRange(null);
     setZoomLevel(1);
     setFacingMode("user");
+    setAspectRatioPresetState("9:16");
   }, []);
 
   /** Opens the camera/mic and shows a live preview without recording yet. Safe to call more than once — a no-op if a stream is already open. */
@@ -129,7 +157,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     if (streamRef.current) return;
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(buildConstraints(kind, facingMode));
+      const stream = await navigator.mediaDevices.getUserMedia(buildConstraints(kind, facingMode, aspectRatioPreset));
       streamRef.current = stream;
       setPreviewStream(stream);
       detectZoomRange(stream);
@@ -140,7 +168,28 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
           : "Microphone access was denied or unavailable.",
       );
     }
-  }, [kind, facingMode, detectZoomRange]);
+  }, [kind, facingMode, aspectRatioPreset, detectZoomRange]);
+
+  /**
+   * Switches the requested frame shape. Unlike flipCamera, this doesn't
+   * need to tear down and reopen the stream — aspectRatio is a standard
+   * MediaTrackConstraint (unlike zoom/torch), so the existing track can
+   * usually just renegotiate it live via applyConstraints(). Only
+   * allowed while not recording: no native camera app lets you change
+   * the frame shape mid-take either, since it would mean the recording's
+   * dimensions change partway through.
+   */
+  const setAspectRatio = useCallback(async (preset: AspectRatioPreset) => {
+    if (kind !== "video" || isRecording) return;
+    setAspectRatioPresetState(preset);
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      await track.applyConstraints({ aspectRatio: { ideal: ASPECT_RATIO_VALUES[preset] } });
+    } catch (err) {
+      console.error("Failed to apply aspect ratio constraint:", err);
+    }
+  }, [kind, isRecording]);
 
   /**
    * Switches between front and back camera — only while not actively
@@ -157,7 +206,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     const next: "user" | "environment" = facingMode === "user" ? "environment" : "user";
     setError(null);
     try {
-      const newStream = await navigator.mediaDevices.getUserMedia(buildConstraints("video", next));
+      const newStream = await navigator.mediaDevices.getUserMedia(buildConstraints("video", next, aspectRatioPreset));
       // Only stop the old stream once the new one is confirmed working —
       // avoids a "camera unavailable" flash if the swap fails partway.
       streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -168,7 +217,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     } catch {
       setError("Could not switch cameras.");
     }
-  }, [kind, isRecording, facingMode, detectZoomRange]);
+  }, [kind, isRecording, facingMode, aspectRatioPreset, detectZoomRange]);
 
   /** Releases the camera/mic without recording anything — for leaving record mode after only previewing. Never tears down mid-recording. */
   const closePreview = useCallback(() => {
@@ -182,7 +231,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
       // Reuse the already-open preview stream if openPreview() got there
       // first — avoids a second getUserMedia prompt/negotiation.
       const reusedExisting = Boolean(streamRef.current);
-      const stream = streamRef.current ?? (await navigator.mediaDevices.getUserMedia(buildConstraints(kind, facingMode)));
+      const stream = streamRef.current ?? (await navigator.mediaDevices.getUserMedia(buildConstraints(kind, facingMode, aspectRatioPreset)));
       streamRef.current = stream;
       setPreviewStream(stream);
       if (!reusedExisting) detectZoomRange(stream);
@@ -231,7 +280,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
           : "Microphone access was denied or unavailable.",
       );
     }
-  }, [kind, facingMode, onCapture, detectZoomRange]);
+  }, [kind, facingMode, aspectRatioPreset, onCapture, detectZoomRange]);
 
   /**
    * Finalizes the recording and hands it to onCapture. Deliberately
@@ -289,6 +338,9 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     /** "user" (front) or "environment" (back) — only meaningful for kind: "video". */
     facingMode,
     flipCamera,
+    /** Current frame-shape preset — see ASPECT_RATIO_PRESETS. Only meaningful for kind: "video". */
+    aspectRatioPreset,
+    setAspectRatio,
     openPreview,
     closePreview,
     start,

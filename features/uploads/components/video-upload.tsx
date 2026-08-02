@@ -5,7 +5,7 @@ import { CheckCircle2, Pause, Play, RotateCcw, Square, SwitchCamera, UploadCloud
 
 import { cn } from "@/lib/utils";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
-import { useMediaRecorder, type ZoomRange } from "@/hooks/use-media-recorder";
+import { useMediaRecorder, ASPECT_RATIO_PRESETS, type ZoomRange } from "@/hooks/use-media-recorder";
 import { UploadQueue } from "@/features/uploads/components/upload-queue";
 
 interface VideoUploadProps {
@@ -77,6 +77,8 @@ export function VideoUpload({
     setZoom,
     facingMode,
     flipCamera,
+    aspectRatioPreset,
+    setAspectRatio,
     openPreview,
     closePreview,
     start,
@@ -264,31 +266,66 @@ export function VideoUpload({
             </p>
           ) : null}
 
-          {/*
-            Real hardware zoom — only rendered where the camera/browser
-            actually reports a zoom range (zoomRange is null everywhere
-            else, notably every iOS Safari, since WebKit doesn't expose
-            camera zoom to the web at all). Deliberately no fallback
-            "fake" zoom control for unsupported devices — a zoom button
-            that silently does nothing is worse than no button.
-          */}
-          {previewStream && zoomRange ? (
-            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/50 p-1">
-              {getZoomPresets(zoomRange).map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setZoom(preset)}
-                  className={cn(
-                    "tap-target rounded-full px-2.5 py-1 text-xs font-medium tabular-nums transition-luxury duration-150",
-                    Math.abs(zoomLevel - preset) < 0.05
-                      ? "bg-gold-500 text-navy-950"
-                      : "text-ivory-100/80 hover:text-ivory-50",
-                  )}
-                >
-                  {preset % 1 === 0 ? preset : preset.toFixed(1)}x
-                </button>
-              ))}
+          {previewStream ? (
+            <div className="absolute inset-x-0 bottom-3 flex flex-col items-center gap-2">
+              {/*
+                Frame shape — a standard constraint (unlike zoom/torch),
+                so it works on every browser including iOS. Only shown
+                before/between takes: no native camera app lets you
+                change the frame shape mid-recording either, since the
+                dimensions would change partway through the file.
+              */}
+              {!isRecording ? (
+                <div className="flex items-center gap-1.5 rounded-full bg-black/50 p-1">
+                  {ASPECT_RATIO_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setAspectRatio(preset)}
+                      className={cn(
+                        "tap-target rounded-full px-2.5 py-1 text-xs font-medium tabular-nums transition-luxury duration-150",
+                        aspectRatioPreset === preset
+                          ? "bg-gold-500 text-navy-950"
+                          : "text-ivory-100/80 hover:text-ivory-50",
+                      )}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              {/*
+                Real hardware zoom — only rendered where the camera/
+                browser actually reports a zoom range (zoomRange is null
+                everywhere else, notably every iOS Safari, since WebKit
+                doesn't expose camera zoom to the web at all).
+                Deliberately no fallback "fake" zoom control for
+                unsupported devices — a zoom button that silently does
+                nothing is worse than no button. Unlike aspect ratio,
+                zoom stays available during recording — real camera apps
+                let you zoom mid-take, since it doesn't change the
+                recording's frame dimensions.
+              */}
+              {zoomRange ? (
+                <div className="flex items-center gap-1.5 rounded-full bg-black/50 p-1">
+                  {getZoomPresets(zoomRange).map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setZoom(preset)}
+                      className={cn(
+                        "tap-target rounded-full px-2.5 py-1 text-xs font-medium tabular-nums transition-luxury duration-150",
+                        Math.abs(zoomLevel - preset) < 0.05
+                          ? "bg-gold-500 text-navy-950"
+                          : "text-ivory-100/80 hover:text-ivory-50",
+                      )}
+                    >
+                      {preset % 1 === 0 ? preset : preset.toFixed(1)}x
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
