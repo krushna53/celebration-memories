@@ -4,14 +4,14 @@ import { BUILDER } from "@/lib/constants";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 export const metadata = {
-  title: "Shipping & Delivery Policy — Celebration Memories",
-  description: "Celebration Memories is a digital service — how and when it's delivered.",
+  title: "Shipping & Delivery Policy — EveryMoment",
+  description: "EveryMoment is a digital service — how and when it's delivered.",
 };
 
 const SECTIONS: { title: string; body: string }[] = [
   {
     title: "No physical shipping",
-    body: "Celebration Memories is a fully digital service — an event website, RSVP system, and memory-sharing tool. Nothing is physically shipped, so there are no shipping charges, carriers, or delivery addresses involved.",
+    body: "EveryMoment is a fully digital service — an event website, RSVP system, and memory-sharing tool. Nothing is physically shipped, so there are no shipping charges, carriers, or delivery addresses involved.",
   },
   {
     title: "How the service is delivered",
@@ -25,13 +25,13 @@ const SECTIONS: { title: string; body: string }[] = [
 
 export default function ShippingPolicyPage() {
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} footerVariant="minimal">
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} footerVariant="minimal">
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
           <SectionHeading
             eyebrow="Legal"
             title="Shipping & Delivery Policy"
-            description="Celebration Memories is a digital service — here's how and when it's delivered."
+            description="EveryMoment is a digital service — here's how and when it's delivered."
             align="left"
           />
           <div className="mt-12 grid gap-8">

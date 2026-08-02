@@ -17,7 +17,7 @@ export default async function EventDayPage({ params }: { params: Promise<{ token
 
   if (!event) {
     return (
-      <SiteShell honoreeName="Celebration Memories" footerVariant="minimal">
+      <SiteShell honoreeName="EveryMoment" footerVariant="minimal">
         <div className="bg-ivory-50 px-4 py-24 text-center">
           <h1 className="font-display text-2xl text-navy-950">Link not valid</h1>
           <p className="mt-2 text-sm text-navy-700/60">

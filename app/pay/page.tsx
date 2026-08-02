@@ -11,7 +11,7 @@ import { publicMediaUrl } from "@/services/uploads";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Make a Payment — Celebration Memories",
+  title: "Make a Payment — EveryMoment",
   description: "Scan the QR code or use the UPI details below, then confirm your payment.",
 };
 
@@ -20,7 +20,7 @@ export default async function PayPage() {
   const qrImageUrl = settings.qrImagePath ? publicMediaUrl("gallery", settings.qrImagePath) : null;
 
   return (
-    <SiteShell honoreeName="Celebration Memories">
+    <SiteShell honoreeName="EveryMoment">
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-xl px-4 sm:px-6">
           <SectionHeading

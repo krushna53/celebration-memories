@@ -32,7 +32,7 @@ const SECTIONS: { title: string; body: string }[] = [
 
 export default function PrivacyPage() {
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} footerVariant="minimal">
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} footerVariant="minimal">
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
           <SectionHeading

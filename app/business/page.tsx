@@ -49,14 +49,14 @@ export default async function BusinessHubPage() {
   const categories = await listCategoryTree();
 
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-navy-950 pb-20 pt-32 text-ivory-50 sm:pt-40">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <p className="text-xs uppercase tracking-[0.35em] text-gold-300">Become a Partner</p>
           <h1 className="mt-5 font-display text-4xl sm:text-5xl">List Your Business on Discover</h1>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-ivory-100/75">
             Photographers, venues, decorators, entertainers — get discovered by hosts planning their next
-            celebration on Celebration Memories.
+            celebration on EveryMoment.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild>

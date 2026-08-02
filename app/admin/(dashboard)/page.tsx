@@ -97,9 +97,9 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
           <div className="mt-4">
             <BarChart
               data={[
-                { label: "Coming", value: stats.invitations.coming, color: "#c9a227" },
-                { label: "Maybe", value: stats.invitations.maybe, color: "#a9861e" },
-                { label: "Declined", value: stats.invitations.declined, color: "#21395e" },
+                { label: "Coming", value: stats.invitations.coming, color: "#ff6b57" },
+                { label: "Maybe", value: stats.invitations.maybe, color: "#e5503c" },
+                { label: "Declined", value: stats.invitations.declined, color: "#4f46e5" },
                 { label: "Pending", value: stats.invitations.pending, color: "#c8c2ad" },
               ]}
             />
@@ -149,9 +149,9 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
         <div className="mt-4">
           <BarChart
             data={[
-              { label: "Page Views", value: funnel.landingPageViews + funnel.publicRsvpPageViews, color: "#21395e" },
-              { label: "Engaged", value: funnel.rsvpStarted, color: "#a9861e" },
-              { label: "Submitted", value: funnel.rsvpSubmitted, color: "#c9a227" },
+              { label: "Page Views", value: funnel.landingPageViews + funnel.publicRsvpPageViews, color: "#4f46e5" },
+              { label: "Engaged", value: funnel.rsvpStarted, color: "#e5503c" },
+              { label: "Submitted", value: funnel.rsvpSubmitted, color: "#ff6b57" },
             ]}
           />
         </div>

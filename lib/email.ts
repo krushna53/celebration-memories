@@ -79,7 +79,7 @@ export async function sendInquiryNotification(input: {
     subject: `New inquiry from ${input.name} — ${SITE_NAME}`,
     html: `
       <p><strong>${escapeHtml(input.name)}</strong> (${escapeHtml(input.email)}${input.phone ? `, ${escapeHtml(input.phone)}` : ""}) sent a message:</p>
-      <blockquote style="border-left:3px solid #c9a227;margin:0;padding-left:12px;color:#333;">
+      <blockquote style="border-left:3px solid #ff6b57;margin:0;padding-left:12px;color:#333;">
         ${escapeHtml(input.message).replace(/\n/g, "<br />")}
       </blockquote>
       <p style="color:#888;font-size:12px;">Reply directly to this guest at ${escapeHtml(input.email)}, or view it in /admin/inquiries.</p>
@@ -135,7 +135,7 @@ export async function sendCustomDomainRequestNotification(input: {
       <p><strong>${escapeHtml(input.adminName)}</strong> (${escapeHtml(input.adminEmail)}) requested a custom domain
       for their event (<code>${escapeHtml(input.eventSlug)}</code>):</p>
       <p style="font-size:16px;"><strong>${escapeHtml(input.domain)}</strong></p>
-      ${input.notes ? `<blockquote style="border-left:3px solid #c9a227;margin:0;padding-left:12px;color:#333;">${escapeHtml(input.notes).replace(/\n/g, "<br />")}</blockquote>` : ""}
+      ${input.notes ? `<blockquote style="border-left:3px solid #ff6b57;margin:0;padding-left:12px;color:#333;">${escapeHtml(input.notes).replace(/\n/g, "<br />")}</blockquote>` : ""}
       <p style="color:#888;font-size:12px;">Reply directly to ${escapeHtml(input.adminEmail)}, or view it in /admin/inquiries.</p>
     `,
   });

@@ -118,13 +118,13 @@ const PERSONAS: Persona[] = [
  */
 export default function RolesPage() {
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <SectionHeading
             eyebrow="Who Uses This Platform"
             title="One Site, Three Kinds of Access"
-            description="Every Celebration Memories site works the same way underneath: guests never need an account, hosts get a full dashboard for their own event, and the platform owner keeps the guest-sensitive tools to themselves."
+            description="Every EveryMoment site works the same way underneath: guests never need an account, hosts get a full dashboard for their own event, and the platform owner keeps the guest-sensitive tools to themselves."
           />
         </div>
 

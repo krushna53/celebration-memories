@@ -226,7 +226,7 @@ async function createRazorpayCheckout(params: {
       const paymentLink = await razorpay.paymentLink.create({
         amount,
         currency: razorpaySettings.currency,
-        description: "Celebration Memories — event site (one-time)",
+        description: "EveryMoment — event site (one-time)",
         customer,
         notify: { email: true, sms: false },
         callback_url: successUrl,

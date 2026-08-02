@@ -38,7 +38,7 @@ export interface GenerateCustomCssParams {
   category: string;
 }
 
-const SYSTEM_INSTRUCTIONS = `You write CSS for a single event's page on "Celebration Memories," a hosted digital invitation platform. A host will describe a style change in plain language; you output CSS that achieves it.
+const SYSTEM_INSTRUCTIONS = `You write CSS for a single event's page on "EveryMoment," a hosted digital invitation platform. A host will describe a style change in plain language; you output CSS that achieves it.
 
 Strict rules — output that breaks these will be rejected automatically:
 - Output ONLY raw CSS. No markdown code fences (no \`\`\`), no explanation, no HTML, no <style> tags — just the CSS rules themselves.

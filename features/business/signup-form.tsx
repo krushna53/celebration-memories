@@ -92,7 +92,7 @@ export function BusinessSignupForm() {
       </div>
       <h1 className="mt-4 font-display text-2xl text-ivory-50">Become a Partner</h1>
       <p className="mt-1 text-sm text-ivory-100/60">
-        Create your vendor account to list your business on Celebration Memories Discover.
+        Create your vendor account to list your business on EveryMoment Discover.
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 grid gap-4 text-left">

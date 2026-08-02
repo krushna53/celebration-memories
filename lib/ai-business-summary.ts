@@ -21,7 +21,7 @@ export const AI_BUSINESS_SUMMARY_CONFIGURED = Boolean(process.env.OPENAI_API_KEY
 
 export class AiBusinessSummaryError extends Error {}
 
-const SYSTEM_INSTRUCTIONS = `You write short, tasteful marketing summaries for vendor listings on "Celebration Memories," an event discovery marketplace (photographers, venues, decorators, entertainers, and similar event vendors).
+const SYSTEM_INSTRUCTIONS = `You write short, tasteful marketing summaries for vendor listings on "EveryMoment," an event discovery marketplace (photographers, venues, decorators, entertainers, and similar event vendors).
 
 Strict rules:
 - Output ONLY the summary paragraph. No markdown, no headings, no quotation marks around it.

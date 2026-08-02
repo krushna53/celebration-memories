@@ -6,7 +6,7 @@ import { beginDraftAction } from "@/features/start/actions/begin";
 import { BUILDER } from "@/lib/constants";
 
 export const metadata = {
-  title: "Create Your Event Site — Celebration Memories",
+  title: "Create Your Event Site — EveryMoment",
 };
 
 /**

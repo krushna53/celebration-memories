@@ -100,8 +100,10 @@ export default async function AdminDashboardLayout({
     <div className="min-h-screen bg-ivory-100">
       <header className="border-b border-navy-950/10 bg-navy-950">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <Link href="/admin" className="font-display text-lg text-gold-300">
-            Celebration Memories · Admin
+          <Link href="/admin" className="flex items-center gap-2 font-display text-lg text-gold-300">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-6 w-6 shrink-0" />
+            EveryMoment · Admin
           </Link>
           <div className="flex items-center gap-4">
             {admin.role === "client" ? (

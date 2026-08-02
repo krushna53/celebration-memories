@@ -174,7 +174,7 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
 
       {!started ? (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-navy-950/90 text-center">
-          <p className="text-xs uppercase tracking-[0.4em] text-gold-400">Celebration Memories</p>
+          <p className="text-xs uppercase tracking-[0.4em] text-gold-400">EveryMoment</p>
           <button
             type="button"
             onClick={handleBegin}

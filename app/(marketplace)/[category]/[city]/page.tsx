@@ -16,7 +16,7 @@ export default async function CategoryCityPage({
   const sp = await searchParams;
 
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <CategoryDirectory categorySlug={category} citySlug={city} searchParams={sp} />
     </SiteShell>
   );

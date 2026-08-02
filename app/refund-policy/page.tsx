@@ -4,8 +4,8 @@ import { BUILDER } from "@/lib/constants";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 export const metadata = {
-  title: "Cancellation & Refund Policy — Celebration Memories",
-  description: "How to cancel a plan and what's refundable on Celebration Memories.",
+  title: "Cancellation & Refund Policy — EveryMoment",
+  description: "How to cancel a plan and what's refundable on EveryMoment.",
 };
 
 const SECTIONS: { title: string; body: string }[] = [
@@ -41,7 +41,7 @@ const SECTIONS: { title: string; body: string }[] = [
 
 export default function RefundPolicyPage() {
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} footerVariant="minimal">
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} footerVariant="minimal">
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
           <SectionHeading

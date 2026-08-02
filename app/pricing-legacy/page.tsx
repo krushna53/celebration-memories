@@ -6,7 +6,7 @@ import { PricingPlans } from "@/features/pricing/pricing-plans";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 export const metadata: Metadata = {
-  title: "Pricing (Legacy) — Celebration Memories",
+  title: "Pricing (Legacy) — EveryMoment",
   robots: { index: false, follow: false },
   description:
     "Free, Premium, and Pro plans for your celebration site — unique guest links, RSVP tracking, guest photo/video uploads, AI invitation images, and more.",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
  */
 export default function PricingLegacyPage() {
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading

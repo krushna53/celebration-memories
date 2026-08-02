@@ -4,23 +4,38 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* ---------- Brand palette ---------- */
-  --color-navy-950: #060d1a;
-  --color-navy-900: #0b1626;
-  --color-navy-800: #101f36;
-  --color-navy-700: #172a47;
-  --color-navy-600: #21395e;
+  /*
+   * ---------- Brand palette (EveryMoment) ----------
+   * Rebranded from Celebration Memories' navy/gold/ivory to
+   * EveryMoment's indigo/coral/cream — see /EVERYMOMENT-BRAND.md for
+   * the full rationale. Variable and Tailwind class NAMES stay
+   * navy-*/gold-*/ivory-* on purpose: only the hex values changed, so
+   * every existing `bg-navy-950`/`text-gold-300`/etc. class across the
+   * app (40+ files) picks up the new brand colors automatically with
+   * zero per-component edits. Semantic mapping: navy = indigo (dark/
+   * foundational, was the "serious" base color, indigo plays the same
+   * role), gold = coral (was the vivid signature/CTA accent, coral
+   * plays that same role now), ivory = cream (light neutral
+   * background, unchanged role). Renaming the classes themselves to
+   * indigo-*/coral-*/cream-* is a nice-to-have cleanup for later, not
+   * required for the rebrand to be complete or correct.
+   */
+  --color-navy-950: #1e1b4b;
+  --color-navy-900: #272257;
+  --color-navy-800: #322b6e;
+  --color-navy-700: #3f358a;
+  --color-navy-600: #4f46e5;
 
-  --color-gold-100: #f8ecc6;
-  --color-gold-200: #f0dd9c;
-  --color-gold-300: #e6c874;
-  --color-gold-400: #d9b158;
-  --color-gold-500: #c9a227;
-  --color-gold-600: #a9861e;
+  --color-gold-100: #ffe4de;
+  --color-gold-200: #ffc7bc;
+  --color-gold-300: #ffa292;
+  --color-gold-400: #ff8770;
+  --color-gold-500: #ff6b57;
+  --color-gold-600: #e5503c;
 
-  --color-ivory-50: #fffdf7;
-  --color-ivory-100: #fbf6ea;
-  --color-ivory-200: #f5edd8;
+  --color-ivory-50: #fdf6ec;
+  --color-ivory-100: #faeedd;
+  --color-ivory-200: #f3e2c7;
 
   /* ---------- Typography ---------- */
   --font-display: var(--font-playfair), "Georgia", serif;

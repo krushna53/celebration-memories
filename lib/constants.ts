@@ -7,15 +7,17 @@
  * instantly without waiting on a database round trip, and so local
  * development works without Supabase configured.
  */
-export const SITE_NAME = "Celebration Memories";
+export const SITE_NAME = "EveryMoment";
 
 /**
  * Base URL for absolute links, metadata, and the sitemap/robots routes
  * (app/sitemap.ts, app/robots.ts). Set NEXT_PUBLIC_SITE_URL once you
  * have a real production domain — falls back to a placeholder so local
- * dev and preview builds don't need it configured.
+ * dev and preview builds don't need it configured. See
+ * /EVERYMOMENT-BRAND.md for the domain strategy (everymoment.me is the
+ * planned flagship domain).
  */
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://celebration-memories.example.com";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://everymoment.me";
 
 /** Matches the `slug` seeded in supabase/seed.sql for the active event. */
 export const EVENT_SLUG = "mahesh-75th-birthday";
@@ -75,7 +77,7 @@ export const BUILDER = {
  * "upi://pay?pa=yourvpa@bank&pn=Krushna%20Web%20Works").
  */
 export const SUPPORT = {
-  url: "https://wa.me/919987982969?text=Hi%20Harshal,%20I%27d%20like%20to%20support%20Celebration%20Memories.",
+  url: "https://wa.me/919987982969?text=Hi%20Harshal,%20I%27d%20like%20to%20support%20EveryMoment.",
 } as const;
 
 export const NAV_LINKS = [

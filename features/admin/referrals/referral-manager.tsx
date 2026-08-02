@@ -145,7 +145,7 @@ function ReferralCard({
     rewardInputRef.current?.focus();
   }
   const whatsappShare = `https://wa.me/?text=${encodeURIComponent(
-    `Check out Celebration Memories — premium digital invitations for birthdays, weddings, and more: ${link}`,
+    `Check out EveryMoment — premium digital invitations for birthdays, weddings, and more: ${link}`,
   )}`;
 
   async function handleAddConversion(e: React.FormEvent) {

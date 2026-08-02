@@ -5,9 +5,9 @@ import { SubmitTemplateForm } from "@/features/templates/submit-template-form";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 export const metadata = {
-  title: "Submit a Template | Celebration Memories",
+  title: "Submit a Template | EveryMoment",
   description:
-    "Design a template for Celebration Memories — pick a palette, a font, and a motion style. Approved templates go live with credit to you.",
+    "Design a template for EveryMoment — pick a palette, a font, and a motion style. Approved templates go live with credit to you.",
 };
 
 /**
@@ -18,13 +18,13 @@ export const metadata = {
  */
 export default function SubmitTemplatePage() {
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <SectionHeading
             eyebrow="Community Templates"
             title="Submit a Template"
-            description="Design a look for Celebration Memories — a palette, a Google Font, and a motion style is all it takes. No code required. If it's approved, it goes live in the template picker with credit to you, including a link to your website if you'd like one."
+            description="Design a look for EveryMoment — a palette, a Google Font, and a motion style is all it takes. No code required. If it's approved, it goes live in the template picker with credit to you, including a link to your website if you'd like one."
           />
           <div className="mt-12">
             <Reveal>

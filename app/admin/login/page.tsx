@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2, Loader2, LockKeyhole } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -60,11 +60,12 @@ function AdminLoginForm() {
 
   return (
     <div className="w-full max-w-sm rounded-2xl border border-gold-500/20 bg-navy-900 p-8 text-center shadow-xl">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold-500/15 text-gold-300">
-        <LockKeyhole size={22} />
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold-500/15">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/everymoment-logo-icon.svg" alt="EveryMoment" className="h-7 w-7" />
       </div>
       <h1 className="mt-4 font-display text-2xl text-ivory-50">Admin Sign In</h1>
-      <p className="mt-1 text-sm text-ivory-100/60">Celebration Memories dashboard</p>
+      <p className="mt-1 text-sm text-ivory-100/60">EveryMoment dashboard</p>
 
       {justVerified ? (
         <p className="mt-4 flex items-center justify-center gap-1.5 rounded-lg bg-green-500/10 px-3 py-2 text-xs text-green-300">

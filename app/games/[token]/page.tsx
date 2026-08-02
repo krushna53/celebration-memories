@@ -19,7 +19,7 @@ export default async function PublicGamePage({ params }: { params: Promise<{ tok
 
   if (!game) {
     return (
-      <SiteShell honoreeName="Celebration Memories" footerVariant="minimal">
+      <SiteShell honoreeName="EveryMoment" footerVariant="minimal">
         <div className="bg-ivory-50 px-4 py-24 text-center">
           <h1 className="font-display text-2xl text-navy-950">Game not available</h1>
           <p className="mt-2 text-sm text-navy-700/60">
@@ -31,7 +31,7 @@ export default async function PublicGamePage({ params }: { params: Promise<{ tok
   }
 
   return (
-    <SiteShell honoreeName="Celebration Memories" footerVariant="minimal">
+    <SiteShell honoreeName="EveryMoment" footerVariant="minimal">
       <div className="bg-ivory-50 px-4 py-10 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-xl">
           {game.type === "word_search" ? (

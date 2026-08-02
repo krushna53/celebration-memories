@@ -1,7 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 
 export const metadata = {
-  title: "Ad Placement Concepts (Internal) — Celebration Memories",
+  title: "Ad Placement Concepts (Internal) — EveryMoment",
   robots: { index: false, follow: false },
 };
 

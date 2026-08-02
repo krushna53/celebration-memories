@@ -50,7 +50,7 @@ export function MobileAccessCard({ initialCode }: MobileAccessCardProps) {
         <Smartphone size={15} /> Mobile App Access Code
       </div>
       <p className="text-xs text-navy-700/50">
-        Open the Celebration Memories app, choose &ldquo;Vendor&rdquo;, and enter this code to check your leads or
+        Open the EveryMoment app, choose &ldquo;Vendor&rdquo;, and enter this code to check your leads or
         pause your listing on the go.
       </p>
       <div className="flex flex-wrap items-center gap-2">

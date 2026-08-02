@@ -10,9 +10,9 @@ import { PieChart } from "@/features/admin/components/pie-chart";
 export const dynamic = "force-dynamic";
 
 const CATEGORY_COLORS = {
-  galleryTimeline: "#21395e",
-  slideshow: "#a9861e",
-  memoryWall: "#c9a227",
+  galleryTimeline: "#4f46e5",
+  slideshow: "#e5503c",
+  memoryWall: "#ff6b57",
 } as const;
 
 /**

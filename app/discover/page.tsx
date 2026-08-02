@@ -40,13 +40,13 @@ export default async function DiscoverPage({
   ]);
 
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-navy-950 pb-20 pt-32 text-ivory-50 sm:pt-40">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <p className="text-xs uppercase tracking-[0.35em] text-gold-300">Discover</p>
           <h1 className="mt-5 font-display text-4xl sm:text-5xl">Find Everything For Your Event</h1>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-ivory-100/75">
-            Photographers, venues, and entertainers — verified vendors, right inside Celebration Memories.
+            Photographers, venues, and entertainers — verified vendors, right inside EveryMoment.
           </p>
         </div>
       </div>
@@ -127,7 +127,7 @@ export default async function DiscoverPage({
           <Reveal>
             <h2 className="font-display text-2xl sm:text-3xl">Run a photography studio, venue, or act?</h2>
             <p className="mt-4 text-sm text-ivory-100/75 sm:text-base">
-              List your business on Celebration Memories and get discovered by hosts planning their next event.
+              List your business on EveryMoment and get discovered by hosts planning their next event.
             </p>
             <Button size="lg" className="mt-7" asChild>
               <Link href="/business">Become a Partner</Link>

@@ -7,13 +7,13 @@ import { ShareExperienceForm } from "@/features/testimonials/share-experience-fo
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 export const metadata: Metadata = {
-  title: "Share Your Experience — Celebration Memories",
+  title: "Share Your Experience — EveryMoment",
   description: "Tell us about your event site and rate your experience — your story may be featured on the homepage.",
 };
 
 export default function ShareExperiencePage() {
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-xl px-4 sm:px-6">
           <SectionHeading

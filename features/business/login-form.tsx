@@ -44,7 +44,7 @@ export function BusinessLoginForm() {
         <LogIn size={22} />
       </div>
       <h1 className="mt-4 font-display text-2xl text-ivory-50">Vendor Sign In</h1>
-      <p className="mt-1 text-sm text-ivory-100/60">Manage your Celebration Memories Discover listing.</p>
+      <p className="mt-1 text-sm text-ivory-100/60">Manage your EveryMoment Discover listing.</p>
 
       <form onSubmit={onSubmit} className="mt-6 grid gap-4 text-left">
         <div>

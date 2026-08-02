@@ -1,0 +1,11 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <title>EveryMoment icon mark</title>
+  <defs>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#FF6B57"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="42" fill="none" stroke="url(#ringGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="207 57" transform="rotate(-98 60 60)"/>
+  <circle cx="102" cy="60" r="11" fill="#FF6B57"/>
+</svg>

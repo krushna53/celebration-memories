@@ -4,8 +4,8 @@ import { BUILDER, SITE_NAME } from "@/lib/constants";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 
 export const metadata = {
-  title: `Terms & Conditions — ${"Celebration Memories"}`,
-  description: "The terms that apply to using Celebration Memories and purchasing a plan.",
+  title: `Terms & Conditions — ${"EveryMoment"}`,
+  description: "The terms that apply to using EveryMoment and purchasing a plan.",
 };
 
 const SECTIONS: { title: string; body: string }[] = [
@@ -101,7 +101,7 @@ const SECTIONS: { title: string; body: string }[] = [
 
 export default function TermsPage() {
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} footerVariant="minimal">
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} footerVariant="minimal">
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
           <SectionHeading

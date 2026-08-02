@@ -4,7 +4,7 @@ import { Heart, PartyPopper } from "lucide-react";
 import { BUILDER } from "@/lib/constants";
 
 export const metadata = {
-  title: "You're All Set — Celebration Memories",
+  title: "You're All Set — EveryMoment",
 };
 
 /**

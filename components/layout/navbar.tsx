@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
-import { ACTIVE_EVENT, NAV_LINKS } from "@/lib/constants";
+import { ACTIVE_EVENT, NAV_LINKS, SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 /**
@@ -70,8 +70,20 @@ export function Navbar({
       <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 text-ivory-50 sm:px-6 sm:py-4">
         <a
           href="#hero"
-          className="truncate font-display text-base tracking-wide text-gold-300 sm:text-lg"
+          className="flex items-center gap-2 truncate font-display text-base tracking-wide text-gold-300 sm:text-lg"
         >
+          {/*
+            The brand mark only ever shows on platform-level pages
+            (marketing site, pricing, roles, discover...), which all
+            pass honoreeName={SITE_NAME} — never on a guest's personal
+            event page, where honoreeName is that event's own honoree
+            and showing the EveryMoment logo there would wrongly brand
+            someone else's event as the platform itself.
+          */}
+          {honoreeName === SITE_NAME ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-7 w-7 shrink-0" />
+          ) : null}
           {honoreeName}
         </a>
 

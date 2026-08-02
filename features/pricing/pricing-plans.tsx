@@ -42,7 +42,7 @@ const TIERS: Tier[] = [
       "Guest photo uploads (up to 50 photos)",
       "Basic RSVP tracking",
       "Shareable WhatsApp invite link",
-      "“Powered by Celebration Memories” footer",
+      "“Powered by EveryMoment” footer",
     ],
   },
   {

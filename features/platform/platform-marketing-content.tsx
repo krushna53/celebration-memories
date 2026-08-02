@@ -138,7 +138,7 @@ export const PLATFORM_NAV_LINKS = [
  */
 export function PlatformMarketingContent() {
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin transparentUntilScroll>
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin transparentUntilScroll>
       <div className="bg-navy-950 pb-24 pt-32 text-ivory-50 sm:pt-40">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <Reveal>
@@ -146,15 +146,19 @@ export function PlatformMarketingContent() {
               A Krushna Web Works Product
             </p>
             <h1 className="mt-5 font-display text-4xl sm:text-5xl">
-              Celebration Memories
+              EveryMoment
             </h1>
+            <p className="mt-3 font-display text-xl italic text-gold-300 sm:text-2xl">
+              Every Moment Matters.
+            </p>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-ivory-100/75 sm:text-lg">
-              A premium, mobile-first invitation site for the moments worth
-              gathering for — birthdays, weddings, anniversaries, retirements,
-              baby showers, memorials, workshops, and more. Unique guest
-              links, live RSVP tracking, a shared wall of photos, videos, and
-              messages, a built-in event planner for the whole family, and
-              digital party games guests can join by scanning a QR code.
+              Create. Celebrate. Remember. A premium, mobile-first invitation
+              site for the moments worth gathering for — birthdays, weddings,
+              anniversaries, retirements, baby showers, memorials, workshops,
+              and more. Unique guest links, live RSVP tracking, a shared wall
+              of photos, videos, and messages, a built-in event planner for
+              the whole family, and digital party games guests can join by
+              scanning a QR code.
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>

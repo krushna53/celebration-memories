@@ -51,7 +51,7 @@ export function MobileAccessCard({ initialCode }: MobileAccessCardProps) {
         <Smartphone size={15} /> Mobile App Access Code
       </div>
       <p className="text-xs text-navy-700/50">
-        Open the Celebration Memories app, choose &ldquo;Organiser&rdquo; or &ldquo;Event Manager&rdquo;, and enter this code to
+        Open the EveryMoment app, choose &ldquo;Organiser&rdquo; or &ldquo;Event Manager&rdquo;, and enter this code to
         sign in.
       </p>
       <div className="flex flex-wrap items-center gap-2">

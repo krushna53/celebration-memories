@@ -15,9 +15,9 @@ interface ListingPageProps {
 export async function generateMetadata({ params }: ListingPageProps): Promise<Metadata> {
   const { slug } = await params;
   const listing = await getListingBySlug(slug);
-  if (!listing) return { title: "Listing not found — Celebration Memories" };
+  if (!listing) return { title: "Listing not found — EveryMoment" };
   return {
-    title: `${listing.displayName} — Celebration Memories Discover`,
+    title: `${listing.displayName} — EveryMoment Discover`,
     description: listing.tagline ?? listing.aiSummary ?? listing.description ?? undefined,
   };
 }
@@ -28,7 +28,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
   if (!listing) notFound();
 
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <ListingDetail listing={listing} />
     </SiteShell>
   );

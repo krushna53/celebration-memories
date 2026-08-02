@@ -9,7 +9,7 @@ import { getDetectedCurrency } from "@/features/pricing/currency";
 import { getPricingPlanSettings } from "@/services/pricing-settings";
 
 export const metadata: Metadata = {
-  title: "Pricing for Photographers & Studios — Celebration Memories",
+  title: "Pricing for Photographers & Studios — EveryMoment",
   description:
     "Deliver a full event website, guest gallery, RSVP, and AI slideshow for every client shoot — not just a photo download link. Plans for solo photographers up to full studios and agencies.",
 };
@@ -42,7 +42,7 @@ export default async function PricingPage() {
   const [initialCurrency, planPrices] = await Promise.all([getDetectedCurrency(), getPricingPlanSettings()]);
 
   return (
-    <SiteShell honoreeName="Celebration Memories" navLinks={PLATFORM_NAV_LINKS} showLogin>
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading
