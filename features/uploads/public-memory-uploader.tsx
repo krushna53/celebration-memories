@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, HeartHandshake, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle2, Circle, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { MediaUploadsSection } from "@/features/uploads/media-uploads-section";
+import { ACTIONS, MediaUploadsSection, type View } from "@/features/uploads/media-uploads-section";
 import { identifyPublicMemoryUploaderAction } from "@/features/uploads/public-memory-actions";
 
 const inputClasses =
-  "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 transition-luxury duration-200 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
+  "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-3 text-base text-navy-950 placeholder:text-navy-700/40 transition-luxury duration-200 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 
 interface PublicMemoryUploaderProps {
   eventSlug: string;
@@ -42,45 +41,49 @@ function loadStoredIdentity(eventSlug: string): StoredIdentity | null {
 }
 
 /**
- * Two-step client for the public "share a memory" page (no invite token
- * needed): a name-only identification form, then — once identified — the
- * exact same <MediaUploadsSection> used on personal /invite/[token]
- * pages, so uploads land in the normal approval queue and Memory Wall.
- * See features/uploads/public-memory-actions.ts for the server side.
+ * One-screen client for the public "share a memory" page (no invite
+ * token needed). Used to be two full-screen steps — type your name, tap
+ * Continue, THEN see the six action icons — which was one screen and
+ * one tap too many for guests less comfortable with phones (a specific,
+ * explicit ask: make this easy for a senior citizen to get through
+ * alone). Now the name field and the six big action icons show
+ * together on one screen: tapping any icon immediately identifies the
+ * guest with whatever name they've typed (defaulting to "Guest" if left
+ * blank — never a hard stop) and drops straight into that action, via
+ * MediaUploadsSection's `initialView` prop. No separate "Continue"
+ * button, no second screen.
  *
- * The identity (self-service token + first name) is saved to
- * localStorage once entered — without this, a guest tapping their
- * browser's back button (or the page reloading) lost the in-memory
- * `identified` state and got asked to type their name again, even
- * though they'd already been issued a working token. Scoped per event
- * slug so visiting a different event's page doesn't reuse the name.
+ * The resolved identity (self-service token + first name) is saved to
+ * localStorage once identified, scoped per event slug, so a guest who
+ * navigates back or reloads doesn't get asked to identify themselves
+ * again — see loadStoredIdentity above.
  */
 export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUploaderProps) {
   const [name, setName] = useState("");
   const [honeypot, setHoneypot] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [pendingView, setPendingView] = useState<View | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [identified, setIdentified] = useState<StoredIdentity | null>(null);
   const [quietSuccess, setQuietSuccess] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const stored = loadStoredIdentity(eventSlug);
     if (stored) setIdentified(stored);
   }, [eventSlug]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (!name.trim()) {
-      setError("Please enter your name.");
+  async function handleActionTap(view: View) {
+    if (identified) {
+      setPendingView(view);
       return;
     }
-    setSubmitting(true);
+
+    setError(null);
+    setPendingView(view);
     try {
-      const result = await identifyPublicMemoryUploaderAction(eventSlug, name, honeypot);
+      const result = await identifyPublicMemoryUploaderAction(eventSlug, name.trim() || "Guest", honeypot);
       if (!result.success) {
         setError(result.error);
+        setPendingView(null);
         return;
       }
       if (!result.token) {
@@ -97,8 +100,9 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
         // guest can still upload this visit, they'd just be asked again
         // next time. Not worth failing the flow over.
       }
-    } finally {
-      setSubmitting(false);
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setPendingView(null);
     }
   }
 
@@ -111,24 +115,12 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
     );
   }
 
-  if (identified) {
-    return (
-      <div className="grid gap-4">
-        <div className="flex items-center gap-2 rounded-xl border border-gold-500/15 bg-gold-500/5 px-4 py-3 text-sm text-navy-700/80">
-          <HeartHandshake className="shrink-0 text-gold-500" size={18} />
-          Thanks, {identified.firstName} — upload as many memories as you&rsquo;d like below.
-        </div>
-        <MediaUploadsSection token={identified.token} />
-      </div>
-    );
+  if (identified && pendingView) {
+    return <MediaUploadsSection token={identified.token} initialView={pendingView} />;
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      noValidate
-      className="grid gap-5 rounded-2xl border border-gold-500/15 bg-white px-6 py-8 text-left shadow-sm sm:px-10 sm:py-10"
-    >
+    <div className="rounded-2xl border border-gold-500/15 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8">
       {/* Honeypot — hidden from real visitors via CSS, left blank by them; bots that fill every field trip it. */}
       <div className="absolute -left-[9999px]" aria-hidden="true">
         <label htmlFor="website">Leave this field blank</label>
@@ -142,41 +134,60 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
         />
       </div>
 
-      <div>
-        <label className="text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70" htmlFor="uploader-name">
-          Your Name
-        </label>
-        <input
-          id="uploader-name"
-          ref={inputRef}
-          className={cn(inputClasses, "mt-1.5")}
-          placeholder={`e.g. Priya (${honoreeName.split(" ")[0]}'s niece)`}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoFocus
-        />
-        <p className="mt-1.5 text-[11px] text-navy-700/50">
-          Just your name — no account or phone number needed. This lets{" "}
-          {honoreeName} know who each memory is from.
+      {!identified ? (
+        <div className="mb-6">
+          <label className="text-sm font-medium text-navy-950" htmlFor="uploader-name">
+            Your Name <span className="font-normal text-navy-700/50">(optional)</span>
+          </label>
+          <input
+            id="uploader-name"
+            className={cn(inputClasses, "mt-2")}
+            placeholder={`e.g. Priya (${honoreeName.split(" ")[0]}'s niece)`}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <p className="mt-2 text-sm text-navy-700/60">
+            Tap a button below to get started — we&rsquo;ll use this name to let {honoreeName} know who each memory
+            is from.
+          </p>
+        </div>
+      ) : (
+        <p className="mb-6 text-center text-sm text-navy-700/70">
+          Thanks, {identified.firstName} — tap a button below to share a memory.
         </p>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {ACTIONS.map(({ view: target, label, icon: Icon, isRecordAction }) => (
+          <button
+            key={target}
+            type="button"
+            disabled={pendingView !== null}
+            onClick={() => handleActionTap(target)}
+            className="tap-target group relative flex flex-col items-center gap-2 rounded-xl border border-navy-950/10 bg-ivory-50 px-3 py-6 text-center transition-luxury duration-200 hover:border-gold-500 hover:bg-gold-500/5 disabled:opacity-60"
+          >
+            {isRecordAction ? (
+              <span className="absolute right-2 top-2 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500">
+                <Circle size={6} className="fill-white text-white" />
+              </span>
+            ) : null}
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gold-500/15 text-gold-600 transition-luxury duration-200 group-hover:bg-gold-500/25">
+              {pendingView === target ? <Loader2 size={22} className="animate-spin" /> : <Icon size={22} />}
+            </span>
+            <span className="text-sm font-medium text-navy-950">{label}</span>
+          </button>
+        ))}
       </div>
 
       {error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="mt-4 text-center text-sm text-red-600" role="alert">
           {error}
         </p>
       ) : null}
 
-      <Button type="submit" size="lg" disabled={submitting} className="w-full sm:w-auto sm:justify-self-start">
-        {submitting ? (
-          <>
-            <Loader2 className="animate-spin" size={16} />
-            One moment...
-          </>
-        ) : (
-          "Continue to Upload"
-        )}
-      </Button>
-    </form>
+      <p className="mt-6 text-center text-xs text-navy-700/50">
+        Your memories are reviewed before appearing on the public Memory Wall.
+      </p>
+    </div>
   );
 }

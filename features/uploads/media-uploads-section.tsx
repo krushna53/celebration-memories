@@ -12,11 +12,13 @@ import { GuestbookForm } from "@/features/guestbook/guestbook-form";
 
 interface MediaUploadsSectionProps {
   token: string;
+  /** Skips straight to this view instead of landing on the menu first — used by PublicMemoryUploader, which folds its own name field and this menu into one screen, so by the time this component mounts the guest has already picked an action. */
+  initialView?: View;
 }
 
-type View = "menu" | "photo" | "video-record" | "video-upload" | "audio-record" | "audio-upload" | "note";
+export type View = "menu" | "photo" | "video-record" | "video-upload" | "audio-record" | "audio-upload" | "note";
 
-interface ActionOption {
+export interface ActionOption {
   view: View;
   label: string;
   icon: typeof ImagePlus;
@@ -24,7 +26,7 @@ interface ActionOption {
   isRecordAction?: boolean;
 }
 
-const ACTIONS: ActionOption[] = [
+export const ACTIONS: ActionOption[] = [
   { view: "video-record", label: "Record Video", icon: Video, isRecordAction: true },
   { view: "audio-record", label: "Record Audio", icon: Mic, isRecordAction: true },
   { view: "photo", label: "Upload Image", icon: ImagePlus },
@@ -64,8 +66,8 @@ const VIEW_TITLES: Record<Exclude<View, "menu">, string> = {
  * that stays mounted across every view change, means a pending queue
  * in any of the three survives switching around and coming back.
  */
-export function MediaUploadsSection({ token }: MediaUploadsSectionProps) {
-  const [view, setView] = useState<View>("menu");
+export function MediaUploadsSection({ token, initialView = "menu" }: MediaUploadsSectionProps) {
+  const [view, setView] = useState<View>(initialView);
   const photoUpload = useMediaUpload(token, "photo");
   const videoUpload = useMediaUpload(token, "video");
   const audioUpload = useMediaUpload(token, "audio");
