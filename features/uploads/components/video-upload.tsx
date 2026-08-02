@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Circle, Loader2, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } from "lucide-react";
+import { Circle, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
@@ -133,9 +133,29 @@ export function VideoUpload({ upload, initialMode = "upload", showCaption = true
         <div className="relative min-h-0 flex-1 bg-black">
           {previewStream ? (
             <video ref={previewRef} autoPlay muted playsInline className="h-full w-full object-cover" />
-          ) : (
+          ) : error ? (
             <div className="flex h-full w-full items-center justify-center text-ivory-100/40">
-              {error ? <Video size={40} /> : <Loader2 size={32} className="animate-spin" />}
+              <Video size={40} />
+            </div>
+          ) : (
+            // The camera can take a moment to warm up (permission
+            // prompt, hardware negotiation) before any picture shows up
+            // — an unlabeled spinner in that gap reads as "is this
+            // broken?" on a slower phone. A gentle pulsing ring around a
+            // camera icon, plus a plain-language "hang tight" line,
+            // makes clear this is expected and momentary.
+            <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-6 text-center">
+              <div className="relative flex h-20 w-20 items-center justify-center">
+                <span className="absolute inset-0 animate-ping rounded-full bg-gold-500/20" />
+                <span className="absolute inset-2 animate-ping rounded-full bg-gold-500/25 [animation-delay:300ms]" />
+                <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gold-500/15 text-gold-300">
+                  <Video size={24} />
+                </span>
+              </div>
+              <div>
+                <p className="font-display text-sm text-ivory-50">Turning on your camera&hellip;</p>
+                <p className="mt-1 text-xs text-ivory-100/50">Hang tight — you&rsquo;ll see yourself in a moment.</p>
+              </div>
             </div>
           )}
 
