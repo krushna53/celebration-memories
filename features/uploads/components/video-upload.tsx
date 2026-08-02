@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Circle, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } from "lucide-react";
+import { CheckCircle2, Circle, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
@@ -183,22 +183,27 @@ export function VideoUpload({
               {formatSeconds(seconds)}
               {isPaused ? <span className="text-[10px] uppercase tracking-wide text-ivory-100/70">Paused</span> : null}
             </p>
+          ) : lastRecordedId ? (
+            <p className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 font-display text-sm text-green-400 tabular-nums">
+              <CheckCircle2 size={14} />
+              Captured &middot; {formatSeconds(seconds)}
+            </p>
           ) : null}
         </div>
 
         <div className="shrink-0 px-4 pb-5 pt-4">
+          {/*
+            Once a take exists, "Done — Review & Upload" becomes the
+            PRIMARY action (the big gold pill) instead of a small,
+            easy-to-miss text link below a still-prominent "Start
+            Recording" button — a guest who just finished recording is
+            almost always trying to move on, not re-record, and the old
+            layout buried that action next to equal-weight "Record
+            again" text. "Record Again" is still one tap away, just
+            visually secondary now.
+          */}
           <div className="flex flex-wrap items-center justify-center gap-3">
-            {!isRecording ? (
-              <button
-                type="button"
-                onClick={start}
-                disabled={!previewStream}
-                className="tap-target flex items-center gap-2 rounded-full bg-gold-500 px-7 py-3 text-sm font-medium text-navy-950 shadow-lg transition-luxury duration-200 disabled:opacity-50"
-              >
-                <Circle size={16} />
-                Start Recording
-              </button>
-            ) : (
+            {isRecording ? (
               <>
                 <button
                   type="button"
@@ -225,28 +230,37 @@ export function VideoUpload({
                   Stop
                 </button>
               </>
+            ) : lastRecordedId ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setMode("upload")}
+                  className="tap-target flex items-center gap-2 rounded-full bg-gold-500 px-7 py-3 text-sm font-medium text-navy-950 shadow-lg transition-luxury duration-200"
+                >
+                  <CheckCircle2 size={18} />
+                  Done — Review &amp; Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={recordAgain}
+                  className="tap-target flex items-center gap-2 rounded-full border border-ivory-100/30 bg-navy-900 px-4 py-3 text-sm font-medium text-ivory-100/80 transition-luxury duration-200 hover:border-ivory-100/50"
+                >
+                  <RotateCcw size={16} />
+                  Record Again
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={start}
+                disabled={!previewStream}
+                className="tap-target flex items-center gap-2 rounded-full bg-gold-500 px-7 py-3 text-sm font-medium text-navy-950 shadow-lg transition-luxury duration-200 disabled:opacity-50"
+              >
+                <Circle size={16} />
+                Start Recording
+              </button>
             )}
           </div>
-
-          {!isRecording && lastRecordedId ? (
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
-              <button
-                type="button"
-                onClick={recordAgain}
-                className="tap-target flex items-center gap-1.5 text-xs font-medium text-gold-300 hover:text-gold-200"
-              >
-                <RotateCcw size={13} />
-                Not happy with it? Record again
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("upload")}
-                className="tap-target text-xs font-medium text-ivory-100/70 hover:text-ivory-50"
-              >
-                Done — review &amp; upload
-              </button>
-            </div>
-          ) : null}
 
           {error ? <p className="mt-3 text-center text-xs text-red-400">{error}</p> : null}
         </div>
