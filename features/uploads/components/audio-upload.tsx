@@ -249,6 +249,11 @@ export function AudioUpload({
         }}
         onUploadAll={uploadAll}
         showCaption={showCaption}
+        onRecordAgain={(id) => {
+          if (id === lastRecordedId) setLastRecordedId(null);
+          remove(id);
+          setMode("record");
+        }}
       />
     </div>
   );

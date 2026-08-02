@@ -97,7 +97,9 @@ export async function createSignedMediaUpload(params: {
  * Records a completed upload (called after the browser has finished the
  * direct-to-Storage PUT). New rows are always `approved = false` — they
  * enter the Phase 5 admin moderation queue before appearing on the
- * public Memory Wall.
+ * public Memory Wall. Returns the new row's id so the guest's own
+ * upload queue can later offer to delete it (see deleteOwnMediaUpload)
+ * without needing any broader read/write access to the table.
  */
 export async function confirmMediaUpload(params: {
   inviteeId: string;
@@ -105,21 +107,71 @@ export async function confirmMediaUpload(params: {
   kind: "photo" | "video" | "audio";
   path: string;
   caption?: string;
-}) {
+}): Promise<{ id: string }> {
   const { inviteeId, eventId, kind, path, caption } = params;
   const table = TABLE_BY_KIND[kind];
 
-  const { error } = await supabaseAdmin()
+  const { data, error } = await supabaseAdmin()
     .from(table)
     .insert({
       invitee_id: inviteeId,
       event_id: eventId,
       storage_path: path,
       caption: caption || null,
-    });
+    })
+    .select("id")
+    .single();
 
-  if (error) {
-    throw new Error(`Failed to save ${kind} upload: ${error.message}`);
+  if (error || !data) {
+    throw new Error(`Failed to save ${kind} upload: ${error?.message}`);
+  }
+
+  return { id: data.id as string };
+}
+
+/**
+ * Lets a guest undo their own just-submitted photo/video/audio — e.g.
+ * "that take didn't come out well, let me delete it and record again."
+ * Scoped to their own invitee id (re-resolved from their token by the
+ * caller, same as every other guest-facing action here) so this can
+ * never be used to delete someone else's memory even if a media id were
+ * guessed. Deletes the Storage object first, then the DB row; a failed
+ * Storage delete is logged but doesn't block removing the row — a guest
+ * clicking "Delete" expects it gone from their queue and the admin
+ * moderation list, and a rare orphaned Storage object is a much smaller
+ * problem than the delete silently not working.
+ */
+export async function deleteOwnMediaUpload(params: {
+  inviteeId: string;
+  kind: "photo" | "video" | "audio";
+  mediaId: string;
+}): Promise<void> {
+  const { inviteeId, kind, mediaId } = params;
+  const table = TABLE_BY_KIND[kind];
+  const bucket = BUCKET_BY_KIND[kind];
+  const client = supabaseAdmin();
+
+  const { data: row, error: fetchError } = await client
+    .from(table)
+    .select("id, invitee_id, storage_path")
+    .eq("id", mediaId)
+    .maybeSingle();
+
+  if (fetchError || !row) {
+    throw new Error("That memory couldn't be found.");
+  }
+  if (row.invitee_id !== inviteeId) {
+    throw new Error("That memory doesn't belong to this invitation.");
+  }
+
+  const { error: storageError } = await client.storage.from(bucket).remove([row.storage_path]);
+  if (storageError) {
+    console.error(`deleteOwnMediaUpload: failed to remove ${kind} storage object:`, storageError.message);
+  }
+
+  const { error: deleteError } = await client.from(table).delete().eq("id", mediaId);
+  if (deleteError) {
+    throw new Error(`Failed to delete ${kind} upload: ${deleteError.message}`);
   }
 }
 

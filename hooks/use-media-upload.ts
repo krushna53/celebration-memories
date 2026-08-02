@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
-import { confirmUpload, requestUploadUrl } from "@/features/uploads/actions";
+import { confirmUpload, deleteUploadAction, requestUploadUrl } from "@/features/uploads/actions";
 
 export interface UploadItem {
   id: string;
@@ -12,6 +12,8 @@ export interface UploadItem {
   status: "pending" | "uploading" | "done" | "error";
   error?: string;
   caption: string;
+  /** Set once the upload finishes (the photos/videos/audio row's id) — lets remove() delete it server-side too, not just drop it from this local queue. Undefined until then. */
+  mediaId?: string;
 }
 
 /**
@@ -40,9 +42,27 @@ export function useMediaUpload(token: string, kind: "photo" | "video" | "audio")
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, caption } : it)));
   }, []);
 
-  const remove = useCallback((id: string) => {
-    setItems((prev) => prev.filter((it) => it.id !== id));
-  }, []);
+  /**
+   * Drops an item from the queue — and, if it already finished
+   * uploading, deletes the underlying photo/video/audio row (and its
+   * Storage object) too, via deleteUploadAction. Removes it from local
+   * state immediately either way so the UI feels instant; the server
+   * delete for an already-uploaded item happens in the background
+   * (best-effort — see deleteOwnMediaUpload's doc comment for why a
+   * failure here doesn't try to put the item back).
+   */
+  const remove = useCallback(
+    (id: string) => {
+      const item = items.find((it) => it.id === id);
+      setItems((prev) => prev.filter((it) => it.id !== id));
+      if (item?.status === "done" && item.mediaId) {
+        deleteUploadAction(token, kind, item.mediaId).catch((err) => {
+          console.error("Failed to delete uploaded memory:", err);
+        });
+      }
+    },
+    [items, token, kind],
+  );
 
   const performUpload = useCallback(
     async (item: UploadItem) => {
@@ -75,7 +95,9 @@ export function useMediaUpload(token: string, kind: "photo" | "video" | "audio")
         }
 
         setItems((prev) =>
-          prev.map((it) => (it.id === item.id ? { ...it, status: "done" } : it)),
+          prev.map((it) =>
+            it.id === item.id ? { ...it, status: "done", mediaId: confirmed.data.id } : it,
+          ),
         );
       } catch (err) {
         setItems((prev) =>
