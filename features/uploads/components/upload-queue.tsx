@@ -101,7 +101,8 @@ export function UploadQueue({
 }: UploadQueueProps) {
   if (items.length === 0) return null;
 
-  const hasPending = items.some((it) => it.status === "pending" || it.status === "error");
+  const pendingCount = items.filter((it) => it.status === "pending" || it.status === "error").length;
+  const hasPending = pendingCount > 0;
   const isUploading = items.some((it) => it.status === "uploading");
 
   function handleDelete(item: UploadItem) {
@@ -187,6 +188,8 @@ export function UploadQueue({
             <>
               <Loader2 className="animate-spin" size={16} /> Uploading...
             </>
+          ) : pendingCount === 1 ? (
+            "Upload"
           ) : (
             "Upload All"
           )}
