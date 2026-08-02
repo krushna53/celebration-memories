@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Circle, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } from "lucide-react";
+import { CheckCircle2, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
@@ -254,13 +254,23 @@ export function VideoUpload({
                 type="button"
                 onClick={start}
                 disabled={!previewStream}
-                className="tap-target flex items-center gap-2 rounded-full bg-gold-500 px-7 py-3 text-sm font-medium text-navy-950 shadow-lg transition-luxury duration-200 disabled:opacity-50"
+                title="Start Recording"
+                aria-label="Start Recording"
+                className="tap-target group flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px] border-ivory-100/90 shadow-lg transition-luxury duration-200 active:scale-95 disabled:opacity-40"
               >
-                <Circle size={16} />
-                Start Recording
+                <span className="h-[54px] w-[54px] rounded-full bg-red-600 transition-luxury duration-200" />
               </button>
             )}
           </div>
+
+          {/* "Start Recording" is a tooltip (title attribute above) now
+              instead of visible text — a plain red-circle-in-a-ring is
+              the near-universal record-button shape on both iOS and
+              Android camera apps, so a single icon design reads
+              correctly on either platform without needing OS detection. */}
+          {!isRecording && !lastRecordedId ? (
+            <p className="mt-3 text-center text-xs text-ivory-100/50">Tap to start recording</p>
+          ) : null}
 
           {error ? <p className="mt-3 text-center text-xs text-red-400">{error}</p> : null}
         </div>
