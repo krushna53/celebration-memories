@@ -41,15 +41,16 @@ export interface ActionOption {
   isRecordAction?: boolean;
 }
 
-// Audio actions are placed last, away from Record Video — sitting
-// right next to each other, "Record Video" and "Record Audio" read as
-// easy to mix up at a glance (same icon style, same red "record" dot).
-// Grouping both audio options at the end of the grid keeps the video
-// pair visually distinct from the audio pair.
+// Video's two actions sit next to each other (Record, then Upload) so
+// they read as one related pair, and audio's two actions are grouped
+// at the very end for the same reason but kept away from the video
+// pair — "Record Video" and "Record Audio" sitting right next to each
+// other read as easy to mix up at a glance (same icon style, same red
+// "record" dot), so the two pairs are kept visually separated.
 export const ACTIONS: ActionOption[] = [
   { view: "video-record", label: "Record Video", icon: Video, isRecordAction: true },
-  { view: "photo", label: "Upload Image", icon: ImagePlus },
   { view: "video-upload", label: "Upload Video", icon: FileVideo },
+  { view: "photo", label: "Upload Image", icon: ImagePlus },
   { view: "note", label: "Add a Text Message", icon: PenLine },
   { view: "audio-record", label: "Record Audio", icon: Mic, isRecordAction: true },
   { view: "audio-upload", label: "Upload Audio", icon: FileAudio },

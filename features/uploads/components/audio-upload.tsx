@@ -240,6 +240,15 @@ export function AudioUpload({
         <span className="text-xs text-navy-700/60">MP3, M4A, AAC or WAV · up to 25MB</span>
       </button>
 
+      <button
+        type="button"
+        onClick={() => setMode("record")}
+        className="tap-target mt-3 flex w-full items-center justify-center gap-1.5 text-xs font-medium text-gold-600 hover:text-gold-700"
+      >
+        <Mic size={13} />
+        Or record a voice message instead
+      </button>
+
       <UploadQueue
         items={items}
         onCaptionChange={setCaption}

@@ -300,6 +300,15 @@ export function VideoUpload({
         <span className="text-xs text-navy-700/60">MP4 or MOV · up to 250MB</span>
       </button>
 
+      <button
+        type="button"
+        onClick={() => setMode("record")}
+        className="tap-target mt-3 flex w-full items-center justify-center gap-1.5 text-xs font-medium text-gold-600 hover:text-gold-700"
+      >
+        <Video size={13} />
+        Or record a video with your camera instead
+      </button>
+
       <UploadQueue
         items={items}
         onCaptionChange={setCaption}

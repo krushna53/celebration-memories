@@ -12,16 +12,8 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/**
- * Small local preview so a guest can see/hear exactly what they're
- * about to send (or already sent) — "did that take actually come out
- * okay?" — without waiting on a network round trip. Built from the
- * File object already sitting in memory (via URL.createObjectURL), so
- * it works the instant something's picked or recorded, not just after
- * upload finishes. Photos/videos get a small thumbnail; audio gets a
- * full native player, since a shrunk-down audio control isn't usable.
- */
-function MediaPreview({ file }: { file: File }) {
+/** Small inline thumbnail for photos — sits next to the filename, same as before. Tapping/long-pressing a plain image doesn't have the same "too small to hit the play button" problem a tiny video does, so this one stays compact. */
+function PhotoThumbnail({ file }: { file: File }) {
   const [url, setUrl] = useState<string | null>(null);
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -33,27 +25,48 @@ function MediaPreview({ file }: { file: File }) {
 
   if (!url) return null;
 
-  if (file.type.startsWith("image/")) {
-    if (imageFailed) {
-      // HEIC/HEIF photos preview fine on Safari but most other browsers
-      // can't decode them for an <img> tag — falls back to a plain icon
-      // rather than a broken-image glyph.
-      return (
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-navy-950/5 text-navy-700/30">
-          <ImageOff size={20} />
-        </div>
-      );
-    }
+  if (imageFailed) {
+    // HEIC/HEIF photos preview fine on Safari but most other browsers
+    // can't decode them for an <img> tag — falls back to a plain icon
+    // rather than a broken-image glyph.
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={url}
-        alt=""
-        onError={() => setImageFailed(true)}
-        className="h-14 w-14 shrink-0 rounded-lg object-cover"
-      />
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-navy-950/5 text-navy-700/30">
+        <ImageOff size={20} />
+      </div>
     );
   }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt=""
+      onError={() => setImageFailed(true)}
+      className="h-14 w-14 shrink-0 rounded-lg object-cover"
+    />
+  );
+}
+
+/**
+ * Full-width video/audio player so a guest can actually check "did
+ * that take come out okay?" — a tiny thumbnail-sized <video> used to
+ * make the native play button so small that a tap often registered as
+ * a long-press instead, popping up the browser's own context menu
+ * (Full screen/Download/Mute/...) rather than just playing. Sized big
+ * enough for the native controls to be comfortably tappable. Built
+ * from the File object already in memory (via URL.createObjectURL),
+ * so it works the instant something's picked or recorded, not just
+ * after the upload finishes.
+ */
+function MediaPlayer({ file }: { file: File }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+
+  if (!url) return null;
 
   if (file.type.startsWith("video/")) {
     return (
@@ -62,7 +75,7 @@ function MediaPreview({ file }: { file: File }) {
         controls
         playsInline
         preload="metadata"
-        className="h-14 w-24 shrink-0 rounded-lg bg-black object-cover"
+        className="aspect-video w-full rounded-lg bg-black object-contain"
       />
     );
   }
@@ -117,14 +130,15 @@ export function UploadQueue({
     onRemove(item.id);
   }
 
-  const isAudioFile = (file: File) => file.type.startsWith("audio/");
+  const isPhoto = (file: File) => file.type.startsWith("image/");
+  const isPlayable = (file: File) => file.type.startsWith("video/") || file.type.startsWith("audio/");
 
   return (
     <div className="mt-4 space-y-3">
       {items.map((item) => (
         <div key={item.id} className="flex flex-col gap-3 rounded-xl border border-navy-950/10 bg-white p-3">
           <div className="flex items-start gap-3">
-            {!isAudioFile(item.file) ? <MediaPreview file={item.file} /> : null}
+            {isPhoto(item.file) ? <PhotoThumbnail file={item.file} /> : null}
 
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-navy-950">{item.file.name}</p>
@@ -156,7 +170,7 @@ export function UploadQueue({
             ) : null}
           </div>
 
-          {isAudioFile(item.file) ? <MediaPreview file={item.file} /> : null}
+          {isPlayable(item.file) ? <MediaPlayer file={item.file} /> : null}
 
           {showCaption ? (
             <input
