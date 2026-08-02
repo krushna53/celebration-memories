@@ -60,6 +60,60 @@ Alternative: Netlify also sells domains directly through its own registrar, whic
 
 Source: [Connecting a GoDaddy domain to Netlify](https://mattmilici.medium.com/connect-a-custom-godaddy-domain-to-your-netlify-site-a48aa18191d7), [Netlify domains docs](https://docs.netlify.com/manage/domains/get-started-with-domains/)
 
+### Full checklist: moving the platform's own domain onto everymoment.in
+
+This is about the *platform's* domain (currently a `*.netlify.app`
+subdomain) — a different thing from the not-yet-built "custom domain
+per event" feature (a client connecting their own domain to just
+their event page). DNS/Netlify is most of it; only one env var needs
+touching in the app itself.
+
+1. **Buy `everymoment.in`** wherever you prefer (Netlify's own
+   registrar skips a separate DNS dashboard if you want that).
+2. **Netlify → Site overview → Domain management → Add custom
+   domain**, enter `everymoment.in` (and `www.everymoment.in` if you
+   want both), verify ownership, then point DNS at Netlify (A record
+   to Netlify's load-balancer IP, or use Netlify DNS directly if you
+   bought it there) — same mechanics as the GoDaddy steps above.
+   Netlify auto-provisions the SSL certificate once DNS resolves.
+   Once verified, set it as the **Primary domain** so the old
+   `*.netlify.app` URL 301-redirects to it (avoids duplicate-content
+   SEO issues; the old URL keeps working, just redirects).
+3. **Set `NEXT_PUBLIC_SITE_URL=https://everymoment.in`** in Netlify's
+   environment variables and redeploy. This one var is the single
+   source of truth for the app's own idea of its domain
+   (`lib/constants.ts`'s `SITE_URL`) — it drives the sitemap
+   (`app/sitemap.ts`), `robots.txt` (`app/robots.ts`), page `<title>`/
+   Open Graph metadata (`app/layout.tsx`), Stripe checkout's success/
+   cancel URLs and CCAvenue's response URL
+   (`features/start/actions/payment.ts`), and the team-invite email's
+   redirect link (`services/admin-team.ts`). Nothing else in the
+   codebase hardcodes a domain — confirmed by grep — so this one
+   change propagates everywhere in the app itself.
+4. **Supabase dashboard → Authentication → URL Configuration**:
+   update **Site URL** to `https://everymoment.in`, and add it to
+   **Redirect URLs** (keep the old `*.netlify.app` URL in that list
+   too while both are live, or auth callback links generated before
+   the cutover will fail). This governs where every Supabase Auth
+   email link (magic link, invite, password reset) and the Google
+   OAuth sign-in flow (`features/admin/auth/google-auth-button.tsx`)
+   send people after they click through.
+5. **If Google Sign-In is enabled**, check the OAuth client in Google
+   Cloud Console has `https://everymoment.in` added under
+   **Authorized JavaScript origins** (the redirect URI itself points
+   at Supabase's own callback URL, which doesn't change).
+6. **Stripe/Razorpay**: no required change — their webhook endpoints
+   point at `/api/webhooks/stripe` / `/api/webhooks/razorpay` on
+   whichever domain you registered in each dashboard, and checkout
+   success/cancel URLs are generated fresh per session from
+   `SITE_URL` (step 3). Only update the registered webhook URL in
+   either dashboard if you plan to fully retire the old
+   `*.netlify.app` domain rather than let it redirect.
+7. **Don't rush deleting the old domain.** Once step 2's redirect is
+   live, old links (WhatsApp invites already sent, bookmarked admin
+   links, etc.) keep working automatically — no need to force
+   everyone onto the new URL on day one.
+
 ## "Anyone could build this with Claude" — how to actually counter that
 
 The honest answer: yes, the code was built with AI assistance — and that's increasingly true of most production software, not a weakness to hide. The real differentiators were never "nobody else could type this code." They're:
