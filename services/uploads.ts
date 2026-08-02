@@ -362,7 +362,7 @@ export async function createSignedPaymentQrUpload(params: {
  * see lib/event-metadata.ts). Deliberately stricter than a regular
  * Gallery/guest video upload: MP4 only (the one format every crawler
  * that does support og:video, i.e. Telegram, reliably plays inline),
- * and capped much smaller than the 250MB guest-video limit since this
+ * and capped much smaller than the 1GB guest-video limit since this
  * file gets fetched synchronously by link-preview crawlers, which
  * have their own tight timeouts — a small, fast-loading clip works far
  * more reliably than a long one.

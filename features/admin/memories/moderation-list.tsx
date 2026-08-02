@@ -43,7 +43,7 @@ export function ModerationList({ items: initialItems }: ModerationListProps) {
     setDownloadingId(item.id);
     try {
       const res = await fetch(item.url);
-      if (!res.ok) throw new Error("Could not load the file.");
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const blob = await res.blob();
       const ext = item.url.split(".").pop()?.split(/[?#]/)[0] || "bin";
       const safeGuestName = item.guestName.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 40) || "guest";
@@ -54,7 +54,16 @@ export function ModerationList({ items: initialItems }: ModerationListProps) {
       a.click();
       URL.revokeObjectURL(objectUrl);
     } catch (err) {
-      console.error("Download failed:", err);
+      // fetch() to read the response body requires CORS headers, even
+      // though the exact same URL loads fine in the <video>/<img> tag
+      // above (media/image elements don't need CORS just to display).
+      // A network hiccup or a CORS-header gap on the Storage response
+      // can make the fetch fail while the file is still perfectly
+      // reachable — rather than a silent dead end, fall back to opening
+      // it directly so the admin can still save it (right-click/long-
+      // press "Save As", or the browser's built-in download button).
+      console.error("Download via blob failed, opening file directly instead:", err);
+      window.open(item.url, "_blank", "noopener,noreferrer");
     } finally {
       setDownloadingId(null);
     }

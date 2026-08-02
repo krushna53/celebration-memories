@@ -21,7 +21,7 @@ export interface MemoryItem {
 
 export const UPLOAD_LIMITS = {
   photo: { maxBytes: 50 * 1024 * 1024, label: "50MB" },
-  video: { maxBytes: 250 * 1024 * 1024, label: "250MB" },
+  video: { maxBytes: 1024 * 1024 * 1024, label: "1GB" },
   audio: { maxBytes: 25 * 1024 * 1024, label: "25MB" },
 } as const;
 

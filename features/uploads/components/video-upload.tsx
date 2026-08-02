@@ -311,7 +311,7 @@ export function VideoUpload({
       >
         <UploadCloud className="text-gold-500" size={28} />
         <span className="text-sm font-medium text-navy-950">Tap to choose a video</span>
-        <span className="text-xs text-navy-700/60">MP4 or MOV · up to 250MB</span>
+        <span className="text-xs text-navy-700/60">MP4 or MOV · up to 1GB</span>
       </button>
 
       <button

@@ -47,7 +47,11 @@ export function MediaShareButtons({ url, fileNameBase, shareText, className }: M
       a.click();
       URL.revokeObjectURL(objectUrl);
     } catch (err) {
-      console.error("Download failed:", err);
+      // Same fetch-as-blob caveat as the admin download button (see
+      // features/admin/memories/moderation-list.tsx) — fall back to
+      // opening the file directly rather than a silent dead end.
+      console.error("Download via blob failed, opening file directly instead:", err);
+      window.open(url, "_blank", "noopener,noreferrer");
     } finally {
       setBusy(null);
     }
