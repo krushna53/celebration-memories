@@ -293,7 +293,7 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
       {!identified ? (
         <div className="mb-6">
           <label className="text-sm font-medium text-navy-950" htmlFor="uploader-name">
-            Your Name <span className="font-normal text-navy-700/50">(optional)</span>
+            Your Name <span className="font-normal text-navy-700/50">(required for video)</span>
           </label>
           <input
             id="uploader-name"
@@ -312,7 +312,7 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
           />
           <p className="mt-2 text-sm text-navy-700/60">
             Tap a button below to get started — we&rsquo;ll use this name to let {honoreeName} know who each memory
-            is from. <span className={nameFieldError ? "font-semibold text-red-600" : undefined}>Required for a video message.</span>
+            is from.
           </p>
         </div>
       ) : (
