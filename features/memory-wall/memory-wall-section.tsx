@@ -1,11 +1,16 @@
-import { Images } from "lucide-react";
+import Link from "next/link";
+import { Images, Upload } from "lucide-react";
 
 import { getMemoryWallItems } from "@/services/memory-wall";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { Button } from "@/components/ui/button";
 import { MemoryCard } from "@/features/memory-wall/components/memory-card";
 
 interface MemoryWallSectionProps {
   eventId: string;
+  eventSlug: string;
+  /** Only link to the public "share a memory" page when the host has actually turned it on — otherwise a guest lands on that page's "This link isn't open right now" fallback instead of somewhere useful. */
+  publicMemoriesEnabled: boolean;
 }
 
 /**
@@ -15,7 +20,7 @@ interface MemoryWallSectionProps {
  * degrades to a friendly empty state if Supabase isn't reachable/
  * configured instead of breaking the whole homepage build.
  */
-export async function MemoryWallSection({ eventId }: MemoryWallSectionProps) {
+export async function MemoryWallSection({ eventId, eventSlug, publicMemoriesEnabled }: MemoryWallSectionProps) {
   let items: Awaited<ReturnType<typeof getMemoryWallItems>> = [];
 
   try {
@@ -32,6 +37,17 @@ export async function MemoryWallSection({ eventId }: MemoryWallSectionProps) {
           title="Memory Wall"
           description="Photos, videos, voice messages, and notes from everyone celebrating with us."
         />
+
+        {publicMemoriesEnabled ? (
+          <div className="mt-8 flex justify-center">
+            <Button asChild>
+              <Link href={`/events/${eventSlug}/memories`}>
+                <Upload size={16} />
+                Share Your Memory
+              </Link>
+            </Button>
+          </div>
+        ) : null}
 
         {items.length === 0 ? (
           <div className="mt-12 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-navy-950/15 py-20 text-center text-navy-700/50">

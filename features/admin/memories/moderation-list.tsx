@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Sparkles, Trash2, X } from "lucide-react";
+import { Check, Download, Loader2, Sparkles, Trash2, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { ModerationItem } from "@/services/admin-memories";
@@ -19,6 +19,7 @@ interface ModerationListProps {
 export function ModerationList({ items: initialItems }: ModerationListProps) {
   const [items, setItems] = useState(initialItems);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   async function run(id: string, fn: () => Promise<void>, removeAfter = false) {
     setBusyId(id);
@@ -31,6 +32,32 @@ export function ModerationList({ items: initialItems }: ModerationListProps) {
       );
     }
     setBusyId(null);
+  }
+
+  // Supabase Storage URLs are cross-origin, so a plain <a href download>
+  // just opens the file inline in most browsers instead of saving it —
+  // same fetch-as-blob-then-synthetic-click technique used by the guest-
+  // facing share/download buttons in components/media/media-share-buttons.tsx.
+  async function handleDownload(item: ModerationItem) {
+    if (!item.url) return;
+    setDownloadingId(item.id);
+    try {
+      const res = await fetch(item.url);
+      if (!res.ok) throw new Error("Could not load the file.");
+      const blob = await res.blob();
+      const ext = item.url.split(".").pop()?.split(/[?#]/)[0] || "bin";
+      const safeGuestName = item.guestName.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 40) || "guest";
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = `${item.kind}-${safeGuestName}.${ext}`;
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      console.error("Download failed:", err);
+    } finally {
+      setDownloadingId(null);
+    }
   }
 
   if (items.length === 0) {
@@ -105,6 +132,20 @@ export function ModerationList({ items: initialItems }: ModerationListProps) {
               >
                 <Sparkles size={18} />
               </button>
+              {item.url ? (
+                <button
+                  disabled={downloadingId === item.id}
+                  onClick={() => handleDownload(item)}
+                  title="Download"
+                  className="tap-target flex items-center justify-center text-navy-700/50 hover:text-gold-600"
+                >
+                  {downloadingId === item.id ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Download size={18} />
+                  )}
+                </button>
+              ) : null}
             </div>
             <button
               disabled={busyId === item.id}

@@ -53,6 +53,13 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
           >
             Download All Media (.zip)
           </a>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a
+            href="/api/admin/media-export?kind=video"
+            className="rounded-full border border-navy-950/15 px-3 py-1.5 text-navy-700/70 hover:border-gold-500/50 hover:text-gold-700"
+          >
+            Download All Videos (.zip)
+          </a>
         </div>
       </div>
 

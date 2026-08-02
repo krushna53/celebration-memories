@@ -54,7 +54,13 @@ export function EventSections({ event, displayData: data, galleryPhotos, milesto
       />
     ),
     wishMessage: <WishMessageSection data={data} />,
-    memoryWall: event ? <MemoryWallSection eventId={event.id} /> : null,
+    memoryWall: event ? (
+      <MemoryWallSection
+        eventId={event.id}
+        eventSlug={event.slug}
+        publicMemoriesEnabled={event.publicMemoriesEnabled}
+      />
+    ) : null,
   };
 
   return (
