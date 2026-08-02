@@ -116,7 +116,12 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
   }
 
   if (identified && pendingView) {
-    return <MediaUploadsSection token={identified.token} initialView={pendingView} />;
+    // No caption field here — this public, no-login page is meant to be
+    // the fewest-taps path (a specific ask: easy enough for a senior
+    // citizen to get through alone), and a caption is one more optional
+    // field to consider on every single item. The personal /invite/
+    // [token] page still shows it.
+    return <MediaUploadsSection token={identified.token} initialView={pendingView} showCaption={false} />;
   }
 
   return (

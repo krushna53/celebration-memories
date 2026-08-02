@@ -16,14 +16,17 @@ interface UploadQueueProps {
   onCaptionChange: (id: string, caption: string) => void;
   onRemove: (id: string) => void;
   onUploadAll: () => void;
+  /** Hides the per-item caption input — off for the public "share a memory" page (see MediaUploadsSection's showCaption prop) to keep that flow to the fewest possible fields. Defaults to true (shown). */
+  showCaption?: boolean;
 }
 
 /**
  * Shared queue UI reused by photo/video/audio uploaders: one row per
- * picked/recorded file with a caption field, status indicator, and a
- * single "Upload All" action. Stacks full-width on mobile.
+ * picked/recorded file with an optional caption field, status
+ * indicator, and a single "Upload All" action. Stacks full-width on
+ * mobile.
  */
-export function UploadQueue({ items, onCaptionChange, onRemove, onUploadAll }: UploadQueueProps) {
+export function UploadQueue({ items, onCaptionChange, onRemove, onUploadAll, showCaption = true }: UploadQueueProps) {
   if (items.length === 0) return null;
 
   const hasPending = items.some((it) => it.status === "pending" || it.status === "error");
@@ -43,14 +46,16 @@ export function UploadQueue({ items, onCaptionChange, onRemove, onUploadAll }: U
             </div>
           </div>
 
-          <input
-            type="text"
-            value={item.caption}
-            onChange={(e) => onCaptionChange(item.id, e.target.value)}
-            placeholder="Add a caption (optional)"
-            disabled={item.status === "uploading" || item.status === "done"}
-            className="w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30 sm:w-56"
-          />
+          {showCaption ? (
+            <input
+              type="text"
+              value={item.caption}
+              onChange={(e) => onCaptionChange(item.id, e.target.value)}
+              placeholder="Add a caption (optional)"
+              disabled={item.status === "uploading" || item.status === "done"}
+              className="w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30 sm:w-56"
+            />
+          ) : null}
 
           <div className="flex items-center justify-between gap-2 sm:justify-end">
             <span

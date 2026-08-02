@@ -27,6 +27,8 @@ interface SiteShellProps {
   transparentUntilScroll?: boolean;
   /** Passed straight through to Footer — see its doc comment for "full" vs "minimal". Defaults to "full". */
   footerVariant?: "full" | "minimal";
+  /** Hides the floating support chat bubble — off for the public "share a memory" page, which is a focused single task (upload a photo/video/audio) for guests who may not be comfortable with phones; a floating chat bubble is one more thing to misread as part of the upload flow. Defaults to false (shown), which is every other public page. */
+  hideChatWidget?: boolean;
 }
 
 /**
@@ -43,6 +45,7 @@ export function SiteShell({
   showLogin,
   transparentUntilScroll,
   footerVariant,
+  hideChatWidget,
 }: SiteShellProps) {
   return (
     <>
@@ -54,7 +57,7 @@ export function SiteShell({
       />
       <main>{children}</main>
       <Footer designerCredit={designerCredit} variant={footerVariant} />
-      <SupportChatWidget />
+      {hideChatWidget ? null : <SupportChatWidget />}
     </>
   );
 }

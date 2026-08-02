@@ -14,6 +14,8 @@ interface MediaUploadsSectionProps {
   token: string;
   /** Skips straight to this view instead of landing on the menu first — used by PublicMemoryUploader, which folds its own name field and this menu into one screen, so by the time this component mounts the guest has already picked an action. */
   initialView?: View;
+  /** Off for the public "share a memory" page (see PublicMemoryUploader) — keeps that flow to the fewest possible fields for a guest who's just dropping off a quick photo/video/audio. Defaults to true (shown), which is what the personal /invite/[token] page still uses. */
+  showCaption?: boolean;
 }
 
 export type View = "menu" | "photo" | "video-record" | "video-upload" | "audio-record" | "audio-upload" | "note";
@@ -26,13 +28,18 @@ export interface ActionOption {
   isRecordAction?: boolean;
 }
 
+// Audio actions are placed last, away from Record Video — sitting
+// right next to each other, "Record Video" and "Record Audio" read as
+// easy to mix up at a glance (same icon style, same red "record" dot).
+// Grouping both audio options at the end of the grid keeps the video
+// pair visually distinct from the audio pair.
 export const ACTIONS: ActionOption[] = [
   { view: "video-record", label: "Record Video", icon: Video, isRecordAction: true },
-  { view: "audio-record", label: "Record Audio", icon: Mic, isRecordAction: true },
   { view: "photo", label: "Upload Image", icon: ImagePlus },
   { view: "video-upload", label: "Upload Video", icon: FileVideo },
-  { view: "audio-upload", label: "Upload Audio", icon: FileAudio },
   { view: "note", label: "Add a Text Message", icon: PenLine },
+  { view: "audio-record", label: "Record Audio", icon: Mic, isRecordAction: true },
+  { view: "audio-upload", label: "Upload Audio", icon: FileAudio },
 ];
 
 const VIEW_TITLES: Record<Exclude<View, "menu">, string> = {
@@ -66,7 +73,7 @@ const VIEW_TITLES: Record<Exclude<View, "menu">, string> = {
  * that stays mounted across every view change, means a pending queue
  * in any of the three survives switching around and coming back.
  */
-export function MediaUploadsSection({ token, initialView = "menu" }: MediaUploadsSectionProps) {
+export function MediaUploadsSection({ token, initialView = "menu", showCaption = true }: MediaUploadsSectionProps) {
   const [view, setView] = useState<View>(initialView);
   const photoUpload = useMediaUpload(token, "photo");
   const videoUpload = useMediaUpload(token, "video");
@@ -148,11 +155,19 @@ export function MediaUploadsSection({ token, initialView = "menu" }: MediaUpload
       </div>
 
       <div className="mt-5">
-        {view === "photo" ? <PhotoUpload upload={photoUpload} /> : null}
-        {view === "video-record" ? <VideoUpload upload={videoUpload} initialMode="record" /> : null}
-        {view === "video-upload" ? <VideoUpload upload={videoUpload} initialMode="upload" /> : null}
-        {view === "audio-record" ? <AudioUpload upload={audioUpload} initialMode="record" /> : null}
-        {view === "audio-upload" ? <AudioUpload upload={audioUpload} initialMode="upload" /> : null}
+        {view === "photo" ? <PhotoUpload upload={photoUpload} showCaption={showCaption} /> : null}
+        {view === "video-record" ? (
+          <VideoUpload upload={videoUpload} initialMode="record" showCaption={showCaption} />
+        ) : null}
+        {view === "video-upload" ? (
+          <VideoUpload upload={videoUpload} initialMode="upload" showCaption={showCaption} />
+        ) : null}
+        {view === "audio-record" ? (
+          <AudioUpload upload={audioUpload} initialMode="record" showCaption={showCaption} />
+        ) : null}
+        {view === "audio-upload" ? (
+          <AudioUpload upload={audioUpload} initialMode="upload" showCaption={showCaption} />
+        ) : null}
         {view === "note" ? <GuestbookForm token={token} /> : null}
       </div>
 

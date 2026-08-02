@@ -15,10 +15,12 @@ interface PhotoUploadProps {
    * the guest switches views. See MediaUploadsSection's doc comment.
    */
   upload: ReturnType<typeof useMediaUpload>;
+  /** Passed straight through to UploadQueue — see its doc comment. */
+  showCaption?: boolean;
 }
 
 /** Multi-photo picker with preview captions, per CLAUDE.md → Guest Uploads. */
-export function PhotoUpload({ upload }: PhotoUploadProps) {
+export function PhotoUpload({ upload, showCaption = true }: PhotoUploadProps) {
   const { items, addFiles, setCaption, remove, uploadAll } = upload;
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -54,6 +56,7 @@ export function PhotoUpload({ upload }: PhotoUploadProps) {
         onCaptionChange={setCaption}
         onRemove={remove}
         onUploadAll={uploadAll}
+        showCaption={showCaption}
       />
     </div>
   );
