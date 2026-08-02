@@ -129,11 +129,21 @@ Deno.serve(async (req: Request) => {
     const openai = new OpenAI({ apiKey: openaiKey });
     const model = Deno.env.get("OPENAI_IMAGE_MODEL") || "gpt-image-2";
 
+    // quality: "high" (not the previous "medium") — gpt-image-2 renders
+    // any text requested in the prompt (captions, banners, names) as
+    // actual pixels, same as everything else in the image. At "medium"
+    // quality the model spends less compute per image and fine detail
+    // like letterforms is the first thing to blur/garble or get dropped
+    // entirely; "high" fixes that at the cost of a slower/pricier call.
+    // If a generated image is still missing text after this, the prompt
+    // itself needs to ask for it explicitly and put the exact text in
+    // quotes (e.g. `a birthday banner with the text "Happy 75th, Mahesh!"`)
+    // — gpt-image-2 won't infer wording that isn't in the prompt.
     const response = await openai.images.generate({
       model,
       prompt,
       size: "1024x1024",
-      quality: "medium",
+      quality: "high",
       n: 1,
     });
 
