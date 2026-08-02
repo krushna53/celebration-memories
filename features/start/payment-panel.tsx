@@ -99,6 +99,35 @@ export function PaymentPanel({
 
   return (
     <div>
+      <div className="mb-6 border-b border-navy-950/10 pb-4">
+        <button
+          type="button"
+          onClick={() => setPromoOpen((v) => !v)}
+          className="flex items-center gap-1 text-xs text-navy-700/40 hover:text-navy-700/70"
+        >
+          <ChevronDown size={12} className={promoOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+          Have a promo code?
+        </button>
+        {promoOpen ? (
+          <form onSubmit={redeemPromo} className="mt-3 flex max-w-xs gap-2">
+            <input
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+              placeholder="PROMO CODE"
+              className="w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2 text-sm uppercase text-navy-950 placeholder:text-navy-700/30 placeholder:normal-case focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30"
+            />
+            <Button type="submit" variant="outline" size="sm" disabled={promoPending || !promoCode.trim()}>
+              {promoPending ? <Loader2 className="animate-spin" size={14} /> : "Apply"}
+            </Button>
+          </form>
+        ) : null}
+        {promoError ? (
+          <p className="mt-2 text-xs text-red-600" role="alert">
+            {promoError}
+          </p>
+        ) : null}
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         {prereqs.configured && prereqs.oneTimeConfigured ? (
           <div className="rounded-xl border border-navy-950/10 bg-white p-5">
@@ -198,35 +227,6 @@ export function PaymentPanel({
           ) : null}
         </div>
       ) : null}
-
-      <div className="mt-6 border-t border-navy-950/10 pt-4">
-        <button
-          type="button"
-          onClick={() => setPromoOpen((v) => !v)}
-          className="flex items-center gap-1 text-xs text-navy-700/40 hover:text-navy-700/70"
-        >
-          <ChevronDown size={12} className={promoOpen ? "rotate-180 transition-transform" : "transition-transform"} />
-          Have a promo code?
-        </button>
-        {promoOpen ? (
-          <form onSubmit={redeemPromo} className="mt-3 flex max-w-xs gap-2">
-            <input
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value)}
-              placeholder="PROMO CODE"
-              className="w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2 text-sm uppercase text-navy-950 placeholder:text-navy-700/30 placeholder:normal-case focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30"
-            />
-            <Button type="submit" variant="outline" size="sm" disabled={promoPending || !promoCode.trim()}>
-              {promoPending ? <Loader2 className="animate-spin" size={14} /> : "Apply"}
-            </Button>
-          </form>
-        ) : null}
-        {promoError ? (
-          <p className="mt-2 text-xs text-red-600" role="alert">
-            {promoError}
-          </p>
-        ) : null}
-      </div>
     </div>
   );
 }

@@ -11,8 +11,17 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-primary text-primary-foreground shadow-sm hover:shadow-md hover:brightness-110",
+        // Uses gold-600 (a darker coral shade) rather than the primary
+        // gold-500 token — after the EveryMoment rebrand, gold-500
+        // (#ff6b57) is bright enough that its usual 60%-opacity border/
+        // text combo reads as near-invisible against the light cream
+        // background (worse still once disabled:opacity-50 stacks on
+        // top), e.g. the promo-code "Apply" button in
+        // features/start/payment-panel.tsx. gold-600 is darker/more
+        // saturated and reads clearly at full opacity on both the cream
+        // background and any dark-navy surface this variant is used on.
         outline:
-          "border border-primary/60 text-primary bg-transparent hover:bg-primary/10",
+          "border border-gold-600 text-gold-600 bg-transparent hover:bg-gold-600/10",
         ghost: "bg-transparent hover:bg-white/10 text-inherit",
         link: "text-primary underline-offset-4 hover:underline",
       },
