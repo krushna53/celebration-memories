@@ -12,6 +12,7 @@ import {
   saveVideoEditDraftAction,
   setBigScreenVideoAction,
 } from "@/features/admin/video-editor/actions";
+import { useVideoEditRender } from "@/hooks/use-video-edit-render";
 
 // The starting point for a brand-new edit — one empty track, a black
 // background, MP4/SD output. Matches the Edit JSON schema Shotstack's
@@ -125,9 +126,9 @@ export function VideoEditorWorkspace({
     };
   }, []);
 
-  const saveDraft = useCallback(async () => {
+  const saveDraft = useCallback(async (): Promise<string | null> => {
     const instance = instanceRef.current;
-    if (!instance) return;
+    if (!instance) return null;
 
     setSaveState("saving");
     const editJson = instance.edit.getEdit();
@@ -135,9 +136,10 @@ export function VideoEditorWorkspace({
     if (result.success) {
       setCurrentJobId(result.jobId);
       setSaveState("saved");
-    } else {
-      setSaveState("error");
+      return result.jobId;
     }
+    setSaveState("error");
+    return null;
   }, [eventId, currentJobId, title]);
 
   // Autosave on an interval so a closed tab never loses progress — see
@@ -216,6 +218,43 @@ export function VideoEditorWorkspace({
       setJobs((prev) => prev.map((j) => ({ ...j, isLiveOnBigScreen: j.id === jobId })));
     }
   }
+
+  const renderJob = useVideoEditRender();
+
+  async function handleRender() {
+    if (atCap) return;
+    // Save first so the job row has the latest edit_json before the Edge
+    // Function reads it — a render started from a stale/never-saved draft
+    // would silently miss whatever was added since the last autosave.
+    const jobId = await saveDraft();
+    if (!jobId) return;
+    await renderJob.render(jobId, eventId);
+  }
+
+  // Once a render finishes, fold it into the history list so "Set as Big
+  // Screen" is immediately available without a full page reload.
+  useEffect(() => {
+    if (renderJob.status !== "done" || !renderJob.resultUrl || !currentJobId) return;
+    setJobs((prev) => {
+      if (prev.some((j) => j.id === currentJobId && j.status === "done")) return prev;
+      const rest = prev.filter((j) => j.id !== currentJobId);
+      return [
+        {
+          id: currentJobId,
+          eventId,
+          title,
+          editJson: null,
+          status: "done",
+          resultUrl: renderJob.resultUrl,
+          errorMessage: null,
+          isLiveOnBigScreen: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        ...rest,
+      ];
+    });
+  }, [renderJob.status, renderJob.resultUrl, currentJobId, eventId, title]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
@@ -339,12 +378,34 @@ export function VideoEditorWorkspace({
           {saveState === "saved" ? <span className="text-xs text-navy-700/50">Saved</span> : null}
           {saveState === "error" ? <span className="text-xs text-red-600">Couldn&rsquo;t save</span> : null}
 
-          <div className="ml-auto">
-            <Button size="sm" disabled title="Rendering is launching very soon — this button isn't wired up yet.">
-              Render Video
+          <div className="ml-auto flex items-center gap-2">
+            {renderJob.status === "processing" || renderJob.status === "starting" ? (
+              <span className="text-xs text-navy-700/50">Rendering — this can take a minute or two...</span>
+            ) : null}
+            <Button size="sm" onClick={handleRender} disabled={!ready || atCap || renderJob.status === "starting" || renderJob.status === "processing"}>
+              {renderJob.status === "starting" || renderJob.status === "processing" ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                "Render Video"
+              )}
             </Button>
           </div>
         </div>
+
+        {renderJob.status === "done" && renderJob.resultUrl ? (
+          <p className="mb-2 flex items-center gap-1.5 text-xs text-green-700">
+            <CheckCircle2 size={13} /> Render complete —{" "}
+            <a href={renderJob.resultUrl} target="_blank" rel="noreferrer" className="underline">
+              view it
+            </a>{" "}
+            or set it as the Big Screen video below.
+          </p>
+        ) : null}
+        {renderJob.status === "error" && renderJob.error ? (
+          <p className="mb-2 text-xs text-red-600" role="alert">
+            {renderJob.error}
+          </p>
+        ) : null}
 
         {atCap ? (
           <p className="mb-2 text-xs text-red-600">
