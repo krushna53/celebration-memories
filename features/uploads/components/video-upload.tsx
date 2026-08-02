@@ -60,6 +60,7 @@ export function VideoUpload({
   const [mode, setMode] = useState<"upload" | "record">(initialMode);
   const inputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLVideoElement>(null);
+  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
   // Tracks the item just added by a recording so "Record again" can
   // discard exactly that take, without touching anything the guest
   // separately picked from the file library.
@@ -121,6 +122,30 @@ export function VideoUpload({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
+  // Requests real browser fullscreen (hides the address bar too, not
+  // just our own fixed-inset-0 overlay) — same try/catch-and-ignore
+  // pattern as features/display/big-screen-slideshow.tsx. Support
+  // varies: solid on desktop Chrome/Edge/Firefox and Android Chrome;
+  // iOS Safari has had it since 16.4 but still reports only partial/
+  // flaky support even in current versions, so this is a progressive
+  // enhancement, never a requirement — the guest still gets today's
+  // full-viewport camera view (mode === "record"'s fixed inset-0) on
+  // any browser that can't or won't grant it.
+  useEffect(() => {
+    if (mode !== "record") return;
+    fullscreenContainerRef.current?.requestFullscreen?.().catch(() => {
+      // Fullscreen isn't available in every environment (e.g. some iOS
+      // browsers, or if it wasn't triggered close enough to the tap
+      // that opened this view) — the camera view still works fine
+      // without it, just with the browser's own address bar visible.
+    });
+    return () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
+  }, [mode]);
+
   // Locks page scroll while the fullscreen camera view is open, same as
   // any other fullscreen overlay (modal, lightbox) in the app.
   useEffect(() => {
@@ -153,7 +178,10 @@ export function VideoUpload({
 
   if (mode === "record") {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-navy-950 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div
+        ref={fullscreenContainerRef}
+        className="fixed inset-0 z-50 flex flex-col bg-navy-950 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+      >
         <div className="flex shrink-0 items-center justify-between px-4 py-3">
           <button
             type="button"
