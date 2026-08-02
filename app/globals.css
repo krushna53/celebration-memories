@@ -9,16 +9,16 @@
    * Rebranded from Celebration Memories' navy/gold/ivory to
    * EveryMoment's indigo/coral/cream — see /EVERYMOMENT-BRAND.md for
    * the full rationale. Variable and Tailwind class NAMES stay
-   * navy-*/gold-*/ivory-* on purpose: only the hex values changed, so
-   * every existing `bg-navy-950`/`text-gold-300`/etc. class across the
-   * app (40+ files) picks up the new brand colors automatically with
-   * zero per-component edits. Semantic mapping: navy = indigo (dark/
-   * foundational, was the "serious" base color, indigo plays the same
-   * role), gold = coral (was the vivid signature/CTA accent, coral
-   * plays that same role now), ivory = cream (light neutral
+   * navy-, gold-, and ivory- on purpose: only the hex values changed,
+   * so every existing `bg-navy-950`/`text-gold-300`/etc. class across
+   * the app (40+ files) picks up the new brand colors automatically
+   * with zero per-component edits. Semantic mapping: navy = indigo
+   * (dark/foundational, was the "serious" base color, indigo plays
+   * the same role), gold = coral (was the vivid signature/CTA accent,
+   * coral plays that same role now), ivory = cream (light neutral
    * background, unchanged role). Renaming the classes themselves to
-   * indigo-*/coral-*/cream-* is a nice-to-have cleanup for later, not
-   * required for the rebrand to be complete or correct.
+   * indigo-, coral-, and cream- is a nice-to-have cleanup for later,
+   * not required for the rebrand to be complete or correct.
    */
   --color-navy-950: #1e1b4b;
   --color-navy-900: #272257;
