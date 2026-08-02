@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } from "lucide-react";
+import { CheckCircle2, Pause, Play, RotateCcw, Square, SwitchCamera, UploadCloud, Video, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
@@ -75,6 +75,8 @@ export function VideoUpload({
     zoomRange,
     zoomLevel,
     setZoom,
+    facingMode,
+    flipCamera,
     openPreview,
     closePreview,
     start,
@@ -192,12 +194,37 @@ export function VideoUpload({
             <X size={18} />
           </button>
           <h3 className="font-display text-sm text-ivory-50">Record a Video</h3>
-          <div className="w-9" />
+          {previewStream && !isRecording ? (
+            <button
+              type="button"
+              onClick={flipCamera}
+              title="Switch Camera"
+              aria-label="Switch Camera"
+              className="tap-target flex h-9 w-9 items-center justify-center rounded-full border border-ivory-100/20 text-ivory-100/80 transition-luxury duration-200 hover:border-ivory-100/40"
+            >
+              <SwitchCamera size={17} />
+            </button>
+          ) : (
+            <div className="w-9" />
+          )}
         </div>
 
         <div className="relative min-h-0 flex-1 bg-black">
           {previewStream ? (
-            <video ref={previewRef} autoPlay muted playsInline className="h-full w-full object-cover" />
+            <video
+              ref={previewRef}
+              autoPlay
+              muted
+              playsInline
+              // Mirror the front-camera preview only — matches every
+              // native camera app (a selfie feels wrong unmirrored,
+              // like moving a hand and watching it go the "wrong" way).
+              // This is purely a display flip: the underlying stream
+              // recorded by MediaRecorder is untouched, so the saved
+              // video comes out the same way everyone else sees the
+              // guest, same as Instagram/Snapchat/iOS Camera.
+              className={cn("h-full w-full object-cover", facingMode === "user" && "-scale-x-100")}
+            />
           ) : error ? (
             <div className="flex h-full w-full items-center justify-center text-ivory-100/40">
               <Video size={40} />

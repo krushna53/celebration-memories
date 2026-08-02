@@ -42,7 +42,17 @@ export interface ZoomRange {
  * choice that fixes it there. zoomRange is null wherever unsupported;
  * callers should hide zoom controls entirely in that case rather than
  * show a control that silently does nothing.
+ *
+ * Also exposes facingMode/flipCamera to switch between front and back
+ * camera — standard across every browser (unlike zoom), but only
+ * allowed while not actively recording; see flipCamera's own doc
+ * comment for why.
  */
+/** getUserMedia's video constraint — a plain `{ facingMode }` object (not wrapped in `ideal`/`exact`) so a device that only has one camera still resolves fine rather than rejecting a constraint it can't satisfy exactly. */
+function buildConstraints(kind: "audio" | "video", facingMode: "user" | "environment"): MediaStreamConstraints {
+  return kind === "video" ? { video: { facingMode }, audio: true } : { audio: true };
+}
+
 export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -54,6 +64,10 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
   // Only ever populated for kind: "video".
   const [zoomRange, setZoomRange] = useState<ZoomRange | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+  // "user" (front/selfie) is the sensible default for a "record a video
+  // message" feature — most guests are talking to the camera, not
+  // filming something else. Only meaningful for kind: "video".
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -107,6 +121,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     setPreviewStream(null);
     setZoomRange(null);
     setZoomLevel(1);
+    setFacingMode("user");
   }, []);
 
   /** Opens the camera/mic and shows a live preview without recording yet. Safe to call more than once — a no-op if a stream is already open. */
@@ -114,9 +129,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     if (streamRef.current) return;
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(
-        kind === "video" ? { video: true, audio: true } : { audio: true },
-      );
+      const stream = await navigator.mediaDevices.getUserMedia(buildConstraints(kind, facingMode));
       streamRef.current = stream;
       setPreviewStream(stream);
       detectZoomRange(stream);
@@ -127,7 +140,35 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
           : "Microphone access was denied or unavailable.",
       );
     }
-  }, [kind, detectZoomRange]);
+  }, [kind, facingMode, detectZoomRange]);
+
+  /**
+   * Switches between front and back camera — only while not actively
+   * recording. MediaRecorder is bound to the specific MediaStream/track
+   * it was created with; swapping the video track underneath a live
+   * recorder is unreliable across browsers (some drop video entirely,
+   * some just ignore the swap), so this tears down and reopens the
+   * whole stream instead, which only makes sense between takes, not
+   * mid-take. Callers should hide/disable the flip control whenever
+   * isRecording is true.
+   */
+  const flipCamera = useCallback(async () => {
+    if (kind !== "video" || isRecording) return;
+    const next: "user" | "environment" = facingMode === "user" ? "environment" : "user";
+    setError(null);
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia(buildConstraints("video", next));
+      // Only stop the old stream once the new one is confirmed working —
+      // avoids a "camera unavailable" flash if the swap fails partway.
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = newStream;
+      setFacingMode(next);
+      setPreviewStream(newStream);
+      detectZoomRange(newStream);
+    } catch {
+      setError("Could not switch cameras.");
+    }
+  }, [kind, isRecording, facingMode, detectZoomRange]);
 
   /** Releases the camera/mic without recording anything — for leaving record mode after only previewing. Never tears down mid-recording. */
   const closePreview = useCallback(() => {
@@ -141,9 +182,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
       // Reuse the already-open preview stream if openPreview() got there
       // first — avoids a second getUserMedia prompt/negotiation.
       const reusedExisting = Boolean(streamRef.current);
-      const stream = streamRef.current ?? (await navigator.mediaDevices.getUserMedia(
-        kind === "video" ? { video: true, audio: true } : { audio: true },
-      ));
+      const stream = streamRef.current ?? (await navigator.mediaDevices.getUserMedia(buildConstraints(kind, facingMode)));
       streamRef.current = stream;
       setPreviewStream(stream);
       if (!reusedExisting) detectZoomRange(stream);
@@ -192,7 +231,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
           : "Microphone access was denied or unavailable.",
       );
     }
-  }, [kind, onCapture, detectZoomRange]);
+  }, [kind, facingMode, onCapture, detectZoomRange]);
 
   /**
    * Finalizes the recording and hands it to onCapture. Deliberately
@@ -247,6 +286,9 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     zoomRange,
     zoomLevel,
     setZoom,
+    /** "user" (front) or "environment" (back) — only meaningful for kind: "video". */
+    facingMode,
+    flipCamera,
     openPreview,
     closePreview,
     start,
