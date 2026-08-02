@@ -12,9 +12,39 @@ import {
 import { validateCustomCss } from "@/lib/custom-css";
 import { AiCssError, generateCustomCssFromPrompt } from "@/lib/ai-css";
 import { countAiCssGenerations, recordAiCssGeneration } from "@/services/ai-css-generations";
+import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
 import type { SectionConfigItem } from "@/lib/section-registry";
 
 export type AdminActionResult = { success: true } | { success: false; error: string };
+
+export type DetectTimezoneResult = { success: true; timezone: string } | { success: false; error: string };
+
+/**
+ * Best-effort venue-address -> IANA timezone lookup (see
+ * lib/timezone-lookup.ts) for the "Detect" button next to the Timezone
+ * field. Doesn't require the caller to already be able to write this
+ * event (unlike updateEventAction) — it's a pure lookup with no side
+ * effect, the admin still has to hit Save to apply whatever it finds —
+ * but does still require a valid admin session so it can't be used as
+ * an open geocoding proxy by anyone who finds the endpoint.
+ */
+export async function detectEventTimezoneAction(eventId: string, address: string): Promise<DetectTimezoneResult> {
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return unauthorized(err);
+  }
+
+  if (!address.trim()) {
+    return { success: false, error: "Enter a venue address first." };
+  }
+
+  const timezone = await resolveTimezoneFromAddress(address);
+  if (!timezone) {
+    return { success: false, error: "Couldn't detect a timezone for that address — please choose one manually." };
+  }
+  return { success: true, timezone };
+}
 
 function unauthorized(err: unknown): { success: false; error: string } {
   return { success: false, error: err instanceof Error ? err.message : "Not authorized." };

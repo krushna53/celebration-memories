@@ -90,7 +90,7 @@ export default async function PublicEventsDirectoryPage() {
                     <div className="mt-4 flex flex-col gap-1.5 text-xs text-navy-700/60">
                       <span className="flex items-center gap-1.5">
                         <CalendarDays size={14} className="text-gold-500" />
-                        {formatEventDate(event.startAt)}
+                        {formatEventDate(event.startAt, event.timezone)}
                       </span>
                       {event.venueName ? (
                         <span className="flex items-center gap-1.5">

@@ -94,9 +94,9 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
             </h1>
             <div className="divider-gold mx-auto mt-6 w-20" />
             <p className="mt-6 text-sm tracking-wide text-navy-700/70">
-              {formatEventDate(event.startAt)}
+              {formatEventDate(event.startAt, event.timezone)}
               <br />
-              {formatEventTime(event.startAt)} &ndash; {formatEventTime(event.endAt)}
+              {formatEventTime(event.startAt, event.timezone)} &ndash; {formatEventTime(event.endAt, event.timezone)}
             </p>
           </Reveal>
         </div>

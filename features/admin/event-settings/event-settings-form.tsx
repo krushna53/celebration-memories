@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   Copy,
@@ -21,6 +21,7 @@ import {
   confirmHighlightReelUploadAction,
   confirmShareImageUploadAction,
   confirmShareVideoUploadAction,
+  detectEventTimezoneAction,
   generateCustomCssAction,
   removeHighlightReelAction,
   removeShareImageAction,
@@ -40,7 +41,7 @@ import { EVENT_CATEGORY_OPTIONS, getWishSectionCopy } from "@/lib/event-category
 import { validateCustomCss } from "@/lib/custom-css";
 import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
 import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
-import { istInputValueToUtcIso, utcIsoToIstInputValue } from "@/lib/timezone";
+import { zonedInputValueToUtcIso, utcIsoToZonedInputValue, listSupportedTimezones } from "@/lib/timezone";
 import { EVENT_SLUG } from "@/lib/constants";
 import type { EventRecord } from "@/types/event";
 
@@ -76,8 +77,9 @@ export function EventSettingsForm({
     honoreeName: event.honoreeName,
     eventTitle: event.eventTitle,
     hostedBy: event.hostedBy,
-    startAt: utcIsoToIstInputValue(event.startAt),
-    endAt: utcIsoToIstInputValue(event.endAt),
+    startAt: utcIsoToZonedInputValue(event.startAt, event.timezone),
+    endAt: utcIsoToZonedInputValue(event.endAt, event.timezone),
+    timezone: event.timezone,
     venueName: event.venueName ?? "",
     venueAddress: event.venueAddress ?? "",
     mapsUrl: event.mapsUrl ?? "",
@@ -99,6 +101,8 @@ export function EventSettingsForm({
   const [customCssError, setCustomCssError] = useState<string | null>(null);
   const [slugError, setSlugError] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
+  const [detectingTimezone, setDetectingTimezone] = useState(false);
+  const [timezoneError, setTimezoneError] = useState<string | null>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -125,6 +129,31 @@ export function EventSettingsForm({
   const [aiCssRemaining, setAiCssRemaining] = useState<number | null>(
     aiCssQuota ? Math.max(aiCssQuota.limit - aiCssQuota.used, 0) : null,
   );
+
+  // Full IANA list from the runtime (see lib/timezone.ts) — computed
+  // once, not on every keystroke, since it's a few hundred fixed strings.
+  const timezoneOptions = useMemo(() => {
+    const options = listSupportedTimezones();
+    // The event's current value should always be selectable even if it's
+    // somehow outside the runtime's list (e.g. a deprecated zone alias).
+    return options.includes(form.timezone) ? options : [form.timezone, ...options];
+  }, [form.timezone]);
+
+  async function handleDetectTimezone() {
+    if (!form.venueAddress.trim()) return;
+    setDetectingTimezone(true);
+    setTimezoneError(null);
+    try {
+      const result = await detectEventTimezoneAction(event.id, form.venueAddress);
+      if (result.success) {
+        set("timezone", result.timezone);
+      } else {
+        setTimezoneError(result.error);
+      }
+    } finally {
+      setDetectingTimezone(false);
+    }
+  }
 
   function copyWebPageLink() {
     navigator.clipboard.writeText(`${origin}/events/${event.slug}`);
@@ -340,8 +369,9 @@ export function EventSettingsForm({
       honoreeName: form.honoreeName,
       eventTitle: form.eventTitle,
       hostedBy: form.hostedBy,
-      startAt: istInputValueToUtcIso(form.startAt),
-      endAt: istInputValueToUtcIso(form.endAt),
+      startAt: zonedInputValueToUtcIso(form.startAt, form.timezone),
+      endAt: zonedInputValueToUtcIso(form.endAt, form.timezone),
+      timezone: form.timezone,
       venueName: form.venueName || null,
       venueAddress: form.venueAddress || null,
       mapsUrl: form.mapsUrl || null,
@@ -552,6 +582,37 @@ export function EventSettingsForm({
               value={form.venueAddress}
               onChange={(e) => set("venueAddress", e.target.value)}
             />
+          </div>
+          <div>
+            <label className={labelClasses}>Timezone</label>
+            <div className="mt-1.5 flex gap-2">
+              <select
+                className={inputClasses}
+                value={form.timezone}
+                onChange={(e) => set("timezone", e.target.value)}
+              >
+                {timezoneOptions.map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tz}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                disabled={!form.venueAddress.trim() || detectingTimezone}
+                onClick={handleDetectTimezone}
+              >
+                {detectingTimezone ? "Detecting…" : "Detect"}
+              </Button>
+            </div>
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              Used for every date/time shown to guests — countdown, invite, RSVP, Event Day. &ldquo;Detect&rdquo;
+              looks this up from the Venue Address above (no API key needed); you can also pick one manually.
+            </p>
+            {timezoneError ? <p className="mt-1 text-xs text-red-600">{timezoneError}</p> : null}
           </div>
           <div>
             <label className={labelClasses}>Google Maps Directions URL</label>

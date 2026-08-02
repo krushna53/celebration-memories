@@ -1,6 +1,5 @@
-import { format } from "date-fns";
-
 import { ACTIVE_EVENT, VENUE } from "@/lib/constants";
+import { DEFAULT_EVENT_TIMEZONE, formatCalendarDate, formatEventTime } from "@/lib/timezone";
 import type { EventRecord, EventCategory } from "@/types/event";
 
 /**
@@ -34,6 +33,13 @@ export interface EventDisplayData {
   category: EventCategory | null;
   additionalNotes: string | null;
   wishMessage: string | null;
+  /** IANA timezone every field above is pinned to — see lib/timezone.ts. */
+  timezone: string;
+}
+
+/** Just the weekday/date parts, in the given event timezone — used to split formatEventDate's combined string into EventDisplayData's separate dayOfWeek/date fields. */
+function zonedPart(iso: string, timezone: string, options: Intl.DateTimeFormatOptions): string {
+  return new Intl.DateTimeFormat("en-US", { timeZone: timezone, ...options }).format(new Date(iso));
 }
 
 export function toEventDisplayData(event: EventRecord | null): EventDisplayData {
@@ -58,18 +64,24 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
       category: null,
       additionalNotes: null,
       wishMessage: null,
+      timezone: DEFAULT_EVENT_TIMEZONE,
     };
   }
+
+  const timezone = event.timezone || DEFAULT_EVENT_TIMEZONE;
 
   return {
     honoreeName: event.honoreeName,
     hostedBy: event.hostedBy,
     occasion: event.occasion,
     eventTitle: event.eventTitle,
-    dayOfWeek: format(new Date(event.startAt), "EEEE"),
-    date: format(new Date(event.startAt), "MMMM d, yyyy"),
-    startTime: format(new Date(event.startAt), "h:mm a"),
-    endTime: format(new Date(event.endAt), "h:mm a"),
+    // Previously used date-fns's bare format(), which renders in the
+    // *server's* local zone (Netlify: UTC) — not this event's own
+    // timezone. Fixed to always format in the venue's actual zone.
+    dayOfWeek: zonedPart(event.startAt, timezone, { weekday: "long" }),
+    date: zonedPart(event.startAt, timezone, { month: "long", day: "numeric", year: "numeric" }),
+    startTime: formatEventTime(event.startAt, timezone),
+    endTime: formatEventTime(event.endAt, timezone),
     isoStart: event.startAt,
     venueName: event.venueName,
     venueAddress: event.venueAddress,
@@ -77,11 +89,10 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
     mapsEmbedUrl: event.mapsEmbedUrl,
     parkingInfo: event.parkingInfo,
     dressCode: event.dressCode,
-    occasionDate: event.occasionDate
-      ? format(new Date(`${event.occasionDate}T00:00:00`), "MMMM d, yyyy")
-      : null,
+    occasionDate: event.occasionDate ? formatCalendarDate(event.occasionDate) : null,
     category: event.category,
     additionalNotes: event.additionalNotes,
     wishMessage: event.wishMessage,
+    timezone,
   };
 }

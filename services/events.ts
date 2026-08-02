@@ -24,6 +24,7 @@ export interface EventRow {
   end_at: string;
   dress_code: string | null;
   hero_video_url: string | null;
+  timezone: string;
   visibility: "public" | "private";
   short_description: string | null;
   occasion_date: string | null;
@@ -69,6 +70,7 @@ export function mapEvent(row: EventRow): EventRecord {
     endAt: row.end_at,
     dressCode: row.dress_code,
     heroVideoUrl: row.hero_video_url,
+    timezone: row.timezone || "Asia/Kolkata",
     visibility: row.visibility,
     shortDescription: row.short_description,
     occasionDate: row.occasion_date,
@@ -249,6 +251,7 @@ export interface EventUpdateInput {
   startAt?: string;
   endAt?: string;
   dressCode?: string | null;
+  timezone?: string;
   visibility?: "public" | "private";
   shortDescription?: string | null;
   occasionDate?: string | null;
@@ -345,6 +348,7 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.startAt !== undefined) patch.start_at = input.startAt;
   if (input.endAt !== undefined) patch.end_at = input.endAt;
   if (input.dressCode !== undefined) patch.dress_code = input.dressCode;
+  if (input.timezone !== undefined) patch.timezone = input.timezone;
   if (input.visibility !== undefined) patch.visibility = input.visibility;
   if (input.shortDescription !== undefined) patch.short_description = input.shortDescription;
   if (input.occasionDate !== undefined) patch.occasion_date = input.occasionDate;

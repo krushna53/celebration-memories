@@ -49,6 +49,15 @@ export interface EventRecord {
   occasionDate: string | null;
   dressCode: string | null;
   heroVideoUrl: string | null;
+  /**
+   * IANA timezone name (e.g. "Asia/Kolkata", "America/New_York") that
+   * every displayed date/time for this event is pinned to, regardless of
+   * where a guest or the server happens to be — see lib/timezone.ts.
+   * Auto-detected from venueAddress when possible (lib/timezone-lookup.ts),
+   * always admin-overridable, defaults to "Asia/Kolkata" for any event
+   * that predates this field or has no venue address yet.
+   */
+  timezone: string;
   /** Controls whether this event appears in the public /events directory. Direct links always work regardless. */
   visibility: "public" | "private";
   /** One or two lines shown on the /events directory card. */

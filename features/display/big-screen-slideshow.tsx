@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { formatEventDate } from "@/lib/format";
+import { formatCalendarDate } from "@/lib/timezone";
 import type { DisplaySlide } from "@/types/display";
 
 interface BigScreenSlideshowProps {
@@ -253,7 +253,7 @@ function Slide({
         <p className="font-display text-2xl text-gold-300 sm:text-3xl">{slide.eventTitle}</p>
         {slide.occasionDate ? (
           <p className="text-sm tracking-[0.2em] text-ivory-100/50">
-            {formatEventDate(slide.occasionDate)}
+            {formatCalendarDate(slide.occasionDate)}
           </p>
         ) : null}
       </div>
