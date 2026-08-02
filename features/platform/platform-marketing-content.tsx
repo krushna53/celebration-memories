@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  Bot,
   CalendarClock,
   Camera,
   CreditCard,
@@ -12,6 +13,7 @@ import {
   Palette,
   ShieldCheck,
   Sparkles,
+  UtensilsCrossed,
 } from "lucide-react";
 
 import { SiteShell } from "@/components/layout/site-shell";
@@ -93,6 +95,18 @@ const LIVE_FEATURES = [
     title: "Pay your way",
     description:
       "Stripe, Razorpay, or CCAvenue for card and UPI checkout — or skip processor fees entirely with a manual UPI QR code and screenshot confirmation.",
+  },
+  {
+    icon: Bot,
+    title: "AI host avatar",
+    description:
+      "A friendly chat widget greets your guests, answers questions, and nudges them toward RSVPing or playing a game — it speaks its replies out loud, and guests can talk back instead of typing.",
+  },
+  {
+    icon: UtensilsCrossed,
+    title: "Event Day schedule & menu",
+    description:
+      "Share a time-blocked run of show and the menu — buffet or à la carte, with dietary tags — on a page guests can check right from their phone on the big day.",
   },
 ];
 

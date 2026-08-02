@@ -31,8 +31,54 @@ const SECTIONS: GuideSection[] = [
         body: "Venue name/address, Google Maps directions + embeddable map, parking notes, dress code.",
       },
       {
+        label: "Timezone",
+        body: "Every event has its own timezone, so guests anywhere in the world see the correct time for the venue rather than whatever server or browser happens to render the page. Tap Detect to set it automatically from the venue address, or choose one manually from the dropdown.",
+      },
+      {
         label: "Public Listing",
         body: "Toggle Public/Private. Public events appear on the /events directory with your short description. Private events are still reachable at their direct link — this only controls the directory listing.",
+      },
+      {
+        label: "Section Order & Visibility",
+        body: "Drag to reorder, or tap the eye icon to hide, any homepage section — Countdown, Invitation, Event Details, Gallery, Timeline, RSVP, Wish Message, Memory Wall. Hero always shows first. Handy for a simple site that only needs a couple of sections.",
+      },
+      {
+        label: "WhatsApp Invite Message",
+        body: "Write your own invite wording using {{name}}, {{link}}, {{hostedBy}}, and {{honoreeName}} placeholders — a live preview shows exactly what each guest will see. Leave it blank to use the default wording.",
+      },
+      {
+        label: "Public RSVP Link",
+        body: "Off by default (RSVP only via each guest's personal link). Turn it on to open a self-service RSVP page anyone with the link can use, matched by phone number — useful for large or informal guest lists where collecting every phone number ahead of time isn't practical.",
+      },
+      {
+        label: "Custom CSS",
+        body: "For fine-tuned visual tweaks beyond what a template offers. Use \"Generate with AI\" to describe a style change in plain language (e.g. \"make the section headings larger\") and have it written for you — review before saving either way.",
+      },
+    ],
+  },
+  {
+    title: "AI Avatar",
+    items: [
+      {
+        label: "What it is",
+        body: "An optional chat widget on your event's homepage that acts as a friendly host/greeter for guests — it can answer questions about the event and nudge visitors toward RSVPing, uploading a memory, or playing a game. It speaks its replies out loud and guests can talk back instead of typing.",
+      },
+      {
+        label: "Turning it on",
+        body: "In Event Settings, switch AI Avatar on and set a daily message limit (a simple safety cap on usage, since every message costs a small amount to generate). Once enabled it appears automatically on your public event page — no extra setup needed.",
+      },
+    ],
+  },
+  {
+    title: "Event Day",
+    items: [
+      {
+        label: "/admin/event-day",
+        body: "Build a time-blocked schedule for the day (e.g. \"11am–12pm Cake Cutting, 12–1pm Lunch\") and share the menu — buffet or à la carte, with dietary tags per item. Guests view it from a dedicated Event Day page.",
+      },
+      {
+        label: "Public vs. private",
+        body: "Choose whether the schedule/menu page is open to anyone with the link (like the Timeline) or gated behind a quick phone-number check against your invitee list.",
       },
     ],
   },
@@ -94,6 +140,41 @@ const SECTIONS: GuideSection[] = [
       {
         label: "/admin/checkin",
         body: "On event day, search a guest by name and tap to check them in. See live attendance as guests arrive; undo is available if needed.",
+      },
+    ],
+  },
+  {
+    title: "AI Image & Slideshow Video",
+    items: [
+      {
+        label: "/admin/ai-image",
+        body: "Describe an image in a sentence and generate one — for a link-preview image, a gallery photo, or inspiration for a printed invitation. You can also upload your own image on the same page if you'd rather skip generation entirely.",
+      },
+      {
+        label: "/admin/slideshow",
+        body: "Turn your Gallery and Timeline photos into a real music-backed highlight video — pick photos, set the pace, optionally add captions, then render. The finished video can be used directly as your Link Preview Video.",
+      },
+    ],
+  },
+  {
+    title: "Games & Planner",
+    items: [
+      {
+        label: "/admin/games",
+        body: "Set up Word Search or Housie (Tambola)-style games for guests to play from their own phone — share a link or QR code, and watch scores/prize claims live.",
+      },
+      {
+        label: "/admin/planner",
+        body: "A simple to-do board and sticky notes for the planning process itself — share one link with family so everyone can help without needing their own login.",
+      },
+    ],
+  },
+  {
+    title: "Domain Search",
+    items: [
+      {
+        label: "/admin/domain-search",
+        body: "Search for a custom domain for your event (e.g. yourname.com) and see live availability and pricing. Purchasing happens on the registrar's own site — once you own the domain, point its DNS at this platform to use it.",
       },
     ],
   },

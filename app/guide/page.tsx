@@ -1,4 +1,4 @@
-import { Camera, Heart, Images, Mic, Share2, Video } from "lucide-react";
+import { Bot, Camera, CalendarClock, Gamepad2, Heart, Images, Mic, Share2, Video } from "lucide-react";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -10,6 +10,21 @@ const STEPS = [
     icon: Heart,
     title: "RSVP",
     body: "Let the host know if you're coming, maybe, or can't make it — with how many adults and children, and your meal preference. You can update your response any time by opening the same link again.",
+  },
+  {
+    icon: CalendarClock,
+    title: "Check the day's schedule & menu",
+    body: "If your host has set one up, see the run of show for the day (like when cake-cutting or games happen) and what's on the menu, with dietary tags — right from your phone.",
+  },
+  {
+    icon: Bot,
+    title: "Chat with the AI host",
+    body: "Some events have a friendly chat assistant on the homepage — ask it questions, and it can point you toward RSVPing, sharing a memory, or a game to play. It can speak its replies aloud, and you can talk back instead of typing.",
+  },
+  {
+    icon: Gamepad2,
+    title: "Play a game",
+    body: "If your host has set one up, join a Word Search or Housie (Tambola) game from your own phone and see the fun live with other guests.",
   },
   {
     icon: Camera,
