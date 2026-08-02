@@ -76,9 +76,16 @@ touching in the app itself.
    to Netlify's load-balancer IP, or use Netlify DNS directly if you
    bought it there) — same mechanics as the GoDaddy steps above.
    Netlify auto-provisions the SSL certificate once DNS resolves.
-   Once verified, set it as the **Primary domain** so the old
-   `*.netlify.app` URL 301-redirects to it (avoids duplicate-content
-   SEO issues; the old URL keeps working, just redirects).
+   Once verified, set it as the **Primary domain** — this only
+   affects which URL Netlify prefers in its own UI/canonical headers.
+   **It does NOT redirect or disable the old `*.netlify.app` URL** —
+   Netlify serves the same deployed site on every domain attached to
+   it (custom domain(s) + the `.netlify.app` subdomain) simultaneously
+   and indefinitely; there's no automatic redirect between them. If
+   you ever *want* the old link to stop working and forward to the
+   new one instead, that takes a manual `_redirects` rule — skip this
+   entirely if, like now, you want both links to keep working side by
+   side.
 3. **Set `NEXT_PUBLIC_SITE_URL=https://everymoment.in`** in Netlify's
    environment variables and redeploy. This one var is the single
    source of truth for the app's own idea of its domain
