@@ -19,6 +19,12 @@ interface UseMediaRecorderOptions {
  * than throwing if one doesn't) and cancel (stop without keeping the
  * clip, for "I don't want this take" — distinct from stop(), which
  * always finalizes and hands the recording to onCapture).
+ *
+ * openPreview()/closePreview() let a caller (video-upload.tsx) turn the
+ * camera on for a live look before actually recording — start() reuses
+ * that already-open stream if one exists rather than requesting
+ * getUserMedia a second time, so tapping "Start Recording" after a
+ * preview is instant instead of prompting for camera access twice.
  */
 export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
   const [isRecording, setIsRecording] = useState(false);
@@ -46,12 +52,39 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     setPreviewStream(null);
   }, []);
 
-  const start = useCallback(async () => {
+  /** Opens the camera/mic and shows a live preview without recording yet. Safe to call more than once — a no-op if a stream is already open. */
+  const openPreview = useCallback(async () => {
+    if (streamRef.current) return;
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia(
         kind === "video" ? { video: true, audio: true } : { audio: true },
       );
+      streamRef.current = stream;
+      setPreviewStream(stream);
+    } catch {
+      setError(
+        kind === "video"
+          ? "Camera/microphone access was denied or unavailable."
+          : "Microphone access was denied or unavailable.",
+      );
+    }
+  }, [kind]);
+
+  /** Releases the camera/mic without recording anything — for leaving record mode after only previewing. Never tears down mid-recording. */
+  const closePreview = useCallback(() => {
+    if (recorderRef.current && recorderRef.current.state !== "inactive") return;
+    teardownStream();
+  }, [teardownStream]);
+
+  const start = useCallback(async () => {
+    setError(null);
+    try {
+      // Reuse the already-open preview stream if openPreview() got there
+      // first — avoids a second getUserMedia prompt/negotiation.
+      const stream = streamRef.current ?? (await navigator.mediaDevices.getUserMedia(
+        kind === "video" ? { video: true, audio: true } : { audio: true },
+      ));
       streamRef.current = stream;
       setPreviewStream(stream);
       chunksRef.current = [];
@@ -101,26 +134,30 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     }
   }, [kind, onCapture]);
 
-  /** Finalizes the recording and hands it to onCapture. */
+  /**
+   * Finalizes the recording and hands it to onCapture. Deliberately
+   * leaves the camera/mic preview running afterward (like a real camera
+   * app's viewfinder) so "Record again" doesn't need to re-request
+   * permission or renegotiate the stream — closePreview() is the only
+   * thing that actually releases the camera.
+   */
   const stop = useCallback(() => {
     discardRef.current = false;
     recorderRef.current?.stop();
-    teardownStream();
     setIsRecording(false);
     setIsPaused(false);
     clearTimer();
-  }, [teardownStream]);
+  }, []);
 
-  /** Ends the recording WITHOUT keeping it — for "never mind, discard this take." */
+  /** Ends the recording WITHOUT keeping it — for "never mind, discard this take." Also leaves the preview running, same reasoning as stop(). */
   const cancel = useCallback(() => {
     discardRef.current = true;
     recorderRef.current?.stop();
-    teardownStream();
     setIsRecording(false);
     setIsPaused(false);
     setSeconds(0);
     clearTimer();
-  }, [teardownStream]);
+  }, []);
 
   /** Feature-detected — pause()/resume() aren't guaranteed on every browser MediaRecorder implementation, so this quietly no-ops rather than throwing on one that lacks it. */
   const pause = useCallback(() => {
@@ -140,5 +177,18 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
   }, []);
 
-  return { isRecording, isPaused, seconds, previewStream, error, start, stop, cancel, pause, resume };
+  return {
+    isRecording,
+    isPaused,
+    seconds,
+    previewStream,
+    error,
+    openPreview,
+    closePreview,
+    start,
+    stop,
+    cancel,
+    pause,
+    resume,
+  };
 }

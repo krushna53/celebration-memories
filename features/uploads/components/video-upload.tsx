@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Circle, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } from "lucide-react";
+import { Circle, Loader2, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
@@ -32,20 +32,47 @@ export function VideoUpload({ upload, initialMode = "upload" }: VideoUploadProps
   // separately picked from the file library.
   const [lastRecordedId, setLastRecordedId] = useState<string | null>(null);
 
-  const { isRecording, isPaused, seconds, previewStream, error, start, stop, cancel, pause, resume } =
-    useMediaRecorder({
-      kind: "video",
-      onCapture: (file) => {
-        const [id] = addFiles([file]);
-        setLastRecordedId(id ?? null);
-      },
-    });
+  const {
+    isRecording,
+    isPaused,
+    seconds,
+    previewStream,
+    error,
+    openPreview,
+    closePreview,
+    start,
+    stop,
+    cancel,
+    pause,
+    resume,
+  } = useMediaRecorder({
+    kind: "video",
+    onCapture: (file) => {
+      const [id] = addFiles([file]);
+      setLastRecordedId(id ?? null);
+    },
+  });
 
   useEffect(() => {
     if (previewRef.current) {
       previewRef.current.srcObject = previewStream;
     }
   }, [previewStream]);
+
+  // Opens the camera as soon as the guest lands on the record view —
+  // shows a live preview with "Start Recording" overlaid on top, like a
+  // camera app's viewfinder, instead of a static placeholder until
+  // recording has already begun. Releases the camera again on the way
+  // out (switching to "Upload a video" or leaving this screen entirely).
+  useEffect(() => {
+    if (mode === "record") {
+      openPreview();
+    }
+    return () => {
+      closePreview();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   function recordAgain() {
     if (lastRecordedId) remove(lastRecordedId);
@@ -106,74 +133,79 @@ export function VideoUpload({ upload, initialMode = "upload" }: VideoUploadProps
           </button>
         </>
       ) : (
-        <div className="mt-4 flex flex-col items-center gap-3 rounded-xl border border-navy-950/10 bg-navy-950 p-4">
-          {isRecording ? (
-            <video ref={previewRef} autoPlay muted playsInline className="aspect-video w-full rounded-lg object-cover" />
-          ) : (
-            <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-navy-900 text-ivory-100/40">
-              <Video size={32} />
-            </div>
-          )}
-
-          {isRecording ? (
-            <p className="font-display text-lg text-gold-300 tabular-nums">
-              {formatSeconds(seconds)}
-              {isPaused ? <span className="ml-2 text-xs uppercase tracking-wide text-ivory-100/50">Paused</span> : null}
-            </p>
-          ) : null}
-
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {!isRecording ? (
-              <button
-                type="button"
-                onClick={start}
-                className="tap-target flex items-center gap-2 rounded-full bg-gold-500 px-6 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200"
-              >
-                <Circle size={16} />
-                Start Recording
-              </button>
+        <div className="mt-4 rounded-xl border border-navy-950/10 bg-navy-950 p-4">
+          <div className="relative overflow-hidden rounded-lg bg-navy-900">
+            {previewStream ? (
+              <video ref={previewRef} autoPlay muted playsInline className="aspect-video w-full object-cover" />
             ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={isPaused ? resume : pause}
-                  className="tap-target flex items-center gap-2 rounded-full border border-ivory-100/20 px-4 py-2.5 text-sm font-medium text-ivory-50 transition-luxury duration-200 hover:border-ivory-100/40"
-                >
-                  {isPaused ? <Play size={16} /> : <Pause size={16} />}
-                  {isPaused ? "Resume" : "Pause"}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancel}
-                  className="tap-target flex items-center gap-2 rounded-full border border-ivory-100/20 px-4 py-2.5 text-sm font-medium text-ivory-100/70 transition-luxury duration-200 hover:border-red-400/50 hover:text-red-300"
-                >
-                  <X size={16} />
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={stop}
-                  className="tap-target flex items-center gap-2 rounded-full bg-red-600 px-6 py-2.5 text-sm font-medium text-white transition-luxury duration-200"
-                >
-                  <Square size={16} />
-                  Stop
-                </button>
-              </>
+              <div className="flex aspect-video w-full items-center justify-center text-ivory-100/40">
+                {error ? <Video size={32} /> : <Loader2 size={28} className="animate-spin" />}
+              </div>
             )}
+
+            {isRecording ? (
+              <p className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 font-display text-sm text-gold-300 tabular-nums">
+                <span className={cn("h-2 w-2 rounded-full bg-red-500", !isPaused && "animate-pulse")} />
+                {formatSeconds(seconds)}
+                {isPaused ? <span className="text-[10px] uppercase tracking-wide text-ivory-100/70">Paused</span> : null}
+              </p>
+            ) : null}
+
+            {previewStream ? (
+              <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center justify-center gap-2 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 pt-8">
+                {!isRecording ? (
+                  <button
+                    type="button"
+                    onClick={start}
+                    className="tap-target flex items-center gap-2 rounded-full bg-gold-500 px-6 py-2.5 text-sm font-medium text-navy-950 shadow-lg transition-luxury duration-200"
+                  >
+                    <Circle size={16} />
+                    Start Recording
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={isPaused ? resume : pause}
+                      className="tap-target flex items-center gap-2 rounded-full border border-ivory-100/30 bg-black/30 px-4 py-2.5 text-sm font-medium text-ivory-50 transition-luxury duration-200 hover:border-ivory-100/50"
+                    >
+                      {isPaused ? <Play size={16} /> : <Pause size={16} />}
+                      {isPaused ? "Resume" : "Pause"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancel}
+                      className="tap-target flex items-center gap-2 rounded-full border border-ivory-100/30 bg-black/30 px-4 py-2.5 text-sm font-medium text-ivory-100/80 transition-luxury duration-200 hover:border-red-400/50 hover:text-red-300"
+                    >
+                      <X size={16} />
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stop}
+                      className="tap-target flex items-center gap-2 rounded-full bg-red-600 px-6 py-2.5 text-sm font-medium text-white shadow-lg transition-luxury duration-200"
+                    >
+                      <Square size={16} />
+                      Stop
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
 
           {!isRecording && lastRecordedId ? (
             <button
               type="button"
               onClick={recordAgain}
-              className="tap-target flex items-center gap-1.5 text-xs font-medium text-gold-300 hover:text-gold-200"
+              className="tap-target mt-3 flex w-full items-center justify-center gap-1.5 text-xs font-medium text-gold-300 hover:text-gold-200"
             >
               <RotateCcw size={13} />
               Not happy with it? Record again
             </button>
           ) : null}
 
-          {error ? <p className="text-xs text-red-400">{error}</p> : null}
+          {error ? <p className="mt-3 text-center text-xs text-red-400">{error}</p> : null}
         </div>
       )}
 
