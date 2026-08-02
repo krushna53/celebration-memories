@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, HeartHandshake, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -16,21 +16,58 @@ interface PublicMemoryUploaderProps {
   honoreeName: string;
 }
 
+interface StoredIdentity {
+  token: string;
+  firstName: string;
+}
+
+function storageKey(eventSlug: string): string {
+  return `cm-public-memory-identity-${eventSlug}`;
+}
+
+/** Reads a previously-saved identity for this event, if any — guards every step since localStorage isn't available during SSR and a guest's saved value could in principle be malformed. */
+function loadStoredIdentity(eventSlug: string): StoredIdentity | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(storageKey(eventSlug));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredIdentity>;
+    if (typeof parsed.token === "string" && typeof parsed.firstName === "string") {
+      return { token: parsed.token, firstName: parsed.firstName };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Two-step client for the public "share a memory" page (no invite token
  * needed): a name-only identification form, then — once identified — the
  * exact same <MediaUploadsSection> used on personal /invite/[token]
  * pages, so uploads land in the normal approval queue and Memory Wall.
  * See features/uploads/public-memory-actions.ts for the server side.
+ *
+ * The identity (self-service token + first name) is saved to
+ * localStorage once entered — without this, a guest tapping their
+ * browser's back button (or the page reloading) lost the in-memory
+ * `identified` state and got asked to type their name again, even
+ * though they'd already been issued a working token. Scoped per event
+ * slug so visiting a different event's page doesn't reuse the name.
  */
 export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUploaderProps) {
   const [name, setName] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [identified, setIdentified] = useState<{ token: string; firstName: string } | null>(null);
+  const [identified, setIdentified] = useState<StoredIdentity | null>(null);
   const [quietSuccess, setQuietSuccess] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const stored = loadStoredIdentity(eventSlug);
+    if (stored) setIdentified(stored);
+  }, [eventSlug]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,7 +88,15 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
         setQuietSuccess(true);
         return;
       }
-      setIdentified({ token: result.token, firstName: result.firstName });
+      const identity: StoredIdentity = { token: result.token, firstName: result.firstName };
+      setIdentified(identity);
+      try {
+        window.localStorage.setItem(storageKey(eventSlug), JSON.stringify(identity));
+      } catch {
+        // Storage can be unavailable (private browsing, quota) — the
+        // guest can still upload this visit, they'd just be asked again
+        // next time. Not worth failing the flow over.
+      }
     } finally {
       setSubmitting(false);
     }

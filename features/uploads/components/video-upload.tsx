@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Circle, Square, UploadCloud, Video } from "lucide-react";
+import { Circle, Pause, Play, RotateCcw, Square, UploadCloud, Video, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
@@ -27,17 +27,31 @@ export function VideoUpload({ upload, initialMode = "upload" }: VideoUploadProps
   const [mode, setMode] = useState<"upload" | "record">(initialMode);
   const inputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLVideoElement>(null);
+  // Tracks the item just added by a recording so "Record again" can
+  // discard exactly that take, without touching anything the guest
+  // separately picked from the file library.
+  const [lastRecordedId, setLastRecordedId] = useState<string | null>(null);
 
-  const { isRecording, seconds, previewStream, error, start, stop } = useMediaRecorder({
-    kind: "video",
-    onCapture: (file) => addFiles([file]),
-  });
+  const { isRecording, isPaused, seconds, previewStream, error, start, stop, cancel, pause, resume } =
+    useMediaRecorder({
+      kind: "video",
+      onCapture: (file) => {
+        const [id] = addFiles([file]);
+        setLastRecordedId(id ?? null);
+      },
+    });
 
   useEffect(() => {
     if (previewRef.current) {
       previewRef.current.srcObject = previewStream;
     }
   }, [previewStream]);
+
+  function recordAgain() {
+    if (lastRecordedId) remove(lastRecordedId);
+    setLastRecordedId(null);
+    start();
+  }
 
   return (
     <div>
@@ -104,20 +118,60 @@ export function VideoUpload({ upload, initialMode = "upload" }: VideoUploadProps
           {isRecording ? (
             <p className="font-display text-lg text-gold-300 tabular-nums">
               {formatSeconds(seconds)}
+              {isPaused ? <span className="ml-2 text-xs uppercase tracking-wide text-ivory-100/50">Paused</span> : null}
             </p>
           ) : null}
 
-          <button
-            type="button"
-            onClick={isRecording ? stop : start}
-            className={cn(
-              "tap-target flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-medium transition-luxury duration-200",
-              isRecording ? "bg-red-600 text-white" : "bg-gold-500 text-navy-950",
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {!isRecording ? (
+              <button
+                type="button"
+                onClick={start}
+                className="tap-target flex items-center gap-2 rounded-full bg-gold-500 px-6 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200"
+              >
+                <Circle size={16} />
+                Start Recording
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={isPaused ? resume : pause}
+                  className="tap-target flex items-center gap-2 rounded-full border border-ivory-100/20 px-4 py-2.5 text-sm font-medium text-ivory-50 transition-luxury duration-200 hover:border-ivory-100/40"
+                >
+                  {isPaused ? <Play size={16} /> : <Pause size={16} />}
+                  {isPaused ? "Resume" : "Pause"}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancel}
+                  className="tap-target flex items-center gap-2 rounded-full border border-ivory-100/20 px-4 py-2.5 text-sm font-medium text-ivory-100/70 transition-luxury duration-200 hover:border-red-400/50 hover:text-red-300"
+                >
+                  <X size={16} />
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={stop}
+                  className="tap-target flex items-center gap-2 rounded-full bg-red-600 px-6 py-2.5 text-sm font-medium text-white transition-luxury duration-200"
+                >
+                  <Square size={16} />
+                  Stop
+                </button>
+              </>
             )}
-          >
-            {isRecording ? <Square size={16} /> : <Circle size={16} />}
-            {isRecording ? "Stop Recording" : "Start Recording"}
-          </button>
+          </div>
+
+          {!isRecording && lastRecordedId ? (
+            <button
+              type="button"
+              onClick={recordAgain}
+              className="tap-target flex items-center gap-1.5 text-xs font-medium text-gold-300 hover:text-gold-200"
+            >
+              <RotateCcw size={13} />
+              Not happy with it? Record again
+            </button>
+          ) : null}
 
           {error ? <p className="text-xs text-red-400">{error}</p> : null}
         </div>
@@ -126,7 +180,10 @@ export function VideoUpload({ upload, initialMode = "upload" }: VideoUploadProps
       <UploadQueue
         items={items}
         onCaptionChange={setCaption}
-        onRemove={remove}
+        onRemove={(id) => {
+          if (id === lastRecordedId) setLastRecordedId(null);
+          remove(id);
+        }}
         onUploadAll={uploadAll}
       />
     </div>

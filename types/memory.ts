@@ -27,6 +27,13 @@ export const UPLOAD_LIMITS = {
 
 export const ACCEPTED_MIME_TYPES = {
   photo: ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"],
-  video: ["video/mp4", "video/quicktime"],
+  // video/webm is here for in-browser recordings: MediaRecorder can only
+  // produce MP4 on Safari — every other browser (Chrome/Android, Edge,
+  // Firefox) can only record WebM. Without it, "Record a Video" silently
+  // failed to upload on every non-Safari browser. Picked/uploaded files
+  // are still expected to be MP4 or MOV (see the file picker's `accept`
+  // in features/uploads/components/video-upload.tsx) — WebM only shows
+  // up here from a recording, never from the upload picker.
+  video: ["video/mp4", "video/quicktime", "video/webm"],
   audio: ["audio/mpeg", "audio/mp4", "audio/aac", "audio/wav", "audio/webm"],
 } as const;

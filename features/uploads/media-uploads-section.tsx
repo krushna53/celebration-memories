@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, Circle, FileAudio, FileVideo, ImagePlus, Mic, PenLine, Video } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -69,6 +69,18 @@ export function MediaUploadsSection({ token }: MediaUploadsSectionProps) {
   const photoUpload = useMediaUpload(token, "photo");
   const videoUpload = useMediaUpload(token, "video");
   const audioUpload = useMediaUpload(token, "audio");
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  // Scrolls the record/upload panel into view whenever it appears — on
+  // mobile, tapping "Record Video"/"Record Audio" from the menu could
+  // otherwise leave the camera preview and Start/Stop controls below the
+  // fold if the guest had scrolled partway down the page to find this
+  // section in the first place.
+  useEffect(() => {
+    if (view !== "menu") {
+      sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [view]);
 
   const pendingCountByView: Partial<Record<View, number>> = {
     photo: photoUpload.items.filter((it) => it.status !== "done").length,
@@ -118,7 +130,7 @@ export function MediaUploadsSection({ token }: MediaUploadsSectionProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-gold-500/15 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8">
+    <div ref={sectionRef} className="rounded-2xl border border-gold-500/15 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8">
       <div className="flex items-center gap-3">
         <button
           type="button"

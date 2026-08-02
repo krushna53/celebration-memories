@@ -43,7 +43,14 @@ export async function createSignedMediaUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
-  const { inviteeId, eventId, kind, fileName, contentType, fileSize } = params;
+  const { inviteeId, eventId, kind, fileName, fileSize } = params;
+
+  // Strip codec parameters (e.g. "video/webm;codecs=vp8,opus" ->
+  // "video/webm") before checking — in-browser recordings normalize
+  // this at the source too (see hooks/use-media-recorder.ts), but this
+  // is a second, server-side safety net for any other client (e.g. the
+  // mobile app) that might send the fuller MIME string.
+  const contentType = (params.contentType.split(";")[0] ?? params.contentType).trim();
 
   const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES[kind];
   if (!acceptedTypes.includes(contentType)) {

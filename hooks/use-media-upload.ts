@@ -24,7 +24,8 @@ export interface UploadItem {
 export function useMediaUpload(token: string, kind: "photo" | "video" | "audio") {
   const [items, setItems] = useState<UploadItem[]>([]);
 
-  const addFiles = useCallback((files: FileList | File[]) => {
+  /** Returns the newly-created items' ids, in order — lets a caller (e.g. the recorder UI's "Record again") target the specific item it just added without guessing at array position. */
+  const addFiles = useCallback((files: FileList | File[]): string[] => {
     const next: UploadItem[] = Array.from(files).map((file) => ({
       id: `${file.name}-${file.size}-${Math.random().toString(36).slice(2)}`,
       file,
@@ -32,6 +33,7 @@ export function useMediaUpload(token: string, kind: "photo" | "video" | "audio")
       caption: "",
     }));
     setItems((prev) => [...prev, ...next]);
+    return next.map((it) => it.id);
   }, []);
 
   const setCaption = useCallback((id: string, caption: string) => {

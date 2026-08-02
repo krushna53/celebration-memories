@@ -13,9 +13,16 @@ interface UseMediaRecorderOptions {
  * directly from the browser" upload option (audio + video). Produces a
  * plain File on stop, which callers feed into the same upload pipeline
  * used for picked files — recording is just an alternate file source.
+ *
+ * Supports pause/resume (MediaRecorder.pause()/resume(), feature-
+ * detected — most browsers support it, but this degrades quietly rather
+ * than throwing if one doesn't) and cancel (stop without keeping the
+ * clip, for "I don't want this take" — distinct from stop(), which
+ * always finalizes and hands the recording to onCapture).
  */
 export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
   const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +31,20 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // Set right before calling recorder.stop() from cancel() — checked in
+  // the onstop handler so a cancelled take never reaches onCapture.
+  const discardRef = useRef(false);
+
+  const clearTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+  };
+
+  const teardownStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setPreviewStream(null);
+  }, []);
 
   const start = useCallback(async () => {
     setError(null);
@@ -34,25 +55,42 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
       streamRef.current = stream;
       setPreviewStream(stream);
       chunksRef.current = [];
+      discardRef.current = false;
 
       const recorder = new MediaRecorder(stream);
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
-        const mimeType = recorder.mimeType || (kind === "video" ? "video/webm" : "audio/webm");
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        const ext = mimeType.includes("mp4") ? "mp4" : "webm";
-        const file = new File([blob], `${kind}-recording-${Date.now()}.${ext}`, {
-          type: mimeType,
-        });
-        onCapture(file);
+        if (!discardRef.current) {
+          // recorder.mimeType often comes back with codec parameters, e.g.
+          // "video/webm;codecs=vp8,opus" or "audio/webm;codecs=opus" — the
+          // upload pipeline's accepted-type list (types/memory.ts) and the
+          // Storage bucket's own MIME allowlist both check the exact
+          // Content-Type, so a codec suffix neither one knows about would
+          // otherwise get rejected as "unsupported file type" even for an
+          // accepted base type. Stripping down to the base type here —
+          // not just at the validation call site — means the File's own
+          // .type always matches exactly what's allowed, all the way
+          // through Storage.
+          const rawMimeType = recorder.mimeType || (kind === "video" ? "video/webm" : "audio/webm");
+          const mimeType = (rawMimeType.split(";")[0] ?? rawMimeType).trim();
+          const blob = new Blob(chunksRef.current, { type: mimeType });
+          const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+          const file = new File([blob], `${kind}-recording-${Date.now()}.${ext}`, {
+            type: mimeType,
+          });
+          onCapture(file);
+        }
+        chunksRef.current = [];
       };
 
       recorder.start();
       recorderRef.current = recorder;
       setIsRecording(true);
+      setIsPaused(false);
       setSeconds(0);
+      clearTimer();
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
     } catch {
       setError(
@@ -63,14 +101,44 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     }
   }, [kind, onCapture]);
 
+  /** Finalizes the recording and hands it to onCapture. */
   const stop = useCallback(() => {
+    discardRef.current = false;
     recorderRef.current?.stop();
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    setPreviewStream(null);
+    teardownStream();
     setIsRecording(false);
-    if (timerRef.current) clearInterval(timerRef.current);
+    setIsPaused(false);
+    clearTimer();
+  }, [teardownStream]);
+
+  /** Ends the recording WITHOUT keeping it — for "never mind, discard this take." */
+  const cancel = useCallback(() => {
+    discardRef.current = true;
+    recorderRef.current?.stop();
+    teardownStream();
+    setIsRecording(false);
+    setIsPaused(false);
+    setSeconds(0);
+    clearTimer();
+  }, [teardownStream]);
+
+  /** Feature-detected — pause()/resume() aren't guaranteed on every browser MediaRecorder implementation, so this quietly no-ops rather than throwing on one that lacks it. */
+  const pause = useCallback(() => {
+    const recorder = recorderRef.current;
+    if (!recorder || typeof recorder.pause !== "function" || recorder.state !== "recording") return;
+    recorder.pause();
+    setIsPaused(true);
+    clearTimer();
   }, []);
 
-  return { isRecording, seconds, previewStream, error, start, stop };
+  const resume = useCallback(() => {
+    const recorder = recorderRef.current;
+    if (!recorder || typeof recorder.resume !== "function" || recorder.state !== "paused") return;
+    recorder.resume();
+    setIsPaused(false);
+    clearTimer();
+    timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+  }, []);
+
+  return { isRecording, isPaused, seconds, previewStream, error, start, stop, cancel, pause, resume };
 }
