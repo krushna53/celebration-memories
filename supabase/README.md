@@ -37,17 +37,19 @@ https://supabase.com/dashboard/project/ktbpnjrovzhjwardyime/auth/templates
 
 | Template file | Dashboard page | Subject |
 | --- | --- | --- |
-| `confirm-signup.html` | Confirm signup | `Confirm your email — Celebration Memories` |
-| `invite-user.html` | Invite user | `You're invited to Celebration Memories` |
-| `magic-link.html` | Magic Link | `Your sign-in link — Celebration Memories` |
-| `reset-password.html` | Reset Password | `Reset your password — Celebration Memories` |
-| `change-email.html` | Change Email Address | `Confirm your new email — Celebration Memories` |
-| `reauthentication.html` | Reauthentication | `Your verification code — Celebration Memories` |
+| `confirm-signup.html` | Confirm signup | `Confirm your email — EveryMoment` |
+| `invite-user.html` | Invite user | `You're invited to EveryMoment` |
+| `magic-link.html` | Magic Link | `Your sign-in link — EveryMoment` |
+| `reset-password.html` | Reset Password | `Reset your password — EveryMoment` |
+| `change-email.html` | Change Email Address | `Confirm your new email — EveryMoment` |
+| `reauthentication.html` | Reauthentication | `Your verification code — EveryMoment` |
 
-All six share the same dark navy / gold / ivory look as the rest of the
-site, are table-based with inline styles only (no external assets or
-fonts, for email client compatibility), and end with the same
-"Celebration Memories · Built by Krushna Web Works" footer line.
+All six share the same dark indigo / coral / cream look as the rest of
+the site (rebranded from the old navy/gold/ivory "Celebration
+Memories" look — see /EVERYMOMENT-BRAND.md), are table-based with
+inline styles only (no external assets or fonts, for email client
+compatibility), and end with the same "EveryMoment · Built by Krushna
+Web Works" footer line.
 
 **Now that the project is on a paid ("Pro") Supabase plan**, two more
 branding levers open up beyond just the template body/subject, both under
@@ -56,12 +58,12 @@ branding levers open up beyond just the template body/subject, both under
 1. **Custom SMTP** — point auth email delivery at your own sender (e.g.
    Resend, the same provider `lib/email.ts` already uses for inquiry/
    notification emails) so the From address reads
-   `Celebration Memories <noreply@yourdomain.com>` instead of Supabase's
-   shared `noreply@mail.app.supabase.io`. This also removes Supabase's
+   `EveryMoment <noreply@yourdomain.com>` instead of Supabase's shared
+   `noreply@mail.app.supabase.io`. This also removes Supabase's
    free-tier rate limit on auth emails (a handful per hour).
 2. **Sender name** — even without custom SMTP, the Pro plan lets you set
-   a display name for the shared sender, so recipients see "Celebration
-   Memories" in their inbox rather than a raw Supabase address.
+   a display name for the shared sender, so recipients see "EveryMoment"
+   in their inbox rather than a raw Supabase address.
 
 Neither of those two are template files — they're one-time Dashboard
 settings, not something to check into this repo.
