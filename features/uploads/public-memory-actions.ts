@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createPublicMemoryUploader, getEventForPublicMemories } from "@/services/public-memories";
+import {
+  createPublicMemoryUploader,
+  getEventForPublicMemories,
+  renamePublicMemoryUploader,
+} from "@/services/public-memories";
 
 export type IdentifyPublicMemoryUploaderResult =
   | { success: true; token: string; firstName: string }
@@ -52,5 +56,27 @@ export async function identifyPublicMemoryUploaderAction(
   } catch (err) {
     console.error("identifyPublicMemoryUploaderAction failed:", err);
     return { success: false, error: "Something went wrong. Please try again." };
+  }
+}
+
+export type RenamePublicMemoryUploaderResult = { success: true } | { success: false; error: string };
+
+/**
+ * Fills in a real name on an already-identified public memory
+ * uploader — see renamePublicMemoryUploader's doc comment for why this
+ * exists (video actions require a real name; other actions don't, so a
+ * guest can hit this gap after already identifying with a blank name).
+ * Re-resolves the invitee from the token itself, never trusts anything
+ * else the client sends.
+ */
+export async function renamePublicMemoryUploaderAction(
+  token: string,
+  name: string,
+): Promise<RenamePublicMemoryUploaderResult> {
+  try {
+    await renamePublicMemoryUploader(token, name);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Something went wrong." };
   }
 }

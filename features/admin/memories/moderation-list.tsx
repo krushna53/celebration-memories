@@ -92,7 +92,14 @@ export function ModerationList({ items: initialItems }: ModerationListProps) {
             <img src={item.url} alt="" className="aspect-[4/3] w-full object-cover" />
           ) : null}
           {item.kind === "video" && item.url ? (
-            <video src={item.url} controls className="aspect-video w-full bg-navy-950" />
+            <>
+              <video src={item.url} controls className="aspect-video w-full bg-navy-950" />
+              <div className="border-t-2 border-gold-400 bg-gold-500/10 px-3 py-1.5">
+                <p className="truncate text-xs font-medium text-navy-950">
+                  <span className="text-navy-700/60">From</span> {item.guestName}
+                </p>
+              </div>
+            </>
           ) : null}
           {item.kind === "audio" && item.url ? (
             <div className="bg-navy-950 px-4 py-4">

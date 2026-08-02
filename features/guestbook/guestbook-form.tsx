@@ -101,27 +101,47 @@ export function GuestbookForm({ token }: GuestbookFormProps) {
     >
       <div>
         <label className={labelClasses} htmlFor="guestName">
-          Your Name
+          Your Name <span className="normal-case text-red-500">*</span>
         </label>
-        <input id="guestName" className={cn(inputClasses, "mt-1.5")} {...register("guestName")} />
+        <input
+          id="guestName"
+          aria-required="true"
+          aria-invalid={errors.guestName ? "true" : "false"}
+          className={cn(
+            inputClasses,
+            "mt-1.5",
+            errors.guestName && "border-red-500 focus:border-red-500 focus:ring-red-500/30",
+          )}
+          {...register("guestName")}
+        />
         {errors.guestName ? (
-          <p className="mt-1 text-xs text-red-600">{errors.guestName.message}</p>
+          <p className="mt-1 text-xs font-medium text-red-600" role="alert">
+            {errors.guestName.message}
+          </p>
         ) : null}
       </div>
 
       <div>
         <label className={labelClasses} htmlFor="message">
-          Your Message
+          Your Message <span className="normal-case text-red-500">*</span>
         </label>
         <textarea
           id="message"
           rows={3}
-          className={cn(inputClasses, "mt-1.5 resize-none")}
+          aria-required="true"
+          aria-invalid={errors.message ? "true" : "false"}
+          className={cn(
+            inputClasses,
+            "mt-1.5 resize-none",
+            errors.message && "border-red-500 focus:border-red-500 focus:ring-red-500/30",
+          )}
           placeholder="Share a wish, a memory, anything from the heart..."
           {...register("message")}
         />
         {errors.message ? (
-          <p className="mt-1 text-xs text-red-600">{errors.message.message}</p>
+          <p className="mt-1 text-xs font-medium text-red-600" role="alert">
+            {errors.message.message}
+          </p>
         ) : null}
       </div>
 
@@ -166,10 +186,15 @@ export function GuestbookForm({ token }: GuestbookFormProps) {
         )}
       </div>
 
-      <div>
+      <div
+        className={cn(
+          errors.consent && "rounded-lg border border-red-300 bg-red-50/60 p-2.5 -m-0.5",
+        )}
+      >
         <label className="flex items-start gap-2.5 text-sm text-navy-700/80">
           <input
             type="checkbox"
+            aria-invalid={errors.consent ? "true" : "false"}
             className="mt-0.5 h-4 w-4 shrink-0 rounded border-navy-950/30 text-gold-500 focus:ring-gold-500/40"
             {...register("consent")}
           />
@@ -188,7 +213,9 @@ export function GuestbookForm({ token }: GuestbookFormProps) {
           </span>
         </label>
         {errors.consent ? (
-          <p className="mt-1 text-xs text-red-600">{errors.consent.message}</p>
+          <p className="mt-1 text-xs font-medium text-red-600" role="alert">
+            {errors.consent.message}
+          </p>
         ) : null}
       </div>
 

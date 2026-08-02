@@ -41,20 +41,59 @@ export function formatEventDate(iso: string, timezone: string = DEFAULT_EVENT_TI
 }
 
 /**
- * e.g. "11:00 AM GMT+5:30" (or "11:00 AM EDT" for zones with a common
- * short name) — in the given event timezone, regardless of server/
- * browser timezone. Always includes the zone so a guest anywhere in the
- * world sees, unambiguously, what time that is for them relative to the
- * venue — not just a bare clock time that reads as their own local time.
+ * Intl's own "short" timeZoneName resolves cleanly for most zones
+ * (America/New_York -> "EST"/"EDT", Europe/London -> "GMT"/"BST", and
+ * so on) but falls back to a bare numeric offset like "GMT+5:30" for
+ * zones whose common abbreviation is ambiguous in CLDR — most notably
+ * Asia/Kolkata, since "IST" could mean India, Israel, or Ireland
+ * Standard Time, so ICU declines to guess and shows the offset
+ * instead. This curated map overrides just those known-ambiguous
+ * zones with the abbreviation actually in everyday use for that
+ * region; every other zone (including every common US zone) still
+ * resolves however Intl already handles it on its own.
+ */
+const TIMEZONE_ABBREVIATION_OVERRIDES: Record<string, string> = {
+  "Asia/Kolkata": "IST",
+  "Asia/Colombo": "IST",
+  "Asia/Dhaka": "BST",
+  "Asia/Karachi": "PKT",
+  "Asia/Kathmandu": "NPT",
+  "Asia/Yangon": "MMT",
+  "Asia/Dubai": "GST",
+  "Asia/Shanghai": "CST",
+  "Asia/Singapore": "SGT",
+  "Asia/Hong_Kong": "HKT",
+  "Asia/Tokyo": "JST",
+  "Asia/Seoul": "KST",
+};
+
+/** Resolves the short zone abbreviation to display for an instant — the curated override above when the zone is one of the known-ambiguous ones, otherwise whatever Intl's own "short" timeZoneName resolves to (already correct, including DST, for zones like America/New_York or Europe/Paris). */
+function resolveZoneAbbreviation(iso: string, timezone: string): string {
+  const override = TIMEZONE_ABBREVIATION_OVERRIDES[timezone];
+  if (override) return override;
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    timeZoneName: "short",
+  }).formatToParts(new Date(iso));
+  return parts.find((p) => p.type === "timeZoneName")?.value ?? timezone;
+}
+
+/**
+ * e.g. "11:00 AM IST" (or "11:00 AM EDT" for a US zone) — in the given
+ * event timezone, regardless of server/browser timezone. Always
+ * includes the zone so a guest anywhere in the world sees,
+ * unambiguously, what time that is for them relative to the venue —
+ * not just a bare clock time that reads as their own local time.
  */
 export function formatEventTime(iso: string, timezone: string = DEFAULT_EVENT_TIMEZONE): string {
-  return new Intl.DateTimeFormat("en-US", {
+  const time = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-    timeZoneName: "short",
   }).format(new Date(iso));
+  return `${time} ${resolveZoneAbbreviation(iso, timezone)}`;
 }
 
 /**
@@ -78,13 +117,9 @@ export function formatCalendarDate(yyyyMmDd: string): string {
   }).format(new Date(Date.UTC(y, m - 1, d)));
 }
 
-/** Just the zone suffix on its own (e.g. "GMT+5:30", "EDT") — for labels that show a time without going through formatEventTime, like a countdown's "(India time)" caption. */
+/** Just the zone suffix on its own (e.g. "IST", "EDT") — for labels that show a time without going through formatEventTime, like a countdown's "(India time)" caption. */
 export function eventTimeZoneAbbreviation(iso: string, timezone: string = DEFAULT_EVENT_TIMEZONE): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    timeZoneName: "short",
-  }).formatToParts(new Date(iso));
-  return parts.find((p) => p.type === "timeZoneName")?.value ?? timezone;
+  return resolveZoneAbbreviation(iso, timezone);
 }
 
 /**

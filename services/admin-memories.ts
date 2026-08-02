@@ -57,6 +57,7 @@ export async function listMemoriesForModeration(
           id: string;
           caption?: string | null;
           message?: string | null;
+          guest_name?: string | null;
           storage_path?: string | null;
           approved: boolean;
           featured: boolean;
@@ -72,7 +73,14 @@ export async function listMemoriesForModeration(
             : null,
         caption: row.caption ?? null,
         message: row.message ?? null,
-        guestName: row.invitees?.name ?? "A guest",
+        // Guestbook entries store the name the guest actually typed
+        // into that form (guestbook.guest_name, required, min 2 chars)
+        // — that's the real author, and can differ from invitees.name
+        // (set once, earlier, by the shared public-uploader identity
+        // step, which can default to a placeholder like "Guest" for
+        // non-video actions). Every other kind has no guest_name column
+        // and falls back to the joined invitee name as before.
+        guestName: (kind === "guestbook" ? row.guest_name : null) ?? row.invitees?.name ?? "A guest",
         approved: row.approved,
         featured: row.featured,
         createdAt: row.created_at,

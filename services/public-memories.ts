@@ -1,7 +1,9 @@
 import "server-only";
 
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getEventBySlug } from "@/services/events";
 import { createInvitee } from "@/services/admin-invitees";
+import { getInviteeByToken } from "@/services/invitees";
 import type { EventRecord, InviteeRecord } from "@/types/event";
 
 /**
@@ -49,4 +51,39 @@ export async function createPublicMemoryUploader(
   }
 
   return createInvitee(eventId, { name: trimmed });
+}
+
+/**
+ * Updates the name on an already-identified public memory uploader's
+ * invitee record, re-resolved from their own token (never trusts a
+ * client-supplied id — same "possession of a token is the credential"
+ * pattern as everywhere else in this flow). Used for the one edge case
+ * where a guest identified with a blank/placeholder name for a
+ * non-video action, then later taps Record/Upload Video, which requires
+ * a real name — this lets that name get filled in on the *same*
+ * invitee row rather than minting a second one and fragmenting their
+ * contributions across two guest records.
+ */
+export async function renamePublicMemoryUploader(token: string, name: string): Promise<void> {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error("Please enter your name.");
+  }
+  if (trimmed.length > 100) {
+    throw new Error("That name looks too long — please shorten it.");
+  }
+
+  const invitee = await getInviteeByToken(token);
+  if (!invitee) {
+    throw new Error("This link isn't valid anymore.");
+  }
+
+  const { error } = await supabaseAdmin()
+    .from("invitees")
+    .update({ name: trimmed, updated_at: new Date().toISOString() })
+    .eq("id", invitee.invitee.id);
+
+  if (error) {
+    throw new Error(`Failed to update name: ${error.message}`);
+  }
 }

@@ -39,7 +39,7 @@ export function MemoryCard({ item }: MemoryCardProps) {
 
       {item.kind === "video" ? (
         <div className="relative">
-          <VideoPlayer url={item.url} />
+          <VideoPlayer url={item.url} guestName={item.author.name} />
           <MediaShareButtons
             url={item.url}
             fileNameBase={`${item.author.name}-video`}

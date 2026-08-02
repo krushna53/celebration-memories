@@ -5,7 +5,10 @@ import { CheckCircle2, Circle, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { ACTIONS, MediaUploadsSection, type View } from "@/features/uploads/media-uploads-section";
-import { identifyPublicMemoryUploaderAction } from "@/features/uploads/public-memory-actions";
+import {
+  identifyPublicMemoryUploaderAction,
+  renamePublicMemoryUploaderAction,
+} from "@/features/uploads/public-memory-actions";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-3 text-base text-navy-950 placeholder:text-navy-700/40 transition-luxury duration-200 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -18,6 +21,13 @@ interface PublicMemoryUploaderProps {
 interface StoredIdentity {
   token: string;
   firstName: string;
+  /** True if this identity was created with a blank name (defaulted to the literal "Guest" server-side) — lets video actions detect they still need a real name from this guest, even though they're already identified for every other action. */
+  isPlaceholder: boolean;
+}
+
+/** Video actions are the one place a real name is required — see PublicMemoryUploader's doc comment. Every other action (photo, audio, note) stays name-optional to keep this the fewest-taps path. */
+function requiresRealName(view: View): boolean {
+  return view === "video-record" || view === "video-upload";
 }
 
 function storageKey(eventSlug: string): string {
@@ -32,7 +42,7 @@ function loadStoredIdentity(eventSlug: string): StoredIdentity | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredIdentity>;
     if (typeof parsed.token === "string" && typeof parsed.firstName === "string") {
-      return { token: parsed.token, firstName: parsed.firstName };
+      return { token: parsed.token, firstName: parsed.firstName, isPlaceholder: parsed.isPlaceholder === true };
     }
     return null;
   } catch {
@@ -48,15 +58,25 @@ function loadStoredIdentity(eventSlug: string): StoredIdentity | null {
  * explicit ask: make this easy for a senior citizen to get through
  * alone). Now the name field and the six big action icons show
  * together on one screen: tapping any icon immediately identifies the
- * guest with whatever name they've typed (defaulting to "Guest" if left
- * blank — never a hard stop) and drops straight into that action, via
- * MediaUploadsSection's `initialView` prop. No separate "Continue"
- * button, no second screen.
+ * guest with whatever name they've typed and drops straight into that
+ * action, via MediaUploadsSection's `initialView` prop. No separate
+ * "Continue" button, no second screen.
+ *
+ * Name is optional for every action EXCEPT the two video actions
+ * (record/upload) — see requiresRealName. A blank name there is
+ * rejected with an inline error instead of silently falling back to a
+ * placeholder, since a video carries a face and a personal message and
+ * the host specifically wants to know who it's from. Every other
+ * action still defaults to "Guest" if left blank — never a hard stop.
  *
  * The resolved identity (self-service token + first name) is saved to
  * localStorage once identified, scoped per event slug, so a guest who
  * navigates back or reloads doesn't get asked to identify themselves
- * again — see loadStoredIdentity above.
+ * again — see loadStoredIdentity above. If that saved identity is a
+ * placeholder (blank name from an earlier non-video action) and the
+ * guest later taps a video action, `renamingFor` gates a small inline
+ * "what's your name?" prompt that fills in the *same* invitee record
+ * via renamePublicMemoryUploaderAction rather than starting over.
  */
 export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUploaderProps) {
   const [name, setName] = useState("");
@@ -65,6 +85,18 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
   const [error, setError] = useState<string | null>(null);
   const [identified, setIdentified] = useState<StoredIdentity | null>(null);
   const [quietSuccess, setQuietSuccess] = useState(false);
+  // Set only for the already-identified-with-a-placeholder-name edge
+  // case above — holds the video view the guest was trying to reach so
+  // the inline prompt can resume straight into it once a real name is
+  // saved.
+  const [renamingFor, setRenamingFor] = useState<View | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
+  // True only while `error` specifically means "the name field is
+  // empty" — distinct from other errors (network failure, server
+  // rejection) so the name input's border only turns red for the one
+  // case it can actually fix.
+  const [nameFieldError, setNameFieldError] = useState(false);
 
   useEffect(() => {
     const stored = loadStoredIdentity(eventSlug);
@@ -72,15 +104,28 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
   }, [eventSlug]);
 
   async function handleActionTap(view: View) {
+    setError(null);
+    setNameFieldError(false);
+
     if (identified) {
+      if (requiresRealName(view) && identified.isPlaceholder) {
+        setRenamingFor(view);
+        return;
+      }
       setPendingView(view);
       return;
     }
 
-    setError(null);
+    const trimmedName = name.trim();
+    if (requiresRealName(view) && !trimmedName) {
+      setError("Please enter your name to record or upload a video.");
+      setNameFieldError(true);
+      return;
+    }
+
     setPendingView(view);
     try {
-      const result = await identifyPublicMemoryUploaderAction(eventSlug, name.trim() || "Guest", honeypot);
+      const result = await identifyPublicMemoryUploaderAction(eventSlug, trimmedName || "Guest", honeypot);
       if (!result.success) {
         setError(result.error);
         setPendingView(null);
@@ -91,7 +136,11 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
         setQuietSuccess(true);
         return;
       }
-      const identity: StoredIdentity = { token: result.token, firstName: result.firstName };
+      const identity: StoredIdentity = {
+        token: result.token,
+        firstName: result.firstName,
+        isPlaceholder: !trimmedName,
+      };
       setIdentified(identity);
       try {
         window.localStorage.setItem(storageKey(eventSlug), JSON.stringify(identity));
@@ -103,6 +152,47 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
     } catch {
       setError("Something went wrong. Please try again.");
       setPendingView(null);
+    }
+  }
+
+  async function handleRenameSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!identified || !renamingFor) return;
+
+    const trimmed = renameValue.trim();
+    if (!trimmed) {
+      setError("Please enter your name to continue.");
+      setNameFieldError(true);
+      return;
+    }
+
+    setError(null);
+    setNameFieldError(false);
+    setIsRenaming(true);
+    try {
+      const result = await renamePublicMemoryUploaderAction(identified.token, trimmed);
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+      const updated: StoredIdentity = {
+        ...identified,
+        firstName: trimmed.split(" ")[0] || trimmed,
+        isPlaceholder: false,
+      };
+      setIdentified(updated);
+      try {
+        window.localStorage.setItem(storageKey(eventSlug), JSON.stringify(updated));
+      } catch {
+        // Same non-fatal storage note as above.
+      }
+      setPendingView(renamingFor);
+      setRenamingFor(null);
+      setRenameValue("");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsRenaming(false);
     }
   }
 
@@ -122,6 +212,67 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
     // field to consider on every single item. The personal /invite/
     // [token] page still shows it.
     return <MediaUploadsSection token={identified.token} initialView={pendingView} showCaption={false} />;
+  }
+
+  if (renamingFor) {
+    return (
+      <div className="rounded-2xl border border-gold-500/15 bg-white px-5 py-6 shadow-sm sm:px-8 sm:py-8">
+        <form onSubmit={handleRenameSubmit}>
+          <label className="text-sm font-medium text-navy-950" htmlFor="rename-uploader">
+            Your Name <span className="normal-case text-red-500">*</span>
+          </label>
+          <input
+            id="rename-uploader"
+            autoFocus
+            aria-required="true"
+            aria-invalid={nameFieldError ? "true" : "false"}
+            className={cn(
+              inputClasses,
+              "mt-2",
+              nameFieldError && "border-red-500 focus:border-red-500 focus:ring-red-500/30",
+            )}
+            placeholder={`e.g. Priya (${honoreeName.split(" ")[0]}'s niece)`}
+            value={renameValue}
+            onChange={(e) => {
+              setRenameValue(e.target.value);
+              if (nameFieldError) setNameFieldError(false);
+            }}
+          />
+          <p className="mt-2 text-sm text-navy-700/60">
+            A name is needed for a video message so {honoreeName} knows who it&rsquo;s from.
+          </p>
+
+          {error ? (
+            <p className="mt-3 text-sm font-medium text-red-600" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <div className="mt-5 flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={isRenaming}
+              className="tap-target flex items-center gap-2 rounded-full bg-gold-500 px-6 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:brightness-110 disabled:opacity-60"
+            >
+              {isRenaming ? <Loader2 className="animate-spin" size={16} /> : null}
+              Continue
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRenamingFor(null);
+                setRenameValue("");
+                setError(null);
+              }}
+              disabled={isRenaming}
+              className="tap-target text-sm font-medium text-navy-700/60 hover:text-navy-950"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    );
   }
 
   return (
@@ -146,14 +297,22 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
           </label>
           <input
             id="uploader-name"
-            className={cn(inputClasses, "mt-2")}
+            aria-invalid={nameFieldError ? "true" : "false"}
+            className={cn(
+              inputClasses,
+              "mt-2",
+              nameFieldError && "border-red-500 focus:border-red-500 focus:ring-red-500/30",
+            )}
             placeholder={`e.g. Priya (${honoreeName.split(" ")[0]}'s niece)`}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (nameFieldError) setNameFieldError(false);
+            }}
           />
           <p className="mt-2 text-sm text-navy-700/60">
             Tap a button below to get started — we&rsquo;ll use this name to let {honoreeName} know who each memory
-            is from.
+            is from. <span className={nameFieldError ? "font-semibold text-red-600" : undefined}>Required for a video message.</span>
           </p>
         </div>
       ) : (
@@ -185,7 +344,7 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
       </div>
 
       {error ? (
-        <p className="mt-4 text-center text-sm text-red-600" role="alert">
+        <p className="mt-4 text-center text-sm font-medium text-red-600" role="alert">
           {error}
         </p>
       ) : null}

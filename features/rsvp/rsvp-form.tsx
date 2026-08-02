@@ -97,8 +97,15 @@ export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormP
     >
       {/* Attendance */}
       <div>
-        <span className={labelClasses}>Will you be joining us?</span>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <span className={labelClasses}>
+          Will you be joining us? <span className="normal-case text-red-500">*</span>
+        </span>
+        <div
+          className={cn(
+            "mt-2 grid grid-cols-1 gap-2 rounded-lg sm:grid-cols-3",
+            errors.coming && "border-2 border-red-400 p-1.5",
+          )}
+        >
           {ATTENDANCE_OPTIONS.map((option) => (
             <label
               key={option}
@@ -120,22 +127,32 @@ export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormP
           ))}
         </div>
         {errors.coming ? (
-          <p className="mt-1 text-xs text-red-600">{errors.coming.message}</p>
+          <p className="mt-1 text-xs font-medium text-red-600" role="alert">
+            {errors.coming.message}
+          </p>
         ) : null}
       </div>
 
       {/* Name */}
       <div>
         <label className={labelClasses} htmlFor="name">
-          Full Name
+          Full Name <span className="normal-case text-red-500">*</span>
         </label>
         <input
           id="name"
-          className={cn(inputClasses, "mt-1.5")}
+          aria-required="true"
+          aria-invalid={errors.name ? "true" : "false"}
+          className={cn(
+            inputClasses,
+            "mt-1.5",
+            errors.name && "border-red-500 focus:border-red-500 focus:ring-red-500/30",
+          )}
           {...register("name")}
         />
         {errors.name ? (
-          <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
+          <p className="mt-1 text-xs font-medium text-red-600" role="alert">
+            {errors.name.message}
+          </p>
         ) : null}
       </div>
 
@@ -158,11 +175,18 @@ export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormP
           <input
             id="email"
             type="email"
-            className={cn(inputClasses, "mt-1.5")}
+            aria-invalid={errors.email ? "true" : "false"}
+            className={cn(
+              inputClasses,
+              "mt-1.5",
+              errors.email && "border-red-500 focus:border-red-500 focus:ring-red-500/30",
+            )}
             {...register("email")}
           />
           {errors.email ? (
-            <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
+            <p className="mt-1 text-xs font-medium text-red-600" role="alert">
+              {errors.email.message}
+            </p>
           ) : null}
         </div>
       </div>
@@ -226,10 +250,13 @@ export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormP
         />
       </div>
 
-      <div>
+      <div
+        className={cn(errors.consent && "-m-0.5 rounded-lg border border-red-300 bg-red-50/60 p-2.5")}
+      >
         <label className="flex items-start gap-2.5 text-sm text-navy-700/80">
           <input
             type="checkbox"
+            aria-invalid={errors.consent ? "true" : "false"}
             className="mt-0.5 h-4 w-4 shrink-0 rounded border-navy-950/30 text-gold-500 focus:ring-gold-500/40"
             {...register("consent")}
           />
@@ -249,12 +276,14 @@ export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormP
           </span>
         </label>
         {errors.consent ? (
-          <p className="mt-1 text-xs text-red-600">{errors.consent.message}</p>
+          <p className="mt-1 text-xs font-medium text-red-600" role="alert">
+            {errors.consent.message}
+          </p>
         ) : null}
       </div>
 
       {serverError ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm font-medium text-red-600" role="alert">
           {serverError}
         </p>
       ) : null}
