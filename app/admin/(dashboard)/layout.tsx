@@ -31,6 +31,7 @@ import {
   ListChecks,
   Gamepad2,
   Store,
+  HardDrive,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -56,6 +57,7 @@ const NAV = [
   { href: "/admin/planner", label: "Planner", icon: ListChecks },
   { href: "/admin/games", label: "Games", icon: Gamepad2 },
   { href: "/admin/marketplace", label: "Marketplace", icon: Store },
+  { href: "/admin/storage", label: "Storage", icon: HardDrive },
   { href: "/admin/share-image", label: "Share Image", icon: ImagePlus },
   { href: "/admin/ai-image", label: "AI Image", icon: Sparkles },
   { href: "/admin/slideshow", label: "Slideshow Video", icon: Film },

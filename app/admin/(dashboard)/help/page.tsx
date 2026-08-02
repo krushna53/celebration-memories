@@ -187,7 +187,16 @@ const SECTIONS: GuideSection[] = [
       },
       {
         label: "Download All Media",
-        body: "On /admin/memories, the \"Download All Media (.zip)\" button bundles every guest photo/video/audio upload into one zip file for backup.",
+        body: "On /admin/memories, \"Download All Media (.zip)\" bundles every guest photo/video/audio upload, and \"Download All Videos (.zip)\" bundles just the videos. Each moderation card also has its own Download button for a single file.",
+      },
+    ],
+  },
+  {
+    title: "Storage Usage",
+    items: [
+      {
+        label: "/admin/storage",
+        body: "Owner-only. How much Supabase Storage each live event is using, split into Gallery & Timeline, Slideshow Video, and Memory Wall (guest uploads) — a bar chart comparing every client's total, plus a per-event breakdown pie chart.",
       },
     ],
   },
