@@ -556,6 +556,49 @@ export async function createSignedHighlightReelUpload(params: {
 }
 
 /**
+ * Same signed-upload pattern, for a video a client uploads specifically
+ * to bring into the Video Editor (features/admin/video-editor/) — e.g.
+ * a separately-shot intro clip, distinct from anything a guest has
+ * submitted. Uses the dedicated `videos` bucket (1GB limit, same as
+ * guest video uploads) rather than `gallery` (50MB) since editing
+ * source footage can reasonably be large/high-bitrate. The caller
+ * (confirmVideoEditorUploadAction) inserts the video_editor_uploads
+ * row after the browser's PUT succeeds — this function only mints the
+ * signed URL, same two-step pattern as every other upload path in this
+ * file.
+ */
+export async function createSignedVideoEditorUpload(params: {
+  eventId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { eventId, fileName, contentType, fileSize } = params;
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.video;
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported video type: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS.video;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `${eventId}/video-editor-uploads/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage
+    .from("videos")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "videos", path, token: data.token, signedUrl: data.signedUrl };
+}
+
+/**
  * Same signed-upload pattern, for a Marketplace vendor's own profile/
  * cover/gallery photos (see features/business/*). Stored in the
  * dedicated `business` bucket rather than reusing `gallery`, since

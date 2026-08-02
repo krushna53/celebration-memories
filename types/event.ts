@@ -110,6 +110,8 @@ export interface EventRecord {
   aiCssGenerationLimit: number;
   /** Max Slideshow Video renders a client-role admin may make for this event. Owner is exempt. See services/slideshow-video-generations.ts. */
   slideshowVideoGenerationLimit: number;
+  /** Max Video Editor renders a client-role admin may make for this event. Owner is exempt. See services/video-editor.ts's countVideoEditGenerations. */
+  videoEditorGenerationLimit: number;
   /** Short free-text notices ("No gifts please", "Dress code: formal"), shown in Event Details. One per line, admin-editable. */
   additionalNotes: string | null;
   /** Free-text message shown in its own homepage section (default: below RSVP) — heading adapts to `category`, see lib/event-category.ts. */

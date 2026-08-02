@@ -39,6 +39,7 @@ export interface EventRow {
   ai_image_generation_limit: number;
   ai_css_generation_limit: number;
   slideshow_video_generation_limit: number;
+  video_editor_generation_limit: number;
   additional_notes: string | null;
   wish_message: string | null;
   custom_css: string | null;
@@ -85,6 +86,7 @@ export function mapEvent(row: EventRow): EventRecord {
     aiImageGenerationLimit: row.ai_image_generation_limit ?? 5,
     aiCssGenerationLimit: row.ai_css_generation_limit ?? 20,
     slideshowVideoGenerationLimit: row.slideshow_video_generation_limit ?? 3,
+    videoEditorGenerationLimit: row.video_editor_generation_limit ?? 3,
     additionalNotes: row.additional_notes,
     wishMessage: row.wish_message,
     customCss: row.custom_css,
@@ -280,6 +282,7 @@ export interface EventUpdateInput {
   aiImageGenerationLimit?: number;
   aiCssGenerationLimit?: number;
   slideshowVideoGenerationLimit?: number;
+  videoEditorGenerationLimit?: number;
   eventDayMode?: "off" | "public" | "private";
   eventDayShareToken?: string | null;
   menuStyle?: "buffet" | "a_la_carte";
@@ -370,6 +373,8 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.aiCssGenerationLimit !== undefined) patch.ai_css_generation_limit = input.aiCssGenerationLimit;
   if (input.slideshowVideoGenerationLimit !== undefined)
     patch.slideshow_video_generation_limit = input.slideshowVideoGenerationLimit;
+  if (input.videoEditorGenerationLimit !== undefined)
+    patch.video_editor_generation_limit = input.videoEditorGenerationLimit;
   if (input.eventDayMode !== undefined) patch.event_day_mode = input.eventDayMode;
   if (input.eventDayShareToken !== undefined) patch.event_day_share_token = input.eventDayShareToken;
   if (input.menuStyle !== undefined) patch.menu_style = input.menuStyle;
