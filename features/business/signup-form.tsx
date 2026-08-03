@@ -8,6 +8,7 @@ import { CheckCircle2, Loader2, Store } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { completeBusinessSignupAction } from "@/features/business/actions";
 import { TermsConsentCheckbox } from "@/components/legal/terms-consent-checkbox";
+import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -136,6 +137,19 @@ export function BusinessSignupForm() {
           {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Vendor Account"}
         </button>
       </form>
+
+      <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-ivory-100/40">
+        <span className="h-px flex-1 bg-white/10" /> or <span className="h-px flex-1 bg-white/10" />
+      </div>
+      {/* business=1 tells /auth/callback to provision a business_accounts
+          row from the Google profile if one doesn't exist yet — see that
+          route's doc comment. Gated on the same Terms checkbox as the
+          password path above, per GoogleAuthButton's disabled prop doc. */}
+      <GoogleAuthButton
+        label="Continue with Google"
+        disabled={!agreedToTerms}
+        redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent("/business/dashboard")}&business=1`}
+      />
 
       <p className="mt-6 text-sm text-ivory-100/60">
         Already listed?{" "}

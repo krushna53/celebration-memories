@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, LogIn } from "lucide-react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -76,6 +77,17 @@ export function BusinessLoginForm() {
           {loading ? <Loader2 className="animate-spin" size={16} /> : "Sign In"}
         </button>
       </form>
+
+      <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-ivory-100/40">
+        <span className="h-px flex-1 bg-white/10" /> or <span className="h-px flex-1 bg-white/10" />
+      </div>
+      {/* Same button/flag as signup-form.tsx — a returning vendor who
+          signed up with Google just signs in again the same way, and
+          /auth/callback's existence check makes this a no-op for them. */}
+      <GoogleAuthButton
+        label="Continue with Google"
+        redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent("/business/dashboard")}&business=1`}
+      />
 
       <p className="mt-6 text-sm text-ivory-100/60">
         New here?{" "}
