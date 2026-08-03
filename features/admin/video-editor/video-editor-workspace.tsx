@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Canvas, Controls, Edit, Timeline, UIController } from "@shotstack/shotstack-studio";
-import { ImageIcon, Loader2, Upload, VideoIcon, Save, MonitorPlay, CheckCircle2 } from "lucide-react";
+import { Loader2, Upload, VideoIcon, Save, MonitorPlay, CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { VideoEditorClip, VideoEditJob } from "@/services/video-editor";
@@ -100,8 +100,18 @@ export function VideoEditorWorkspace({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [bigScreenBusyId, setBigScreenBusyId] = useState<string | null>(null);
+  // Video duration isn't stored in the DB for Memory Wall/gallery clips
+  // (see services/video-editor.ts) — measured client-side once per clip
+  // via a hidden <video>'s loadedmetadata event and cached here so it's
+  // only computed once even as the bin re-renders.
+  const [durations, setDurations] = useState<Record<string, number>>({});
+  const recordDuration = useCallback((clipId: string, seconds: number) => {
+    setDurations((prev) => (prev[clipId] === seconds ? prev : { ...prev, [clipId]: seconds }));
+  }, []);
 
   const atCap = quota ? quota.used >= quota.limit : false;
+  const pendingClips = mediaLibrary.filter((c) => !c.approved);
+  const approvedClips = mediaLibrary.filter((c) => c.approved);
 
   // Disposes the Studio SDK on unmount only — mounting happens on demand,
   // in beginEditing below, not on an effect tied to component mount. See
@@ -146,6 +156,19 @@ export function VideoEditorWorkspace({
 
       instanceRef.current = { edit, canvas, timeline, controls };
       setReady(true);
+
+      // Canvas.load() sizes the PIXI canvas from the container's
+      // getBoundingClientRect() at that exact instant. Immediately after
+      // mount, the surrounding grid/flex layout can still be settling
+      // (fonts, the sidebar's own content, etc.), so that first
+      // measurement is sometimes smaller than the container's final
+      // resting size — the SDK never re-measures on its own afterward,
+      // which is what produced the "tiny video stuck in a huge navy
+      // box" bug. One extra resize() a tick later, once layout has
+      // definitely settled, corrects it. The ResizeObserver effect
+      // below handles every resize after this one (window resize,
+      // sidebar content changing height, etc.).
+      requestAnimationFrame(() => instanceRef.current?.canvas.resize());
     } catch (err) {
       console.error("Video Editor: failed to load Shotstack Studio SDK:", err);
       setLoadError(describeLoadError(err));
@@ -154,6 +177,20 @@ export function VideoEditorWorkspace({
       setInitializing(false);
     }
   }
+
+  // Keeps the PIXI canvas's actual pixel size in sync with its
+  // container's rendered size for the entire life of the editor, not
+  // just once at load — covers window resizes, device rotation, and
+  // the sidebar reflowing (e.g. once media finishes loading).
+  useEffect(() => {
+    const el = studioContainerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      instanceRef.current?.canvas.resize();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const saveDraft = useCallback(async (): Promise<string | null> => {
     const instance = instanceRef.current;
@@ -313,41 +350,35 @@ export function VideoEditorWorkspace({
             </p>
           ) : null}
 
-          <div className="mt-3 grid max-h-[420px] grid-cols-2 gap-2 overflow-y-auto">
-            {mediaLibrary.map((clip) => (
-              <button
-                key={clip.id}
-                type="button"
-                onClick={() => handleMediaTap(clip)}
-                disabled={initializing}
-                className="group relative aspect-square overflow-hidden rounded-lg border border-navy-950/10 bg-navy-950/5 disabled:cursor-not-allowed disabled:opacity-50"
-                title={clip.label ?? undefined}
-              >
-                {clip.kind === "photo" ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={clip.url} alt={clip.label ?? ""} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-navy-950/10 text-navy-700/50">
-                    <VideoIcon size={20} />
-                  </div>
-                )}
-                {!clip.approved ? (
-                  <span className="absolute left-1 top-1 rounded-full bg-gold-500 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-navy-950">
-                    Pending
-                  </span>
-                ) : null}
-                <span className="absolute inset-x-0 bottom-0 truncate bg-navy-950/70 px-1.5 py-0.5 text-[9px] text-ivory-50 opacity-0 group-hover:opacity-100">
-                  {clip.source}
-                </span>
-              </button>
-            ))}
-            {mediaLibrary.length === 0 ? (
-              <p className="col-span-2 py-6 text-center text-xs text-navy-700/50">
-                <ImageIcon size={18} className="mx-auto mb-1" />
-                No photos or videos yet.
-              </p>
-            ) : null}
-          </div>
+          {/* Split pending vs. approved rather than one flat grid — a
+              client with only guest-uploaded, not-yet-moderated videos
+              was seeing a bin that looked entirely "Pending" with no
+              visible "Approved" section at all, which read as broken.
+              Two labeled sections make it clear when Approved is
+              genuinely empty (nothing's been approved in Memories yet)
+              versus hidden. Gallery/Timeline photos and custom uploads
+              are always approved: true (see services/video-editor.ts),
+              so only Memory Wall photos/videos can ever land in Pending. */}
+          <MediaSection
+            title="Pending Approval"
+            hint="Not yet approved in Memories — visible here so you can preview and use them, but guests won't see these until you approve them."
+            clips={pendingClips}
+            onTap={handleMediaTap}
+            disabled={initializing}
+            durations={durations}
+            onDuration={recordDuration}
+            emptyLabel={null}
+          />
+          <MediaSection
+            title="Approved"
+            hint={null}
+            clips={approvedClips}
+            onTap={handleMediaTap}
+            disabled={initializing}
+            durations={durations}
+            onDuration={recordDuration}
+            emptyLabel="No approved photos or videos yet — approve some in Memories, or add Gallery photos/Timeline milestones."
+          />
         </div>
 
         {/* Past renders + drafts */}
@@ -395,8 +426,11 @@ export function VideoEditorWorkspace({
         ) : null}
       </div>
 
-      {/* Editor canvas + timeline */}
-      <div className="order-1 lg:order-2">
+      {/* Editor canvas + timeline — capped at max-w-3xl so a wide desktop
+          monitor doesn't stretch the 16:9 canvas to an oversized, mostly-empty
+          box; it now stays proportional to a normal device viewport instead
+          of the full grid column. */}
+      <div className="order-1 mx-auto w-full max-w-3xl lg:order-2">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <input
             value={title}
@@ -520,5 +554,127 @@ export function VideoEditorWorkspace({
         </div>
       </div>
     </div>
+  );
+}
+
+function formatDuration(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+/** One labeled group of media tiles (Pending or Approved) — a section is
+ * always rendered (even with zero clips) so "nothing here" reads as an
+ * intentional, empty state rather than a missing feature. */
+function MediaSection({
+  title,
+  hint,
+  clips,
+  onTap,
+  disabled,
+  durations,
+  onDuration,
+  emptyLabel,
+}: {
+  title: string;
+  hint: string | null;
+  clips: VideoEditorClip[];
+  onTap: (clip: VideoEditorClip) => void;
+  disabled: boolean;
+  durations: Record<string, number>;
+  onDuration: (clipId: string, seconds: number) => void;
+  emptyLabel: string | null;
+}) {
+  return (
+    <div className="mt-4 first:mt-0">
+      <div className="flex items-center gap-1.5">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-navy-700/60">{title}</h3>
+        <span className="rounded-full bg-navy-950/8 px-1.5 py-0.5 text-[10px] font-medium text-navy-700/60">
+          {clips.length}
+        </span>
+      </div>
+      {hint ? <p className="mt-0.5 text-[11px] text-navy-700/45">{hint}</p> : null}
+      <div className="mt-2 grid max-h-[360px] grid-cols-2 gap-2 overflow-y-auto">
+        {clips.map((clip) => (
+          <MediaTile
+            key={clip.id}
+            clip={clip}
+            onTap={onTap}
+            disabled={disabled}
+            duration={durations[clip.id]}
+            onDuration={onDuration}
+          />
+        ))}
+        {clips.length === 0 && emptyLabel ? (
+          <p className="col-span-2 py-6 text-center text-xs text-navy-700/50">{emptyLabel}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** A single tappable tile in the media bin. Photos use their own URL as
+ * the thumbnail directly. Videos have no thumbnailUrl from the backend
+ * (see services/video-editor.ts) — an actual muted, preload="metadata"
+ * <video> renders the first frame as a natural thumbnail without any
+ * extra image-generation work, and its loadedmetadata event is also
+ * how duration gets measured, since it isn't stored in the DB for
+ * Memory Wall videos. */
+function MediaTile({
+  clip,
+  onTap,
+  disabled,
+  duration,
+  onDuration,
+}: {
+  clip: VideoEditorClip;
+  onTap: (clip: VideoEditorClip) => void;
+  disabled: boolean;
+  duration: number | undefined;
+  onDuration: (clipId: string, seconds: number) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onTap(clip)}
+      disabled={disabled}
+      className="group relative aspect-square overflow-hidden rounded-lg border border-navy-950/10 bg-navy-950/5 disabled:cursor-not-allowed disabled:opacity-50"
+      title={clip.label ?? undefined}
+    >
+      {clip.kind === "photo" ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={clip.url} alt={clip.label ?? ""} className="h-full w-full object-cover" />
+      ) : (
+        <video
+          src={clip.url}
+          muted
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+          onLoadedMetadata={(e) => {
+            const el = e.currentTarget;
+            // Forces the browser to paint the first frame as the visible
+            // "poster" instead of a blank/black box — most browsers only
+            // decode a frame once currentTime is nudged off 0.
+            el.currentTime = Math.min(0.1, el.duration || 0);
+            if (Number.isFinite(el.duration)) onDuration(clip.id, el.duration);
+          }}
+        />
+      )}
+      {clip.kind === "video" && typeof duration === "number" ? (
+        <span className="absolute bottom-1 right-1 rounded bg-navy-950/80 px-1 py-0.5 text-[9px] font-medium tabular-nums text-ivory-50">
+          {formatDuration(duration)}
+        </span>
+      ) : null}
+      {!clip.approved ? (
+        <span className="absolute left-1 top-1 rounded-full bg-gold-500 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-navy-950">
+          Pending
+        </span>
+      ) : null}
+      <span className="absolute inset-x-0 bottom-0 truncate bg-navy-950/70 px-1.5 py-0.5 text-[9px] text-ivory-50 opacity-0 group-hover:opacity-100">
+        {clip.source}
+      </span>
+    </button>
   );
 }
