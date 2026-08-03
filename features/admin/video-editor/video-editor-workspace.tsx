@@ -93,7 +93,14 @@ function buildFirstClipEdit(
   aspectRatio: (typeof ASPECT_RATIO_OPTIONS)[number]["value"],
 ): { edit: Edit; length: number } {
   const length = clip.kind === "photo" ? 4 : 5;
-  const asset = clip.kind === "photo" ? ({ type: "image", src: clip.url } as const) : ({ type: "video", src: clip.url } as const);
+  // transcode: true forces Shotstack to re-encode the source before
+  // compositing rather than relying on its own auto-detection of
+  // whether preprocessing is needed — cheap insurance against a video
+  // rendering solid black/corrupted, which we've seen happen with
+  // guest-recorded browser footage (MediaRecorder-produced webm) that
+  // Shotstack's renderer doesn't always handle cleanly untouched. See
+  // @shotstack/schemas' VideoAsset.transcode doc comment.
+  const asset = clip.kind === "photo" ? ({ type: "image", src: clip.url } as const) : ({ type: "video", src: clip.url, transcode: true } as const);
   const edit = new Edit({
     timeline: {
       // Every clip gets a client-generated id (not just text overlays)
@@ -174,6 +181,9 @@ export function VideoEditorWorkspace({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [bigScreenBusyId, setBigScreenBusyId] = useState<string | null>(null);
+  // "view it" / "View render" open the finished MP4 in an in-page popup
+  // instead of a new browser tab.
+  const [viewingVideoUrl, setViewingVideoUrl] = useState<string | null>(null);
   // Video duration isn't stored in the DB for Memory Wall/gallery clips
   // (see services/video-editor.ts) — measured client-side once per clip
   // via a hidden <video>'s loadedmetadata event and cached here so it's
@@ -511,7 +521,14 @@ export function VideoEditorWorkspace({
 
     const length = clip.kind === "photo" ? 4 : 5;
     const start = instance.edit.totalDuration ?? 0;
-    const asset = clip.kind === "photo" ? ({ type: "image", src: clip.url } as const) : ({ type: "video", src: clip.url } as const);
+    // transcode: true forces Shotstack to re-encode the source before
+  // compositing rather than relying on its own auto-detection of
+  // whether preprocessing is needed — cheap insurance against a video
+  // rendering solid black/corrupted, which we've seen happen with
+  // guest-recorded browser footage (MediaRecorder-produced webm) that
+  // Shotstack's renderer doesn't always handle cleanly untouched. See
+  // @shotstack/schemas' VideoAsset.transcode doc comment.
+  const asset = clip.kind === "photo" ? ({ type: "image", src: clip.url } as const) : ({ type: "video", src: clip.url, transcode: true } as const);
 
     instance.edit.addClip(mainTrackIndexRef.current, { id: crypto.randomUUID(), asset, start, length });
   }
@@ -717,9 +734,9 @@ export function VideoEditorWorkspace({
         {renderJob.status === "done" && renderJob.resultUrl ? (
           <p className="mb-2 flex items-center gap-1.5 text-xs text-green-700">
             <CheckCircle2 size={13} /> Render complete —{" "}
-            <a href={renderJob.resultUrl} target="_blank" rel="noreferrer" className="underline">
+            <button type="button" onClick={() => setViewingVideoUrl(renderJob.resultUrl)} className="underline">
               view it
-            </a>{" "}
+            </button>{" "}
             or set it as the Big Screen video below.
           </p>
         ) : null}
@@ -1006,9 +1023,13 @@ export function VideoEditorWorkspace({
                   </div>
                   {job.status === "done" && job.resultUrl ? (
                     <div className="mt-2 flex items-center gap-2">
-                      <a href={job.resultUrl} target="_blank" rel="noreferrer" className="text-gold-700 hover:underline">
+                      <button
+                        type="button"
+                        onClick={() => job.resultUrl && setViewingVideoUrl(job.resultUrl)}
+                        className="text-gold-700 hover:underline"
+                      >
                         View render
-                      </a>
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleSetBigScreen(job.id)}
@@ -1038,6 +1059,43 @@ export function VideoEditorWorkspace({
 
         <VideoEditorFaq />
       </div>
+      </div>
+
+      {/* "view it" / "View render" open here instead of a new browser
+          tab. Closes on backdrop click, the X button, or Escape. */}
+      {viewingVideoUrl ? (
+        <VideoPreviewModal url={viewingVideoUrl} onClose={() => setViewingVideoUrl(null)} />
+      ) : null}
+    </div>
+  );
+}
+
+/** Fullscreen-ish popup with a native <video controls> player — used by both the "Render complete" banner and the "Your Edits" list to preview a finished render without leaving the page. */
+function VideoPreviewModal({ url, onClose }: { url: string; onClose: () => void }) {
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/80 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="relative w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute -top-9 right-0 flex items-center gap-1 text-xs font-medium text-ivory-50/80 hover:text-ivory-50"
+        >
+          <X size={16} /> Close
+        </button>
+        <video src={url} controls autoPlay playsInline className="w-full rounded-xl bg-navy-950" />
       </div>
     </div>
   );
