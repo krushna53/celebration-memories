@@ -7,7 +7,6 @@ import {
   AI_IMAGE_COST_PER_GENERATION_USD,
   SHOTSTACK_COST_PER_MINUTE_USD,
   SLIDESHOW_ASSUMED_MINUTES,
-  STOCK_MUSIC_SUBSCRIPTION_COST_USD_PER_MONTH,
   VIDEO_EDITOR_ASSUMED_MINUTES,
 } from "@/lib/usage-pricing";
 
@@ -43,16 +42,6 @@ export interface EventUsage {
   estimatedShotstackSlideshowCostUsd: number;
   estimatedShotstackVideoEditorCostUsd: number;
   estimatedShotstackCostUsd: number;
-  /**
-   * This event's share of the flat monthly stock-music subscription
-   * cost (STOCK_MUSIC_SUBSCRIPTION_COST_USD_PER_MONTH), allocated
-   * proportional to its share of total Video Editor renders across all
-   * events — see that constant's doc comment in lib/usage-pricing.ts
-   * for why this is an allocation estimate, not a measured per-client
-   * spend. 0 for every event if no Video Editor renders exist yet
-   * platform-wide.
-   */
-  estimatedStockMusicCostUsd: number;
   estimatedTotalCostUsd: number;
 }
 
@@ -96,13 +85,6 @@ export async function getAllEventsUsage(): Promise<EventUsage[]> {
 
   const storageByEvent = new Map(storageUsage.map((u) => [u.eventId, u.totalBytes]));
 
-  // Total Video Editor renders across every event — the denominator for
-  // splitting the flat stock-music subscription cost proportionally.
-  // Summing counts() directly (rather than events.reduce) so this stays
-  // correct even if listAllActiveEvents ever excludes an event that
-  // still has generation rows (e.g. a just-deactivated event).
-  const totalVideoEditorCount = Array.from(videoEditorCounts.values()).reduce((sum, n) => sum + n, 0);
-
   return events
     .map((event) => {
       const aiImageCount = aiImageCounts.get(event.id) ?? 0;
@@ -113,10 +95,6 @@ export async function getAllEventsUsage(): Promise<EventUsage[]> {
       const estimatedShotstackSlideshowCostUsd = slideshowCount * SLIDESHOW_ASSUMED_MINUTES * SHOTSTACK_COST_PER_MINUTE_USD;
       const estimatedShotstackVideoEditorCostUsd = videoEditorCount * VIDEO_EDITOR_ASSUMED_MINUTES * SHOTSTACK_COST_PER_MINUTE_USD;
       const estimatedShotstackCostUsd = estimatedShotstackSlideshowCostUsd + estimatedShotstackVideoEditorCostUsd;
-      const estimatedStockMusicCostUsd =
-        totalVideoEditorCount > 0
-          ? (videoEditorCount / totalVideoEditorCount) * STOCK_MUSIC_SUBSCRIPTION_COST_USD_PER_MONTH
-          : 0;
 
       return {
         eventId: event.id,
@@ -131,8 +109,7 @@ export async function getAllEventsUsage(): Promise<EventUsage[]> {
         estimatedShotstackSlideshowCostUsd,
         estimatedShotstackVideoEditorCostUsd,
         estimatedShotstackCostUsd,
-        estimatedStockMusicCostUsd,
-        estimatedTotalCostUsd: estimatedAiImageCostUsd + estimatedShotstackCostUsd + estimatedStockMusicCostUsd,
+        estimatedTotalCostUsd: estimatedAiImageCostUsd + estimatedShotstackCostUsd,
       };
     })
     .sort((a, b) => b.estimatedTotalCostUsd - a.estimatedTotalCostUsd);

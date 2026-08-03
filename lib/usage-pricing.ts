@@ -25,16 +25,6 @@
  *    pricing ($8/1M image input tokens, $30/1M image output tokens) —
  *    not an official flat per-image price, since actual cost also
  *    depends on prompt length.
- *  - Stock music subscription: no provider is actually wired up in the
- *    Video Editor today (Jamendo's free tier turned out non-commercial-
- *    only; a paid catalog — Uppbeat/Envato/Soundstripe/Artlist — was
- *    researched but not yet purchased). STOCK_MUSIC_SUBSCRIPTION_COST_USD_PER_MONTH
- *    below is a manually-set placeholder so the Usage Dashboard has
- *    somewhere to show this cost the moment a subscription starts —
- *    update the constant to whatever plan actually gets purchased.
- *    Defaults to Uppbeat's Pro annual plan ($14.99/mo billed yearly),
- *    the cheapest option researched that explicitly covers client/
- *    commercial content.
  */
 
 /** Estimated USD cost per AI Image generation (services/video-editor.ts's sibling, ai-image, at quality "high"). */
@@ -55,16 +45,3 @@ export const SHOTSTACK_COST_PER_MINUTE_USD = 0.4;
  */
 export const SLIDESHOW_ASSUMED_MINUTES = 1;
 export const VIDEO_EDITOR_ASSUMED_MINUTES = 1.5;
-
-/**
- * A stock-music subscription (Uppbeat/Envato/etc.) is a flat monthly
- * cost, not a per-render one, so it can't be priced per generation the
- * way Shotstack/OpenAI are above. The Usage Dashboard instead splits
- * this monthly cost across clients proportional to each event's share
- * of total Video Editor renders (see getAllEventsUsage in
- * services/usage-analytics.ts) — an estimate of who's "driving" the
- * subscription cost, not a measurement of which client actually used a
- * stock track on a given render (upload/track selection isn't
- * attributed to a specific event in the database today).
- */
-export const STOCK_MUSIC_SUBSCRIPTION_COST_USD_PER_MONTH = 14.99;

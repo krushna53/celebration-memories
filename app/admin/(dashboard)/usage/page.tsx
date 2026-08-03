@@ -13,7 +13,6 @@ const PROVIDER_COLORS = {
   aiImage: "#4f46e5",
   shotstackSlideshow: "#e5503c",
   shotstackVideoEditor: "#c2410c",
-  stockMusic: "#0d9488",
 } as const;
 
 function formatUsd(amount: number): string {
@@ -47,7 +46,6 @@ export default async function AdminUsagePage() {
       estimatedTotalCostUsd: acc.estimatedTotalCostUsd + u.estimatedTotalCostUsd,
       estimatedShotstackSlideshowCostUsd: acc.estimatedShotstackSlideshowCostUsd + u.estimatedShotstackSlideshowCostUsd,
       estimatedShotstackVideoEditorCostUsd: acc.estimatedShotstackVideoEditorCostUsd + u.estimatedShotstackVideoEditorCostUsd,
-      estimatedStockMusicCostUsd: acc.estimatedStockMusicCostUsd + u.estimatedStockMusicCostUsd,
     }),
     {
       aiImageCount: 0,
@@ -56,7 +54,6 @@ export default async function AdminUsagePage() {
       estimatedTotalCostUsd: 0,
       estimatedShotstackSlideshowCostUsd: 0,
       estimatedShotstackVideoEditorCostUsd: 0,
-      estimatedStockMusicCostUsd: 0,
     },
   );
 
@@ -64,9 +61,8 @@ export default async function AdminUsagePage() {
     <div>
       <h1 className="font-display text-2xl text-navy-950">Usage & Estimated Spend</h1>
       <p className="mt-1 text-sm text-navy-700/60">
-        Cross-client AI Image, Shotstack (Slideshow Video + Video Editor), Stock Music, and
-        Supabase Storage consumption — spot which client is using the most before it becomes a
-        billing surprise.
+        Cross-client AI Image, Shotstack (Slideshow Video + Video Editor), and Supabase Storage
+        consumption — spot which client is using the most before it becomes a billing surprise.
       </p>
       <p className="mt-3 rounded-lg border border-gold-500/25 bg-gold-500/5 px-3 py-2 text-xs leading-relaxed text-navy-700/70">
         Dollar figures below are <strong className="text-navy-950">estimates</strong> computed from
@@ -86,17 +82,10 @@ export default async function AdminUsagePage() {
           both bill against the same Shotstack account but are separate
           features, so a client running up Video Editor renders shouldn't
           get lost inside a single merged "Shotstack" number. */}
-      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-2 gap-4">
         <StatCard label="Shotstack API — Slideshow" value={formatUsd(totals.estimatedShotstackSlideshowCostUsd)} />
         <StatCard label="Shotstack API — Video Editor" value={formatUsd(totals.estimatedShotstackVideoEditorCostUsd)} />
-        <StatCard label="Stock Music Subscription" value={formatUsd(totals.estimatedStockMusicCostUsd)} />
       </div>
-      <p className="mt-2 text-xs text-navy-700/50">
-        Stock Music is the flat monthly royalty-free track subscription (currently no provider is
-        purchased yet — see <code>lib/usage-pricing.ts</code>), split across clients below by their
-        share of total Video Editor renders, since individual track usage isn&apos;t attributed to a
-        specific event in the database today.
-      </p>
 
       {usage.length === 0 ? (
         <p className="mt-8 rounded-xl border border-dashed border-navy-950/15 py-16 text-center text-sm text-navy-700/50">
@@ -144,11 +133,6 @@ export default async function AdminUsagePage() {
                         value: u.estimatedShotstackVideoEditorCostUsd,
                         color: PROVIDER_COLORS.shotstackVideoEditor,
                       },
-                      {
-                        label: "Stock Music",
-                        value: u.estimatedStockMusicCostUsd,
-                        color: PROVIDER_COLORS.stockMusic,
-                      },
                     ]}
                   />
                 </div>
@@ -172,10 +156,6 @@ export default async function AdminUsagePage() {
                   <div className="flex items-center justify-between rounded-lg bg-ivory-100 px-2.5 py-1.5">
                     <dt>Storage</dt>
                     <dd className="font-medium text-navy-950">{formatBytes(u.storageBytes)}</dd>
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-ivory-100 px-2.5 py-1.5">
-                    <dt>Stock Music (est.)</dt>
-                    <dd className="font-medium text-navy-950">{formatUsd(u.estimatedStockMusicCostUsd)}</dd>
                   </div>
                 </dl>
               </div>
