@@ -14,12 +14,24 @@ import {
 } from "@/features/admin/video-editor/actions";
 import { useVideoEditRender } from "@/hooks/use-video-edit-render";
 
-// The starting point for a brand-new edit — one empty track, a black
+// The starting point for a brand-new edit — NO tracks yet, a black
 // background, MP4/SD output. Matches the Edit JSON schema Shotstack's
 // Edit API renders directly (see
 // https://shotstack.io/docs/guide/getting-started/core-concepts/) —
 // edit.getEdit() later returns this same shape with clips filled in,
 // which is exactly what gets POSTed to the render endpoint (task #83).
+//
+// Deliberately `tracks: []`, NOT `tracks: [{ clips: [] }]` — the
+// Studio SDK validates the Edit against Shotstack's schema on load,
+// and a track with an empty `clips` array fails that validation
+// ("Too small: expected array to have >=1 items" at
+// timeline.tracks.0.clips) — a real bug this shipped with, only
+// surfacing the first time someone opened a genuinely fresh event with
+// no draft yet. A track simply doesn't exist until it has its first
+// clip; addClipToTimeline below creates the track (via edit.addTrack)
+// the moment the very first clip is added, rather than creating an
+// empty, invalid one upfront.
+//
 // A plain function (rather than a shared object constant) so the object
 // literal is inline at the `new Edit(...)` call site — TypeScript then
 // contextually types "mp4"/"sd" against Edit's constructor parameter
@@ -30,7 +42,7 @@ import { useVideoEditRender } from "@/hooks/use-video-edit-render";
 function createEmptyEdit(): Edit {
   return new Edit({
     timeline: {
-      tracks: [{ clips: [] }],
+      tracks: [],
       background: "#000000",
     },
     output: {
@@ -38,6 +50,21 @@ function createEmptyEdit(): Edit {
       resolution: "sd",
     },
   });
+}
+
+/** True, human-readable message for a known failure shape — never shows a raw Zod/schema error dump to the person using the editor. Falls back to a generic, still-reassuring message for anything unrecognized. */
+function describeLoadError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  if (raw.includes("too_small") && raw.includes("clips")) {
+    return "This edit's data looks incomplete, so the editor couldn't open it.";
+  }
+  if (raw.toLowerCase().includes("webgl") || raw.toLowerCase().includes("context")) {
+    return "Your browser couldn't start the video canvas. This editor needs a browser with WebGL support (most current Chrome, Safari, or Edge).";
+  }
+  if (raw.toLowerCase().includes("network") || raw.toLowerCase().includes("fetch")) {
+    return "A network problem stopped the editor from loading.";
+  }
+  return "Something went wrong loading the editor.";
 }
 
 const AUTOSAVE_INTERVAL_MS = 20_000;
@@ -66,6 +93,9 @@ export function VideoEditorWorkspace({
 
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadErrorDetail, setLoadErrorDetail] = useState<string | null>(null);
+  const [showLoadErrorDetail, setShowLoadErrorDetail] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [mediaLibrary, setMediaLibrary] = useState(initialMediaLibrary);
   const [jobs, setJobs] = useState(initialJobs);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
@@ -84,6 +114,9 @@ export function VideoEditorWorkspace({
   // render.
   useEffect(() => {
     let disposed = false;
+    setReady(false);
+    setLoadError(null);
+    setLoadErrorDetail(null);
 
     async function init() {
       try {
@@ -112,7 +145,10 @@ export function VideoEditorWorkspace({
         setReady(true);
       } catch (err) {
         console.error("Video Editor: failed to load Shotstack Studio SDK:", err);
-        if (!disposed) setLoadError(err instanceof Error ? err.message : "Failed to load the editor.");
+        if (!disposed) {
+          setLoadError(describeLoadError(err));
+          setLoadErrorDetail(err instanceof Error ? err.message : String(err));
+        }
       }
     }
 
@@ -124,7 +160,10 @@ export function VideoEditorWorkspace({
       instanceRef.current?.timeline.dispose();
       instanceRef.current = null;
     };
-  }, []);
+    // reloadKey is a deliberate, otherwise-unused dependency — bumping it
+    // (the error screen's "Try Again" button) re-runs this whole mount
+    // effect to retry loading the editor without a full page refresh.
+  }, [reloadKey]);
 
   const saveDraft = useCallback(async (): Promise<string | null> => {
     const instance = instanceRef.current;
@@ -156,12 +195,19 @@ export function VideoEditorWorkspace({
 
     const length = clip.kind === "photo" ? 4 : 5;
     const start = instance.edit.totalDuration ?? 0;
+    const asset = clip.kind === "photo" ? ({ type: "image", src: clip.url } as const) : ({ type: "video", src: clip.url } as const);
 
-    instance.edit.addClip(0, {
-      asset: clip.kind === "photo" ? { type: "image", src: clip.url } : { type: "video", src: clip.url },
-      start,
-      length,
-    });
+    // createEmptyEdit() starts with zero tracks (a track with 0 clips
+    // fails Shotstack's schema validation — see that function's doc
+    // comment), so the very first clip has to create track 0 itself,
+    // already carrying that clip — addClip(0, ...) would fail here
+    // since there's no track 0 to add to yet. Every clip after the
+    // first goes through the normal addClip path.
+    if (instance.edit.getEdit().timeline.tracks.length === 0) {
+      instance.edit.addTrack(0, { clips: [{ asset, start, length }] });
+    } else {
+      instance.edit.addClip(0, { asset, start, length });
+    }
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -414,8 +460,37 @@ export function VideoEditorWorkspace({
         ) : null}
 
         {loadError ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            Couldn&rsquo;t load the editor: {loadError}. Try refreshing the page.
+          <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
+            <p className="font-medium">The video editor couldn&rsquo;t open.</p>
+            <p className="mt-1 text-red-700">{loadError}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button size="sm" onClick={() => setReloadKey((k) => k + 1)}>
+                Try Again
+              </Button>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="text-xs text-red-700 underline underline-offset-2 hover:text-red-900"
+              >
+                Reload the whole page instead
+              </button>
+            </div>
+            {loadErrorDetail ? (
+              <div className="mt-3 border-t border-red-200 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowLoadErrorDetail((v) => !v)}
+                  className="text-xs text-red-700/70 underline underline-offset-2 hover:text-red-900"
+                >
+                  {showLoadErrorDetail ? "Hide" : "Show"} technical details
+                </button>
+                {showLoadErrorDetail ? (
+                  <p className="mt-2 break-words rounded-lg bg-white/60 p-2 font-mono text-[11px] text-red-900/80">
+                    {loadErrorDetail}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-navy-950">

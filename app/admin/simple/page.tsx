@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import {
   ArrowRight,
   Check,
+  Clapperboard,
   Clock,
   ExternalLink,
   Film,
@@ -20,6 +21,7 @@ import { getDashboardStats } from "@/services/admin-stats";
 import { getSetupProgressCounts } from "@/services/admin-setup-progress";
 import { getLatestCompletedAiImageJob, getLatestUploadedAiImageJob } from "@/services/ai-image-jobs";
 import { getLatestCompletedSlideshowVideoJob } from "@/services/slideshow-video-jobs";
+import { listVideoEditJobs } from "@/services/video-editor";
 import { getOrCreateMobileAccessCode } from "@/services/admin-mobile-auth";
 import { signOutAction } from "@/features/admin/auth-actions";
 import { StatCard } from "@/features/admin/components/stat-card";
@@ -57,13 +59,14 @@ export default async function AdminSimplePage() {
     );
   }
 
-  const [stats, setupCounts, latestGeneratedAiImage, latestUploadedAiImage, latestSlideshowVideo, mobileAccessCode] =
+  const [stats, setupCounts, latestGeneratedAiImage, latestUploadedAiImage, latestSlideshowVideo, videoEditJobs, mobileAccessCode] =
     await Promise.all([
       getDashboardStats(event.id),
       getSetupProgressCounts(event.id),
       getLatestCompletedAiImageJob(event.id),
       getLatestUploadedAiImageJob(event.id),
       getLatestCompletedSlideshowVideoJob(event.id),
+      listVideoEditJobs(event.id),
       getOrCreateMobileAccessCode(admin.id),
     ]);
 
@@ -125,6 +128,14 @@ export default async function AdminSimplePage() {
       description: "Turn your gallery into a music video.",
       badge: null,
       done: Boolean(latestSlideshowVideo),
+    },
+    {
+      href: "/admin/video-editor",
+      icon: Clapperboard,
+      label: "Video Editor",
+      description: "Hand-edit a video from your photos and clips, then set it for the Big Screen.",
+      badge: null,
+      done: videoEditJobs.some((j) => j.status === "done"),
     },
   ];
 
