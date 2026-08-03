@@ -618,7 +618,6 @@ export function VideoEditorWorkspace({
   }, [renderJob.status, renderJob.resultUrl, currentJobId, eventId, title]);
 
   return (
-    <div>
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       {/* Media bin — every photo/video this event has, plus custom uploads */}
       <div className="order-2 lg:order-1">
@@ -822,6 +821,8 @@ export function VideoEditorWorkspace({
             </ul>
           </div>
         ) : null}
+
+        <VideoEditorFaq />
       </div>
 
       {/* Editor canvas + timeline — capped at max-w-3xl so a wide desktop
@@ -1008,9 +1009,6 @@ export function VideoEditorWorkspace({
           <div data-shotstack-timeline ref={timelineContainerRef} className="h-48 w-full" />
         </div>
       </div>
-    </div>
-
-    <VideoEditorFaq />
     </div>
   );
 }
