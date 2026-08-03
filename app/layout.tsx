@@ -14,6 +14,7 @@ import {
 } from "@/lib/fonts";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import { ClarityScript } from "@/features/analytics/clarity-script";
+import { ServiceWorkerRegister } from "@/features/pwa/service-worker-register";
 
 import "./globals.css";
 
@@ -37,6 +38,17 @@ export const metadata: Metadata = {
     description: "Premium digital invitations and shared guest memories for any celebration.",
     type: "website",
   },
+  // manifest.webmanifest itself comes from app/manifest.ts's file
+  // convention (auto-linked, no <link> tag needed here). appleWebApp
+  // is the separate iOS-specific bit Chrome/Android's manifest doesn't
+  // cover — without it, a guest/admin who "Add to Home Screen"s from
+  // iOS Safari still gets the browser chrome (URL bar, tab switcher)
+  // instead of a real standalone app window.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: SITE_NAME,
+  },
 };
 
 export const viewport: Viewport = {
@@ -58,6 +70,7 @@ export default function RootLayout({
       <body className="antialiased">
         {children}
         <ClarityScript />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

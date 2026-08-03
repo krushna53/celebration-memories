@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EveryMoment</string>
+    <string name="title_activity_main">EveryMoment</string>
+    <string name="package_name">me.everymoment.app</string>
+    <string name="custom_url_scheme">me.everymoment.app</string>
+</resources>

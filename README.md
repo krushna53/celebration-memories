@@ -32,6 +32,63 @@ Set the same three Supabase env vars from `.env.example` in Netlify's
 site settings (Site configuration → Environment variables), then trigger
 a new deploy.
 
+## Mobile app
+
+The entire site — guest experience and the full `/admin` dashboard — is
+also installable/shippable as a mobile app, without a separate codebase
+to maintain. Two layers, both wrapping the same live deployed site
+rather than reimplementing anything:
+
+1. **PWA (works right now, no build tools needed).** `app/manifest.ts`
+   + `app/icon-192.png/route.tsx` + `app/icon-512.png/route.tsx` +
+   `public/sw.js` (registered from `features/pwa/service-worker-register.tsx`)
+   make the site a real installable Progressive Web App. Open the live
+   site on a phone and:
+   - **Android/Chrome**: menu → "Install app" (or the install icon in
+     the address bar).
+   - **iOS/Safari**: Share sheet → "Add to Home Screen".
+
+   Either way you get a standalone app icon and window (no browser
+   address bar), reading live from the real site every time. The
+   service worker is deliberately non-caching (see its own doc
+   comment) — this is "installable," not "offline-first," since almost
+   nothing here (Server Actions, live Supabase data, auth cookies) is
+   safe to cache blindly.
+
+2. **Native iOS/Android app shells (Capacitor).** `capacitor.config.ts`
+   points a native WebView at the same production URL (`server.url`,
+   "remote mode" — the standard Capacitor pattern for a server-rendered
+   app like this one, since a static `next export` can't carry Server
+   Actions/auth/live data). The `ios/` and `android/` folders are real,
+   committed native projects — every feature works exactly as it does
+   on the web, because it *is* the web app, just inside a native shell
+   instead of a browser tab.
+
+   To build and run one yourself:
+
+   ```bash
+   npm install
+   npx cap sync            # or: npm run cap:sync
+   npm run cap:open:ios      # opens ios/App/App.xcodeproj in Xcode (macOS + Xcode required)
+   npm run cap:open:android  # opens android/ in Android Studio
+   ```
+
+   From there it's a normal Xcode/Android Studio project — hit Run to
+   launch it in a simulator/emulator or on a connected device. No
+   CocoaPods needed (this Capacitor version uses Swift Package Manager;
+   Xcode resolves `ios/App/CapApp-SPM` automatically on first open).
+
+   Two known cosmetic leftovers from scaffolding worth a one-time
+   cleanup on your own machine (harmless, but tidy them up if you like):
+   `rm -rf android/app/src/main/java/com/getcapacitor android/app/src/androidTest/java/com/getcapacitor android/app/src/test/java/com/getcapacitor`
+   — unused default-template files the CLI couldn't overwrite in the
+   sandbox this was built in.
+
+   Publishing to the App Store / Play Store from here is the normal
+   native flow (Xcode Organizer → Distribute App; Android Studio →
+   Generate Signed Bundle) — out of scope for this doc, but nothing
+   about the setup above blocks it.
+
 ## Status
 
 All 6 phases from CLAUDE.md are implemented, plus a full admin content

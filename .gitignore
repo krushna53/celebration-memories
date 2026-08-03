@@ -35,3 +35,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Capacitor native app shells (ios/, android/) — the projects
+# themselves are committed (custom config, MainActivity, Info.plist),
+# only their local build/dependency-resolution artifacts are ignored.
+android/.gradle
+android/app/build
+android/build
+android/local.properties
+ios/App/Pods
+ios/App/build
+ios/App/DerivedData
+ios/App/App.xcworkspace/xcuserdata
+ios/App/App.xcodeproj/xcuserdata
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata
