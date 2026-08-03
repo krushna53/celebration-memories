@@ -45,6 +45,28 @@ const TEXT_POSITION_OPTIONS: { value: "top" | "center" | "bottom"; label: string
   { value: "bottom", label: "Bottom (caption)" },
 ];
 
+/** Shotstack's `Transition.in` enum has ~80 entries (every direction × speed) — this is a curated subset covering the shapes an admin actually reaches for, not the full list. Applied as the clip's transition-in only; transition-out is left unset (a normal hard cut at the end, which is the expected default). */
+const TRANSITION_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "No transition" },
+  { value: "fade", label: "Fade" },
+  { value: "slideLeft", label: "Slide left" },
+  { value: "slideRight", label: "Slide right" },
+  { value: "wipeLeft", label: "Wipe left" },
+  { value: "wipeRight", label: "Wipe right" },
+  { value: "carouselLeft", label: "Carousel left" },
+  { value: "carouselRight", label: "Carousel right" },
+  { value: "zoom", label: "Zoom" },
+];
+
+/** Shotstack's `Output.aspectRatio` — "Useful for social media output formats" per its own schema doc. 9:16/1:1/4:5 are the vertical/square shapes Instagram Reels, Stories, and feed posts actually use; 16:9/4:3 cover a traditional horizontal Big Screen Display render. */
+const ASPECT_RATIO_OPTIONS: { value: "16:9" | "9:16" | "1:1" | "4:5" | "4:3"; label: string; cssRatio: string }[] = [
+  { value: "16:9", label: "16:9 — Widescreen", cssRatio: "16 / 9" },
+  { value: "9:16", label: "9:16 — Reels / Stories", cssRatio: "9 / 16" },
+  { value: "1:1", label: "1:1 — Square", cssRatio: "1 / 1" },
+  { value: "4:5", label: "4:5 — Portrait feed", cssRatio: "4 / 5" },
+  { value: "4:3", label: "4:3 — Classic TV", cssRatio: "4 / 3" },
+];
+
 /**
  * Builds the Edit JSON for a brand-new session, seeded with exactly one
  * real clip. Matches the Edit JSON schema Shotstack's Edit API renders
@@ -65,7 +87,10 @@ const TEXT_POSITION_OPTIONS: { value: "top" | "center" | "bottom"; label: string
  * page shows a plain "add a photo or video to begin" prompt rather than
  * attempting to open an editor with nothing in it.
  */
-function buildFirstClipEdit(clip: VideoEditorClip): { edit: Edit; length: number } {
+function buildFirstClipEdit(
+  clip: VideoEditorClip,
+  aspectRatio: (typeof ASPECT_RATIO_OPTIONS)[number]["value"],
+): { edit: Edit; length: number } {
   const length = clip.kind === "photo" ? 4 : 5;
   const asset = clip.kind === "photo" ? ({ type: "image", src: clip.url } as const) : ({ type: "video", src: clip.url } as const);
   const edit = new Edit({
@@ -81,6 +106,7 @@ function buildFirstClipEdit(clip: VideoEditorClip): { edit: Edit; length: number
     output: {
       format: "mp4",
       resolution: "sd",
+      aspectRatio,
     },
   });
   return { edit, length };
@@ -169,6 +195,12 @@ export function VideoEditorWorkspace({
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string>("none");
   const [selectedEffect, setSelectedEffect] = useState<string>("");
+  const [selectedTransition, setSelectedTransition] = useState<string>("");
+
+  // Defaults to the existing horizontal behavior — changeable any time
+  // (before or after the editor's opened) via applyAspectRatio, which
+  // hot-reloads the SDK the same way applySoundtrack does.
+  const [aspectRatio, setAspectRatio] = useState<(typeof ASPECT_RATIO_OPTIONS)[number]["value"]>("16:9");
 
   const [textDraft, setTextDraft] = useState("");
   const [textPosition, setTextPosition] = useState<"top" | "center" | "bottom">("bottom");
@@ -211,7 +243,7 @@ export function VideoEditorWorkspace({
     setPendingFirstClip(clip);
 
     try {
-      const { edit } = buildFirstClipEdit(clip);
+      const { edit } = buildFirstClipEdit(clip, aspectRatio);
       const canvas = new Canvas(edit);
       await canvas.load();
       await edit.load();
@@ -279,6 +311,7 @@ export function VideoEditorWorkspace({
       setSelectedClipId(payload.clip.id ?? null);
       setSelectedFilter(payload.clip.filter ?? "none");
       setSelectedEffect(payload.clip.effect ?? "");
+      setSelectedTransition(payload.clip.transition?.in ?? "");
     });
     const offCleared = instance.edit.events.on("selection:cleared", () => {
       setSelectedClipId(null);
@@ -306,6 +339,37 @@ export function VideoEditorWorkspace({
     if (!instance || !selectedClipId) return;
     const updates: ClipUpdate = { effect: (value || undefined) as ClipUpdate["effect"] };
     await instance.edit.updateClipById(selectedClipId, updates);
+  }
+
+  /** Applies a transition-in to the selected clip. Transition-out is deliberately left unset (see TRANSITION_OPTIONS' doc comment) — picking the blank option clears transition entirely rather than setting an empty object. */
+  async function applyTransition(value: string) {
+    setSelectedTransition(value);
+    const instance = instanceRef.current;
+    if (!instance || !selectedClipId) return;
+    const updates: ClipUpdate = { transition: value ? ({ in: value } as ClipUpdate["transition"]) : undefined };
+    await instance.edit.updateClipById(selectedClipId, updates);
+  }
+
+  /**
+   * Switches the whole video's aspect ratio (Output.aspectRatio) —
+   * unlike filter/effect/transition, this isn't per-clip, it's a
+   * top-level Edit setting, same category of change as the soundtrack
+   * (see applySoundtrack) and applied the same way: read the current
+   * edit JSON, patch output.aspectRatio, hand it back to loadEdit() for
+   * a hot-reload. Safe to call whether or not the editor's open yet —
+   * if it isn't, the picked value is simply used the moment
+   * beginEditing constructs the first clip's Edit JSON.
+   */
+  async function applyAspectRatio(value: (typeof ASPECT_RATIO_OPTIONS)[number]["value"]) {
+    setAspectRatio(value);
+    const instance = instanceRef.current;
+    if (!instance) return;
+    const current = instance.edit.getEdit();
+    await instance.edit.loadEdit({
+      ...current,
+      output: { ...current.output, aspectRatio: value },
+    });
+    requestAnimationFrame(() => instanceRef.current?.canvas.resize());
   }
 
   /**
@@ -604,6 +668,25 @@ export function VideoEditorWorkspace({
           />
         </div>
 
+        {/* Output shape — Output.aspectRatio, not a per-clip setting.
+            Change anytime; applyAspectRatio hot-reloads the SDK the same
+            way applySoundtrack does when the editor's already open. */}
+        <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
+          <h2 className="font-display text-base text-navy-950">Shape</h2>
+          <p className="mt-1 text-xs text-navy-700/50">Pick vertical for Reels/Stories, square for feed posts, or widescreen for the Big Screen.</p>
+          <select
+            value={aspectRatio}
+            onChange={(e) => applyAspectRatio(e.target.value as (typeof ASPECT_RATIO_OPTIONS)[number]["value"])}
+            className="mt-2 w-full rounded-lg border border-navy-950/15 bg-white px-2.5 py-1.5 text-sm text-navy-950 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30"
+          >
+            {ASPECT_RATIO_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Text overlays ("stickers") — inserted on their own topmost
             track so they render on top of the video/photo footage. See
             addTextOverlay's doc comment for the track-index bookkeeping. */}
@@ -833,6 +916,20 @@ export function VideoEditorWorkspace({
                 ))}
               </select>
             </label>
+            <label className="flex items-center gap-1.5 text-navy-700/60">
+              Transition
+              <select
+                value={selectedTransition}
+                onChange={(e) => applyTransition(e.target.value)}
+                className="rounded-lg border border-navy-950/15 bg-white px-1.5 py-1 text-xs text-navy-950 focus:border-gold-500 focus:outline-none"
+              >
+                {TRANSITION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         ) : null}
 
@@ -878,7 +975,12 @@ export function VideoEditorWorkspace({
                 The "not started yet" / "starting up" messaging below is
                 a sibling overlay, never a child of this div, so it never
                 fights with Shotstack's own DOM writes once mounted. */}
-            <div data-shotstack-studio ref={studioContainerRef} className="aspect-video w-full" />
+            <div
+              data-shotstack-studio
+              ref={studioContainerRef}
+              className="w-full"
+              style={{ aspectRatio: ASPECT_RATIO_OPTIONS.find((opt) => opt.value === aspectRatio)?.cssRatio ?? "16 / 9" }}
+            />
             {!ready ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-navy-950/95 px-6 text-center">
                 {initializing ? (
