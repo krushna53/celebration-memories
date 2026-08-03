@@ -31,6 +31,16 @@ export interface EventUsage {
   videoEditorCount: number;
   storageBytes: number;
   estimatedAiImageCostUsd: number;
+  /**
+   * Shotstack spend split by which tool triggered the render — Slideshow
+   * Video and Video Editor are two separate features that both happen to
+   * bill against the same Shotstack account, but an owner trying to spot
+   * which client/tool is driving cost needs them broken out, not merged.
+   * estimatedShotstackCostUsd (below) is kept as their sum for anything
+   * that only wants a single Shotstack total.
+   */
+  estimatedShotstackSlideshowCostUsd: number;
+  estimatedShotstackVideoEditorCostUsd: number;
   estimatedShotstackCostUsd: number;
   estimatedTotalCostUsd: number;
 }
@@ -82,9 +92,9 @@ export async function getAllEventsUsage(): Promise<EventUsage[]> {
       const videoEditorCount = videoEditorCounts.get(event.id) ?? 0;
 
       const estimatedAiImageCostUsd = aiImageCount * AI_IMAGE_COST_PER_GENERATION_USD;
-      const estimatedShotstackCostUsd =
-        slideshowCount * SLIDESHOW_ASSUMED_MINUTES * SHOTSTACK_COST_PER_MINUTE_USD +
-        videoEditorCount * VIDEO_EDITOR_ASSUMED_MINUTES * SHOTSTACK_COST_PER_MINUTE_USD;
+      const estimatedShotstackSlideshowCostUsd = slideshowCount * SLIDESHOW_ASSUMED_MINUTES * SHOTSTACK_COST_PER_MINUTE_USD;
+      const estimatedShotstackVideoEditorCostUsd = videoEditorCount * VIDEO_EDITOR_ASSUMED_MINUTES * SHOTSTACK_COST_PER_MINUTE_USD;
+      const estimatedShotstackCostUsd = estimatedShotstackSlideshowCostUsd + estimatedShotstackVideoEditorCostUsd;
 
       return {
         eventId: event.id,
@@ -96,6 +106,8 @@ export async function getAllEventsUsage(): Promise<EventUsage[]> {
         videoEditorCount,
         storageBytes: storageByEvent.get(event.id) ?? 0,
         estimatedAiImageCostUsd,
+        estimatedShotstackSlideshowCostUsd,
+        estimatedShotstackVideoEditorCostUsd,
         estimatedShotstackCostUsd,
         estimatedTotalCostUsd: estimatedAiImageCostUsd + estimatedShotstackCostUsd,
       };

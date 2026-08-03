@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 
 const PROVIDER_COLORS = {
   aiImage: "#4f46e5",
-  shotstack: "#e5503c",
+  shotstackSlideshow: "#e5503c",
+  shotstackVideoEditor: "#c2410c",
 } as const;
 
 function formatUsd(amount: number): string {
@@ -43,8 +44,17 @@ export default async function AdminUsagePage() {
       shotstackRenders: acc.shotstackRenders + u.slideshowCount + u.videoEditorCount,
       storageBytes: acc.storageBytes + u.storageBytes,
       estimatedTotalCostUsd: acc.estimatedTotalCostUsd + u.estimatedTotalCostUsd,
+      estimatedShotstackSlideshowCostUsd: acc.estimatedShotstackSlideshowCostUsd + u.estimatedShotstackSlideshowCostUsd,
+      estimatedShotstackVideoEditorCostUsd: acc.estimatedShotstackVideoEditorCostUsd + u.estimatedShotstackVideoEditorCostUsd,
     }),
-    { aiImageCount: 0, shotstackRenders: 0, storageBytes: 0, estimatedTotalCostUsd: 0 },
+    {
+      aiImageCount: 0,
+      shotstackRenders: 0,
+      storageBytes: 0,
+      estimatedTotalCostUsd: 0,
+      estimatedShotstackSlideshowCostUsd: 0,
+      estimatedShotstackVideoEditorCostUsd: 0,
+    },
   );
 
   return (
@@ -68,6 +78,15 @@ export default async function AdminUsagePage() {
         <StatCard label="Total Storage" value={formatBytes(totals.storageBytes)} />
       </div>
 
+      {/* Shotstack spend split by tool — Slideshow Video and Video Editor
+          both bill against the same Shotstack account but are separate
+          features, so a client running up Video Editor renders shouldn't
+          get lost inside a single merged "Shotstack" number. */}
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <StatCard label="Shotstack API — Slideshow" value={formatUsd(totals.estimatedShotstackSlideshowCostUsd)} />
+        <StatCard label="Shotstack API — Video Editor" value={formatUsd(totals.estimatedShotstackVideoEditorCostUsd)} />
+      </div>
+
       {usage.length === 0 ? (
         <p className="mt-8 rounded-xl border border-dashed border-navy-950/15 py-16 text-center text-sm text-navy-700/50">
           No live events yet.
@@ -86,7 +105,7 @@ export default async function AdminUsagePage() {
                 data={usage.map((u) => ({
                   label: u.honoreeName,
                   value: Number(u.estimatedTotalCostUsd.toFixed(2)),
-                  color: PROVIDER_COLORS.shotstack,
+                  color: PROVIDER_COLORS.shotstackSlideshow,
                 }))}
               />
             </div>
@@ -104,7 +123,16 @@ export default async function AdminUsagePage() {
                     centerLabel={formatUsd(u.estimatedTotalCostUsd)}
                     data={[
                       { label: "AI Image", value: u.estimatedAiImageCostUsd, color: PROVIDER_COLORS.aiImage },
-                      { label: "Shotstack", value: u.estimatedShotstackCostUsd, color: PROVIDER_COLORS.shotstack },
+                      {
+                        label: "Shotstack — Slideshow",
+                        value: u.estimatedShotstackSlideshowCostUsd,
+                        color: PROVIDER_COLORS.shotstackSlideshow,
+                      },
+                      {
+                        label: "Shotstack — Video Editor",
+                        value: u.estimatedShotstackVideoEditorCostUsd,
+                        color: PROVIDER_COLORS.shotstackVideoEditor,
+                      },
                     ]}
                   />
                 </div>
@@ -115,11 +143,15 @@ export default async function AdminUsagePage() {
                   </div>
                   <div className="flex items-center justify-between rounded-lg bg-ivory-100 px-2.5 py-1.5">
                     <dt>Slideshow renders</dt>
-                    <dd className="font-medium text-navy-950">{u.slideshowCount}</dd>
+                    <dd className="font-medium text-navy-950">
+                      {u.slideshowCount} · {formatUsd(u.estimatedShotstackSlideshowCostUsd)}
+                    </dd>
                   </div>
                   <div className="flex items-center justify-between rounded-lg bg-ivory-100 px-2.5 py-1.5">
                     <dt>Video Editor renders</dt>
-                    <dd className="font-medium text-navy-950">{u.videoEditorCount}</dd>
+                    <dd className="font-medium text-navy-950">
+                      {u.videoEditorCount} · {formatUsd(u.estimatedShotstackVideoEditorCostUsd)}
+                    </dd>
                   </div>
                   <div className="flex items-center justify-between rounded-lg bg-ivory-100 px-2.5 py-1.5">
                     <dt>Storage</dt>
