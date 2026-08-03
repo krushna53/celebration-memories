@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle2, ShieldCheck, TrendingUp, Users } from "lucide-react";
 
@@ -7,8 +8,20 @@ import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 import { listCategoryTree } from "@/services/marketplace-categories";
+import { SITE_NAME } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: `List Your Business — Free Vendor Listings | ${SITE_NAME} Discover`,
+  description:
+    "Photographers, makeup artists, magicians, and other event vendors: create a free profile on EveryMoment Discover and reach hosts actively planning a celebration. No commission on leads or bookings.",
+  openGraph: {
+    title: `Become a Partner | ${SITE_NAME} Discover`,
+    description: "Free vendor listings for photographers, makeup artists, magicians, and more.",
+    type: "website",
+  },
+};
 
 const BENEFITS = [
   {

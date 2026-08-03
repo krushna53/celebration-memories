@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
+
 import { SiteShell } from "@/components/layout/site-shell";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 import { CategoryDirectory } from "@/features/discover/category-directory";
+import { buildMarketplaceDirectoryMetadata } from "@/lib/marketplace-metadata";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
+  const { category } = await params;
+  return buildMarketplaceDirectoryMetadata(category);
+}
 
 /** SEO directory page — e.g. /photographers, /venues, /djs. See features/discover/category-directory.tsx for the shared rendering logic across all three URL depths. */
 export default async function CategoryPage({

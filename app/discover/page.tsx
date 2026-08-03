@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SiteShell } from "@/components/layout/site-shell";
@@ -7,8 +8,20 @@ import { Button } from "@/components/ui/button";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 import { listCategoryTree } from "@/services/marketplace-categories";
 import { getSuggestedCategoriesForEventType } from "@/services/marketplace-suggestions";
+import { SITE_NAME } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: `Discover Event Vendors — Photographers, Venues, Makeup Artists & More | ${SITE_NAME}`,
+  description:
+    "Browse photographers, videographers, venues, makeup artists, and entertainers for your next celebration. Real profiles and pricing — contact vendors directly, no commission.",
+  openGraph: {
+    title: `Discover Event Vendors | ${SITE_NAME}`,
+    description: "Browse and compare event vendors for your next celebration.",
+    type: "website",
+  },
+};
 
 const EVENT_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: "birthday", label: "Birthday" },

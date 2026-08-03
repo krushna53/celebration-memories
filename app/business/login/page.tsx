@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
+
 import { BusinessLoginForm } from "@/features/business/login-form";
+
+export const metadata: Metadata = { robots: { index: false, follow: true } };
 
 export default function BusinessLoginPage() {
   return (

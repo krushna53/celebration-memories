@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
+
 import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { ContactForm } from "@/features/contact/contact-form";
-import { BUILDER } from "@/lib/constants";
+import { BUILDER, SITE_NAME } from "@/lib/constants";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
+
+export const metadata: Metadata = {
+  title: `Contact Us | ${SITE_NAME}`,
+  description: "Questions about building your own event site, or anything else — send us a message and we'll reply by email.",
+};
 
 export default function ContactPage() {
   return (

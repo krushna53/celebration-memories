@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarDays, MapPin, PartyPopper } from "lucide-react";
 
@@ -8,8 +9,20 @@ import { getCoverPhoto } from "@/services/gallery-photos";
 import { formatEventDate } from "@/lib/format";
 import { EVENT_CATEGORY_LABELS as CATEGORY_LABELS } from "@/lib/event-category";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
+import { SITE_NAME } from "@/lib/constants";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: `Browse Celebrations | ${SITE_NAME}`,
+  description:
+    "See birthdays, weddings, anniversaries, and other celebrations hosted on EveryMoment that have opted to be publicly listed.",
+  openGraph: {
+    title: `Browse Celebrations | ${SITE_NAME}`,
+    description: "Public celebrations hosted on EveryMoment.",
+    type: "website",
+  },
+};
 
 /**
  * Public directory of every event that has opted into being listed

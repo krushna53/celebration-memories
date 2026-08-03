@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
+
 import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { BUILDER } from "@/lib/constants";
+import { BUILDER, SITE_NAME } from "@/lib/constants";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
+
+export const metadata: Metadata = {
+  title: `Privacy Policy | ${SITE_NAME}`,
+  description: `How ${SITE_NAME} collects, uses, and stores information from event hosts and guests.`,
+};
 
 const SECTIONS: { title: string; body: string }[] = [
   {

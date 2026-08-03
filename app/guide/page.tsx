@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { Bot, Camera, CalendarClock, Gamepad2, Heart, Images, Mic, Share2, Video } from "lucide-react";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
+import { SITE_NAME } from "@/lib/constants";
+
+export const metadata: Metadata = {
+  title: `Guest Guide — How to RSVP & Share Memories | ${SITE_NAME}`,
+  description: "New to an EveryMoment invitation? Here's how to RSVP, check the schedule, and share your photos, videos, and messages.",
+};
 
 const STEPS = [
   {

@@ -620,6 +620,33 @@ export async function listListingsForAdmin(status?: ListingStatus): Promise<Busi
   return (data ?? []).map(mapListing);
 }
 
+export interface PublicListingSlug {
+  slug: string;
+  updatedAt: string;
+}
+
+/**
+ * Minimal, sitemap-only query (app/sitemap.ts) — every listing actually
+ * reachable/visible at /listing/[slug] today. Deliberately narrower
+ * than listListingsForAdmin: that one is status-filterable but not
+ * paused-aware (fine for an admin moderation table, wrong for a
+ * sitemap), so this repeats searchListings' exact
+ * `status = 'approved' AND is_paused = false` visibility rule rather
+ * than reusing either existing function.
+ */
+export async function listAllPublicListingSlugs(): Promise<PublicListingSlug[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("business_profiles")
+    .select("slug, updated_at")
+    .eq("status", "approved")
+    .eq("is_paused", false);
+  if (error) throw new Error(`Failed to load public listings: ${error.message}`);
+  return (data as { slug: string; updated_at: string }[] | null ?? []).map((row) => ({
+    slug: row.slug,
+    updatedAt: row.updated_at,
+  }));
+}
+
 export async function setListingStatus(listingId: string, status: ListingStatus): Promise<void> {
   const { error } = await supabaseAdmin()
     .from("business_profiles")
