@@ -15,6 +15,7 @@ import {
   setBigScreenVideoAction,
 } from "@/features/admin/video-editor/actions";
 import { useVideoEditRender } from "@/hooks/use-video-edit-render";
+import { VideoEditorFaq } from "@/features/admin/video-editor/video-editor-faq";
 
 /** Shotstack's `Clip.filter` enum (see @shotstack/schemas' Clip schema) — a colour-grade applied to whichever clip is currently selected on the timeline. "none" is a real enum value, not the absence of a value, so it's always sent explicitly rather than omitted. */
 const FILTER_OPTIONS: { value: string; label: string }[] = [
@@ -617,6 +618,7 @@ export function VideoEditorWorkspace({
   }, [renderJob.status, renderJob.resultUrl, currentJobId, eventId, title]);
 
   return (
+    <div>
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       {/* Media bin — every photo/video this event has, plus custom uploads */}
       <div className="order-2 lg:order-1">
@@ -1006,6 +1008,9 @@ export function VideoEditorWorkspace({
           <div data-shotstack-timeline ref={timelineContainerRef} className="h-48 w-full" />
         </div>
       </div>
+    </div>
+
+    <VideoEditorFaq />
     </div>
   );
 }
