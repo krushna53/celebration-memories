@@ -3,10 +3,12 @@ import { ChevronDown, HelpCircle } from "lucide-react";
 /**
  * Static help copy for the Video Editor — explains both layers of
  * controls an admin sees: the native Shotstack Studio toolbar/timeline
- * (rendered by the SDK itself, not by us) and our own sidebar panels
- * (Media/Shape/Text/Music) and "Selected clip" shortcut bar. Kept as a
- * plain data array rather than scattered inline comments so it's easy
- * to add/reorder/edit an entry without touching component structure.
+ * (rendered by the SDK itself, not by us) and our own panels (Media in
+ * the left sidebar; Shape/Text/Music/Your Edits stacked below the
+ * canvas/timeline in the same column) and "Selected clip" shortcut
+ * bar. Kept as a plain data array rather than scattered inline
+ * comments so it's easy to add/reorder/edit an entry without touching
+ * component structure.
  */
 const FAQ_ITEMS: { question: string; answer: string }[] = [
   {
@@ -63,17 +65,17 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
   {
     question: "How do I change the video's shape (vertical for Reels, square, widescreen)?",
     answer:
-      "Use the \"Shape\" card in the left sidebar. This is a whole-video setting (not per-clip) — pick 9:16 for Reels/Stories, 1:1 for a square feed post, 4:5 for portrait feed, or 16:9/4:3 for a traditional widescreen Big Screen display.",
+      "Use the \"Shape\" card below the canvas and timeline. This is a whole-video setting (not per-clip) — pick 9:16 for Reels/Stories, 1:1 for a square feed post, 4:5 for portrait feed, or 16:9/4:3 for a traditional widescreen Big Screen display.",
   },
   {
-    question: "How do I add text or a caption?",
+    question: "How do I add a text overlay or caption?",
     answer:
-      "Use the \"Text\" card in the left sidebar — type your caption, choose Top/Center/Bottom placement, then Add Text. Text always renders above the video/photo footage.",
+      "Use the \"Text\" card below the canvas and timeline — type your caption, choose Top/Center/Bottom placement, then click Add Text. It's added as its own clip on a dedicated top layer, so it always renders above the video/photo footage rather than being hidden behind it. You can add as many text clips as you like, reposition each one on the timeline like any other clip, and it's fully supported end to end (this isn't a mockup — addTextOverlay is wired up to the real Shotstack Edit and will appear in the rendered MP4).",
   },
   {
     question: "How do I add background music?",
     answer:
-      "Use the \"Music\" card in the left sidebar to upload a track — it plays under the whole video with its own volume slider, separate from any individual clip's audio.",
+      "Use the \"Music\" card below the canvas and timeline to upload a track — it plays under the whole video with its own volume slider, separate from any individual clip's audio.",
   },
   {
     question: "How do I save my progress?",

@@ -618,8 +618,15 @@ export function VideoEditorWorkspace({
   }, [renderJob.status, renderJob.resultUrl, currentJobId, eventId, title]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-      {/* Media bin — every photo/video this event has, plus custom uploads */}
+    <div className="mx-auto w-full max-w-5xl">
+      {/* Media bin — a narrow side-by-side column to the left of the
+          editor at lg and up; stacks below the editor on smaller
+          screens instead (order-2, no side-by-side room to spare).
+          Shape/Text/Music/Your Edits/FAQ all live inside the editor
+          column (order-1 lg:order-2) below the canvas/timeline, so
+          they stay under the video rather than spanning the full
+          width under Media too. */}
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       <div className="order-2 lg:order-1">
         <div className="rounded-xl border border-navy-950/10 bg-white p-4">
           <h2 className="font-display text-base text-navy-950">Media</h2>
@@ -668,166 +675,12 @@ export function VideoEditorWorkspace({
             emptyLabel="No approved photos or videos yet — approve some in Memories, or add Gallery photos/Timeline milestones."
           />
         </div>
-
-        {/* Output shape — Output.aspectRatio, not a per-clip setting.
-            Change anytime; applyAspectRatio hot-reloads the SDK the same
-            way applySoundtrack does when the editor's already open. */}
-        <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
-          <h2 className="font-display text-base text-navy-950">Shape</h2>
-          <p className="mt-1 text-xs text-navy-700/50">Pick vertical for Reels/Stories, square for feed posts, or widescreen for the Big Screen.</p>
-          <select
-            value={aspectRatio}
-            onChange={(e) => applyAspectRatio(e.target.value as (typeof ASPECT_RATIO_OPTIONS)[number]["value"])}
-            className="mt-2 w-full rounded-lg border border-navy-950/15 bg-white px-2.5 py-1.5 text-sm text-navy-950 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30"
-          >
-            {ASPECT_RATIO_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Text overlays ("stickers") — inserted on their own topmost
-            track so they render on top of the video/photo footage. See
-            addTextOverlay's doc comment for the track-index bookkeeping. */}
-        <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
-          <h2 className="flex items-center gap-1.5 font-display text-base text-navy-950">
-            <Type size={15} /> Text
-          </h2>
-          <p className="mt-1 text-xs text-navy-700/50">
-            {ready ? "Add a caption or title over the video." : "Add a photo or video first to start editing."}
-          </p>
-          <textarea
-            value={textDraft}
-            onChange={(e) => setTextDraft(e.target.value)}
-            disabled={!ready}
-            placeholder="Happy 75th Birthday!"
-            rows={2}
-            className="mt-2 w-full resize-none rounded-lg border border-navy-950/15 bg-white px-2.5 py-1.5 text-sm text-navy-950 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30 disabled:bg-navy-950/5"
-          />
-          <div className="mt-2 flex items-center gap-2">
-            <select
-              value={textPosition}
-              onChange={(e) => setTextPosition(e.target.value as "top" | "center" | "bottom")}
-              disabled={!ready}
-              className="rounded-lg border border-navy-950/15 bg-white px-2 py-1.5 text-xs text-navy-950 focus:border-gold-500 focus:outline-none"
-            >
-              {TEXT_POSITION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <Button size="sm" variant="outline" onClick={addTextOverlay} disabled={!ready || !textDraft.trim() || addingText} className="ml-auto">
-              {addingText ? <Loader2 size={13} className="animate-spin" /> : "Add Text"}
-            </Button>
-          </div>
-        </div>
-
-        {/* Background music — a single soundtrack for the whole video
-            (timeline.soundtrack), not a per-clip audio track. See
-            applySoundtrack's doc comment. */}
-        <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
-          <h2 className="flex items-center gap-1.5 font-display text-base text-navy-950">
-            <Music size={15} /> Music
-          </h2>
-          <p className="mt-1 text-xs text-navy-700/50">
-            {ready ? "Add a background track that plays under the whole video." : "Add a photo or video first to start editing."}
-          </p>
-
-          {musicFileName ? (
-            <div className="mt-2 flex items-center gap-2 rounded-lg border border-navy-950/10 bg-navy-950/5 px-2.5 py-2 text-xs">
-              <Music size={13} className="shrink-0 text-navy-700/50" />
-              <span className="truncate text-navy-950">{musicFileName}</span>
-              <button type="button" onClick={removeMusic} className="ml-auto shrink-0 text-navy-700/50 hover:text-red-600" title="Remove music">
-                <X size={13} />
-              </button>
-            </div>
-          ) : (
-            <label className="tap-target mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gold-500/40 px-3 py-2.5 text-xs font-medium text-gold-700 hover:border-gold-500 hover:bg-gold-500/5 disabled:cursor-not-allowed disabled:opacity-50">
-              {musicUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              {musicUploading ? "Uploading..." : "Upload a track"}
-              <input
-                type="file"
-                accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/webm"
-                onChange={handleMusicUpload}
-                className="hidden"
-                disabled={!ready || musicUploading}
-              />
-            </label>
-          )}
-          {musicUploadError ? (
-            <p className="mt-1.5 text-xs text-red-600" role="alert">
-              {musicUploadError}
-            </p>
-          ) : null}
-          {musicFileName ? (
-            <label className="mt-2 flex items-center gap-2 text-xs text-navy-700/60">
-              Volume
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={musicVolume}
-                onChange={(e) => handleMusicVolumeChange(Number(e.target.value))}
-                className="flex-1"
-              />
-            </label>
-          ) : null}
-        </div>
-
-        {/* Past renders + drafts */}
-        {jobs.length > 0 ? (
-          <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
-            <h2 className="font-display text-base text-navy-950">Your Edits</h2>
-            <ul className="mt-2 space-y-2">
-              {jobs.map((job) => (
-                <li key={job.id} className="rounded-lg border border-navy-950/10 p-2.5 text-xs">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate font-medium text-navy-950">{job.title}</span>
-                    <span className="shrink-0 rounded-full bg-navy-950/5 px-1.5 py-0.5 text-[9px] uppercase text-navy-700/60">
-                      {job.status}
-                    </span>
-                  </div>
-                  {job.status === "done" && job.resultUrl ? (
-                    <div className="mt-2 flex items-center gap-2">
-                      <a href={job.resultUrl} target="_blank" rel="noreferrer" className="text-gold-700 hover:underline">
-                        View render
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => handleSetBigScreen(job.id)}
-                        disabled={job.isLiveOnBigScreen || bigScreenBusyId === job.id}
-                        className="ml-auto flex items-center gap-1 text-navy-700/60 hover:text-navy-950 disabled:opacity-50"
-                      >
-                        {job.isLiveOnBigScreen ? (
-                          <>
-                            <CheckCircle2 size={12} /> Live
-                          </>
-                        ) : bigScreenBusyId === job.id ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          <>
-                            <MonitorPlay size={12} /> Set as Big Screen
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
       </div>
 
-      {/* Editor canvas + timeline — capped at max-w-3xl so a wide desktop
-          monitor doesn't stretch the 16:9 canvas to an oversized, mostly-empty
-          box; it now stays proportional to a normal device viewport instead
-          of the full grid column. */}
-      <div className="order-1 mx-auto w-full max-w-3xl lg:order-2">
+      {/* Editor canvas + timeline — the second grid column on desktop
+          (order-1 lg:order-2, to the right of Media), first in the
+          vertical flow on mobile. */}
+      <div className="order-1 lg:order-2 mx-auto w-full max-w-3xl">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <input
             value={title}
@@ -994,7 +847,7 @@ export function VideoEditorWorkspace({
                     <VideoIcon className="text-gold-400" size={28} />
                     <p className="text-sm font-medium text-ivory-100">Add a photo or video to get started</p>
                     <p className="text-xs text-ivory-100/60">
-                      Tap anything in the Media list on the left — the editor opens as soon as you do.
+                      Tap anything in the Media list below — the editor opens as soon as you do.
                     </p>
                   </>
                 )}
@@ -1003,11 +856,170 @@ export function VideoEditorWorkspace({
           </div>
         )}
 
-        <div className="mt-3 overflow-hidden rounded-xl border border-navy-950/10 bg-white">
+        <div className={ready ? "mt-3 overflow-hidden rounded-xl border border-navy-950/10 bg-white" : "mt-3"}>
           <div data-shotstack-timeline ref={timelineContainerRef} className="h-48 w-full" />
         </div>
 
+        {/* Shape/Text/Music/Your Edits — stacked one below the other,
+            below the canvas/timeline, still in this same right-hand
+            column (not spanning under the Media column to the left). */}
+        <div className="mt-6 space-y-4">
+        {/* Output shape — Output.aspectRatio, not a per-clip setting.
+            Change anytime; applyAspectRatio hot-reloads the SDK the same
+            way applySoundtrack does when the editor's already open. */}
+        <div className="rounded-xl border border-navy-950/10 bg-white p-4">
+          <h2 className="font-display text-base text-navy-950">Shape</h2>
+          <p className="mt-1 text-xs text-navy-700/50">Pick vertical for Reels/Stories, square for feed posts, or widescreen for the Big Screen.</p>
+          <select
+            value={aspectRatio}
+            onChange={(e) => applyAspectRatio(e.target.value as (typeof ASPECT_RATIO_OPTIONS)[number]["value"])}
+            className="mt-2 w-full rounded-lg border border-navy-950/15 bg-white px-2.5 py-1.5 text-sm text-navy-950 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30"
+          >
+            {ASPECT_RATIO_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Text overlays ("stickers") — inserted on their own topmost
+            track so they render on top of the video/photo footage. See
+            addTextOverlay's doc comment for the track-index bookkeeping. */}
+        <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
+          <h2 className="flex items-center gap-1.5 font-display text-base text-navy-950">
+            <Type size={15} /> Text
+          </h2>
+          <p className="mt-1 text-xs text-navy-700/50">
+            {ready ? "Add a caption or title over the video." : "Add a photo or video first to start editing."}
+          </p>
+          <textarea
+            value={textDraft}
+            onChange={(e) => setTextDraft(e.target.value)}
+            disabled={!ready}
+            placeholder="Happy 75th Birthday!"
+            rows={2}
+            className="mt-2 w-full resize-none rounded-lg border border-navy-950/15 bg-white px-2.5 py-1.5 text-sm text-navy-950 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30 disabled:bg-navy-950/5"
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <select
+              value={textPosition}
+              onChange={(e) => setTextPosition(e.target.value as "top" | "center" | "bottom")}
+              disabled={!ready}
+              className="rounded-lg border border-navy-950/15 bg-white px-2 py-1.5 text-xs text-navy-950 focus:border-gold-500 focus:outline-none"
+            >
+              {TEXT_POSITION_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <Button size="sm" variant="outline" onClick={addTextOverlay} disabled={!ready || !textDraft.trim() || addingText} className="ml-auto">
+              {addingText ? <Loader2 size={13} className="animate-spin" /> : "Add Text"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Background music — a single soundtrack for the whole video
+            (timeline.soundtrack), not a per-clip audio track. See
+            applySoundtrack's doc comment. */}
+        <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
+          <h2 className="flex items-center gap-1.5 font-display text-base text-navy-950">
+            <Music size={15} /> Music
+          </h2>
+          <p className="mt-1 text-xs text-navy-700/50">
+            {ready ? "Add a background track that plays under the whole video." : "Add a photo or video first to start editing."}
+          </p>
+
+          {musicFileName ? (
+            <div className="mt-2 flex items-center gap-2 rounded-lg border border-navy-950/10 bg-navy-950/5 px-2.5 py-2 text-xs">
+              <Music size={13} className="shrink-0 text-navy-700/50" />
+              <span className="truncate text-navy-950">{musicFileName}</span>
+              <button type="button" onClick={removeMusic} className="ml-auto shrink-0 text-navy-700/50 hover:text-red-600" title="Remove music">
+                <X size={13} />
+              </button>
+            </div>
+          ) : (
+            <label className="tap-target mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gold-500/40 px-3 py-2.5 text-xs font-medium text-gold-700 hover:border-gold-500 hover:bg-gold-500/5 disabled:cursor-not-allowed disabled:opacity-50">
+              {musicUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+              {musicUploading ? "Uploading..." : "Upload a track"}
+              <input
+                type="file"
+                accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/webm"
+                onChange={handleMusicUpload}
+                className="hidden"
+                disabled={!ready || musicUploading}
+              />
+            </label>
+          )}
+          {musicUploadError ? (
+            <p className="mt-1.5 text-xs text-red-600" role="alert">
+              {musicUploadError}
+            </p>
+          ) : null}
+          {musicFileName ? (
+            <label className="mt-2 flex items-center gap-2 text-xs text-navy-700/60">
+              Volume
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={musicVolume}
+                onChange={(e) => handleMusicVolumeChange(Number(e.target.value))}
+                className="flex-1"
+              />
+            </label>
+          ) : null}
+        </div>
+
+        {/* Past renders + drafts */}
+        {jobs.length > 0 ? (
+          <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
+            <h2 className="font-display text-base text-navy-950">Your Edits</h2>
+            <ul className="mt-2 space-y-2">
+              {jobs.map((job) => (
+                <li key={job.id} className="rounded-lg border border-navy-950/10 p-2.5 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium text-navy-950">{job.title}</span>
+                    <span className="shrink-0 rounded-full bg-navy-950/5 px-1.5 py-0.5 text-[9px] uppercase text-navy-700/60">
+                      {job.status}
+                    </span>
+                  </div>
+                  {job.status === "done" && job.resultUrl ? (
+                    <div className="mt-2 flex items-center gap-2">
+                      <a href={job.resultUrl} target="_blank" rel="noreferrer" className="text-gold-700 hover:underline">
+                        View render
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleSetBigScreen(job.id)}
+                        disabled={job.isLiveOnBigScreen || bigScreenBusyId === job.id}
+                        className="ml-auto flex items-center gap-1 text-navy-700/60 hover:text-navy-950 disabled:opacity-50"
+                      >
+                        {job.isLiveOnBigScreen ? (
+                          <>
+                            <CheckCircle2 size={12} /> Live
+                          </>
+                        ) : bigScreenBusyId === job.id ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <>
+                            <MonitorPlay size={12} /> Set as Big Screen
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        </div>
+
         <VideoEditorFaq />
+      </div>
       </div>
     </div>
   );
