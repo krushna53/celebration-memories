@@ -9,7 +9,7 @@ import {
   saveVideoEditDraft,
   setVideoEditJobLiveOnBigScreen,
 } from "@/services/video-editor";
-import { createSignedVideoEditorUpload, UploadValidationError } from "@/services/uploads";
+import { createSignedSlideshowMusicUpload, createSignedVideoEditorUpload, UploadValidationError } from "@/services/uploads";
 
 export type RequestVideoEditorUploadResult =
   | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string } }
@@ -30,6 +30,42 @@ export async function requestVideoEditorUploadAction(
 
   try {
     const upload = await createSignedVideoEditorUpload({ eventId, fileName, contentType, fileSize });
+    return { success: true, data: upload };
+  } catch (err) {
+    if (err instanceof UploadValidationError) return { success: false, error: err.message };
+    return { success: false, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+export type RequestVideoEditorMusicUploadResult =
+  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string } }
+  | { success: false; error: string };
+
+/**
+ * Issues a signed upload URL for a background-music track on the Video
+ * Editor's timeline soundtrack. Reuses createSignedSlideshowMusicUpload
+ * (same `audio` Storage bucket, same MIME-type allow-list) rather than
+ * a new bucket/service function — this is the identical "an admin
+ * uploads one mp3 to loop under a video" need that /admin/slideshow
+ * already solved; only the caller differs. There's no DB row for this
+ * (unlike video/photo uploads) — the resulting public URL just gets
+ * written into the edit JSON's timeline.soundtrack field and saved
+ * with the rest of the draft via saveVideoEditDraftAction.
+ */
+export async function requestVideoEditorMusicUploadAction(
+  eventId: string,
+  fileName: string,
+  contentType: string,
+  fileSize: number,
+): Promise<RequestVideoEditorMusicUploadResult> {
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
+
+  try {
+    const upload = await createSignedSlideshowMusicUpload({ eventId, fileName, contentType, fileSize });
     return { success: true, data: upload };
   } catch (err) {
     if (err instanceof UploadValidationError) return { success: false, error: err.message };

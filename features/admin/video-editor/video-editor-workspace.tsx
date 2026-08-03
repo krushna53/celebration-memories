@@ -2,17 +2,48 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Canvas, Controls, Edit, Timeline, UIController } from "@shotstack/shotstack-studio";
-import { Loader2, Upload, VideoIcon, Save, MonitorPlay, CheckCircle2 } from "lucide-react";
+import { Loader2, Upload, VideoIcon, Save, MonitorPlay, CheckCircle2, Music, Type, Wand2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import type { VideoEditorClip, VideoEditJob } from "@/services/video-editor";
 import {
   confirmVideoEditorUploadAction,
+  requestVideoEditorMusicUploadAction,
   requestVideoEditorUploadAction,
   saveVideoEditDraftAction,
   setBigScreenVideoAction,
 } from "@/features/admin/video-editor/actions";
 import { useVideoEditRender } from "@/hooks/use-video-edit-render";
+
+/** Shotstack's `Clip.filter` enum (see @shotstack/schemas' Clip schema) — a colour-grade applied to whichever clip is currently selected on the timeline. "none" is a real enum value, not the absence of a value, so it's always sent explicitly rather than omitted. */
+const FILTER_OPTIONS: { value: string; label: string }[] = [
+  { value: "none", label: "No filter" },
+  { value: "boost", label: "Boost" },
+  { value: "contrast", label: "Contrast" },
+  { value: "darken", label: "Darken" },
+  { value: "greyscale", label: "Greyscale" },
+  { value: "lighten", label: "Lighten" },
+  { value: "muted", label: "Muted" },
+  { value: "negative", label: "Negative" },
+];
+
+/** Shotstack's `Clip.effect` enum — a motion effect (pan/zoom) for the selected clip. Unlike filter, there's no "none" enum value; picking the blank option omits the field entirely instead. */
+const EFFECT_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "No motion" },
+  { value: "zoomIn", label: "Zoom in" },
+  { value: "zoomOut", label: "Zoom out" },
+  { value: "slideLeft", label: "Slide left" },
+  { value: "slideRight", label: "Slide right" },
+  { value: "slideUp", label: "Slide up" },
+  { value: "slideDown", label: "Slide down" },
+];
+
+const TEXT_POSITION_OPTIONS: { value: "top" | "center" | "bottom"; label: string }[] = [
+  { value: "top", label: "Top" },
+  { value: "center", label: "Center" },
+  { value: "bottom", label: "Bottom (caption)" },
+];
 
 /**
  * Builds the Edit JSON for a brand-new session, seeded with exactly one
@@ -39,7 +70,12 @@ function buildFirstClipEdit(clip: VideoEditorClip): { edit: Edit; length: number
   const asset = clip.kind === "photo" ? ({ type: "image", src: clip.url } as const) : ({ type: "video", src: clip.url } as const);
   const edit = new Edit({
     timeline: {
-      tracks: [{ clips: [{ asset, start: 0, length }] }],
+      // Every clip gets a client-generated id (not just text overlays)
+      // so the Selected Clip filter/effect panel can call
+      // edit.updateClipById() against whatever the admin taps on the
+      // timeline — the "clip:selected" event's payload only carries an
+      // id when one was set at creation time.
+      tracks: [{ clips: [{ id: crypto.randomUUID(), asset, start: 0, length }] }],
       background: "#000000",
     },
     output: {
@@ -63,6 +99,17 @@ function describeLoadError(err: unknown): string {
 }
 
 const AUTOSAVE_INTERVAL_MS = 20_000;
+
+/**
+ * The Shotstack schema's `Clip` type (`components["schemas"]["Clip"]` in
+ * @shotstack/schemas) isn't re-exported by @shotstack/shotstack-studio's
+ * public surface, so there's nothing importable to name directly. Every
+ * public method that accepts clip updates is typed against it though
+ * (e.g. `Edit.updateClipById(id, updates: Partial<Clip>)`), so this
+ * derives the same type structurally from the exported `Edit` class
+ * itself — no `any` needed for filter/effect values below.
+ */
+type ClipUpdate = Parameters<Edit["updateClipById"]>[1];
 
 interface StudioInstance {
   edit: Edit;
@@ -108,6 +155,29 @@ export function VideoEditorWorkspace({
   const recordDuration = useCallback((clipId: string, seconds: number) => {
     setDurations((prev) => (prev[clipId] === seconds ? prev : { ...prev, [clipId]: seconds }));
   }, []);
+
+  // Which track currently holds the main video/photo footage vs. the
+  // text-overlay track — starts as track 0/none since buildFirstClipEdit
+  // always seeds the main footage at index 0. Adding a text track later
+  // inserts it ABOVE (index 0, since Shotstack layers array-index-0 as
+  // the topmost/foreground track) which pushes the main track down by
+  // one — these refs are how addClipToTimeline keeps targeting the
+  // right track after that shift, rather than staying hardcoded to 0.
+  const mainTrackIndexRef = useRef(0);
+  const textTrackIndexRef = useRef<number | null>(null);
+
+  const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string>("none");
+  const [selectedEffect, setSelectedEffect] = useState<string>("");
+
+  const [textDraft, setTextDraft] = useState("");
+  const [textPosition, setTextPosition] = useState<"top" | "center" | "bottom">("bottom");
+  const [addingText, setAddingText] = useState(false);
+
+  const [musicFileName, setMusicFileName] = useState<string | null>(null);
+  const [musicVolume, setMusicVolume] = useState(0.8);
+  const [musicUploading, setMusicUploading] = useState(false);
+  const [musicUploadError, setMusicUploadError] = useState<string | null>(null);
 
   const atCap = quota ? quota.used >= quota.limit : false;
   const pendingClips = mediaLibrary.filter((c) => !c.approved);
@@ -192,6 +262,159 @@ export function VideoEditorWorkspace({
     return () => observer.disconnect();
   }, []);
 
+  // Tracks which clip (if any) is currently selected on the timeline, so
+  // the Selected Clip panel below can show/apply its filter and effect.
+  // Event names are passed as string literals rather than an imported
+  // `EditEvent` constant — the Studio SDK's runtime bundle doesn't
+  // actually export that object (only Canvas/Controls/Edit/Timeline/
+  // UIController are exported), so the literal keys of EditEventMap are
+  // used directly; TypeScript still checks them against Edit.events'
+  // declared type.
+  useEffect(() => {
+    if (!ready) return;
+    const instance = instanceRef.current;
+    if (!instance) return;
+
+    const offSelected = instance.edit.events.on("clip:selected", (payload) => {
+      setSelectedClipId(payload.clip.id ?? null);
+      setSelectedFilter(payload.clip.filter ?? "none");
+      setSelectedEffect(payload.clip.effect ?? "");
+    });
+    const offCleared = instance.edit.events.on("selection:cleared", () => {
+      setSelectedClipId(null);
+    });
+
+    return () => {
+      offSelected();
+      offCleared();
+    };
+  }, [ready]);
+
+  /** Applies a colour filter to whichever clip is selected on the timeline. "none" is a real Shotstack enum value (see FILTER_OPTIONS), always sent explicitly. */
+  async function applyFilter(value: string) {
+    setSelectedFilter(value);
+    const instance = instanceRef.current;
+    if (!instance || !selectedClipId) return;
+    const updates: ClipUpdate = { filter: value as ClipUpdate["filter"] };
+    await instance.edit.updateClipById(selectedClipId, updates);
+  }
+
+  /** Applies a motion (pan/zoom) effect to the selected clip. The blank "No motion" option omits the field entirely — Shotstack's effect enum has no "none" value. */
+  async function applyEffect(value: string) {
+    setSelectedEffect(value);
+    const instance = instanceRef.current;
+    if (!instance || !selectedClipId) return;
+    const updates: ClipUpdate = { effect: (value || undefined) as ClipUpdate["effect"] };
+    await instance.edit.updateClipById(selectedClipId, updates);
+  }
+
+  /**
+   * Adds a text overlay ("sticker") clip. The first text clip creates a
+   * brand-new track at array index 0 — the topmost/foreground layer, so
+   * text renders on top of the video/photo footage rather than being
+   * hidden behind it — which pushes the existing main-footage track down
+   * by one; mainTrackIndexRef is bumped to match so every later
+   * addClipToTimeline call still lands on the right track. Every text
+   * clip after the first just appends to that same now-established
+   * text track.
+   */
+  async function addTextOverlay() {
+    const instance = instanceRef.current;
+    const text = textDraft.trim();
+    if (!instance || !text) return;
+
+    setAddingText(true);
+    try {
+      const clip = {
+        id: crypto.randomUUID(),
+        asset: {
+          type: "text" as const,
+          text,
+          font: { family: "Poppins", color: "#ffffff", size: 42, weight: 700 },
+          alignment: { horizontal: "center" as const, vertical: "center" as const },
+          background: { color: "#000000", opacity: 0.35, padding: 16, borderRadius: 8 },
+        },
+        start: instance.edit.playbackTime ?? 0,
+        length: 4,
+        position: textPosition,
+      };
+
+      if (textTrackIndexRef.current === null) {
+        await instance.edit.addTrack(0, { clips: [clip] });
+        mainTrackIndexRef.current += 1;
+        textTrackIndexRef.current = 0;
+      } else {
+        await instance.edit.addClip(textTrackIndexRef.current, clip);
+      }
+      setTextDraft("");
+    } finally {
+      setAddingText(false);
+    }
+  }
+
+  /**
+   * Sets (or replaces) the timeline's background-music soundtrack — a
+   * top-level `timeline.soundtrack` field on the Edit JSON, separate
+   * from the clips/tracks array entirely, so it plays under the whole
+   * video without needing its own audio track or z-order bookkeeping.
+   * Applied via loadEdit() (a documented hot-reload the SDK already
+   * knows how to diff efficiently for soundtrack changes specifically,
+   * per its internal "structural changes requiring full reload" check)
+   * rather than rebuilding tracks by hand.
+   */
+  async function applySoundtrack(soundtrack: { src: string; volume: number } | null) {
+    const instance = instanceRef.current;
+    if (!instance) return;
+    const current = instance.edit.getEdit();
+    await instance.edit.loadEdit({
+      ...current,
+      timeline: { ...current.timeline, soundtrack: soundtrack ?? undefined },
+    });
+  }
+
+  async function handleMusicUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setMusicUploading(true);
+    setMusicUploadError(null);
+
+    const requested = await requestVideoEditorMusicUploadAction(eventId, file.name, file.type, file.size);
+    if (!requested.success) {
+      setMusicUploadError(requested.error);
+      setMusicUploading(false);
+      return;
+    }
+
+    const { bucket, path, token } = requested.data;
+    const { error: uploadError } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, token, file);
+    if (uploadError) {
+      setMusicUploadError("Upload failed — please try again.");
+      setMusicUploading(false);
+      return;
+    }
+
+    const publicUrl = supabaseBrowser().storage.from(bucket).getPublicUrl(path).data.publicUrl;
+    await applySoundtrack({ src: publicUrl, volume: musicVolume });
+    setMusicFileName(file.name);
+    setMusicUploading(false);
+  }
+
+  function handleMusicVolumeChange(volume: number) {
+    setMusicVolume(volume);
+    if (musicFileName) {
+      const instance = instanceRef.current;
+      const src = instance?.edit.getEdit().timeline.soundtrack?.src;
+      if (src) applySoundtrack({ src, volume });
+    }
+  }
+
+  function removeMusic() {
+    setMusicFileName(null);
+    applySoundtrack(null);
+  }
+
   const saveDraft = useCallback(async (): Promise<string | null> => {
     const instance = instanceRef.current;
     if (!instance) return null;
@@ -216,7 +439,7 @@ export function VideoEditorWorkspace({
     return () => clearInterval(id);
   }, [ready, saveDraft]);
 
-  /** Adds a clip to the end of the timeline. Only ever called once beginEditing has already created track 0 with its first clip. */
+  /** Adds a clip to the end of the main footage track. Targets mainTrackIndexRef rather than a hardcoded 0, since adding a text-overlay track shifts the main track's real index down by one (see addTextOverlay). */
   function addClipToTimeline(clip: VideoEditorClip) {
     const instance = instanceRef.current;
     if (!instance) return;
@@ -225,7 +448,7 @@ export function VideoEditorWorkspace({
     const start = instance.edit.totalDuration ?? 0;
     const asset = clip.kind === "photo" ? ({ type: "image", src: clip.url } as const) : ({ type: "video", src: clip.url } as const);
 
-    instance.edit.addClip(0, { asset, start, length });
+    instance.edit.addClip(mainTrackIndexRef.current, { id: crypto.randomUUID(), asset, start, length });
   }
 
   /** The media bin's tap handler — starts the editor on the first tap, adds a clip to the existing timeline on every tap after that. */
@@ -381,6 +604,96 @@ export function VideoEditorWorkspace({
           />
         </div>
 
+        {/* Text overlays ("stickers") — inserted on their own topmost
+            track so they render on top of the video/photo footage. See
+            addTextOverlay's doc comment for the track-index bookkeeping. */}
+        <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
+          <h2 className="flex items-center gap-1.5 font-display text-base text-navy-950">
+            <Type size={15} /> Text
+          </h2>
+          <p className="mt-1 text-xs text-navy-700/50">
+            {ready ? "Add a caption or title over the video." : "Add a photo or video first to start editing."}
+          </p>
+          <textarea
+            value={textDraft}
+            onChange={(e) => setTextDraft(e.target.value)}
+            disabled={!ready}
+            placeholder="Happy 75th Birthday!"
+            rows={2}
+            className="mt-2 w-full resize-none rounded-lg border border-navy-950/15 bg-white px-2.5 py-1.5 text-sm text-navy-950 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30 disabled:bg-navy-950/5"
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <select
+              value={textPosition}
+              onChange={(e) => setTextPosition(e.target.value as "top" | "center" | "bottom")}
+              disabled={!ready}
+              className="rounded-lg border border-navy-950/15 bg-white px-2 py-1.5 text-xs text-navy-950 focus:border-gold-500 focus:outline-none"
+            >
+              {TEXT_POSITION_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <Button size="sm" variant="outline" onClick={addTextOverlay} disabled={!ready || !textDraft.trim() || addingText} className="ml-auto">
+              {addingText ? <Loader2 size={13} className="animate-spin" /> : "Add Text"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Background music — a single soundtrack for the whole video
+            (timeline.soundtrack), not a per-clip audio track. See
+            applySoundtrack's doc comment. */}
+        <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
+          <h2 className="flex items-center gap-1.5 font-display text-base text-navy-950">
+            <Music size={15} /> Music
+          </h2>
+          <p className="mt-1 text-xs text-navy-700/50">
+            {ready ? "Add a background track that plays under the whole video." : "Add a photo or video first to start editing."}
+          </p>
+
+          {musicFileName ? (
+            <div className="mt-2 flex items-center gap-2 rounded-lg border border-navy-950/10 bg-navy-950/5 px-2.5 py-2 text-xs">
+              <Music size={13} className="shrink-0 text-navy-700/50" />
+              <span className="truncate text-navy-950">{musicFileName}</span>
+              <button type="button" onClick={removeMusic} className="ml-auto shrink-0 text-navy-700/50 hover:text-red-600" title="Remove music">
+                <X size={13} />
+              </button>
+            </div>
+          ) : (
+            <label className="tap-target mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gold-500/40 px-3 py-2.5 text-xs font-medium text-gold-700 hover:border-gold-500 hover:bg-gold-500/5 disabled:cursor-not-allowed disabled:opacity-50">
+              {musicUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+              {musicUploading ? "Uploading..." : "Upload a track"}
+              <input
+                type="file"
+                accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/webm"
+                onChange={handleMusicUpload}
+                className="hidden"
+                disabled={!ready || musicUploading}
+              />
+            </label>
+          )}
+          {musicUploadError ? (
+            <p className="mt-1.5 text-xs text-red-600" role="alert">
+              {musicUploadError}
+            </p>
+          ) : null}
+          {musicFileName ? (
+            <label className="mt-2 flex items-center gap-2 text-xs text-navy-700/60">
+              Volume
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={musicVolume}
+                onChange={(e) => handleMusicVolumeChange(Number(e.target.value))}
+                className="flex-1"
+              />
+            </label>
+          ) : null}
+        </div>
+
         {/* Past renders + drafts */}
         {jobs.length > 0 ? (
           <div className="mt-4 rounded-xl border border-navy-950/10 bg-white p-4">
@@ -483,6 +796,44 @@ export function VideoEditorWorkspace({
           <p className="mb-2 text-xs text-red-600">
             You&rsquo;ve reached the render limit for this event ({quota?.limit}). Contact your site admin to raise it.
           </p>
+        ) : null}
+
+        {/* Only shown once a clip is selected on the timeline — tap any
+            clip (video, photo, or text) to bring this up. */}
+        {ready && selectedClipId ? (
+          <div className="mb-2 flex flex-wrap items-center gap-3 rounded-lg border border-navy-950/10 bg-white px-3 py-2 text-xs">
+            <span className="flex items-center gap-1 font-medium text-navy-950">
+              <Wand2 size={13} className="text-gold-600" /> Selected clip
+            </span>
+            <label className="flex items-center gap-1.5 text-navy-700/60">
+              Filter
+              <select
+                value={selectedFilter}
+                onChange={(e) => applyFilter(e.target.value)}
+                className="rounded-lg border border-navy-950/15 bg-white px-1.5 py-1 text-xs text-navy-950 focus:border-gold-500 focus:outline-none"
+              >
+                {FILTER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-1.5 text-navy-700/60">
+              Motion
+              <select
+                value={selectedEffect}
+                onChange={(e) => applyEffect(e.target.value)}
+                className="rounded-lg border border-navy-950/15 bg-white px-1.5 py-1 text-xs text-navy-950 focus:border-gold-500 focus:outline-none"
+              >
+                {EFFECT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         ) : null}
 
         {loadError ? (
