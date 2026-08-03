@@ -14,35 +14,32 @@ import {
 } from "@/features/admin/video-editor/actions";
 import { useVideoEditRender } from "@/hooks/use-video-edit-render";
 
-// The starting point for a brand-new edit — NO tracks yet, a black
-// background, MP4/SD output. Matches the Edit JSON schema Shotstack's
-// Edit API renders directly (see
-// https://shotstack.io/docs/guide/getting-started/core-concepts/) —
-// edit.getEdit() later returns this same shape with clips filled in,
-// which is exactly what gets POSTed to the render endpoint (task #83).
-//
-// Deliberately `tracks: []`, NOT `tracks: [{ clips: [] }]` — the
-// Studio SDK validates the Edit against Shotstack's schema on load,
-// and a track with an empty `clips` array fails that validation
-// ("Too small: expected array to have >=1 items" at
-// timeline.tracks.0.clips) — a real bug this shipped with, only
-// surfacing the first time someone opened a genuinely fresh event with
-// no draft yet. A track simply doesn't exist until it has its first
-// clip; addClipToTimeline below creates the track (via edit.addTrack)
-// the moment the very first clip is added, rather than creating an
-// empty, invalid one upfront.
-//
-// A plain function (rather than a shared object constant) so the object
-// literal is inline at the `new Edit(...)` call site — TypeScript then
-// contextually types "mp4"/"sd" against Edit's constructor parameter
-// (narrowing them to their literal types) instead of widening to
-// `string`, which a separately-declared `const` would do without an
-// awkward `as const` that then fights the SDK's expected *mutable*
-// array shape for tracks/clips.
-function createEmptyEdit(): Edit {
-  return new Edit({
+/**
+ * Builds the Edit JSON for a brand-new session, seeded with exactly one
+ * real clip. Matches the Edit JSON schema Shotstack's Edit API renders
+ * directly (see https://shotstack.io/docs/guide/getting-started/core-concepts/)
+ * — edit.getEdit() later returns this same shape with more clips filled
+ * in, which is exactly what gets POSTed to the render endpoint (task #83).
+ *
+ * Deliberately never constructed with an empty `clips` array — the
+ * Studio SDK validates the Edit against Shotstack's schema on load, and
+ * a track with 0 clips fails that validation ("Too small: expected
+ * array to have >=1 items" at timeline.tracks.0.clips). That's a real
+ * bug this shipped with (an "empty starter edit" isn't a state
+ * Shotstack's own data model can represent), and simply switching to
+ * `tracks: []` wasn't a full fix either — Canvas/Timeline still need at
+ * least one real clip to establish frame size/duration and initialize
+ * correctly. So the SDK is never mounted at all until the admin picks
+ * their first photo/video (see beginEditing below); before that, the
+ * page shows a plain "add a photo or video to begin" prompt rather than
+ * attempting to open an editor with nothing in it.
+ */
+function buildFirstClipEdit(clip: VideoEditorClip): { edit: Edit; length: number } {
+  const length = clip.kind === "photo" ? 4 : 5;
+  const asset = clip.kind === "photo" ? ({ type: "image", src: clip.url } as const) : ({ type: "video", src: clip.url } as const);
+  const edit = new Edit({
     timeline: {
-      tracks: [],
+      tracks: [{ clips: [{ asset, start: 0, length }] }],
       background: "#000000",
     },
     output: {
@@ -50,21 +47,19 @@ function createEmptyEdit(): Edit {
       resolution: "sd",
     },
   });
+  return { edit, length };
 }
 
 /** True, human-readable message for a known failure shape — never shows a raw Zod/schema error dump to the person using the editor. Falls back to a generic, still-reassuring message for anything unrecognized. */
 function describeLoadError(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err);
-  if (raw.includes("too_small") && raw.includes("clips")) {
-    return "This edit's data looks incomplete, so the editor couldn't open it.";
-  }
   if (raw.toLowerCase().includes("webgl") || raw.toLowerCase().includes("context")) {
     return "Your browser couldn't start the video canvas. This editor needs a browser with WebGL support (most current Chrome, Safari, or Edge).";
   }
   if (raw.toLowerCase().includes("network") || raw.toLowerCase().includes("fetch")) {
     return "A network problem stopped the editor from loading.";
   }
-  return "Something went wrong loading the editor.";
+  return "Something went wrong opening the editor.";
 }
 
 const AUTOSAVE_INTERVAL_MS = 20_000;
@@ -92,10 +87,11 @@ export function VideoEditorWorkspace({
   const instanceRef = useRef<StudioInstance | null>(null);
 
   const [ready, setReady] = useState(false);
+  const [initializing, setInitializing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadErrorDetail, setLoadErrorDetail] = useState<string | null>(null);
   const [showLoadErrorDetail, setShowLoadErrorDetail] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
+  const [pendingFirstClip, setPendingFirstClip] = useState<VideoEditorClip | null>(null);
   const [mediaLibrary, setMediaLibrary] = useState(initialMediaLibrary);
   const [jobs, setJobs] = useState(initialJobs);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
@@ -107,63 +103,57 @@ export function VideoEditorWorkspace({
 
   const atCap = quota ? quota.used >= quota.limit : false;
 
-  // Mount the Studio SDK once. See features/admin/video-editor/
-  // video-editor-client-boundary.tsx for why this whole component only
-  // ever runs in the browser (next/dynamic ssr:false) — Canvas/Timeline
-  // need real DOM/WebGL, which doesn't exist during Next.js's server
-  // render.
+  // Disposes the Studio SDK on unmount only — mounting happens on demand,
+  // in beginEditing below, not on an effect tied to component mount. See
+  // features/admin/video-editor/video-editor-client-boundary.tsx for why
+  // this whole component only ever runs in the browser (next/dynamic
+  // ssr:false) — Canvas/Timeline need real DOM/WebGL, which doesn't
+  // exist during Next.js's server render.
   useEffect(() => {
-    let disposed = false;
-    setReady(false);
-    setLoadError(null);
-    setLoadErrorDetail(null);
-
-    async function init() {
-      try {
-        const edit = createEmptyEdit();
-        const canvas = new Canvas(edit);
-        await canvas.load();
-        await edit.load();
-
-        UIController.create(edit, canvas);
-
-        const timelineEl = timelineContainerRef.current;
-        if (!timelineEl) throw new Error("Timeline container not found.");
-        const timeline = new Timeline(edit, timelineEl);
-        await timeline.load();
-
-        const controls = new Controls(edit);
-        await controls.load();
-
-        if (disposed) {
-          canvas.dispose();
-          timeline.dispose();
-          return;
-        }
-
-        instanceRef.current = { edit, canvas, timeline, controls };
-        setReady(true);
-      } catch (err) {
-        console.error("Video Editor: failed to load Shotstack Studio SDK:", err);
-        if (!disposed) {
-          setLoadError(describeLoadError(err));
-          setLoadErrorDetail(err instanceof Error ? err.message : String(err));
-        }
-      }
-    }
-
-    init();
-
     return () => {
-      disposed = true;
       instanceRef.current?.canvas.dispose();
       instanceRef.current?.timeline.dispose();
       instanceRef.current = null;
     };
-    // reloadKey is a deliberate, otherwise-unused dependency — bumping it
-    // (the error screen's "Try Again" button) re-runs this whole mount
-    // effect to retry loading the editor without a full page refresh.
-  }, [reloadKey]);
+  }, []);
+
+  // Opens the editor for the first time in this session, seeded with
+  // the admin's first chosen photo/video — see buildFirstClipEdit's doc
+  // comment for why the SDK is never mounted against empty content.
+  // Every clip after this one goes through addClipToTimeline instead.
+  async function beginEditing(clip: VideoEditorClip) {
+    const timelineEl = timelineContainerRef.current;
+    if (!timelineEl || initializing || instanceRef.current) return;
+
+    setInitializing(true);
+    setLoadError(null);
+    setLoadErrorDetail(null);
+    setPendingFirstClip(clip);
+
+    try {
+      const { edit } = buildFirstClipEdit(clip);
+      const canvas = new Canvas(edit);
+      await canvas.load();
+      await edit.load();
+
+      UIController.create(edit, canvas);
+
+      const timeline = new Timeline(edit, timelineEl);
+      await timeline.load();
+
+      const controls = new Controls(edit);
+      await controls.load();
+
+      instanceRef.current = { edit, canvas, timeline, controls };
+      setReady(true);
+    } catch (err) {
+      console.error("Video Editor: failed to load Shotstack Studio SDK:", err);
+      setLoadError(describeLoadError(err));
+      setLoadErrorDetail(err instanceof Error ? err.message : String(err));
+    } finally {
+      setInitializing(false);
+    }
+  }
 
   const saveDraft = useCallback(async (): Promise<string | null> => {
     const instance = instanceRef.current;
@@ -189,6 +179,7 @@ export function VideoEditorWorkspace({
     return () => clearInterval(id);
   }, [ready, saveDraft]);
 
+  /** Adds a clip to the end of the timeline. Only ever called once beginEditing has already created track 0 with its first clip. */
   function addClipToTimeline(clip: VideoEditorClip) {
     const instance = instanceRef.current;
     if (!instance) return;
@@ -197,16 +188,15 @@ export function VideoEditorWorkspace({
     const start = instance.edit.totalDuration ?? 0;
     const asset = clip.kind === "photo" ? ({ type: "image", src: clip.url } as const) : ({ type: "video", src: clip.url } as const);
 
-    // createEmptyEdit() starts with zero tracks (a track with 0 clips
-    // fails Shotstack's schema validation — see that function's doc
-    // comment), so the very first clip has to create track 0 itself,
-    // already carrying that clip — addClip(0, ...) would fail here
-    // since there's no track 0 to add to yet. Every clip after the
-    // first goes through the normal addClip path.
-    if (instance.edit.getEdit().timeline.tracks.length === 0) {
-      instance.edit.addTrack(0, { clips: [{ asset, start, length }] });
+    instance.edit.addClip(0, { asset, start, length });
+  }
+
+  /** The media bin's tap handler — starts the editor on the first tap, adds a clip to the existing timeline on every tap after that. */
+  function handleMediaTap(clip: VideoEditorClip) {
+    if (instanceRef.current) {
+      addClipToTimeline(clip);
     } else {
-      instance.edit.addClip(0, { asset, start, length });
+      beginEditing(clip);
     }
   }
 
@@ -308,7 +298,9 @@ export function VideoEditorWorkspace({
       <div className="order-2 lg:order-1">
         <div className="rounded-xl border border-navy-950/10 bg-white p-4">
           <h2 className="font-display text-base text-navy-950">Media</h2>
-          <p className="mt-1 text-xs text-navy-700/50">Tap a photo or video to add it to the end of the timeline.</p>
+          <p className="mt-1 text-xs text-navy-700/50">
+            {ready ? "Tap a photo or video to add it to the end of the timeline." : "Tap a photo or video below to start editing."}
+          </p>
 
           <label className="tap-target mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-gold-500/40 px-3 py-2.5 text-xs font-medium text-gold-700 hover:border-gold-500 hover:bg-gold-500/5">
             {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
@@ -326,8 +318,8 @@ export function VideoEditorWorkspace({
               <button
                 key={clip.id}
                 type="button"
-                onClick={() => addClipToTimeline(clip)}
-                disabled={!ready}
+                onClick={() => handleMediaTap(clip)}
+                disabled={initializing}
                 className="group relative aspect-square overflow-hidden rounded-lg border border-navy-950/10 bg-navy-950/5 disabled:cursor-not-allowed disabled:opacity-50"
                 title={clip.label ?? undefined}
               >
@@ -464,7 +456,7 @@ export function VideoEditorWorkspace({
             <p className="font-medium">The video editor couldn&rsquo;t open.</p>
             <p className="mt-1 text-red-700">{loadError}</p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <Button size="sm" onClick={() => setReloadKey((k) => k + 1)}>
+              <Button size="sm" onClick={() => pendingFirstClip && beginEditing(pendingFirstClip)}>
                 Try Again
               </Button>
               <button
@@ -493,20 +485,39 @@ export function VideoEditorWorkspace({
             ) : null}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-navy-950">
+          <div className="relative overflow-hidden rounded-xl border border-navy-950/10 bg-navy-950">
+            {/* This container is always in the DOM whenever there's no
+                load error — beginEditing constructs Canvas/Timeline into
+                it the moment the admin taps their first photo/video, so
+                the ref has to already be attached before that happens.
+                The "not started yet" / "starting up" messaging below is
+                a sibling overlay, never a child of this div, so it never
+                fights with Shotstack's own DOM writes once mounted. */}
             <div data-shotstack-studio ref={studioContainerRef} className="aspect-video w-full" />
+            {!ready ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-navy-950/95 px-6 text-center">
+                {initializing ? (
+                  <>
+                    <Loader2 className="animate-spin text-gold-400" size={22} />
+                    <p className="text-sm text-ivory-100/80">Setting up your editor...</p>
+                  </>
+                ) : (
+                  <>
+                    <VideoIcon className="text-gold-400" size={28} />
+                    <p className="text-sm font-medium text-ivory-100">Add a photo or video to get started</p>
+                    <p className="text-xs text-ivory-100/60">
+                      Tap anything in the Media list on the left — the editor opens as soon as you do.
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
         )}
 
         <div className="mt-3 overflow-hidden rounded-xl border border-navy-950/10 bg-white">
           <div data-shotstack-timeline ref={timelineContainerRef} className="h-48 w-full" />
         </div>
-
-        {!ready && !loadError ? (
-          <div className="mt-2 flex items-center gap-2 text-xs text-navy-700/50">
-            <Loader2 size={12} className="animate-spin" /> Loading editor...
-          </div>
-        ) : null}
       </div>
     </div>
   );
