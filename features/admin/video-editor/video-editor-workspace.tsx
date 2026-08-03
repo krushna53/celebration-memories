@@ -821,8 +821,6 @@ export function VideoEditorWorkspace({
             </ul>
           </div>
         ) : null}
-
-        <VideoEditorFaq />
       </div>
 
       {/* Editor canvas + timeline — capped at max-w-3xl so a wide desktop
@@ -1008,6 +1006,8 @@ export function VideoEditorWorkspace({
         <div className="mt-3 overflow-hidden rounded-xl border border-navy-950/10 bg-white">
           <div data-shotstack-timeline ref={timelineContainerRef} className="h-48 w-full" />
         </div>
+
+        <VideoEditorFaq />
       </div>
     </div>
   );
