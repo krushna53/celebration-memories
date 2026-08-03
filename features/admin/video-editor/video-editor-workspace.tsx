@@ -856,7 +856,25 @@ export function VideoEditorWorkspace({
           </div>
         )}
 
-        <div className={ready ? "mt-3 overflow-hidden rounded-xl border border-navy-950/10 bg-white" : "mt-3"}>
+        {/* The ref div underneath must already be in the DOM (with a
+            real, non-zero size) the instant beginEditing runs — Timeline
+            reads its container's size once at load() and, unlike
+            Canvas, has no resize() method to correct a bad initial
+            measurement later. So its height only ever collapses in the
+            true idle state (nothing tapped yet, not even initializing):
+            the moment a clip is tapped, setInitializing(true) fires
+            synchronously and expands this box to its full height well
+            before the awaited canvas/edit loads finish and Timeline
+            actually gets constructed, so it's always full-size by the
+            time it matters. This just removes the dead blank gap that
+            otherwise sat here before anything was tapped. */}
+        <div
+          className={
+            ready || initializing
+              ? "mt-3 overflow-hidden rounded-xl border border-navy-950/10 bg-white"
+              : "h-0 overflow-hidden"
+          }
+        >
           <div data-shotstack-timeline ref={timelineContainerRef} className="h-48 w-full" />
         </div>
 
