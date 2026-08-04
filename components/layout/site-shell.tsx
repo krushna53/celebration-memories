@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { SupportChatWidget } from "@/features/support/support-chat-widget";
+import { InstallAppBanner } from "@/features/pwa/install-app-banner";
 
 interface NavLink {
   label: string;
@@ -58,6 +59,7 @@ export function SiteShell({
       <main>{children}</main>
       <Footer designerCredit={designerCredit} variant={footerVariant} />
       {hideChatWidget ? null : <SupportChatWidget />}
+      <InstallAppBanner />
     </>
   );
 }
