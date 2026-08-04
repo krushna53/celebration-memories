@@ -205,17 +205,39 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     if (kind !== "video" || isRecording) return;
     const next: "user" | "environment" = facingMode === "user" ? "environment" : "user";
     setError(null);
+    // Most phone camera stacks — every iOS Safari included — only allow
+    // one active camera stream at a time. Requesting the new-facing
+    // stream *before* releasing the current one (as this used to do)
+    // throws (NotReadableError / "Could not start video source") on
+    // those devices instead of returning a second stream, so the flip
+    // silently failed there every time. Releasing first means a brief
+    // black flash while the new camera negotiates, but that's the only
+    // way this actually works across devices.
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setPreviewStream(null);
     try {
       const newStream = await navigator.mediaDevices.getUserMedia(buildConstraints("video", next, aspectRatioPreset));
-      // Only stop the old stream once the new one is confirmed working —
-      // avoids a "camera unavailable" flash if the swap fails partway.
-      streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = newStream;
       setFacingMode(next);
       setPreviewStream(newStream);
       detectZoomRange(newStream);
     } catch {
-      setError("Could not switch cameras.");
+      // The camera we just released can be briefly unavailable right
+      // after being closed — try to get the guest's original camera
+      // back rather than leaving them staring at a dead preview with no
+      // way to recover except backing out of the recorder entirely.
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia(
+          buildConstraints("video", facingMode, aspectRatioPreset),
+        );
+        streamRef.current = fallbackStream;
+        setPreviewStream(fallbackStream);
+        detectZoomRange(fallbackStream);
+        setError("Could not switch cameras.");
+      } catch {
+        setError("Camera unavailable — try closing and reopening the recorder.");
+      }
     }
   }, [kind, isRecording, facingMode, aspectRatioPreset, detectZoomRange]);
 
