@@ -9,8 +9,16 @@ import { ImageResponse } from "next/og";
  * handler (not Next's icon.tsx convention) since that convention only
  * generates a single favicon-purpose icon, not an arbitrary manifest
  * icon set.
+ *
+ * Note: this is a Route Handler (route.tsx), not Next's icon.tsx
+ * convention — Route Handlers only permit HTTP method exports plus a
+ * small fixed set of route-config exports (dynamic, revalidate,
+ * runtime, etc.); a `contentType` export is only valid on the
+ * icon.tsx/apple-icon.tsx convention and fails the build here with
+ * "not a valid Route export field". ImageResponse already sets the
+ * correct Content-Type response header on its own, so nothing extra
+ * is needed.
  */
-export const contentType = "image/png";
 
 export function GET() {
   return new ImageResponse(

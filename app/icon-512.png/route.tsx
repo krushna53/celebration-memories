@@ -1,7 +1,11 @@
 import { ImageResponse } from "next/og";
 
-/** PWA manifest icon (512x512) — see app/icon-192.png/route.tsx's doc comment. */
-export const contentType = "image/png";
+/**
+ * PWA manifest icon (512x512) — see app/icon-192.png/route.tsx's doc
+ * comment (no `contentType` export here: that's only valid on the
+ * icon.tsx convention, not a Route Handler; ImageResponse sets the
+ * Content-Type header itself).
+ */
 
 export function GET() {
   return new ImageResponse(
