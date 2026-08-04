@@ -25,9 +25,19 @@ interface StoredIdentity {
   isPlaceholder: boolean;
 }
 
-/** Video actions are the one place a real name is required — see PublicMemoryUploader's doc comment. Every other action (photo, audio, note) stays name-optional to keep this the fewest-taps path. */
-function requiresRealName(view: View): boolean {
-  return view === "video-record" || view === "video-upload";
+/**
+ * A real name is required for every action now — photo, audio, and
+ * note included, not just the two video actions. Used to be video-only
+ * (see git history for the old fewest-taps reasoning), but that let a
+ * guest tap "Photo"/"Note"/"Audio" without typing a name and get
+ * silently identified as the literal placeholder "Guest" server-side,
+ * permanently — nothing ever prompted them again unless they later
+ * happened to tap a video action too. A host reviewing the Memory Wall
+ * has no way to know who a "Guest" upload is actually from, so this
+ * closes that gap for every upload type.
+ */
+function requiresRealName(): boolean {
+  return true;
 }
 
 function storageKey(eventSlug: string): string {
@@ -62,21 +72,20 @@ function loadStoredIdentity(eventSlug: string): StoredIdentity | null {
  * action, via MediaUploadsSection's `initialView` prop. No separate
  * "Continue" button, no second screen.
  *
- * Name is optional for every action EXCEPT the two video actions
- * (record/upload) — see requiresRealName. A blank name there is
- * rejected with an inline error instead of silently falling back to a
- * placeholder, since a video carries a face and a personal message and
- * the host specifically wants to know who it's from. Every other
- * action still defaults to "Guest" if left blank — never a hard stop.
+ * Name is required for every action — see requiresRealName. A blank
+ * name is rejected with an inline error instead of silently falling
+ * back to a placeholder, since every memory (photo, video, audio, or
+ * note) carries a personal message and the host specifically wants to
+ * know who it's from.
  *
  * The resolved identity (self-service token + first name) is saved to
  * localStorage once identified, scoped per event slug, so a guest who
  * navigates back or reloads doesn't get asked to identify themselves
- * again — see loadStoredIdentity above. If that saved identity is a
- * placeholder (blank name from an earlier non-video action) and the
- * guest later taps a video action, `renamingFor` gates a small inline
- * "what's your name?" prompt that fills in the *same* invitee record
- * via renamePublicMemoryUploaderAction rather than starting over.
+ * again — see loadStoredIdentity above. `isPlaceholder`/`renamingFor`
+ * remain as a fallback for guests who were already identified as the
+ * literal "Guest" before this requirement existed (an already-stored
+ * localStorage identity from a prior visit) — new identifications can
+ * no longer end up in that state.
  */
 export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUploaderProps) {
   const [name, setName] = useState("");
@@ -108,7 +117,7 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
     setNameFieldError(false);
 
     if (identified) {
-      if (requiresRealName(view) && identified.isPlaceholder) {
+      if (requiresRealName() && identified.isPlaceholder) {
         setRenamingFor(view);
         return;
       }
@@ -117,15 +126,15 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
     }
 
     const trimmedName = name.trim();
-    if (requiresRealName(view) && !trimmedName) {
-      setError("Please enter your name to record or upload a video.");
+    if (requiresRealName() && !trimmedName) {
+      setError("Please enter your name to continue.");
       setNameFieldError(true);
       return;
     }
 
     setPendingView(view);
     try {
-      const result = await identifyPublicMemoryUploaderAction(eventSlug, trimmedName || "Guest", honeypot);
+      const result = await identifyPublicMemoryUploaderAction(eventSlug, trimmedName, honeypot);
       if (!result.success) {
         setError(result.error);
         setPendingView(null);
@@ -293,7 +302,7 @@ export function PublicMemoryUploader({ eventSlug, honoreeName }: PublicMemoryUpl
       {!identified ? (
         <div className="mb-6">
           <label className="text-sm font-medium text-navy-950" htmlFor="uploader-name">
-            Your Name <span className="font-normal text-navy-700/50">(required for video)</span>
+            Your Name <span className="normal-case text-red-500">*</span>
           </label>
           <input
             id="uploader-name"
