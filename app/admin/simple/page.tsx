@@ -89,6 +89,17 @@ export default async function AdminSimplePage() {
 
   const event = await resolveAdminEvent(admin);
   if (!event) {
+    // A client-role admin with no linked event has a real path forward
+    // now — the self-serve wizard's account step recognizes an existing
+    // signed-in session with no event and offers to link a new draft to
+    // it instead of dead-ending here (see
+    // app/start/[token]/account/page.tsx). Owner-role never hits this in
+    // practice (resolveAdminEvent always resolves an event for the
+    // owner) — kept as a dead-end message rather than sent into the
+    // self-serve wizard, which is the wrong tool for that edge case.
+    if (admin.role === "client") {
+      redirect("/start");
+    }
     return (
       <div className="min-h-screen bg-ivory-100">
         <SimpleHeader />

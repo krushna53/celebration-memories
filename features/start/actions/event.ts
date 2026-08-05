@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { requireDraftEvent } from "@/features/start/draft-auth";
 import { updateEvent, type EventUpdateInput } from "@/services/events";
 import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
+import { getCurrentAdmin } from "@/services/admin-auth";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { AdminActionResult } from "@/features/admin/event-settings/actions";
 
 /**
@@ -94,4 +96,76 @@ export async function draftAddWebsiteGoalAction(token: string, eventId: string):
   const steps = resolveWizardSteps(Array.from(goals));
   const timelineStep = steps.find((s) => s.slug === "timeline");
   redirect(wizardStepHref(token, timelineStep?.slug ?? "review"));
+}
+
+/**
+ * Lets an admin who's already signed in (a client-role admin whose
+ * `admins.event_id` is null — e.g. an old registration that never got
+ * linked, or a Google signup where the OAuth callback's link_event_id
+ * step didn't run) claim a wizard draft as their event, instead of
+ * going through AccountForm's signUp() flow. That flow has no
+ * awareness of an existing session — using the same email fails as
+ * "already registered" with no recovery path, and a different email
+ * creates a genuinely separate identity, leaving the original admin
+ * row orphaned. This does the equivalent of the OAuth callback's own
+ * link_event_id linking (app/auth/callback/route.ts), just triggered
+ * from inside the wizard instead of right after an OAuth redirect.
+ *
+ * Re-resolves both the draft event (from `token`) and the admin (from
+ * the actual server session) rather than trusting anything the client
+ * passed in. Guarded with `.is("event_id", null)` so this can only
+ * ever set the link once — an admin already scoped to a different
+ * event is turned back with an explanation rather than silently
+ * reassigned.
+ */
+export async function linkDraftEventToExistingAdminAction(token: string): Promise<AdminActionResult> {
+  const event = await requireDraftEvent(token);
+
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    return { success: false, error: "You've been signed out — please sign in again." };
+  }
+  if (admin.eventId) {
+    return {
+      success: false,
+      error: "This account is already linked to a different event. Sign out first if you meant to start a new one.",
+    };
+  }
+
+  const { data, error } = await supabaseAdmin()
+    .from("admins")
+    .update({ event_id: event.id })
+    .eq("id", admin.id)
+    .is("event_id", null)
+    .select("id");
+
+  if (error) {
+    return { success: false, error: "Something went wrong linking this event to your account." };
+  }
+  if (!data || data.length === 0) {
+    return {
+      success: false,
+      error: "This account is already linked to a different event. Sign out first if you meant to start a new one.",
+    };
+  }
+
+  redirect(wizardStepHref(token, "payment"));
+}
+
+/**
+ * Thin `<form action={...}>`-compatible wrapper around
+ * linkDraftEventToExistingAdminAction — a plain HTML form action must
+ * return void/Promise<void>, but the action above returns an
+ * AdminActionResult on failure (it only ever "returns" on failure,
+ * since success redirects internally and never comes back). Failure
+ * here is a rare edge case (session expired mid-submit, or a double
+ * click racing the `.is("event_id", null)` guard) — bounces back to
+ * the same step with the error message in the query string rather
+ * than needing a full client-side form + useFormState just for this.
+ */
+export async function linkDraftEventFormAction(token: string): Promise<void> {
+  const result = await linkDraftEventToExistingAdminAction(token);
+  if (!result.success) {
+    redirect(`${wizardStepHref(token, "account")}?linkError=${encodeURIComponent(result.error)}`);
+  }
 }

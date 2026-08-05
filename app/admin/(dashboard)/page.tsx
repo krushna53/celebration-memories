@@ -31,6 +31,14 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
 
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
+    // Same reasoning as app/admin/simple/page.tsx's identical check —
+    // a client-role admin with no linked event now has somewhere to go
+    // (the self-serve wizard recognizes their existing session and
+    // offers to link a new draft instead of creating a duplicate
+    // account). Owner never hits this in practice.
+    if (admin?.role === "client") {
+      redirect("/start");
+    }
     return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
   }
 
