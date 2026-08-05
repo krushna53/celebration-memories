@@ -42,6 +42,45 @@ export const dynamic = "force-dynamic";
  * landing route (which stays /admin). Big cards here just link out to the
  * existing full pages rather than re-implementing any of their forms.
  */
+/**
+ * The slim header itself — pulled out so both the normal page and the
+ * "no event assigned yet" fallback below render it. It used to live
+ * inline in the main return only, so a brand-new client admin whose
+ * account isn't linked to an event yet (resolveAdminEvent returns
+ * null — e.g. a Google signup that didn't carry link_event_id through
+ * the OAuth callback) saw a bare page with no logo, no way back to
+ * /admin, and — worse — no Sign Out button at all.
+ */
+function SimpleHeader() {
+  return (
+    <header className="border-b border-navy-950/10 bg-navy-950">
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <Link href="/admin/simple" className="flex items-center gap-2 font-display text-lg text-gold-300">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-6 w-6 shrink-0" />
+          EveryMoment
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/admin"
+            className="hidden items-center gap-1.5 text-sm text-ivory-100/70 hover:text-gold-300 sm:flex"
+          >
+            <LayoutDashboard size={15} /> Full Dashboard
+          </Link>
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="tap-target flex items-center gap-1.5 text-sm text-ivory-100/70 hover:text-gold-300"
+            >
+              <LogOut size={16} /> Sign Out
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export default async function AdminSimplePage() {
   const admin = await getCurrentAdmin();
   if (!admin) {
@@ -51,10 +90,13 @@ export default async function AdminSimplePage() {
   const event = await resolveAdminEvent(admin);
   if (!event) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-ivory-100 px-4 text-center">
-        <p className="max-w-sm text-navy-700">
-          No event is assigned to this account yet. Contact the site owner to get linked to your event.
-        </p>
+      <div className="min-h-screen bg-ivory-100">
+        <SimpleHeader />
+        <div className="flex min-h-[60vh] items-center justify-center px-4 text-center">
+          <p className="max-w-sm text-navy-700">
+            No event is assigned to this account yet. Contact the site owner to get linked to your event.
+          </p>
+        </div>
       </div>
     );
   }
@@ -144,31 +186,7 @@ export default async function AdminSimplePage() {
 
   return (
     <div className="min-h-screen bg-ivory-100">
-      <header className="border-b border-navy-950/10 bg-navy-950">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <Link href="/admin/simple" className="flex items-center gap-2 font-display text-lg text-gold-300">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-6 w-6 shrink-0" />
-            EveryMoment
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/admin"
-              className="hidden items-center gap-1.5 text-sm text-ivory-100/70 hover:text-gold-300 sm:flex"
-            >
-              <LayoutDashboard size={15} /> Full Dashboard
-            </Link>
-            <form action={signOutAction}>
-              <button
-                type="submit"
-                className="tap-target flex items-center gap-1.5 text-sm text-ivory-100/70 hover:text-gold-300"
-              >
-                <LogOut size={16} /> Sign Out
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+      <SimpleHeader />
 
       <ActiveEventBanner admin={admin} />
 
