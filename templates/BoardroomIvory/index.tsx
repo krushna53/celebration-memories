@@ -1,0 +1,20 @@
+import { SiteShell } from "@/components/layout/site-shell";
+import { EventSections } from "@/features/event-landing/event-sections";
+import { TemplateThemeWrapper } from "@/templates/shared/template-theme-wrapper";
+import { boardroomIvoryTheme } from "./theme";
+import type { BirthdayTemplateProps } from "@/lib/templates";
+
+export default function BoardroomIvory(props: BirthdayTemplateProps) {
+  return (
+    <TemplateThemeWrapper theme={boardroomIvoryTheme}>
+      <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
+        <EventSections
+          event={props.event}
+          displayData={props.displayData}
+          galleryPhotos={props.galleryPhotos}
+          milestones={props.milestones}
+        />
+      </SiteShell>
+    </TemplateThemeWrapper>
+  );
+}

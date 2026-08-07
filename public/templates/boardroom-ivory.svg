@@ -1,0 +1,8 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#14161a"/>
+  <rect y="220" width="400" height="80" fill="#fbfbfa"/>
+  <line x1="150" y1="120" x2="250" y2="120" stroke="#a67c48" stroke-width="2"/>
+  <text x="200" y="100" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#d1b48f" text-anchor="middle" letter-spacing="3">BOARDROOM IVORY</text>
+  <text x="200" y="150" font-family="Helvetica, Arial, sans-serif" font-weight="600" font-size="24" fill="#fbfbfa" text-anchor="middle">You're Invited</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#333840" text-anchor="middle">Graphite &amp; Bronze &#183; Inter</text>
+</svg>

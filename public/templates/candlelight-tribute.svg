@@ -1,0 +1,8 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#1f1712"/>
+  <rect y="220" width="400" height="80" fill="#fdf9f2"/>
+  <line x1="150" y1="120" x2="250" y2="120" stroke="#b3765a" stroke-width="2"/>
+  <text x="200" y="100" font-family="Georgia, serif" font-size="15" fill="#ddb29d" text-anchor="middle" letter-spacing="3">CANDLELIGHT TRIBUTE</text>
+  <text x="200" y="150" font-family="Georgia, serif" font-size="24" fill="#fdf9f2" text-anchor="middle">In Loving Memory</text>
+  <text x="200" y="260" font-family="Helvetica, Arial, sans-serif" font-size="13" fill="#4a382c" text-anchor="middle">Espresso &amp; Rose-Gold &#183; Playfair Display</text>
+</svg>
