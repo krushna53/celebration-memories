@@ -1,3 +1,5 @@
+import type { EventCategory } from "@/types/event";
+
 /**
  * Single source of truth for the self-serve onboarding wizard's step
  * order — see app/start/[token]/layout.tsx (nav) and each step's
@@ -34,6 +36,39 @@ export const WIZARD_GOAL_OPTIONS: { value: WizardGoal; label: string; descriptio
   { value: "slideshow", label: "Slideshow Video", description: "A music-backed video from your photos" },
   { value: "website", label: "Full Web Page", description: "A complete shareable event site" },
 ];
+
+/**
+ * Pre-selects the Goals step (features/start/goals-picker.tsx) based on
+ * whatever Occasion the host picked one step earlier — a plain
+ * heuristic guess, not a rule: every checkbox stays fully editable, so
+ * a wrong guess costs one extra tap, not a dead end. Exists purely to
+ * cut taps for the common case (most hosts want everything for a
+ * birthday/wedding/anniversary/retirement; a workshop/education/
+ * corporate/live-stream host is far less likely to want a music-video
+ * slideshow of photos). Keyed by EventCategory rather than living in
+ * lib/event-category.ts, since WizardGoal is owned here — see that
+ * file's WISH_COPY_BY_CATEGORY for the same per-category-default
+ * pattern applied to a different field.
+ */
+export const DEFAULT_GOALS_BY_CATEGORY: Record<EventCategory, WizardGoal[]> = {
+  birthday: ["website", "slideshow", "invitation_card"],
+  wedding: ["website", "slideshow", "invitation_card"],
+  anniversary: ["website", "slideshow", "invitation_card"],
+  retirement: ["website", "slideshow", "invitation_card"],
+  baby_shower: ["website", "invitation_card"],
+  obituary: ["website", "slideshow"],
+  corporate: ["website"],
+  workshop: ["website"],
+  education: ["website"],
+  live_stream: ["website"],
+};
+
+export function getDefaultGoalsForCategory(
+  category: import("@/types/event").EventCategory | null | undefined,
+): WizardGoal[] {
+  if (!category) return [];
+  return DEFAULT_GOALS_BY_CATEGORY[category] ?? [];
+}
 
 export interface WizardStep {
   slug: string;

@@ -5,8 +5,15 @@ import { useRouter } from "next/navigation";
 import { Check, Film, Globe, Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { WIZARD_GOAL_OPTIONS, resolveWizardSteps, wizardStepHref, type WizardGoal } from "@/features/start/wizard-steps";
+import {
+  WIZARD_GOAL_OPTIONS,
+  resolveWizardSteps,
+  wizardStepHref,
+  getDefaultGoalsForCategory,
+  type WizardGoal,
+} from "@/features/start/wizard-steps";
 import type { DraftUpdateEventAction } from "@/features/start/event-basics-form";
+import type { EventRecord } from "@/types/event";
 
 const ICONS: Record<WizardGoal, React.ComponentType<{ size?: number }>> = {
   invitation_card: Sparkles,
@@ -17,16 +24,26 @@ const ICONS: Record<WizardGoal, React.ComponentType<{ size?: number }>> = {
 export function GoalsPicker({
   token,
   eventId,
+  category,
   currentGoals,
   updateAction,
 }: {
   token: string;
   eventId: string;
+  category: EventRecord["category"];
   currentGoals: string[] | null;
   updateAction: DraftUpdateEventAction;
 }) {
   const router = useRouter();
-  const [selected, setSelected] = useState<WizardGoal[]>((currentGoals as WizardGoal[] | null) ?? []);
+  // Pre-fills from the Occasion picked one step earlier (a guess, not a
+  // rule — every card below stays independently toggleable) only on a
+  // first-ever visit to this step; currentGoals is null until the host
+  // actually submits this step once, after which it's always a
+  // non-empty array (the Continue button is disabled on an empty
+  // selection), so this never overwrites a real, saved choice.
+  const [selected, setSelected] = useState<WizardGoal[]>(
+    (currentGoals as WizardGoal[] | null) ?? getDefaultGoalsForCategory(category),
+  );
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 

@@ -24,6 +24,7 @@ export default async function WizardGoalsPage({ params }: { params: Promise<{ to
       <GoalsPicker
         token={token}
         eventId={event.id}
+        category={event.category}
         currentGoals={event.wizardGoals}
         updateAction={draftUpdateEventAction}
       />
