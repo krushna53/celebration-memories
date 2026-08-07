@@ -1,6 +1,7 @@
 import { getTemplateBySlug } from "@/lib/templates";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
+import { buildInvitationCardPrompt } from "@/lib/ai-image-prompt";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
 import { getLatestCompletedAiImageJob, getLatestUploadedAiImageJob } from "@/services/ai-image-jobs";
@@ -20,19 +21,7 @@ export default async function AdminAiImagePage() {
   }
 
   const template = getTemplateBySlug(event.templateSlug);
-  const dateLabel = new Date(event.startAt).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-
-  const defaultPrompt = [
-    `An elegant invitation card design for ${event.honoreeName}'s ${event.occasion || event.eventTitle}, hosted by ${event.hostedBy}.`,
-    `Held on ${dateLabel}${event.venueName ? ` at ${event.venueName}` : ""}.`,
-    `Color palette inspired by ${template.name}: warm tones around ${template.primaryColor} and ${template.secondaryColor}.`,
-    "No readable text in the image — just the visual design, decorative elements, and mood. Elegant, high-quality, printable invitation card style.",
-  ].join(" ");
+  const defaultPrompt = buildInvitationCardPrompt(event, template);
 
   const isClient = admin?.role === "client";
   const used = isClient ? await countAiImageGenerations(event.id) : 0;

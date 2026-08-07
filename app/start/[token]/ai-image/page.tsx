@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { getDraftEventByToken } from "@/services/event-drafts";
 import { getTemplateBySlug } from "@/lib/templates";
+import { buildInvitationCardPrompt } from "@/lib/ai-image-prompt";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { getLatestCompletedAiImageJob, getLatestUploadedAiImageJob } from "@/services/ai-image-jobs";
 import { publicMediaUrl } from "@/services/uploads";
@@ -24,19 +25,7 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
   if (!event) notFound();
 
   const template = getTemplateBySlug(event.templateSlug);
-  const dateLabel = new Date(event.startAt).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-
-  const defaultPrompt = [
-    `An elegant invitation card design for ${event.honoreeName}'s ${event.occasion || event.eventTitle}, hosted by ${event.hostedBy || "the host"}.`,
-    `Held on ${dateLabel}${event.venueName ? ` at ${event.venueName}` : ""}.`,
-    `Color palette inspired by ${template.name}: warm tones around ${template.primaryColor} and ${template.secondaryColor}.`,
-    "No readable text in the image — just the visual design, decorative elements, and mood. Elegant, high-quality, printable invitation card style.",
-  ].join(" ");
+  const defaultPrompt = buildInvitationCardPrompt(event, template);
 
   const [latestGeneratedJob, latestUploadedJob] = await Promise.all([
     getLatestCompletedAiImageJob(event.id),
