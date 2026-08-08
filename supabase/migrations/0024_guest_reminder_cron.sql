@@ -3,11 +3,16 @@
 -- 0023's header comments for why), this is the matching committed
 -- source of truth.
 --
--- Every 15 minutes, calls supabase/functions/send-reminder-push with no
--- body, which processes every event with guest_reminder_enabled = true
--- and sends a Web Push reminder to any guest who started recording/
--- uploading a video or audio memory but never finished (see that
--- function's own header comment for the full targeting logic).
+-- Once a day (13:30 UTC = 7:00 PM IST/Asia/Kolkata — this app's events
+-- are India-based; adjust the schedule below if that stops being true),
+-- calls supabase/functions/send-reminder-push with no body, which
+-- processes every event with guest_reminder_enabled = true and sends a
+-- Web Push reminder to any guest who started recording/uploading a
+-- video or audio memory but never finished (see that function's own
+-- header comment for the full targeting logic). Was every 15 minutes
+-- initially; changed to once daily since a family/wedding guest list
+-- doesn't need near-real-time reminders and a single daily nudge reads
+-- as less spammy.
 --
 -- The Authorization header below is the project's anon key — a validly
 -- signed project JWT, already public (it's the same value as
@@ -23,7 +28,7 @@ create extension if not exists pg_net with schema extensions;
 
 select cron.schedule(
   'guest-reminder-push-dispatch',
-  '*/15 * * * *',
+  '30 13 * * *',
   $$
   select net.http_post(
     url := 'https://ktbpnjrovzhjwardyime.supabase.co/functions/v1/send-reminder-push',

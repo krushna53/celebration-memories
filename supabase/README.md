@@ -100,8 +100,8 @@ no-op. To turn it on:
 
 Once all three are set in both places, guests start seeing the "remind
 me" prompt, and the `guest-reminder-push-dispatch` pg_cron job (runs
-every 15 minutes, see migration `0024_guest_reminder_cron.sql`) starts
-actually sending.
+once daily, 7:00 PM IST — see migration `0024_guest_reminder_cron.sql`
+to change the time) starts actually sending.
 
 **How it works, end to end:**
 - A guest starting a video/audio recording or picking a file to upload
