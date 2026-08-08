@@ -87,6 +87,26 @@ export async function confirmUpload(
 }
 
 /**
+ * Fire-and-forget signal that a guest started capturing/picking a
+ * video or audio file but hasn't uploaded it yet — logged the moment
+ * it's added to the local upload queue (see hooks/use-media-upload.ts's
+ * addFiles), well before the guest taps "Upload". Paired later with the
+ * existing `${kind}_uploaded` event confirmUpload already logs: the
+ * guest reminder system (supabase/functions/send-reminder-push) finds
+ * invitees whose most recent "_capture_started" event is older than
+ * events.guest_reminder_delay_minutes with no matching "_uploaded"
+ * event after it, and sends one push reminder. Deliberately only for
+ * video/audio (not photo) — see NotificationPrompt's doc comment for
+ * why those two are the actual abandonment-prone flows worth reminding
+ * about.
+ */
+export async function logCaptureStartedAction(token: string, kind: "video" | "audio"): Promise<void> {
+  const found = await getInviteeByToken(token);
+  if (!found) return;
+  await logActivity(found.invitee.id, `${kind}_capture_started`);
+}
+
+/**
  * Lets a guest delete a photo/video/audio memory they just uploaded
  * through this same token — "Delete" next to an already-uploaded item
  * in the queue, e.g. to record a video again after seeing the preview.

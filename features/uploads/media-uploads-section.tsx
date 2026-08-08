@@ -22,6 +22,7 @@ import { PhotoUpload } from "@/features/uploads/components/photo-upload";
 import { VideoUpload } from "@/features/uploads/components/video-upload";
 import { AudioUpload } from "@/features/uploads/components/audio-upload";
 import { GuestbookForm } from "@/features/guestbook/guestbook-form";
+import { NotificationPrompt } from "@/features/push/notification-prompt";
 
 interface MediaUploadsSectionProps {
   token: string;
@@ -345,6 +346,12 @@ export function MediaUploadsSection({ token, initialView = "menu", showCaption =
         ) : null}
         {view === "note" ? <GuestbookForm token={token} /> : null}
       </div>
+
+      {/* Only offered once there's something actually at risk of being
+          forgotten (a capture/pick sitting in the queue, or a recording
+          in progress) — see NotificationPrompt's own doc comment for
+          why this moment specifically. */}
+      {hasPendingUploads ? <NotificationPrompt token={token} /> : null}
 
       <p className="mt-6 text-center text-xs text-navy-700/50">
         Your memories are reviewed before appearing on the public Memory Wall.

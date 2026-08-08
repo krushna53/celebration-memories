@@ -14,8 +14,44 @@ import { AiCssError, generateCustomCssFromPrompt } from "@/lib/ai-css";
 import { countAiCssGenerations, recordAiCssGeneration } from "@/services/ai-css-generations";
 import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
 import type { SectionConfigItem } from "@/lib/section-registry";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export type AdminActionResult = { success: true } | { success: false; error: string };
+
+export type SendGuestRemindersResult =
+  | { success: true; sent: number; considered: number }
+  | { success: false; error: string };
+
+/**
+ * "Send reminders now" — an immediate, out-of-band trigger for the same
+ * Edge Function pg_cron calls automatically (see migration
+ * 0024_guest_reminder_cron.sql). Bypasses the event's
+ * guest_reminder_enabled flag on purpose: an admin explicitly asking for
+ * a send right now is a clearer signal than the automatic on/off
+ * toggle, useful for e.g. testing the feature or catching up guests
+ * right before the event.
+ */
+export async function sendGuestRemindersNowAction(eventId: string): Promise<SendGuestRemindersResult> {
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin().functions.invoke("send-reminder-push", {
+      body: { eventId },
+    });
+    if (error) throw error;
+    if (!data?.success) {
+      return { success: false, error: data?.error || "Send failed." };
+    }
+    return { success: true, sent: data.sent ?? 0, considered: data.considered ?? 0 };
+  } catch (err) {
+    console.error("sendGuestRemindersNowAction failed:", err);
+    return { success: false, error: "Could not send reminders — the Web Push integration may not be configured yet." };
+  }
+}
 
 export type DetectTimezoneResult = { success: true; timezone: string } | { success: false; error: string };
 

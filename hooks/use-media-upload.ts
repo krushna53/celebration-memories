@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
-import { confirmUpload, deleteUploadAction, requestUploadUrl } from "@/features/uploads/actions";
+import { confirmUpload, deleteUploadAction, logCaptureStartedAction, requestUploadUrl } from "@/features/uploads/actions";
 
 export interface UploadItem {
   id: string;
@@ -35,8 +35,20 @@ export function useMediaUpload(token: string, kind: "photo" | "video" | "audio")
       caption: "",
     }));
     setItems((prev) => [...prev, ...next]);
+
+    // Fire-and-forget: signals "guest has an unfinished video/audio" for
+    // the reminder system — see logCaptureStartedAction's doc comment.
+    // Not awaited (upload queueing must stay instant), and deliberately
+    // scoped to video/audio only.
+    if (kind === "video" || kind === "audio") {
+      logCaptureStartedAction(token, kind).catch(() => {
+        // Best-effort — a failed log shouldn't block the guest from
+        // continuing to use the upload queue.
+      });
+    }
+
     return next.map((it) => it.id);
-  }, []);
+  }, [kind, token]);
 
   const setCaption = useCallback((id: string, caption: string) => {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, caption } : it)));

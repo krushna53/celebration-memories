@@ -49,6 +49,8 @@ export interface EventRow {
   menu_style: "buffet" | "a_la_carte";
   ai_avatar_enabled: boolean;
   ai_avatar_daily_message_limit: number;
+  guest_reminder_enabled: boolean;
+  guest_reminder_delay_minutes: number;
   created_at: string;
   updated_at: string;
 }
@@ -96,6 +98,8 @@ export function mapEvent(row: EventRow): EventRecord {
     menuStyle: row.menu_style ?? "buffet",
     aiAvatarEnabled: row.ai_avatar_enabled ?? false,
     aiAvatarDailyMessageLimit: row.ai_avatar_daily_message_limit ?? 150,
+    guestReminderEnabled: row.guest_reminder_enabled ?? true,
+    guestReminderDelayMinutes: row.guest_reminder_delay_minutes ?? 60,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -288,6 +292,8 @@ export interface EventUpdateInput {
   menuStyle?: "buffet" | "a_la_carte";
   aiAvatarEnabled?: boolean;
   aiAvatarDailyMessageLimit?: number;
+  guestReminderEnabled?: boolean;
+  guestReminderDelayMinutes?: number;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -381,6 +387,9 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.aiAvatarEnabled !== undefined) patch.ai_avatar_enabled = input.aiAvatarEnabled;
   if (input.aiAvatarDailyMessageLimit !== undefined)
     patch.ai_avatar_daily_message_limit = input.aiAvatarDailyMessageLimit;
+  if (input.guestReminderEnabled !== undefined) patch.guest_reminder_enabled = input.guestReminderEnabled;
+  if (input.guestReminderDelayMinutes !== undefined)
+    patch.guest_reminder_delay_minutes = input.guestReminderDelayMinutes;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

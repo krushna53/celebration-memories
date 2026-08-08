@@ -29,6 +29,7 @@ import {
   requestHighlightReelUploadUrlAction,
   requestShareImageUploadUrlAction,
   requestShareVideoUploadUrlAction,
+  sendGuestRemindersNowAction,
   updateEventAction,
 } from "@/features/admin/event-settings/actions";
 import { SectionOrderManager } from "@/features/admin/event-settings/section-order-manager";
@@ -94,6 +95,8 @@ export function EventSettingsForm({
     publicMemoriesEnabled: event.publicMemoriesEnabled,
     aiAvatarEnabled: event.aiAvatarEnabled,
     aiAvatarDailyMessageLimit: event.aiAvatarDailyMessageLimit,
+    guestReminderEnabled: event.guestReminderEnabled,
+    guestReminderDelayMinutes: event.guestReminderDelayMinutes,
     additionalNotes: event.additionalNotes ?? "",
     wishMessage: event.wishMessage ?? "",
     customCss: event.customCss ?? "",
@@ -109,6 +112,22 @@ export function EventSettingsForm({
   }, []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
+  const [reminderResult, setReminderResult] = useState<string | null>(null);
+
+  async function handleSendRemindersNow() {
+    setSendingReminders(true);
+    setReminderResult(null);
+    const result = await sendGuestRemindersNowAction(event.id);
+    setSendingReminders(false);
+    setReminderResult(
+      result.success
+        ? result.sent > 0
+          ? `Sent ${result.sent} reminder${result.sent === 1 ? "" : "s"}.`
+          : "No one has an unfinished video/audio to remind right now."
+        : result.error,
+    );
+  }
   const [error, setError] = useState<string | null>(null);
   const [copiedWebPageLink, setCopiedWebPageLink] = useState(false);
   const [copiedRsvpLink, setCopiedRsvpLink] = useState(false);
@@ -386,6 +405,8 @@ export function EventSettingsForm({
       publicMemoriesEnabled: form.publicMemoriesEnabled,
       aiAvatarEnabled: form.aiAvatarEnabled,
       aiAvatarDailyMessageLimit: form.aiAvatarDailyMessageLimit,
+      guestReminderEnabled: form.guestReminderEnabled,
+      guestReminderDelayMinutes: form.guestReminderDelayMinutes,
       additionalNotes: form.additionalNotes || null,
       wishMessage: form.wishMessage || null,
       customCss: form.customCss || null,
@@ -1141,6 +1162,75 @@ export function EventSettingsForm({
             </p>
           </div>
         ) : null}
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Guest Reminders</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          If a guest starts recording or picking a video/audio message but never finishes uploading it, they can
+          opt in (right on the upload screen) to a one-time push notification reminding them to finish — a real
+          notification on their phone/browser, even if they&rsquo;ve closed the site. Free, no paid API involved.
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, guestReminderEnabled: false }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              !form.guestReminderEnabled
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            Off
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, guestReminderEnabled: true }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              form.guestReminderEnabled
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            On — remind automatically
+          </button>
+        </div>
+        {form.guestReminderEnabled ? (
+          <div>
+            <label className={labelClasses}>Wait this long before reminding (minutes)</label>
+            <input
+              type="number"
+              min={5}
+              max={1440}
+              value={form.guestReminderDelayMinutes}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, guestReminderDelayMinutes: Number(e.target.value) || 5 }));
+                setSaved(false);
+              }}
+              className={`${inputClasses} max-w-[10rem]`}
+            />
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              How long an unfinished recording/upload sits before a guest who opted in gets reminded.
+            </p>
+          </div>
+        ) : null}
+        <div className="border-t border-navy-950/10 pt-4">
+          <Button type="button" variant="outline" onClick={handleSendRemindersNow} disabled={sendingReminders}>
+            {sendingReminders ? <Loader2 className="animate-spin" size={16} /> : null}
+            Send reminders now
+          </Button>
+          <p className="mt-1.5 text-xs text-navy-700/50">
+            Triggers an immediate check for this event only, regardless of the On/Off setting above — useful for
+            testing or catching up guests right before the event.
+          </p>
+          {reminderResult ? <p className="mt-2 text-xs font-medium text-navy-700/80">{reminderResult}</p> : null}
+        </div>
       </section>
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">

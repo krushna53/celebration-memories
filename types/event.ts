@@ -159,6 +159,19 @@ export interface EventRecord {
   aiAvatarEnabled: boolean;
   /** Cost guard for the AI Avatar: max guest messages answered per calendar day, across all guests combined. See services/ai-avatar-messages.ts. */
   aiAvatarDailyMessageLimit: number;
+  /**
+   * Whether the automatic (pg_cron-driven) half of the guest reminder
+   * system runs for this event — a real Web Push notification sent to
+   * any guest who started recording/uploading a video or audio memory
+   * but never finished. On by default (opt-out, not opt-in) since it's
+   * free (no paid API) and purely a nudge to guests who already showed
+   * intent to participate. A manual "Send reminders now" trigger in the
+   * admin panel ignores this flag. See features/push, services/push.ts,
+   * supabase/functions/send-reminder-push.
+   */
+  guestReminderEnabled: boolean;
+  /** How long to wait after a guest starts recording/uploading before considering it abandoned and reminding them. */
+  guestReminderDelayMinutes: number;
   createdAt: string;
   updatedAt: string;
 }

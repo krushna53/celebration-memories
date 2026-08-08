@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Sunday, August 9",
+    items: [
+      {
+        title: "Guest reminder push notifications",
+        detail:
+          "If a guest starts recording or picking a video/audio message on their personal invite link but never finishes uploading it, they can now opt in to a real notification on their phone — a small \"Remind me\" prompt appears right on the upload screen once they have something unfinished. The reminder arrives even if they've closed the site or app entirely (a true push notification, not just an in-app banner), and only fires once per unfinished attempt. Off by default until Web Push is configured (see supabase/README.md) — until then this section simply doesn't appear, nothing breaks.",
+        test:
+          "On your phone, open a personal invite link (/invite/[token]), tap \"Record Video\", record a few seconds, tap \"Done — Review & Upload\", then back out WITHOUT tapping Upload — you should see a gold \"Want a reminder?\" prompt. Tap \"Remind me\" and allow notifications when your browser asks. To actually test delivery without waiting the full delay: go to Admin → Event Settings → \"Guest Reminders\" and tap \"Send reminders now\" — a notification should land on your phone within a few seconds.",
+      },
+    ],
+  },
+  {
     date: "Friday, August 7",
     items: [
       {
@@ -106,7 +118,7 @@ export default function WeeklyUpdatePage() {
       <div className="mx-auto max-w-2xl">
         <p className="text-xs font-medium uppercase tracking-[0.15em] text-gold-700">Internal — not linked anywhere on the site</p>
         <h1 className="mt-2 font-display text-3xl text-navy-950 sm:text-4xl">Weekly Update</h1>
-        <p className="mt-1 text-sm text-navy-700/60">Friday, August 7, 2026</p>
+        <p className="mt-1 text-sm text-navy-700/60">Sunday, August 9, 2026</p>
 
         <div className="mt-10 grid gap-10">
           {CHANGES.map((group) => (
