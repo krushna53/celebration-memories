@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Sunday, August 9 (newest)",
+    items: [
+      {
+        title: "Live preview now shows up in the /start wizard too, no account needed",
+        detail:
+          "The live preview panel (Countdown, Invitation, Event Details, Gallery, Timeline, RSVP, Wish Message, Memory Wall) was previously admin-only, inside Event Settings — a host filling out the free /start wizard before creating any account couldn't see it at all. It now also appears at the top of the wizard's \"Event Details\" step, open by default and staying in view while you scroll, updating live as you type — same component, same instant feedback, no login required.",
+        test:
+          "Open a /start/[token]/basics link (or start a fresh draft at /start) without being logged in — a \"Live Preview\" panel should already be open near the top of the page. Type into Honoree Name, Tagline, or Wish Message and watch it update immediately.",
+      },
+    ],
+  },
+  {
     date: "Sunday, August 9 (latest)",
     items: [
       {

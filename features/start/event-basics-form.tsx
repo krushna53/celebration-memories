@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { EVENT_CATEGORY_OPTIONS } from "@/lib/event-category";
 import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
 import { zonedInputValueToUtcIso, utcIsoToZonedInputValue } from "@/lib/timezone";
+import { EventSettingsPreview } from "@/features/admin/event-settings/event-settings-preview";
 import type { EventRecord } from "@/types/event";
 import type { EventUpdateInput } from "@/services/events";
 
@@ -42,6 +43,10 @@ interface EventBasicsFormProps {
  * homepage-section-ordering sections, which stay in the real dashboard
  * once the account exists. See CLAUDE.md / session notes for why this
  * is a dedicated component rather than a refactor of the full form.
+ *
+ * Shares the same EventSettingsPreview component as the admin form —
+ * a host filling out this step without an account yet (no login) still
+ * gets the same live, no-save-required preview of their homepage.
  */
 export function EventBasicsForm({ token, event, updateAction, nextHref }: EventBasicsFormProps) {
   const router = useRouter();
@@ -124,8 +129,36 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
     }
   }
 
+  const previewData = {
+    honoreeName: form.honoreeName,
+    hostedBy: form.hostedBy,
+    eventTitle: form.eventTitle,
+    occasion: form.occasion,
+    startAt: form.startAt,
+    venueName: form.venueName,
+    parkingInfo: form.parkingInfo,
+    dressCode: form.dressCode,
+    wishMessage: form.wishMessage,
+    category: form.category,
+    // The wizard has no section-reorder step of its own (that's an
+    // Event Settings-only feature once the account exists) — the
+    // preview just uses whatever's on the draft record already
+    // (normalized to every section, visible, in default order, if
+    // unset), same as a brand-new event would show.
+    sectionConfig: event.sectionConfig,
+  };
+
   return (
     <form onSubmit={onSubmit} className="grid max-w-2xl gap-6">
+      <details className="sticky top-2 z-20 rounded-xl border border-gold-500/25 bg-ivory-50/95 p-4 shadow-md backdrop-blur" open>
+        <summary className="cursor-pointer font-display text-sm font-medium text-navy-950">
+          Live Preview
+        </summary>
+        <div className="mt-4 max-h-[60vh] max-w-sm overflow-y-auto">
+          <EventSettingsPreview data={previewData} />
+        </div>
+      </details>
+
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Who &amp; What</h2>
         <div className="grid gap-4 sm:grid-cols-2">
