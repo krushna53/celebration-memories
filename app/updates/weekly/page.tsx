@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Sunday, August 9 (newest of all)",
+    items: [
+      {
+        title: "Wizard: go live for free when payment isn't set up yet",
+        detail:
+          "The payment step used to be a dead end if neither card checkout (Stripe/Razorpay/CCAvenue) nor manual UPI/QR/bank details were configured yet — the QR block just said \"Payment details haven't been set up yet\" with nothing else to do. That step now detects when there's genuinely nothing to pay through and shows a \"Go Live — Free for Now\" option instead, so a host isn't stuck. This is a temporary bypass, not a permanent free tier: the moment any real payment method is configured on the site, this option disappears on its own and the normal Pay Once / Subscribe / QR flow takes over — re-checked server-side every time, not just hidden client-side. Events activated this way are labeled \"Free (no payment configured)\" on the owner-only Billing page so they're easy to tell apart from a real payment or a promo code.",
+        test:
+          "With no Stripe/Razorpay/CCAvenue and no QR/UPI/bank details configured, walk a fresh draft through the wizard to the payment step — a gold \"Go Live — Free for Now\" panel with a \"Continue for Free\" button should appear instead of the old dead-end QR message. Clicking it should activate the event and land on the success page. Then configure any one payment method and repeat — the free option should no longer appear, and the normal payment UI should show instead. Check Admin → Billing — the free-activated event should show as \"Free (no payment configured)\".",
+      },
+    ],
+  },
+  {
     date: "Sunday, August 9 (even newer)",
     items: [
       {

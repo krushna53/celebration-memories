@@ -28,6 +28,7 @@ const PROVIDER_LABEL: Record<string, string> = {
   razorpay: "Razorpay",
   ccavenue: "CCAvenue",
   promo: "Promo Code",
+  free: "Free (no payment configured)",
 };
 
 export default async function AdminBillingPage() {

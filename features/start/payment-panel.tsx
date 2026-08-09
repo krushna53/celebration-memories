@@ -1,10 +1,15 @@
 "use client";
 
 import { useTransition, useState, useRef, useEffect } from "react";
-import { CheckCircle2, ChevronDown, Loader2, QrCode, Repeat, Zap } from "lucide-react";
+import { CheckCircle2, ChevronDown, Gift, Loader2, QrCode, Repeat, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { createCheckoutSessionAction, type BillingPlan, type CheckoutPrereqs } from "@/features/start/actions/payment";
+import {
+  claimFreeAccessAction,
+  createCheckoutSessionAction,
+  type BillingPlan,
+  type CheckoutPrereqs,
+} from "@/features/start/actions/payment";
 import { redeemPromoCodeAction } from "@/features/start/actions/promo";
 import { QrPaymentBlock } from "@/features/pay/qr-payment-block";
 import { PayForm } from "@/features/pay/pay-form";
@@ -49,6 +54,8 @@ export function PaymentPanel({
   const [qrOpen, setQrOpen] = useState(false);
   const ccavenueFormRef = useRef<HTMLFormElement>(null);
   const [ccavenueFields, setCcavenueFields] = useState<{ url: string; fields: Record<string, string> } | null>(null);
+  const [freePending, setFreePending] = useState(false);
+  const [freeError, setFreeError] = useState<string | null>(null);
 
   function choose(plan: BillingPlan) {
     setError(null);
@@ -82,7 +89,23 @@ export function PaymentPanel({
     if (result && !result.success) setPromoError(result.error);
   }
 
+  async function claimFree() {
+    setFreeError(null);
+    setFreePending(true);
+    const result = await claimFreeAccessAction(token, eventId);
+    setFreePending(false);
+    // A successful call redirects server-side and never resolves here.
+    if (result && !result.success) setFreeError(result.error);
+  }
+
   const cardCheckoutAvailable = prereqs.configured && (prereqs.oneTimeConfigured || prereqs.subscriptionConfigured);
+  const manualPaymentAvailable = Boolean(
+    paymentSettings && (paymentSettings.qrImagePath || paymentSettings.upiId || paymentSettings.bankDetails),
+  );
+  // Nothing to actually charge the host through yet — see
+  // claimFreeAccessAction, which re-checks this same condition
+  // server-side before letting the draft go live for free.
+  const noPaymentAvailable = !cardCheckoutAvailable && !manualPaymentAvailable;
   const providerLabel =
     prereqs.provider === "razorpay" ? "Razorpay" : prereqs.provider === "ccavenue" ? "CCAvenue" : "Stripe";
 
@@ -160,7 +183,26 @@ export function PaymentPanel({
           </div>
         ) : null}
 
-        {cardCheckoutAvailable ? null : (
+        {cardCheckoutAvailable ? null : noPaymentAvailable ? (
+          <div className="sm:col-span-2 rounded-xl border border-gold-500/30 bg-gold-500/5 p-5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold-500/15 text-gold-600">
+              <Gift size={16} />
+            </div>
+            <h2 className="mt-3 font-display text-lg text-navy-950">Go Live — Free for Now</h2>
+            <p className="mt-1 text-sm text-navy-700/70">
+              Payment isn&rsquo;t set up on this site yet, so there&rsquo;s nothing to charge you for. Continue and
+              your event site goes live today — no card, no form.
+            </p>
+            <Button className="mt-4 w-full sm:w-auto" disabled={freePending} onClick={claimFree}>
+              {freePending ? <Loader2 className="animate-spin" size={16} /> : "Continue for Free"}
+            </Button>
+            {freeError ? (
+              <p className="mt-3 text-sm text-red-600" role="alert">
+                {freeError}
+              </p>
+            ) : null}
+          </div>
+        ) : (
           <div className="sm:col-span-2">
             <div className="mb-4 flex items-start gap-2 rounded-lg border border-gold-500/20 bg-gold-500/5 p-3 text-sm text-navy-700/80">
               <QrCode size={16} className="mt-0.5 shrink-0 text-gold-600" />
