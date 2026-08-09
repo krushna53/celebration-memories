@@ -37,6 +37,7 @@ import {
 } from "@/features/admin/event-settings/actions";
 import { SectionOrderManager } from "@/features/admin/event-settings/section-order-manager";
 import { EventSettingsPreview } from "@/features/admin/event-settings/event-settings-preview";
+import { normalizeSectionConfig, type SectionConfigItem } from "@/lib/section-registry";
 import {
   DEFAULT_INVITE_MESSAGE_TEMPLATE,
   INVITE_TEMPLATE_PLACEHOLDERS,
@@ -112,6 +113,12 @@ export function EventSettingsForm({
     wishMessage: event.wishMessage ?? "",
     customCss: event.customCss ?? "",
   });
+  // Mirrors SectionOrderManager's own state (see its onChange prop) so
+  // the live preview panel can reflect a reorder/show-hide the instant
+  // it happens, without waiting for "Save Section Order" to be pressed.
+  const [sectionConfig, setSectionConfig] = useState<SectionConfigItem[]>(() =>
+    normalizeSectionConfig(event.sectionConfig),
+  );
   const [customCssError, setCustomCssError] = useState<string | null>(null);
   const [slugError, setSlugError] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
@@ -476,18 +483,22 @@ export function EventSettingsForm({
     occasion: form.occasion,
     startAt: form.startAt,
     venueName: form.venueName,
+    parkingInfo: form.parkingInfo,
+    dressCode: form.dressCode,
     wishMessage: form.wishMessage,
     category: form.category,
+    sectionConfig,
   };
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
       <form onSubmit={onSubmit} className="grid max-w-3xl gap-8">
-        <details className="rounded-xl border border-gold-500/25 bg-gold-500/5 p-4 lg:hidden">
+        <details className="sticky top-2 z-20 rounded-xl border border-gold-500/25 bg-ivory-50/95 p-4 shadow-md backdrop-blur lg:hidden">
+
           <summary className="cursor-pointer font-display text-sm font-medium text-navy-950">
             Live Preview
           </summary>
-          <div className="mt-4 max-w-sm">
+          <div className="mt-4 max-h-[60vh] max-w-sm overflow-y-auto">
             <EventSettingsPreview data={previewData} />
           </div>
         </details>
@@ -897,7 +908,7 @@ export function EventSettingsForm({
           hide Timeline until you&rsquo;ve added milestones, or move Gallery
           higher. Changes apply immediately to the live site once saved.
         </p>
-        <SectionOrderManager eventId={event.id} initialConfig={event.sectionConfig} />
+        <SectionOrderManager eventId={event.id} initialConfig={event.sectionConfig} onChange={setSectionConfig} />
       </section>
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">

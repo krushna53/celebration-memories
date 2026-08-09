@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -27,6 +27,14 @@ import { updateSectionConfigAction } from "@/features/admin/event-settings/actio
 interface SectionOrderManagerProps {
   eventId: string;
   initialConfig: SectionConfigItem[] | null;
+  /**
+   * Fired on every reorder/show-hide toggle, before "Save Section
+   * Order" is pressed — lets a parent (the live preview panel in
+   * event-settings-form.tsx) reflect section order/visibility changes
+   * immediately, the same way every other field in that form updates
+   * the preview live without a save.
+   */
+  onChange?: (items: SectionConfigItem[]) => void;
 }
 
 function SortableRow({
@@ -84,11 +92,16 @@ function SortableRow({
  * events) rather than a heavier page-builder library, since the only
  * things that vary are order and visibility, not section content.
  */
-export function SectionOrderManager({ eventId, initialConfig }: SectionOrderManagerProps) {
+export function SectionOrderManager({ eventId, initialConfig, onChange }: SectionOrderManagerProps) {
   const [items, setItems] = useState<SectionConfigItem[]>(() => normalizeSectionConfig(initialConfig));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    onChange?.(items);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),

@@ -41,9 +41,9 @@ const CHANGES: ChangeGroup[] = [
       {
         title: "Live preview panel in Event Settings",
         detail:
-          "Event Settings now shows a live preview as you type — honoree name, tagline, host, date, venue, and the Wish Message all update instantly in a small card, no saving required. On desktop it sits sticky on the right; on mobile it's a collapsible \"Live Preview\" panel at the top of the page. It's a lightweight brand-shell preview (navy/gold/ivory), not a pixel-perfect render of your event's active visual template — that's still best checked on the live page itself.",
+          "Event Settings now shows a live preview as you type — honoree name, tagline, host, date, venue, and every homepage section (Countdown, Invitation, Event Details, Gallery, Timeline, RSVP, Wish Message, Memory Wall) update instantly, no saving required. Reordering or hiding/showing a section in \"Homepage Sections\" reflects in the preview the same instant, before you even tap Save Section Order. On desktop the preview is sticky on the right, staying in view as you scroll through every step of the form; on mobile it's a sticky collapsible \"Live Preview\" panel that stays reachable near the top of the screen throughout. It's a lightweight brand-shell preview (navy/gold/ivory), not a pixel-perfect render of your event's active visual template — that's still best checked on the live page itself.",
         test:
-          "Open Admin → Event Settings on a wide screen — a preview card should appear on the right. Change the Honoree Name, Tagline, or Wish Message fields and watch it update immediately. On your phone, look for a \"Live Preview\" section near the top of the page instead — tap it to expand.",
+          "Open Admin → Event Settings on a wide screen — a preview card should appear on the right showing every section, not just Hero. Change the Honoree Name or Wish Message and watch it update immediately. Scroll to \"Homepage Sections\" and hide Countdown or Memory Wall (tap the eye icon) — it should disappear from the preview right away, without saving. On your phone, tap \"Live Preview\" near the top — it should stay visible as you scroll further down the page.",
       },
     ],
   },
