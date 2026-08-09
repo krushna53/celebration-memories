@@ -14,6 +14,7 @@ import {
   Loader2,
   Presentation,
   Radio,
+  Users,
 } from "lucide-react";
 
 import { EVENT_CATEGORY_OPTIONS } from "@/lib/event-category";
@@ -32,6 +33,7 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   workshop: Presentation,
   education: GraduationCap,
   live_stream: Radio,
+  reunion: Users,
 };
 
 export function OccasionPicker({

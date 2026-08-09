@@ -11,6 +11,7 @@ export const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
   workshop: "Workshop",
   education: "Educational Event",
   live_stream: "Live Streamed Event",
+  reunion: "Reunion",
 };
 
 export const EVENT_CATEGORY_OPTIONS: { value: EventCategory; label: string }[] = (
@@ -100,6 +101,12 @@ const WISH_COPY_BY_CATEGORY: Partial<Record<EventCategory, WishSectionCopy>> = {
     title: "A Note From The Host",
     placeholder: "e.g. The stream link will go live 10 minutes before start time...",
     noticesTitle: "Streaming Details",
+  },
+  reunion: {
+    eyebrow: "Old Friends, New Memories",
+    title: "A Reunion Note",
+    placeholder: "e.g. It's been too long — can't wait to catch up and relive old memories together...",
+    noticesTitle: "Good to Know",
   },
 };
 
