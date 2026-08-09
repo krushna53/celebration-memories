@@ -16,13 +16,25 @@
 --
 -- The Authorization header below is the project's anon key — a validly
 -- signed project JWT, already public (it's the same value as
--- NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.example). This only clears the
--- Edge Function's verify_jwt gate; the function does all its real work
--- with its own service-role key internally, so this is not an
--- authorization boundary. If the anon key is ever rotated, re-run
+-- NEXT_PUBLIC_SUPABASE_ANON_KEY). This only clears the Edge Function's
+-- verify_jwt gate; the function does all its real work with its own
+-- service-role key internally, so this is not an authorization
+-- boundary. If the anon key is ever rotated, re-run
 -- `select cron.alter_job(job_id, command := ...)` (or re-apply this
 -- file's cron.schedule call, which upserts by job name) with the new
 -- key — find the current key at Project Settings -> API.
+--
+-- REDACTED BELOW: <SUPABASE_URL> / <SUPABASE_ANON_KEY> are placeholders,
+-- not the literal values — this file is committed source of truth for
+-- structure only. The real values are already applied directly against
+-- the live project (see this file's own header above), and Netlify's
+-- secret scanner blocks any build where the literal
+-- NEXT_PUBLIC_SUPABASE_ANON_KEY/NEXT_PUBLIC_SUPABASE_URL values appear
+-- anywhere in the repo (both are configured as "secret" env vars in
+-- this project's Netlify settings even though the anon key is
+-- ordinarily safe to expose to a browser) — that's what caused an
+-- earlier failed deploy. Fill in the real values from
+-- Project Settings -> API before re-running this by hand.
 create extension if not exists pg_cron with schema extensions;
 create extension if not exists pg_net with schema extensions;
 
@@ -31,10 +43,10 @@ select cron.schedule(
   '30 13 * * *',
   $$
   select net.http_post(
-    url := 'https://ktbpnjrovzhjwardyime.supabase.co/functions/v1/send-reminder-push',
+    url := '<SUPABASE_URL>/functions/v1/send-reminder-push',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0YnBuanJvdnpoandhcmR5aW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwMzcyMzMsImV4cCI6MjEwMDYxMzIzM30.Z-5NRVBQq3cVL6CXpBqUsXnPhgSLOj6CLDGKT0tb8JE'
+      'Authorization', 'Bearer <SUPABASE_ANON_KEY>'
     ),
     body := '{}'::jsonb
   );

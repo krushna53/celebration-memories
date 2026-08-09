@@ -14,6 +14,12 @@
 --
 -- Applied live via MCP first per this repo's established practice;
 -- this file is the matching committed source of truth.
+--
+-- REDACTED BELOW: <CRON_SECRET> is a placeholder, not the literal
+-- value — same reasoning as 0024_guest_reminder_cron.sql's header
+-- comment (Netlify secret scanning blocks a build with the literal
+-- CRON_SECRET value present anywhere in the repo). Real value already
+-- applied live; must match Netlify's CRON_SECRET env var exactly.
 select cron.schedule(
   'admin-notifications-dispatch',
   '35 13 * * *',
@@ -22,7 +28,7 @@ select cron.schedule(
     url := 'https://everymoment.in/api/cron/admin-notifications',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer 0c0673ef783227f6272ecd06e037b349343a5ec8a8d2d33a38ebf84f4ccdae36'
+      'Authorization', 'Bearer <CRON_SECRET>'
     ),
     body := '{}'::jsonb
   );
