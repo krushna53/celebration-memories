@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Loader2, UserPlus } from "lucide-react";
 
@@ -33,6 +33,25 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  // Shared with the "Resend confirmation email" action below — must be
+  // byte-identical to the redirect used on the original signUp() call,
+  // or a resent link would drop the host somewhere other than back into
+  // this same wizard draft's payment step.
+  function verificationRedirectTo() {
+    return typeof window !== "undefined"
+      ? `${window.location.origin}${wizardStepHref(token, "payment")}?verified=1`
+      : undefined;
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,10 +76,7 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
       password,
       options: {
         data: { name, draft_event_id: eventId },
-        emailRedirectTo:
-          typeof window !== "undefined"
-            ? `${window.location.origin}${wizardStepHref(token, "payment")}?verified=1`
-            : undefined,
+        emailRedirectTo: verificationRedirectTo(),
       },
     });
     setLoading(false);
@@ -75,6 +91,22 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
     }
 
     setSubmitted(true);
+    setResendCooldown(30);
+  }
+
+  async function handleResend() {
+    setResending(true);
+    setResendMessage(null);
+    const { error: resendError } = await supabaseBrowser().auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: verificationRedirectTo() },
+    });
+    setResending(false);
+    setResendCooldown(30);
+    setResendMessage(
+      resendError ? resendError.message : "Sent again — check your inbox (and spam folder).",
+    );
   }
 
   if (submitted) {
@@ -88,6 +120,22 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
           We&rsquo;ve sent a verification link to <strong className="text-navy-950">{email}</strong>.
           Click it, then come back here to finish setting up billing.
         </p>
+        <p className="mt-4 text-xs text-navy-700/50">
+          Didn&rsquo;t get it?{" "}
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resending || resendCooldown > 0}
+            className="text-gold-600 underline underline-offset-4 hover:text-gold-500 disabled:cursor-not-allowed disabled:text-navy-700/40 disabled:no-underline"
+          >
+            {resending
+              ? "Sending…"
+              : resendCooldown > 0
+                ? `Resend confirmation email (${resendCooldown}s)`
+                : "Resend confirmation email"}
+          </button>
+        </p>
+        {resendMessage ? <p className="mt-2 text-xs text-navy-700/60">{resendMessage}</p> : null}
       </div>
     );
   }
