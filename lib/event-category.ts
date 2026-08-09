@@ -114,3 +114,71 @@ export function getWishSectionCopy(category: EventCategory | null | undefined): 
   if (!category) return DEFAULT_WISH_COPY;
   return WISH_COPY_BY_CATEGORY[category] ?? DEFAULT_WISH_COPY;
 }
+
+/**
+ * Labels/placeholders for the "Honoree" and "Hosted By" fields (the
+ * very first two fields in both EventBasicsForm and EventSettingsForm)
+ * — "Honoree / Guest of Honor" reads fine for a birthday or retirement,
+ * but is a confusing fit for events with no single person at the
+ * center (a reunion's "honoree" is really a batch/group; a workshop's
+ * is really its title). Same per-category-default pattern as
+ * WishSectionCopy above, applied to a different pair of fields.
+ */
+export interface EventFieldCopy {
+  honoreeLabel: string;
+  honoreePlaceholder?: string;
+  hostedByLabel: string;
+  hostedByPlaceholder?: string;
+}
+
+const DEFAULT_FIELD_COPY: EventFieldCopy = {
+  honoreeLabel: "Honoree / Guest of Honor",
+  hostedByLabel: "Hosted By",
+};
+
+const FIELD_COPY_BY_CATEGORY: Partial<Record<EventCategory, EventFieldCopy>> = {
+  wedding: {
+    honoreeLabel: "Couple's Names",
+    honoreePlaceholder: "e.g. Raj & Priya",
+    hostedByLabel: "Hosted By",
+  },
+  baby_shower: {
+    honoreeLabel: "Parent(s)-to-Be",
+    honoreePlaceholder: "e.g. Raj & Priya",
+    hostedByLabel: "Hosted By",
+  },
+  corporate: {
+    honoreeLabel: "Event / Team Name",
+    honoreePlaceholder: "e.g. Product Launch Team",
+    hostedByLabel: "Hosted By (Company)",
+  },
+  workshop: {
+    honoreeLabel: "Workshop Title",
+    honoreePlaceholder: "e.g. Intro to Web Development",
+    hostedByLabel: "Organized By",
+  },
+  education: {
+    honoreeLabel: "Program / Class Name",
+    honoreePlaceholder: "e.g. Graduating Class of 2026",
+    hostedByLabel: "Organized By",
+  },
+  live_stream: {
+    honoreeLabel: "Event Name",
+    hostedByLabel: "Hosted By",
+  },
+  obituary: {
+    honoreeLabel: "In Loving Memory Of",
+    hostedByLabel: "Hosted By (Family)",
+  },
+  reunion: {
+    honoreeLabel: "Batch / Group Name",
+    honoreePlaceholder: "e.g. Batch 73, MGM Medical College",
+    hostedByLabel: "Organized By",
+    hostedByPlaceholder: "e.g. Reunion Committee",
+  },
+};
+
+export function getEventFieldCopy(category: EventCategory | null | undefined): EventFieldCopy {
+  if (!category) return DEFAULT_FIELD_COPY;
+  return FIELD_COPY_BY_CATEGORY[category] ?? DEFAULT_FIELD_COPY;
+}

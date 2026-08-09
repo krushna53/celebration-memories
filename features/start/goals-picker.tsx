@@ -12,6 +12,7 @@ import {
   getDefaultGoalsForCategory,
   type WizardGoal,
 } from "@/features/start/wizard-steps";
+import { WizardBackLink } from "@/features/start/wizard-back-link";
 import type { DraftUpdateEventAction } from "@/features/start/event-basics-form";
 import type { EventRecord } from "@/types/event";
 
@@ -108,18 +109,21 @@ export function GoalsPicker({
         </p>
       ) : null}
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <Button disabled={pending || selected.length === 0} onClick={() => proceed(selected)}>
-          {pending ? <Loader2 className="animate-spin" size={16} /> : "Continue"}
-        </Button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => proceed(WIZARD_GOAL_OPTIONS.map((o) => o.value))}
-          className="text-sm text-navy-700/50 underline underline-offset-4 hover:text-navy-700/80"
-        >
-          Not sure — show me everything
-        </button>
+      <div className="mt-8 flex items-center justify-between border-t border-navy-950/10 pt-6">
+        <WizardBackLink token={token} slug="goals" goals={currentGoals} />
+        <div className="flex flex-wrap items-center gap-3">
+          <Button disabled={pending || selected.length === 0} onClick={() => proceed(selected)}>
+            {pending ? <Loader2 className="animate-spin" size={16} /> : "Continue"}
+          </Button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => proceed(WIZARD_GOAL_OPTIONS.map((o) => o.value))}
+            className="text-sm text-navy-700/50 underline underline-offset-4 hover:text-navy-700/80"
+          >
+            Not sure — show me everything
+          </button>
+        </div>
       </div>
     </div>
   );

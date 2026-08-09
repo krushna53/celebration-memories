@@ -7,7 +7,8 @@ import { updateEvent, type EventUpdateInput } from "@/services/events";
 import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import type { AdminActionResult } from "@/features/admin/event-settings/actions";
+import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
+import type { AdminActionResult, DetectTimezoneResult } from "@/features/admin/event-settings/actions";
 
 /**
  * Draft-token-gated mirror of updateEventAction — used by the wizard's
@@ -31,6 +32,37 @@ export async function draftUpdateEventAction(
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed." };
   }
+}
+
+/**
+ * Draft-token-gated mirror of detectEventTimezoneAction (features/admin/
+ * event-settings/actions.ts) — the wizard's Event Details step has no
+ * admin session to check yet, so this re-resolves the draft from
+ * `token` instead of requireAdminForEvent. Same pure-lookup contract:
+ * no side effect, the host still has to hit Save & Continue to apply
+ * whatever it finds.
+ */
+export async function draftDetectEventTimezoneAction(
+  token: string,
+  eventId: string,
+  address: string,
+): Promise<DetectTimezoneResult> {
+  try {
+    const event = await requireDraftEvent(token);
+    if (event.id !== eventId) return { success: false, error: "This link doesn't match that event." };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
+
+  if (!address.trim()) {
+    return { success: false, error: "Enter a venue address first." };
+  }
+
+  const timezone = await resolveTimezoneFromAddress(address);
+  if (!timezone) {
+    return { success: false, error: "Couldn't detect a timezone for that address — please choose one manually." };
+  }
+  return { success: true, timezone };
 }
 
 /** Draft-token-gated mirror of confirmShareImageUploadAction — used by the AI Image step's "Use as invitation card" save and Event Basics' cover photo. */

@@ -6,6 +6,7 @@ import { getDraftEventByToken } from "@/services/event-drafts";
 import { publicMediaUrl } from "@/services/uploads";
 import { Button } from "@/components/ui/button";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
+import { WizardBackLink } from "@/features/start/wizard-back-link";
 import { draftAddWebsiteGoalAction } from "@/features/start/actions/event";
 import { wizardStepHref } from "@/features/start/wizard-steps";
 
@@ -40,6 +41,7 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
         hideFooter
       >
         <div className="grid gap-6">
+          <WizardBackLink token={token} slug="review" goals={event.wizardGoals} />
           {wantsCard ? (
             <section className="rounded-xl border border-navy-950/10 bg-white p-5">
               <h2 className="font-display text-lg text-navy-950">Invitation Card</h2>
@@ -123,6 +125,7 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
       hideFooter
     >
       <div className="grid gap-6">
+        <WizardBackLink token={token} slug="review" goals={event.wizardGoals} />
         <section className="rounded-xl border border-navy-950/10 bg-white p-5">
           <h2 className="font-display text-lg text-navy-950">Your Site</h2>
           <p className="mt-1 text-sm text-navy-700/60">

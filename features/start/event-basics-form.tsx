@@ -1,20 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { EVENT_CATEGORY_OPTIONS } from "@/lib/event-category";
+import { EVENT_CATEGORY_OPTIONS, getEventFieldCopy } from "@/lib/event-category";
 import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
-import { zonedInputValueToUtcIso, utcIsoToZonedInputValue } from "@/lib/timezone";
+import { zonedInputValueToUtcIso, utcIsoToZonedInputValue, listSupportedTimezones } from "@/lib/timezone";
 import { EventSettingsPreview } from "@/features/admin/event-settings/event-settings-preview";
+import { draftDetectEventTimezoneAction } from "@/features/start/actions/event";
+import { WizardBackLink } from "@/features/start/wizard-back-link";
 import type { EventRecord } from "@/types/event";
 import type { EventUpdateInput } from "@/services/events";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70";
+
+/**
+ * Start/End are stored in `form` as a single "YYYY-MM-DDTHH:mm" string
+ * (the exact shape zonedInputValueToUtcIso expects), but rendered as
+ * two separate native inputs (`type="date"` + `type="time"`) instead of
+ * one combined `type="datetime-local"` — a single datetime-local input
+ * requires BOTH the date and time sub-fields to be filled before its
+ * value is considered valid at all, and a host who only picks a date
+ * (the calendar widget's most natural first interaction) would find
+ * the field stuck "invalid," blocking Save & Continue with a native
+ * browser validation message that reads as an unexplained error. These
+ * two helpers keep the combined string always fully valid the instant
+ * either half is touched, by defaulting the other half rather than
+ * leaving it blank.
+ */
+function dateOnly(value: string): string {
+  return value.split("T")[0] ?? "";
+}
+function timeOnly(value: string): string {
+  return value.split("T")[1] ?? "";
+}
+function combineDateTime(date: string, time: string): string {
+  const d = date || new Date().toISOString().slice(0, 10);
+  const t = time || "11:00";
+  return `${d}T${t}`;
+}
 
 // Event start/end datetime-local fields are pinned to the event's own
 // timezone (see lib/timezone.ts; defaults to Asia/Kolkata until the
@@ -59,6 +87,7 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
     hostedBy: event.hostedBy,
     startAt: utcIsoToZonedInputValue(event.startAt, event.timezone),
     endAt: utcIsoToZonedInputValue(event.endAt, event.timezone),
+    timezone: event.timezone,
     venueName: event.venueName ?? "",
     venueAddress: event.venueAddress ?? "",
     mapsUrl: event.mapsUrl ?? "",
@@ -73,10 +102,36 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
   const [error, setError] = useState<string | null>(null);
   const [slugError, setSlugError] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
+  const [detectingTimezone, setDetectingTimezone] = useState(false);
+  const [timezoneError, setTimezoneError] = useState<string | null>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
+
+  // Full IANA list from the runtime (see lib/timezone.ts) — computed
+  // once, not on every keystroke, mirroring the admin form's own
+  // timezoneOptions memo.
+  const timezoneOptions = useMemo(() => {
+    const options = listSupportedTimezones();
+    return options.includes(form.timezone) ? options : [form.timezone, ...options];
+  }, [form.timezone]);
+
+  async function handleDetectTimezone() {
+    if (!form.venueAddress.trim()) return;
+    setDetectingTimezone(true);
+    setTimezoneError(null);
+    try {
+      const result = await draftDetectEventTimezoneAction(token, event.id, form.venueAddress);
+      if (result.success) {
+        set("timezone", result.timezone);
+      } else {
+        setTimezoneError(result.error);
+      }
+    } finally {
+      setDetectingTimezone(false);
+    }
+  }
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -104,8 +159,9 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
       honoreeName: form.honoreeName,
       eventTitle: form.eventTitle,
       hostedBy: form.hostedBy,
-      startAt: zonedInputValueToUtcIso(form.startAt, event.timezone),
-      endAt: zonedInputValueToUtcIso(form.endAt, event.timezone),
+      startAt: zonedInputValueToUtcIso(form.startAt, form.timezone),
+      endAt: zonedInputValueToUtcIso(form.endAt, form.timezone),
+      timezone: form.timezone,
       venueName: form.venueName || null,
       venueAddress: form.venueAddress || null,
       mapsUrl: form.mapsUrl || null,
@@ -128,6 +184,8 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
       setError(result.error);
     }
   }
+
+  const fieldCopy = getEventFieldCopy(form.category);
 
   const previewData = {
     honoreeName: form.honoreeName,
@@ -186,12 +244,13 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
             />
           </div>
           <div>
-            <label className={labelClasses}>Honoree / Guest of Honor</label>
+            <label className={labelClasses}>{fieldCopy.honoreeLabel}</label>
             <input
               required
               className={`${inputClasses} mt-1.5`}
               value={form.honoreeName}
               onChange={(e) => set("honoreeName", e.target.value)}
+              placeholder={fieldCopy.honoreePlaceholder}
             />
           </div>
           <div>
@@ -205,12 +264,13 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
             />
           </div>
           <div>
-            <label className={labelClasses}>Hosted By</label>
+            <label className={labelClasses}>{fieldCopy.hostedByLabel}</label>
             <input
               required
               className={`${inputClasses} mt-1.5`}
               value={form.hostedBy}
               onChange={(e) => set("hostedBy", e.target.value)}
+              placeholder={fieldCopy.hostedByPlaceholder}
             />
           </div>
           <div>
@@ -274,32 +334,55 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Date &amp; Time</h2>
         <p className="text-xs leading-relaxed text-navy-700/60">
-          Times are in the event&rsquo;s timezone ({event.timezone}), regardless
-          of your own device&rsquo;s timezone. You can detect this automatically
-          from your venue address, or change it, in Event Settings after saving.
+          Times are in the event&rsquo;s timezone ({form.timezone}), regardless
+          of your own device&rsquo;s timezone — set or detect it below, under Location.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={labelClasses}>Starts</label>
-            <input
-              required
-              type="datetime-local"
-              className={`${inputClasses} mt-1.5`}
-              value={form.startAt}
-              onChange={(e) => set("startAt", e.target.value)}
-            />
+            <div className="mt-1.5 flex gap-2">
+              <input
+                required
+                type="date"
+                className={inputClasses}
+                value={dateOnly(form.startAt)}
+                onChange={(e) => set("startAt", combineDateTime(e.target.value, timeOnly(form.startAt)))}
+              />
+              <input
+                required
+                type="time"
+                className={inputClasses}
+                value={timeOnly(form.startAt)}
+                onChange={(e) => set("startAt", combineDateTime(dateOnly(form.startAt), e.target.value))}
+              />
+            </div>
           </div>
           <div>
             <label className={labelClasses}>Ends</label>
-            <input
-              required
-              type="datetime-local"
-              className={`${inputClasses} mt-1.5`}
-              value={form.endAt}
-              onChange={(e) => set("endAt", e.target.value)}
-            />
+            <div className="mt-1.5 flex gap-2">
+              <input
+                required
+                type="date"
+                className={inputClasses}
+                value={dateOnly(form.endAt)}
+                onChange={(e) => set("endAt", combineDateTime(e.target.value, timeOnly(form.endAt)))}
+              />
+              <input
+                required
+                type="time"
+                className={inputClasses}
+                value={timeOnly(form.endAt)}
+                onChange={(e) => set("endAt", combineDateTime(dateOnly(form.endAt), e.target.value))}
+              />
+            </div>
           </div>
         </div>
+        <p className="text-xs text-navy-700/50">
+          Date and time are separate fields on purpose — picking just a date used to leave the
+          combined field half-filled and block saving until a time was also set. Now, if you only
+          touch one, the other defaults automatically (11:00 AM start / today&rsquo;s date) so you
+          can always come back and fine-tune it.
+        </p>
       </section>
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
@@ -320,6 +403,37 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
               value={form.venueAddress}
               onChange={(e) => set("venueAddress", e.target.value)}
             />
+          </div>
+          <div>
+            <label className={labelClasses}>Timezone</label>
+            <div className="mt-1.5 flex gap-2">
+              <select
+                className={inputClasses}
+                value={form.timezone}
+                onChange={(e) => set("timezone", e.target.value)}
+              >
+                {timezoneOptions.map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tz}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                disabled={!form.venueAddress.trim() || detectingTimezone}
+                onClick={handleDetectTimezone}
+              >
+                {detectingTimezone ? "Detecting…" : "Detect"}
+              </Button>
+            </div>
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              Used for every date/time shown to guests. &ldquo;Detect&rdquo; looks this up from the
+              Address above (no API key needed) — or pick one manually.
+            </p>
+            {timezoneError ? <p className="mt-1 text-xs text-red-600">{timezoneError}</p> : null}
           </div>
           <div>
             <label className={labelClasses}>Google Maps Link</label>
@@ -375,12 +489,15 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
         </p>
       ) : null}
 
-      <div className="flex items-center gap-3">
-        <Button type="submit" disabled={saving}>
-          {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-          Save &amp; Continue
-        </Button>
-        {saved ? <span className="text-sm text-navy-700/60">Saved.</span> : null}
+      <div className="flex items-center justify-between border-t border-navy-950/10 pt-6">
+        <WizardBackLink token={token} slug="basics" goals={event.wizardGoals} />
+        <div className="flex items-center gap-3">
+          <Button type="submit" disabled={saving}>
+            {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+            Save &amp; Continue
+          </Button>
+          {saved ? <span className="text-sm text-navy-700/60">Saved.</span> : null}
+        </div>
       </div>
     </form>
   );

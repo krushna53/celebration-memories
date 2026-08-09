@@ -43,7 +43,7 @@ import {
   INVITE_TEMPLATE_PLACEHOLDERS,
   previewInviteMessage,
 } from "@/lib/whatsapp";
-import { EVENT_CATEGORY_OPTIONS, getWishSectionCopy } from "@/lib/event-category";
+import { EVENT_CATEGORY_OPTIONS, getEventFieldCopy, getWishSectionCopy } from "@/lib/event-category";
 import { formatBytes } from "@/lib/format-bytes";
 import { validateCustomCss } from "@/lib/custom-css";
 import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
@@ -476,6 +476,8 @@ export function EventSettingsForm({
     }
   }
 
+  const fieldCopy = getEventFieldCopy(form.category);
+
   const previewData = {
     honoreeName: form.honoreeName,
     hostedBy: form.hostedBy,
@@ -527,20 +529,22 @@ export function EventSettingsForm({
             </p>
           </div>
           <div>
-            <label className={labelClasses}>Hosted For (Honoree)</label>
+            <label className={labelClasses}>{fieldCopy.honoreeLabel}</label>
             <input
               className={`${inputClasses} mt-1.5`}
               value={form.honoreeName}
               onChange={(e) => set("honoreeName", e.target.value)}
+              placeholder={fieldCopy.honoreePlaceholder}
               required
             />
           </div>
           <div>
-            <label className={labelClasses}>Hosted By</label>
+            <label className={labelClasses}>{fieldCopy.hostedByLabel}</label>
             <input
               className={`${inputClasses} mt-1.5`}
               value={form.hostedBy}
               onChange={(e) => set("hostedBy", e.target.value)}
+              placeholder={fieldCopy.hostedByPlaceholder}
               required
             />
           </div>

@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Sunday, August 9 (even newer)",
+    items: [
+      {
+        title: "Wizard: category-aware Honoree/Hosted By labels, fixed Date & Time, timezone picker, back links, and a slideshow bug fix",
+        detail:
+          "\"Honoree / Guest of Honor\" made no sense for a Reunion (or Corporate, Workshop, Education, Live Stream, Obituary) — those fields now relabel per category, e.g. Reunion shows \"Batch / Group Name\" and \"Organized By\" instead. Date & Time was a single combined field that silently blocked saving if you picked a date but not a time (read as an unexplained error) — now split into separate Date and Time inputs that always default the other half automatically. A Timezone picker + \"Detect\" button (same as Event Settings) is now available right in the wizard's Location section, not just after creating an account. Every wizard step that hid the shared footer (Event Details, Goals, Review) now shows a \"← Previous Step\" link again, matching every other step. Also fixed: the Slideshow step's \"Generate Video\" button could look completely unresponsive if a background-music re-upload failed silently — the error now shows right under the button, not just up by the audio picker.",
+        test:
+          "Start a new draft with Reunion as the Event Type — the Honoree field should read \"Batch / Group Name.\" On Event Details, pick just a date (no time) for Starts — it should default to 11:00 AM instead of blocking Save. Under Location, confirm a Timezone dropdown + Detect button appear. On Event Details, Goals, and Review, confirm a back link to the previous step now appears. On Slideshow, attach a music file, generate once successfully, then try generating again — if it ever fails, an error should now appear directly under the Generate Video button.",
+      },
+    ],
+  },
+  {
     date: "Sunday, August 9 (newest)",
     items: [
       {
