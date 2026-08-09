@@ -36,6 +36,7 @@ import {
   updateEventAction,
 } from "@/features/admin/event-settings/actions";
 import { SectionOrderManager } from "@/features/admin/event-settings/section-order-manager";
+import { EventSettingsPreview } from "@/features/admin/event-settings/event-settings-preview";
 import {
   DEFAULT_INVITE_MESSAGE_TEMPLATE,
   INVITE_TEMPLATE_PLACEHOLDERS,
@@ -468,8 +469,29 @@ export function EventSettingsForm({
     }
   }
 
+  const previewData = {
+    honoreeName: form.honoreeName,
+    hostedBy: form.hostedBy,
+    eventTitle: form.eventTitle,
+    occasion: form.occasion,
+    startAt: form.startAt,
+    venueName: form.venueName,
+    wishMessage: form.wishMessage,
+    category: form.category,
+  };
+
   return (
-    <form onSubmit={onSubmit} className="grid max-w-3xl gap-8">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <form onSubmit={onSubmit} className="grid max-w-3xl gap-8">
+        <details className="rounded-xl border border-gold-500/25 bg-gold-500/5 p-4 lg:hidden">
+          <summary className="cursor-pointer font-display text-sm font-medium text-navy-950">
+            Live Preview
+          </summary>
+          <div className="mt-4 max-w-sm">
+            <EventSettingsPreview data={previewData} />
+          </div>
+        </details>
+
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Who &amp; What</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -1610,6 +1632,11 @@ export function EventSettingsForm({
         </Button>
         {saved ? <span className="text-sm text-green-700">Saved.</span> : null}
       </div>
-    </form>
+      </form>
+
+      <aside className="hidden lg:sticky lg:top-6 lg:block">
+        <EventSettingsPreview data={previewData} />
+      </aside>
+    </div>
   );
 }

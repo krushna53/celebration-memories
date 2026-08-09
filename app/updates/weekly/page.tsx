@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Sunday, August 9 (latest)",
+    items: [
+      {
+        title: "Live preview panel in Event Settings",
+        detail:
+          "Event Settings now shows a live preview as you type — honoree name, tagline, host, date, venue, and the Wish Message all update instantly in a small card, no saving required. On desktop it sits sticky on the right; on mobile it's a collapsible \"Live Preview\" panel at the top of the page. It's a lightweight brand-shell preview (navy/gold/ivory), not a pixel-perfect render of your event's active visual template — that's still best checked on the live page itself.",
+        test:
+          "Open Admin → Event Settings on a wide screen — a preview card should appear on the right. Change the Honoree Name, Tagline, or Wish Message fields and watch it update immediately. On your phone, look for a \"Live Preview\" section near the top of the page instead — tap it to expand.",
+      },
+    ],
+  },
+  {
     date: "Sunday, August 9 (even later)",
     items: [
       {
