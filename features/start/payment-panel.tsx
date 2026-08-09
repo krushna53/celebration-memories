@@ -10,16 +10,14 @@ import {
   type BillingPlan,
   type CheckoutPrereqs,
 } from "@/features/start/actions/payment";
-import { redeemPromoCodeAction } from "@/features/start/actions/promo";
 import { QrPaymentBlock } from "@/features/pay/qr-payment-block";
 import { PayForm } from "@/features/pay/pay-form";
 import type { PaymentSettingsRecord } from "@/types/payment";
 
 /**
  * Renders the "pay once" / "subscribe" choice on the wizard's payment
- * step (app/start/[token]/payment/page.tsx), plus a low-key promo code
- * entry. Both createCheckoutSessionAction and redeemPromoCodeAction
- * redirect the browser on success, so a "success" state here would
+ * step (app/start/[token]/payment/page.tsx). createCheckoutSessionAction
+ * redirects the browser on success, so a "success" state here would
  * never actually render — only the error path shows anything back in
  * this component.
  */
@@ -29,7 +27,6 @@ export function PaymentPanel({
   prereqs,
   paymentSettings,
   qrImageUrl,
-  initialPromoCode,
 }: {
   token: string;
   eventId: string;
@@ -37,16 +34,10 @@ export function PaymentPanel({
   /** Shown as a fallback ("scan to pay") when Stripe/Razorpay isn't configured — see /admin/payment-settings. */
   paymentSettings?: PaymentSettingsRecord;
   qrImageUrl?: string | null;
-  /** Prefills and auto-opens the promo field — set from the cm_promo_code cookie a /pricing tier's CTA leaves behind. */
-  initialPromoCode?: string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const [pendingPlan, setPendingPlan] = useState<BillingPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [promoOpen, setPromoOpen] = useState(Boolean(initialPromoCode));
-  const [promoCode, setPromoCode] = useState(initialPromoCode ?? "");
-  const [promoPending, setPromoPending] = useState(false);
-  const [promoError, setPromoError] = useState<string | null>(null);
   // "Prefer to pay via UPI/QR instead?" is always available as a
   // secondary option once a card processor is configured — it's the
   // primary path (rendered open, not behind this toggle) only when no
@@ -78,16 +69,6 @@ export function PaymentPanel({
   useEffect(() => {
     if (ccavenueFields) ccavenueFormRef.current?.submit();
   }, [ccavenueFields]);
-
-  async function redeemPromo(e: React.FormEvent) {
-    e.preventDefault();
-    setPromoError(null);
-    setPromoPending(true);
-    const result = await redeemPromoCodeAction(token, eventId, promoCode);
-    setPromoPending(false);
-    // A successful call redirects server-side and never resolves here.
-    if (result && !result.success) setPromoError(result.error);
-  }
 
   async function claimFree() {
     setFreeError(null);
@@ -122,35 +103,6 @@ export function PaymentPanel({
 
   return (
     <div>
-      <div className="mb-6 border-b border-navy-950/10 pb-4">
-        <button
-          type="button"
-          onClick={() => setPromoOpen((v) => !v)}
-          className="flex items-center gap-1 text-xs text-navy-700/40 hover:text-navy-700/70"
-        >
-          <ChevronDown size={12} className={promoOpen ? "rotate-180 transition-transform" : "transition-transform"} />
-          Have a promo code?
-        </button>
-        {promoOpen ? (
-          <form onSubmit={redeemPromo} className="mt-3 flex max-w-xs gap-2">
-            <input
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value)}
-              placeholder="PROMO CODE"
-              className="w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2 text-sm uppercase text-navy-950 placeholder:text-navy-700/30 placeholder:normal-case focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30"
-            />
-            <Button type="submit" variant="outline" size="sm" disabled={promoPending || !promoCode.trim()}>
-              {promoPending ? <Loader2 className="animate-spin" size={14} /> : "Apply"}
-            </Button>
-          </form>
-        ) : null}
-        {promoError ? (
-          <p className="mt-2 text-xs text-red-600" role="alert">
-            {promoError}
-          </p>
-        ) : null}
-      </div>
-
       <div className="grid gap-4 sm:grid-cols-2">
         {prereqs.configured && prereqs.oneTimeConfigured ? (
           <div className="rounded-xl border border-navy-950/10 bg-white p-5">
