@@ -44,6 +44,7 @@ import { TOUR_STEP_COPY } from "@/lib/admin-tour-steps";
 import { AdminTourController, type TourStep } from "@/features/admin/tour/admin-tour-controller";
 import { FaqChatbot } from "@/features/admin/support/faq-chatbot";
 import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
+import { NotificationBell } from "@/features/admin/notifications/notification-bell";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -125,6 +126,7 @@ export default async function AdminDashboardLayout({
               <LayoutGrid size={13} /> Simple View
             </Link>
             <AdminTourController steps={tourSteps} autoStart={!admin.hasSeenTour} />
+            <NotificationBell />
             <form action={signOutAction}>
               <button
                 type="submit"

@@ -176,6 +176,36 @@ export async function sendPaymentSubmissionNotification(input: {
   });
 }
 
+/**
+ * Notifies an event's admin(s) — the client host and/or the owner, see
+ * services/admin-notifications.ts's getAdminsToNotifyForEvent — when a
+ * guest submits an RSVP. Sent to the admin's own account email (not the
+ * fixed ADMIN_NOTIFICATION_EMAIL like the functions above), since this
+ * is meant to reach the actual event host, not just the platform
+ * owner's inbox. Paired with an in-app admin_notifications row created
+ * alongside this — see features/rsvp/actions.ts.
+ */
+export async function sendRsvpSubmittedNotification(input: {
+  adminEmail: string;
+  guestName: string;
+  honoreeName: string;
+  eventTitle: string;
+  coming: "coming" | "maybe" | "not_coming";
+  adminDashboardUrl: string;
+}): Promise<void> {
+  const comingLabel =
+    input.coming === "coming" ? "is coming" : input.coming === "maybe" ? "might come" : "can't make it";
+
+  await sendEmail({
+    to: input.adminEmail,
+    subject: `RSVP: ${input.guestName} ${comingLabel} — ${input.honoreeName}'s ${input.eventTitle}`,
+    html: `
+      <p><strong>${escapeHtml(input.guestName)}</strong> just submitted an RSVP and ${comingLabel}.</p>
+      <p style="color:#888;font-size:12px;">View the full guest list at <a href="${input.adminDashboardUrl}">${input.adminDashboardUrl}</a>.</p>
+    `,
+  });
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

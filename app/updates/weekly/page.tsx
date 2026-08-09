@@ -36,8 +36,15 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
-    date: "Sunday, August 9",
+    date: "Sunday, August 9 (later)",
     items: [
+      {
+        title: "Admin notification center — bell icon in the dashboard",
+        detail:
+          "A new bell icon in the admin header (both the full dashboard and the Simple View) shows a shared inbox covering four things: an alert the moment a guest RSVPs (in-app + email, sent to you and the site owner), a daily nudge about one feature you haven't tried yet (Gallery, Planner, Video Editor, Guest List, AI Image, AI Avatar — stops once you've used it), a warning once your event's storage usage crosses 80% of its quota (editable in Event Settings → Storage), and — once your event has passed — an occasional \"planning another event?\" prompt. No setup needed for any of this.",
+        test:
+          "Look for the bell icon next to Sign Out in the admin header — tap it to see the panel. To see an RSVP alert specifically: open your event's public/personal RSVP page in another tab and submit one — a notification (and email, if RESEND_API_KEY is configured) should appear within a few seconds. Event Settings → \"Storage\" shows your current usage against an editable quota.",
+      },
       {
         title: "Guest reminder push notifications",
         detail:

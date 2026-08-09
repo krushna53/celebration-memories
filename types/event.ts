@@ -180,6 +180,8 @@ export interface EventRecord {
    */
   shareMemoryNudgeEnabled: boolean;
   shareMemoryNudgeDaysBefore: number;
+  /** Editable storage ceiling (GB) shown against live usage (services/storage-usage.ts) in the admin Storage dashboard and Event Settings — default 5, not tied to any real pricing plan yet. Crossing it triggers an admin_notifications 'storage_usage' warning (see services/admin-notification-jobs.ts). */
+  storageQuotaGb: number;
   createdAt: string;
   updatedAt: string;
 }

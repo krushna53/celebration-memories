@@ -53,6 +53,7 @@ export interface EventRow {
   guest_reminder_delay_minutes: number;
   share_memory_nudge_enabled: boolean;
   share_memory_nudge_days_before: number;
+  storage_quota_gb: number;
   created_at: string;
   updated_at: string;
 }
@@ -104,6 +105,7 @@ export function mapEvent(row: EventRow): EventRecord {
     guestReminderDelayMinutes: row.guest_reminder_delay_minutes ?? 60,
     shareMemoryNudgeEnabled: row.share_memory_nudge_enabled ?? true,
     shareMemoryNudgeDaysBefore: row.share_memory_nudge_days_before ?? 3,
+    storageQuotaGb: row.storage_quota_gb ?? 5,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -300,6 +302,7 @@ export interface EventUpdateInput {
   guestReminderDelayMinutes?: number;
   shareMemoryNudgeEnabled?: boolean;
   shareMemoryNudgeDaysBefore?: number;
+  storageQuotaGb?: number;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -399,6 +402,7 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.shareMemoryNudgeEnabled !== undefined) patch.share_memory_nudge_enabled = input.shareMemoryNudgeEnabled;
   if (input.shareMemoryNudgeDaysBefore !== undefined)
     patch.share_memory_nudge_days_before = input.shareMemoryNudgeDaysBefore;
+  if (input.storageQuotaGb !== undefined) patch.storage_quota_gb = input.storageQuotaGb;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

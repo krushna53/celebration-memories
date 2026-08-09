@@ -7,6 +7,7 @@ import { findOrCreateSelfInvitee, getEventForPublicRsvp } from "@/services/publi
 import { submitRsvp } from "@/services/rsvps";
 import { sendRsvpConfirmation } from "@/lib/email";
 import { rsvpFormSchema, type RsvpFormValues } from "@/types/rsvp";
+import { notifyAdminsOfRsvpSubmission } from "@/services/admin-notifications";
 
 export type SubmitPublicRsvpResult =
   | { success: true }
@@ -66,9 +67,10 @@ export async function submitPublicRsvpAction(
     };
   }
 
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("host");
+
   if (parsed.data.email) {
-    const requestHeaders = await headers();
-    const host = requestHeaders.get("host");
     const eventUrl = host ? `https://${host}/events/${eventSlug}` : `/events/${eventSlug}`;
     sendRsvpConfirmation({
       guestEmail: parsed.data.email,
@@ -79,6 +81,14 @@ export async function submitPublicRsvpAction(
       eventUrl,
     }).catch((err) => console.error("sendRsvpConfirmation failed:", err));
   }
+
+  notifyAdminsOfRsvpSubmission({
+    eventId: event.id,
+    honoreeName: event.honoreeName,
+    eventTitle: event.eventTitle,
+    values: parsed.data,
+    host,
+  }).catch((err) => console.error("notifyAdminsOfRsvpSubmission failed:", err));
 
   revalidatePath(`/events/${eventSlug}/rsvp`);
   return { success: true };

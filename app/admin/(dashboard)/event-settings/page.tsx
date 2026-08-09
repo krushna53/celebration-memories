@@ -3,6 +3,7 @@ import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { AI_CSS_CONFIGURED } from "@/lib/ai-css";
 import { countAiCssGenerations } from "@/services/ai-css-generations";
+import { getEventStorageUsage } from "@/services/storage-usage";
 import { EventSettingsForm } from "@/features/admin/event-settings/event-settings-form";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ export default async function AdminEventSettingsPage() {
   const isClient = admin?.role === "client";
   const aiCssUsed = isClient ? await countAiCssGenerations(event.id) : 0;
   const aiCssLimit = event.aiCssGenerationLimit;
+  const storageUsage = await getEventStorageUsage(event);
 
   return (
     <div>
@@ -38,6 +40,7 @@ export default async function AdminEventSettingsPage() {
           highlightReelUrl={highlightReelUrl}
           aiCssConfigured={AI_CSS_CONFIGURED}
           aiCssQuota={isClient ? { used: aiCssUsed, limit: aiCssLimit } : null}
+          storageUsedBytes={storageUsage.totalBytes}
         />
       </div>
     </div>

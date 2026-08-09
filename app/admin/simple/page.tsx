@@ -28,6 +28,7 @@ import { StatCard } from "@/features/admin/components/stat-card";
 import { QuickShareLinks } from "@/features/admin/simple/quick-share-links";
 import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
 import { VisibilityToggle } from "@/features/admin/events/visibility-toggle";
+import { NotificationBell } from "@/features/admin/notifications/notification-bell";
 import { MobileAccessCard } from "@/features/admin/mobile-access/mobile-access-card";
 
 export const dynamic = "force-dynamic";
@@ -67,6 +68,7 @@ function SimpleHeader() {
           >
             <LayoutDashboard size={15} /> Full Dashboard
           </Link>
+          <NotificationBell />
           <form action={signOutAction}>
             <button
               type="submit"

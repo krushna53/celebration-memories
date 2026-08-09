@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import {
@@ -40,6 +41,7 @@ import {
   previewInviteMessage,
 } from "@/lib/whatsapp";
 import { EVENT_CATEGORY_OPTIONS, getWishSectionCopy } from "@/lib/event-category";
+import { formatBytes } from "@/lib/format-bytes";
 import { validateCustomCss } from "@/lib/custom-css";
 import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
 import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
@@ -58,6 +60,7 @@ interface EventSettingsFormProps {
   highlightReelUrl: string | null;
   aiCssConfigured: boolean;
   aiCssQuota: { used: number; limit: number } | null;
+  storageUsedBytes: number;
 }
 
 // Event start/end datetime-local fields are pinned to IST (see
@@ -71,6 +74,7 @@ export function EventSettingsForm({
   highlightReelUrl,
   aiCssConfigured,
   aiCssQuota,
+  storageUsedBytes,
 }: EventSettingsFormProps) {
   const [form, setForm] = useState({
     slug: event.slug,
@@ -100,6 +104,7 @@ export function EventSettingsForm({
     guestReminderDelayMinutes: event.guestReminderDelayMinutes,
     shareMemoryNudgeEnabled: event.shareMemoryNudgeEnabled,
     shareMemoryNudgeDaysBefore: event.shareMemoryNudgeDaysBefore,
+    storageQuotaGb: event.storageQuotaGb,
     additionalNotes: event.additionalNotes ?? "",
     wishMessage: event.wishMessage ?? "",
     customCss: event.customCss ?? "",
@@ -429,6 +434,7 @@ export function EventSettingsForm({
       guestReminderDelayMinutes: form.guestReminderDelayMinutes,
       shareMemoryNudgeEnabled: form.shareMemoryNudgeEnabled,
       shareMemoryNudgeDaysBefore: form.shareMemoryNudgeDaysBefore,
+      storageQuotaGb: form.storageQuotaGb,
       additionalNotes: form.additionalNotes || null,
       wishMessage: form.wishMessage || null,
       customCss: form.customCss || null,
@@ -1314,6 +1320,51 @@ export function EventSettingsForm({
             </Button>
             {nudgeResult ? <p className="mt-2 text-xs font-medium text-navy-700/80">{nudgeResult}</p> : null}
           </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Storage</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          How much space this event&rsquo;s Gallery, Timeline, Slideshow, and guest-uploaded photos/videos/audio are
+          using, against an editable quota — an informational limit for now, not tied to a specific pricing plan.
+        </p>
+        {(() => {
+          const quotaBytes = form.storageQuotaGb * 1024 * 1024 * 1024;
+          const ratio = quotaBytes > 0 ? Math.min(1, storageUsedBytes / quotaBytes) : 0;
+          const percent = Math.round(ratio * 100);
+          return (
+            <div>
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="font-medium text-navy-950">{formatBytes(storageUsedBytes)} used</span>
+                <span className="text-navy-700/60">of {form.storageQuotaGb} GB ({percent}%)</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-navy-950/10">
+                <div
+                  className={cn("h-full rounded-full transition-luxury duration-300", ratio >= 0.8 ? "bg-red-500" : "bg-gold-500")}
+                  style={{ width: `${Math.max(2, percent)}%` }}
+                />
+              </div>
+            </div>
+          );
+        })()}
+        <div>
+          <label className={labelClasses}>Storage quota (GB)</label>
+          <input
+            type="number"
+            min={1}
+            max={1000}
+            step={0.5}
+            value={form.storageQuotaGb}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, storageQuotaGb: Number(e.target.value) || 1 }));
+              setSaved(false);
+            }}
+            className={`${inputClasses} max-w-[10rem]`}
+          />
+          <p className="mt-1.5 text-xs text-navy-700/50">
+            You&rsquo;ll get a notification (in-app + this shows here) once usage crosses 80% of this.
+          </p>
         </div>
       </section>
 

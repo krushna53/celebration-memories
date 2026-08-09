@@ -157,3 +157,53 @@ otherwise never be asked.
   public, no-token RSVP path (`PublicRsvpForm`) has no per-guest token
   to attach a push subscription to, same scoping limitation as the
   upload reminder above.
+
+## Admin notification center
+
+A bell icon in the admin dashboard header (`features/admin/notifications/`)
+covering four notification types, all landing in one shared inbox
+(`admin_notifications` table, migration `0027_admin_notifications.sql`)
+visible to both the owner and client-role admins — each admin only ever
+sees their own notifications (scoped by `admin_id`, not `event_id`).
+No configuration needed; this one doesn't depend on Web Push/VAPID at
+all — it's a plain in-app + email system.
+
+- **RSVP submitted** — fires synchronously the moment a guest RSVPs
+  (`services/admin-notifications.ts`'s `notifyAdminsOfRsvpSubmission`,
+  called from both `submitRsvpAction` and `submitPublicRsvpAction`).
+  Notifies the event's client admin **and** every owner, both in-app
+  and by email (`sendRsvpSubmittedNotification` in `lib/email.ts`,
+  gated on `RESEND_API_KEY` same as every other email in this app).
+- **Feature-discovery nudges** — once a day, for any event that hasn't
+  ended, the client admin gets nudged about one not-yet-tried feature
+  (Gallery, Planner, Video Editor, Guest List, AI Image, AI Avatar —
+  see the registry in `services/admin-feature-nudges.ts`, additive to
+  extend). Stops nudging about a feature once it's actually been used,
+  and never repeats a feature once nudged — once the list is
+  exhausted, no more feature nudges for that event.
+- **Storage usage warnings** — once a day, compares each event's live
+  Storage usage (the same computation `/admin/storage` uses) against
+  an editable `storage_quota_gb` (Event Settings → "Storage", default
+  5 GB — not tied to any real pricing plan, just a starting number).
+  Notifies once usage crosses 80%, at most once every 7 days.
+- **"Planning another event?"** — once an event's end date has passed,
+  the client admin switches from feature nudges to this prompt, at
+  most once every 14 days, linking to `/start`.
+
+**Setup:** the three daily producers above (everything except RSVP,
+which is synchronous) run via `app/api/cron/admin-notifications/route.ts`,
+called once a day by pg_cron (migration
+`0028_admin_notifications_cron.sql`, 13:35 UTC / 7:05 PM IST). That
+route requires `CRON_SECRET` in Netlify's env vars, matching the value
+baked into the cron job's Authorization header — without it, the route
+401s and those three producers silently never run (RSVP notifications
+and the notification panel itself still work regardless, since they
+don't go through this route).
+
+**Known simplification:** unlike the guest-facing push reminders
+above, this system reuses Next.js Route Handler + existing services
+directly rather than a Supabase Edge Function, specifically so it could
+reuse `services/storage-usage.ts`'s existing Storage-listing logic
+(already proven to run fine inside a Next Server Component on
+`/admin/storage`) without reimplementing it in Deno. See that route's
+own header comment for the full reasoning.
