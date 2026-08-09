@@ -131,3 +131,29 @@ to change the time) starts actually sending.
 push channel — it won't reach a guest through the Capacitor iOS/Android
 app shell via APNs/FCM. Revisit if/when the native app ships to app
 stores.
+
+### Second reminder type: "share a memory" nudge
+
+A separate, one-time push to guests who RSVP'd "coming" or "maybe" but
+haven't shared any photo/video/message yet, sent once a few days
+before the event (`events.share_memory_nudge_days_before`, default 3).
+Uses the same VAPID keys/subscription infrastructure above — nothing
+extra to configure. Guests opt in right after submitting their RSVP
+(see `RsvpForm`'s post-submit `NotificationPrompt`), not on the upload
+screen, since a guest who never touches the upload flow would
+otherwise never be asked.
+
+- `supabase/functions/send-memory-nudge-push` — targets invitees with
+  `rsvp_status in ('coming','maybe')`, no existing photos/videos/audio/
+  guestbook rows, and no prior `memory_nudge_sent` activity_logs event
+  (sent at most once ever per guest).
+- `guest-memory-nudge-dispatch` pg_cron job, same daily 7:00 PM IST
+  slot as the abandoned-upload reminder (migration
+  `0026_guest_memory_nudge_cron.sql`).
+- Event Settings → Guest Reminders → "Share-a-Memory Nudge" has the
+  on/off toggle, days-before setting, and a manual "Send memory-nudge
+  now" button.
+- Only wired up for the personal `/invite/[token]` RSVP form — the
+  public, no-token RSVP path (`PublicRsvpForm`) has no per-guest token
+  to attach a push subscription to, same scoping limitation as the
+  upload reminder above.

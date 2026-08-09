@@ -30,6 +30,7 @@ import {
   requestShareImageUploadUrlAction,
   requestShareVideoUploadUrlAction,
   sendGuestRemindersNowAction,
+  sendMemoryNudgeNowAction,
   updateEventAction,
 } from "@/features/admin/event-settings/actions";
 import { SectionOrderManager } from "@/features/admin/event-settings/section-order-manager";
@@ -97,6 +98,8 @@ export function EventSettingsForm({
     aiAvatarDailyMessageLimit: event.aiAvatarDailyMessageLimit,
     guestReminderEnabled: event.guestReminderEnabled,
     guestReminderDelayMinutes: event.guestReminderDelayMinutes,
+    shareMemoryNudgeEnabled: event.shareMemoryNudgeEnabled,
+    shareMemoryNudgeDaysBefore: event.shareMemoryNudgeDaysBefore,
     additionalNotes: event.additionalNotes ?? "",
     wishMessage: event.wishMessage ?? "",
     customCss: event.customCss ?? "",
@@ -125,6 +128,23 @@ export function EventSettingsForm({
         ? result.sent > 0
           ? `Sent ${result.sent} reminder${result.sent === 1 ? "" : "s"}.`
           : "No one has an unfinished video/audio to remind right now."
+        : result.error,
+    );
+  }
+
+  const [sendingNudge, setSendingNudge] = useState(false);
+  const [nudgeResult, setNudgeResult] = useState<string | null>(null);
+
+  async function handleSendMemoryNudgeNow() {
+    setSendingNudge(true);
+    setNudgeResult(null);
+    const result = await sendMemoryNudgeNowAction(event.id);
+    setSendingNudge(false);
+    setNudgeResult(
+      result.success
+        ? result.sent > 0
+          ? `Sent ${result.sent} nudge${result.sent === 1 ? "" : "s"}.`
+          : "No RSVP'd guests without a shared memory to nudge right now."
         : result.error,
     );
   }
@@ -407,6 +427,8 @@ export function EventSettingsForm({
       aiAvatarDailyMessageLimit: form.aiAvatarDailyMessageLimit,
       guestReminderEnabled: form.guestReminderEnabled,
       guestReminderDelayMinutes: form.guestReminderDelayMinutes,
+      shareMemoryNudgeEnabled: form.shareMemoryNudgeEnabled,
+      shareMemoryNudgeDaysBefore: form.shareMemoryNudgeDaysBefore,
       additionalNotes: form.additionalNotes || null,
       wishMessage: form.wishMessage || null,
       customCss: form.customCss || null,
@@ -1230,6 +1252,68 @@ export function EventSettingsForm({
             testing or catching up guests right before the event.
           </p>
           {reminderResult ? <p className="mt-2 text-xs font-medium text-navy-700/80">{reminderResult}</p> : null}
+        </div>
+
+        <div className="border-t border-navy-950/10 pt-4">
+          <h3 className="font-display text-sm text-navy-950">Share-a-Memory Nudge</h3>
+          <p className="mt-1 text-xs leading-relaxed text-navy-700/60">
+            A separate, one-time push to guests who RSVP&rsquo;d &ldquo;coming&rdquo; or &ldquo;maybe&rdquo; but
+            haven&rsquo;t shared a photo/video/message yet — sent once, a few days before the event, only to guests
+            who opted in when RSVPing.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setForm((f) => ({ ...f, shareMemoryNudgeEnabled: false }));
+                setSaved(false);
+              }}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+                !form.shareMemoryNudgeEnabled
+                  ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                  : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+              }`}
+            >
+              Off
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setForm((f) => ({ ...f, shareMemoryNudgeEnabled: true }));
+                setSaved(false);
+              }}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+                form.shareMemoryNudgeEnabled
+                  ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                  : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+              }`}
+            >
+              On — nudge automatically
+            </button>
+          </div>
+          {form.shareMemoryNudgeEnabled ? (
+            <div className="mt-3">
+              <label className={labelClasses}>Send this many days before the event</label>
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={form.shareMemoryNudgeDaysBefore}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, shareMemoryNudgeDaysBefore: Number(e.target.value) || 1 }));
+                  setSaved(false);
+                }}
+                className={`${inputClasses} max-w-[10rem]`}
+              />
+            </div>
+          ) : null}
+          <div className="mt-4">
+            <Button type="button" variant="outline" onClick={handleSendMemoryNudgeNow} disabled={sendingNudge}>
+              {sendingNudge ? <Loader2 className="animate-spin" size={16} /> : null}
+              Send memory-nudge now
+            </Button>
+            {nudgeResult ? <p className="mt-2 text-xs font-medium text-navy-700/80">{nudgeResult}</p> : null}
+          </div>
         </div>
       </section>
 

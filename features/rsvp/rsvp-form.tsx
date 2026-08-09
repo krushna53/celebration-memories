@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { submitRsvpAction } from "@/features/rsvp/actions";
 import { logRsvpStartedAction } from "@/features/tracking/actions";
+import { NotificationPrompt } from "@/features/push/notification-prompt";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_OPTIONS,
@@ -32,6 +33,7 @@ interface RsvpFormProps {
 
 export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormProps) {
   const [submitted, setSubmitted] = useState(false);
+  const [submittedComing, setSubmittedComing] = useState<RsvpFormValues["coming"] | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const startedTracked = useRef(false);
 
@@ -65,6 +67,7 @@ export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormP
     const result = await submitRsvpAction(token, values);
     if (result.success) {
       setSubmitted(true);
+      setSubmittedComing(values.coming);
     } else {
       setServerError(result.error);
     }
@@ -84,6 +87,15 @@ export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormP
         <Button variant="outline" onClick={() => setSubmitted(false)}>
           Edit my RSVP
         </Button>
+        {submittedComing === "coming" || submittedComing === "maybe" ? (
+          <div className="w-full text-left">
+            <NotificationPrompt
+              token={token}
+              message="Get a reminder to share a photo or video memory before the big day?"
+              buttonLabel="Notify me"
+            />
+          </div>
+        ) : null}
       </div>
     );
   }

@@ -45,6 +45,13 @@ const CHANGES: ChangeGroup[] = [
         test:
           "On your phone, open a personal invite link (/invite/[token]), tap \"Record Video\", record a few seconds, tap \"Done — Review & Upload\", then back out WITHOUT tapping Upload — you should see a gold \"Want a reminder?\" prompt. Tap \"Remind me\" and allow notifications when your browser asks. To actually test delivery without waiting the full delay: go to Admin → Event Settings → \"Guest Reminders\" and tap \"Send reminders now\" — a notification should land on your phone within a few seconds.",
       },
+      {
+        title: "Second push type: \"share a memory\" nudge for RSVP'd guests",
+        detail:
+          "A separate one-time reminder for guests who RSVP'd \"coming\" or \"maybe\" but haven't shared a photo/video/message yet — sent once, a few days before the event. Guests opt in right after submitting their RSVP, not on the upload screen, so guests who never touch the upload flow still get asked.",
+        test:
+          "On your phone, open a personal invite link, submit an RSVP as \"Joyfully Accepts\" or the maybe option — you should see a \"Get a reminder to share a memory?\" prompt right after submitting. Tap \"Notify me\" and allow notifications. To test delivery immediately: Admin → Event Settings → \"Guest Reminders\" → \"Send memory-nudge now\".",
+      },
     ],
   },
   {

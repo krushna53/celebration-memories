@@ -51,6 +51,8 @@ export interface EventRow {
   ai_avatar_daily_message_limit: number;
   guest_reminder_enabled: boolean;
   guest_reminder_delay_minutes: number;
+  share_memory_nudge_enabled: boolean;
+  share_memory_nudge_days_before: number;
   created_at: string;
   updated_at: string;
 }
@@ -100,6 +102,8 @@ export function mapEvent(row: EventRow): EventRecord {
     aiAvatarDailyMessageLimit: row.ai_avatar_daily_message_limit ?? 150,
     guestReminderEnabled: row.guest_reminder_enabled ?? true,
     guestReminderDelayMinutes: row.guest_reminder_delay_minutes ?? 60,
+    shareMemoryNudgeEnabled: row.share_memory_nudge_enabled ?? true,
+    shareMemoryNudgeDaysBefore: row.share_memory_nudge_days_before ?? 3,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -294,6 +298,8 @@ export interface EventUpdateInput {
   aiAvatarDailyMessageLimit?: number;
   guestReminderEnabled?: boolean;
   guestReminderDelayMinutes?: number;
+  shareMemoryNudgeEnabled?: boolean;
+  shareMemoryNudgeDaysBefore?: number;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -390,6 +396,9 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.guestReminderEnabled !== undefined) patch.guest_reminder_enabled = input.guestReminderEnabled;
   if (input.guestReminderDelayMinutes !== undefined)
     patch.guest_reminder_delay_minutes = input.guestReminderDelayMinutes;
+  if (input.shareMemoryNudgeEnabled !== undefined) patch.share_memory_nudge_enabled = input.shareMemoryNudgeEnabled;
+  if (input.shareMemoryNudgeDaysBefore !== undefined)
+    patch.share_memory_nudge_days_before = input.shareMemoryNudgeDaysBefore;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

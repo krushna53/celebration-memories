@@ -172,6 +172,14 @@ export interface EventRecord {
   guestReminderEnabled: boolean;
   /** How long to wait after a guest starts recording/uploading before considering it abandoned and reminding them. */
   guestReminderDelayMinutes: number;
+  /**
+   * Third-party reminder type: a one-time push nudge to guests who
+   * RSVP'd coming/maybe but haven't shared any memory yet, sent once
+   * within shareMemoryNudgeDaysBefore days of the event. See
+   * supabase/functions/send-memory-nudge-push.
+   */
+  shareMemoryNudgeEnabled: boolean;
+  shareMemoryNudgeDaysBefore: number;
   createdAt: string;
   updatedAt: string;
 }
