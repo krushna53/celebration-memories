@@ -188,13 +188,13 @@ export function PaymentPanel({
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold-500/15 text-gold-600">
               <Gift size={16} />
             </div>
-            <h2 className="mt-3 font-display text-lg text-navy-950">Go Live — Free for Now</h2>
+            <h2 className="mt-3 font-display text-lg text-navy-950">Early Bird Access</h2>
             <p className="mt-1 text-sm text-navy-700/70">
-              Payment isn&rsquo;t set up on this site yet, so there&rsquo;s nothing to charge you for. Continue and
-              your event site goes live today — no card, no form.
+              You&rsquo;re in as an early host — online payments aren&rsquo;t open yet, so there&rsquo;s nothing to
+              charge you for. Continue and your event site goes live today, no card required.
             </p>
             <Button className="mt-4 w-full sm:w-auto" disabled={freePending} onClick={claimFree}>
-              {freePending ? <Loader2 className="animate-spin" size={16} /> : "Continue for Free"}
+              {freePending ? <Loader2 className="animate-spin" size={16} /> : "Claim Early Bird Access"}
             </Button>
             {freeError ? (
               <p className="mt-3 text-sm text-red-600" role="alert">
