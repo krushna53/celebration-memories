@@ -158,6 +158,41 @@ otherwise never be asked.
   to attach a push subscription to, same scoping limitation as the
   upload reminder above.
 
+### Third reminder type: broadcast "engagement" notifications
+
+A third push type, deliberately scoped down from the original ask
+("notify like Zomato/Zepto, multiple times a day") — a one-time family
+event isn't a habit-forming commerce app, and that cadence would very
+likely get guests to disable notifications or uninstall the PWA
+entirely. Built instead: meaningful, capped-frequency broadcasts to
+every guest who opted in, via `features/push/engagement-opt-in-banner.tsx`
+(shown on the personal `/invite/[token]` page, offering general event
+updates — separate from the two narrower opt-in moments above).
+
+- **Countdown milestones** — "7 days to go", "1 day to go", "Today's
+  the day" — sent once each, ever, per event.
+- **New-content digests** — "New photos added to the Gallery" / "New
+  memories shared" — at most once per ~20 hours, and only if something
+  actually changed since the last digest.
+- `supabase/functions/send-engagement-push` computes and sends both;
+  de-duplication reuses `activity_logs` (one row per event per
+  milestone/digest, `invitee_id` left null) rather than a new table.
+- `guest-engagement-push-dispatch` pg_cron job, same daily 7pm-IST
+  family as the other two (migration `0030_guest_engagement_push_cron.sql`).
+- Event Settings → Guest Reminders → "Event Updates" has the on/off
+  toggle + a manual "Send now" button.
+
+**Platform reach, and a real Apple restriction worth knowing:** the
+opt-in banner (and, as of this round, every push opt-in in the app —
+see `lib/pwa.ts`'s `canRequestPushNow`) now correctly detects that
+**iPhone Safari only allows Web Push if the site has been added to the
+Home Screen** — a plain Safari tab cannot receive push notifications
+at all, no matter what this app does; that's an OS-level Apple
+restriction, not a configuration choice here. Every other supported
+browser (Android/Chrome, desktop) works fine in a normal tab, no
+install required — so the opt-in banners show for those guests
+immediately, and for iPhone guests only once they've installed the app.
+
 ## Admin notification center
 
 A bell icon in the admin dashboard header (`features/admin/notifications/`)

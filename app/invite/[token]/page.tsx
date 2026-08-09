@@ -9,6 +9,7 @@ import { formatEventDate, formatEventTime } from "@/lib/format";
 import { buildEventMetadata } from "@/lib/event-metadata";
 import { RsvpForm } from "@/features/rsvp/rsvp-form";
 import { MediaUploadsSection } from "@/features/uploads/media-uploads-section";
+import { EngagementOptInBanner } from "@/features/push/engagement-opt-in-banner";
 import { Reveal } from "@/components/motion/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SiteShell } from "@/components/layout/site-shell";
@@ -52,6 +53,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   return (
     <SiteShell honoreeName={event.honoreeName} footerVariant="minimal">
+      <EngagementOptInBanner token={token} honoreeName={event.honoreeName} />
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
           <Reveal>

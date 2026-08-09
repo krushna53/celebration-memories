@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { PUSH_CONFIGURED, PUSH_PUBLIC_KEY } from "@/lib/push";
 import { savePushSubscriptionAction, removePushSubscriptionAction } from "@/features/push/actions";
+import { canRequestPushNow } from "@/lib/pwa";
 
 /** Converts a base64url VAPID public key into the Uint8Array pushManager.subscribe() expects. Standard Web Push boilerplate — see MDN's "Web Push API" guide. */
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -38,7 +39,12 @@ export function usePushSubscription(token: string) {
     typeof window !== "undefined" &&
     "serviceWorker" in navigator &&
     "PushManager" in window &&
-    "Notification" in window;
+    "Notification" in window &&
+    // Feature-detection alone reports true on non-installed iOS Safari
+    // too, even though Apple blocks actually requesting permission
+    // there — see lib/pwa.ts's canRequestPushNow for the real
+    // platform constraint this additionally checks.
+    canRequestPushNow();
 
   useEffect(() => {
     if (!supported) {

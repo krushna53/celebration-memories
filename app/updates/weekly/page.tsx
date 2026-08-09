@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Sunday, August 9 (even later)",
+    items: [
+      {
+        title: "Third push type: countdown + \"new content\" notifications",
+        detail:
+          "A new \"Stay in the loop?\" prompt on the personal invite page offers general event-update notifications — countdown milestones (7 days to go, 1 day to go, today's the day) and \"new photos/memories added\" alerts, at most once a day. Deliberately not a Zomato/Zepto-style multiple-times-a-day blast — a wedding or birthday isn't a habit-forming app, and that cadence would likely get guests to just turn notifications off. Also fixed: every notification prompt in the app now correctly detects that iPhone Safari only allows push notifications once the site's been added to the Home Screen (an Apple restriction) — Android/Chrome/desktop guests can opt in immediately in a normal browser tab.",
+        test:
+          "On your phone, open a personal invite link — after a couple seconds you should see a \"Stay in the loop?\" prompt near the bottom (on iPhone, only after adding the site to your Home Screen first). To test delivery immediately: Admin → Event Settings → \"Guest Reminders\" → \"Event Updates\" → \"Send now\".",
+      },
+    ],
+  },
+  {
     date: "Sunday, August 9 (later)",
     items: [
       {

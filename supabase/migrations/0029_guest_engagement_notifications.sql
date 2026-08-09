@@ -1,0 +1,15 @@
+-- Third guest-facing push type: broadcast "engagement" notifications
+-- (event countdown milestones + new-content digests) to every guest
+-- who opted in via the new EngagementOptInBanner (shown only once the
+-- guest is running the installed PWA — see that component's doc
+-- comment). On by default, same rationale as guest_reminder_enabled —
+-- free, no paid API, and only reaches guests who explicitly subscribed.
+--
+-- No new de-dup table — broadcast sends (one message, many guests) are
+-- tracked with a single activity_logs row per event per milestone/
+-- digest (invitee_id left null, event_id set), reusing the same
+-- event-log-as-source-of-truth pattern as every other reminder type in
+-- this app. See supabase/functions/send-engagement-push. Applied live
+-- via MCP first per this repo's established practice; this file is
+-- the matching committed source of truth.
+alter table events add column if not exists engagement_notifications_enabled boolean not null default true;

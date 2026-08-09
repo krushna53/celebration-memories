@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Download, Share, SquarePlus, X } from "lucide-react";
 
 import { SITE_NAME } from "@/lib/constants";
+import { isStandalone } from "@/lib/pwa";
 
 const DISMISS_STORAGE_KEY = "everymoment_install_banner_dismissed_until";
 const DISMISS_DAYS = 14;
@@ -23,12 +24,6 @@ function detectPlatform(): Platform {
   if (/iphone|ipad|ipod/i.test(ua) && !("MSStream" in window)) return "ios";
   if (/android/i.test(ua)) return "android";
   return "other";
-}
-
-function isStandalone(): boolean {
-  if (typeof window === "undefined") return false;
-  const navigatorStandalone = (navigator as Navigator & { standalone?: boolean }).standalone;
-  return window.matchMedia("(display-mode: standalone)").matches || navigatorStandalone === true;
 }
 
 /**

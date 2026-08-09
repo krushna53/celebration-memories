@@ -32,6 +32,7 @@ import {
   requestShareVideoUploadUrlAction,
   sendGuestRemindersNowAction,
   sendMemoryNudgeNowAction,
+  sendEngagementPushNowAction,
   updateEventAction,
 } from "@/features/admin/event-settings/actions";
 import { SectionOrderManager } from "@/features/admin/event-settings/section-order-manager";
@@ -104,6 +105,7 @@ export function EventSettingsForm({
     guestReminderDelayMinutes: event.guestReminderDelayMinutes,
     shareMemoryNudgeEnabled: event.shareMemoryNudgeEnabled,
     shareMemoryNudgeDaysBefore: event.shareMemoryNudgeDaysBefore,
+    engagementNotificationsEnabled: event.engagementNotificationsEnabled,
     storageQuotaGb: event.storageQuotaGb,
     additionalNotes: event.additionalNotes ?? "",
     wishMessage: event.wishMessage ?? "",
@@ -150,6 +152,23 @@ export function EventSettingsForm({
         ? result.sent > 0
           ? `Sent ${result.sent} nudge${result.sent === 1 ? "" : "s"}.`
           : "No RSVP'd guests without a shared memory to nudge right now."
+        : result.error,
+    );
+  }
+
+  const [sendingEngagement, setSendingEngagement] = useState(false);
+  const [engagementResult, setEngagementResult] = useState<string | null>(null);
+
+  async function handleSendEngagementNow() {
+    setSendingEngagement(true);
+    setEngagementResult(null);
+    const result = await sendEngagementPushNowAction(event.id);
+    setSendingEngagement(false);
+    setEngagementResult(
+      result.success
+        ? result.sent > 0
+          ? `Sent ${result.sent} notification${result.sent === 1 ? "" : "s"}.`
+          : "Nothing new to broadcast right now (no countdown milestone hit, no new content)."
         : result.error,
     );
   }
@@ -434,6 +453,7 @@ export function EventSettingsForm({
       guestReminderDelayMinutes: form.guestReminderDelayMinutes,
       shareMemoryNudgeEnabled: form.shareMemoryNudgeEnabled,
       shareMemoryNudgeDaysBefore: form.shareMemoryNudgeDaysBefore,
+      engagementNotificationsEnabled: form.engagementNotificationsEnabled,
       storageQuotaGb: form.storageQuotaGb,
       additionalNotes: form.additionalNotes || null,
       wishMessage: form.wishMessage || null,
@@ -1319,6 +1339,52 @@ export function EventSettingsForm({
               Send memory-nudge now
             </Button>
             {nudgeResult ? <p className="mt-2 text-xs font-medium text-navy-700/80">{nudgeResult}</p> : null}
+          </div>
+        </div>
+
+        <div className="border-t border-navy-950/10 pt-4">
+          <h3 className="font-display text-sm text-navy-950">Event Updates (Countdown &amp; New Content)</h3>
+          <p className="mt-1 text-xs leading-relaxed text-navy-700/60">
+            A third, separate push type — countdown milestones (7 days / 1 day / day-of, once each) and
+            &ldquo;new photos/memories added&rdquo; digests (at most once a day). Only reaches guests who opted in
+            via the &ldquo;Stay in the loop?&rdquo; prompt on their invite page — not tied to the two toggles above.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setForm((f) => ({ ...f, engagementNotificationsEnabled: false }));
+                setSaved(false);
+              }}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+                !form.engagementNotificationsEnabled
+                  ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                  : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+              }`}
+            >
+              Off
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setForm((f) => ({ ...f, engagementNotificationsEnabled: true }));
+                setSaved(false);
+              }}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+                form.engagementNotificationsEnabled
+                  ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                  : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+              }`}
+            >
+              On — send automatically
+            </button>
+          </div>
+          <div className="mt-4">
+            <Button type="button" variant="outline" onClick={handleSendEngagementNow} disabled={sendingEngagement}>
+              {sendingEngagement ? <Loader2 className="animate-spin" size={16} /> : null}
+              Send now
+            </Button>
+            {engagementResult ? <p className="mt-2 text-xs font-medium text-navy-700/80">{engagementResult}</p> : null}
           </div>
         </div>
       </section>

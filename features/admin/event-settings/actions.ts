@@ -76,6 +76,29 @@ export async function sendMemoryNudgeNowAction(eventId: string): Promise<SendGue
   }
 }
 
+/** Third reminder type — countdown milestones + new-content digests (send-engagement-push). Same shape as the other two manual-send actions. */
+export async function sendEngagementPushNowAction(eventId: string): Promise<SendGuestRemindersResult> {
+  try {
+    await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin().functions.invoke("send-engagement-push", {
+      body: { eventId },
+    });
+    if (error) throw error;
+    if (!data?.success) {
+      return { success: false, error: data?.error || "Send failed." };
+    }
+    return { success: true, sent: data.sent ?? 0, considered: (data.broadcasts?.length as number) ?? 0 };
+  } catch (err) {
+    console.error("sendEngagementPushNowAction failed:", err);
+    return { success: false, error: "Could not send — the Web Push integration may not be configured yet." };
+  }
+}
+
 export type DetectTimezoneResult = { success: true; timezone: string } | { success: false; error: string };
 
 /**
