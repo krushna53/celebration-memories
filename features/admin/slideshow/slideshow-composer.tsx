@@ -347,7 +347,21 @@ export function SlideshowComposer({
         ) : remainingCount !== null ? (
           <p className="text-xs text-navy-700/50">{remainingCount} render{remainingCount === 1 ? "" : "s"} remaining.</p>
         ) : null}
+        {/*
+          Surfaced here too (not just up by the audio picker) — if the
+          background-music re-upload fails, handleGenerate returns
+          before ever calling generate(), so the button just silently
+          reverts to "Generate Video" with no visible change near
+          itself. A host looking at the button after clicking it
+          (rather than scrolling back up to the audio field) would see
+          nothing happen at all and reasonably conclude the button is
+          broken/unresponsive. Showing the same message right here
+          closes that gap.
+        */}
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {!error && audioError ? (
+          <p className="text-sm text-red-600">Couldn&rsquo;t generate: {audioError}</p>
+        ) : null}
       </div>
 
       <div>
