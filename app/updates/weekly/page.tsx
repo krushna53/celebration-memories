@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (after midnight)",
+    items: [
+      {
+        title: "Fixed: AI Image generation erroring out with \"taking much longer than expected\"",
+        detail:
+          "Generating an invitation image (especially one asking for exact text like a name or date, which needs the AI's slower \"high quality\" rendering mode to come out legible) could genuinely take over 90 seconds — but the browser was giving up and showing an error at exactly 90 seconds, even though the image was still being generated successfully on the server. Raised that limit well past what the server itself allows, so the browser only gives up if the server actually would have too. Also added a live \"Ns elapsed\" counter next to the loading message so it's obvious it's still working during a longer wait instead of looking frozen.",
+        test:
+          "Generate an AI invitation image with a detailed, text-heavy prompt (the kind that takes longest) and confirm it completes successfully even past the one-minute mark, with the elapsed-seconds counter visibly ticking up the whole time.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (near midnight)",
     items: [
       {

@@ -29,17 +29,27 @@ const LOADING_STEPS = [
   "Designing the invitation...",
   "Enhancing details...",
   "Applying your theme...",
-  "Still finishing up — this can take up to a minute...",
+  "Rendering the text precisely — this is the slowest part...",
+  "Still finishing up — high-quality renders can take a couple of minutes...",
 ];
 
 /**
  * Client-side ceiling on how long to wait for the Edge Function's
- * response before giving up — the function itself can run up to 150s
- * (free plan) / 400s (paid), but OpenAI's image API practically always
- * resolves well under a minute, so anything beyond this almost
- * certainly means something's actually stuck rather than just slow.
+ * response before giving up. Previously 90s — too tight: OpenAI's
+ * gpt-image "high" quality setting (used here specifically so any text
+ * requested in the prompt, like a name or date, renders legibly rather
+ * than as garbled squiggles — see the Edge Function's own comment on
+ * `quality`) routinely takes well past 90s, especially for a detailed,
+ * text-heavy prompt, so real in-progress generations were being cut off
+ * client-side and shown as "This is taking much longer than expected"
+ * even though the Edge Function was still working and would have
+ * finished. Raised to comfortably exceed the Edge Function's own 150s
+ * wall-clock ceiling on Supabase's free plan (plus network overhead) —
+ * see supabase/functions/generate-ai-image's header comment — so this
+ * client-side abort only ever fires after the server side would have
+ * given up on its own anyway, never before.
  */
-const REQUEST_TIMEOUT_MS = 90_000;
+const REQUEST_TIMEOUT_MS = 170_000;
 
 const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
   (c): c is { value: GalleryCategory; label: string } => c.value !== "all",
@@ -138,6 +148,7 @@ export function AiImageGenerator({
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [generatedResult, setGeneratedResult] = useState<ImageResult | null>(initialGeneratedResult);
   const [uploadedResult, setUploadedResult] = useState<ImageResult | null>(initialUploadedResult);
@@ -147,6 +158,7 @@ export function AiImageGenerator({
   const [actionBusy, setActionBusy] = useState(false);
   const [remainingOverride, setRemainingOverride] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const remaining = remainingOverride ?? (quota ? quota.limit - quota.used : null);
@@ -155,11 +167,13 @@ export function AiImageGenerator({
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
     };
   }, []);
 
   function stopLoadingSteps() {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
     setGenerating(false);
   }
 
@@ -167,6 +181,13 @@ export function AiImageGenerator({
     setGenerating(true);
     setError(null);
     setLoadingStep(0);
+    setElapsedSeconds(0);
+    // Ticks once a second purely for the "(Ns)" reassurance readout next
+    // to the status text — separate from the step-cycling interval below
+    // (which just rotates LOADING_STEPS' wording) so a host watching a
+    // 2-minute "high quality" render sees the number keep moving, not a
+    // static message that could otherwise read as frozen/broken.
+    elapsedIntervalRef.current = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
     intervalRef.current = setInterval(() => {
       setLoadingStep((s) => Math.min(s + 1, LOADING_STEPS.length - 1));
     }, 2200);
@@ -425,7 +446,7 @@ export function AiImageGenerator({
               >
                 {generating ? (
                   <>
-                    <Loader2 className="animate-spin" size={16} /> {LOADING_STEPS[loadingStep]}
+                    <Loader2 className="animate-spin" size={16} /> {LOADING_STEPS[loadingStep]} ({elapsedSeconds}s)
                   </>
                 ) : (
                   <>
@@ -511,6 +532,7 @@ export function AiImageGenerator({
           <div className="grid aspect-[3/4] w-full animate-pulse place-items-center gap-3 rounded-xl border border-dashed border-gold-500/30 bg-gold-500/5 px-6 text-center">
             <Sparkles className="text-gold-500/60" size={28} />
             <p className="text-sm font-medium text-navy-700/70">{LOADING_STEPS[loadingStep]}</p>
+            <p className="text-xs text-navy-700/40">{elapsedSeconds}s elapsed</p>
           </div>
         ) : (
           <div className="flex aspect-[3/4] w-full items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
