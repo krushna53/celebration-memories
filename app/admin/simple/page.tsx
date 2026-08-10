@@ -304,6 +304,10 @@ export default async function AdminSimplePage() {
             <Link href="/admin" className="font-medium text-gold-700 underline underline-offset-4 hover:text-gold-800">
               Open the full dashboard
             </Link>
+            {" · "}
+            <Link href="/admin/apps" className="font-medium text-gold-700 underline underline-offset-4 hover:text-gold-800">
+              Try the app-icon view
+            </Link>
           </p>
         </div>
       </main>

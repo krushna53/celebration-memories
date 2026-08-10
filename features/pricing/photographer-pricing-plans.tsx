@@ -253,7 +253,7 @@ export function PhotographerPricingPlans({
               ) : null}
 
               <h3 className="font-display text-xl text-navy-950">{tier.name}</h3>
-              <p className="mt-1 text-sm text-navy-700/60">{tier.tagline}</p>
+              <p className="mt-1 text-base text-navy-700/60">{tier.tagline}</p>
 
               <div className="mt-5 min-h-[56px]">
                 {price ? (
@@ -290,7 +290,7 @@ export function PhotographerPricingPlans({
                 </form>
               )}
 
-              <ul className="mt-6 grid gap-2.5 text-sm text-navy-700/80">
+              <ul className="mt-6 grid gap-2.5 text-base text-navy-700/80">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
                     <Check size={15} className="mt-0.5 shrink-0 text-gold-600" />

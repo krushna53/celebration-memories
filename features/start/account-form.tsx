@@ -151,58 +151,62 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 grid gap-4 text-left">
-        <div>
-          <label htmlFor="name" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
-            Full Name
-          </label>
-          <input
-            id="name"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={cn(inputClasses, "mt-1.5")}
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="name" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
+              Full Name
+            </label>
+            <input
+              id="name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={cn(inputClasses, "mt-1.5")}
+            />
+          </div>
+          <div>
+            <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={cn(inputClasses, "mt-1.5")}
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={cn(inputClasses, "mt-1.5")}
-          />
-        </div>
-        <div>
-          <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={cn(inputClasses, "mt-1.5")}
-          />
-        </div>
-        <div>
-          <label htmlFor="confirmPassword" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
-            Confirm Password
-          </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            required
-            minLength={8}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className={cn(inputClasses, "mt-1.5")}
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={cn(inputClasses, "mt-1.5")}
+            />
+          </div>
+          <div>
+            <label htmlFor="confirmPassword" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              required
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={cn(inputClasses, "mt-1.5")}
+            />
+          </div>
         </div>
 
         <TermsConsentCheckbox checked={agreedToTerms} onChange={setAgreedToTerms} variant="light" />

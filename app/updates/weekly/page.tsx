@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (near midnight)",
+    items: [
+      {
+        title: "App-icon launcher page, global page-load spinner, and a round of UI fixes",
+        detail:
+          "New \"App Icons\" view (linked from the Simplified view and the main dashboard) — every page a client can reach as a big colorful rounded icon, phone-home-screen style, with a badge on Memories when something's waiting for approval. Also this round: a gold progress bar now sweeps across the top of the page on every click/navigation site-wide, so nothing feels unresponsive while the next page loads; fixed the Submit-a-Template color picker (the swatch and hex box now actually stay in sync); fixed a stray horizontal scroll in the header; the site logo now actually goes somewhere on every page (it used to only work on the homepage); removed Testimonials from the homepage and widened the hero; bigger footer and feature-card text; Pricing page text bumped up; the onboarding wizard now has a way back to the main site (previously trapped you with no exit); wizard textareas no longer show a resize handle; the Invitation Card generator has a proper loading skeleton with live status text instead of a plain \"Generating...\" box; fixed an invalid HTML nesting bug and combined/aligned the \"Create Account\" and \"View Your Site\" buttons on the Review step; the Create Account form is now two columns on desktop.",
+        test:
+          "Click around the public site and admin — confirm the gold progress bar shows on every navigation. Visit /admin/apps as a client and confirm every tile opens the right page. Try Submit a Template's color pickers (swatch and hex box should always match). Check the homepage, footer, and Pricing page for the larger text. Walk through /start end to end — confirm the wizard header has a logo/Exit link, the Invitation Card step shows a nice loading state, and the Review → Create Account flow has two aligned buttons.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (very late night)",
     items: [
       {

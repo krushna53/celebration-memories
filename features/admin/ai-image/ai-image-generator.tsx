@@ -323,12 +323,14 @@ export function AiImageGenerator({
         <p className="text-xs font-medium uppercase tracking-[0.15em] text-navy-700/50">
           {source === "generated" ? "AI Generated" : "Your Upload"}
         </p>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={result.url}
-          alt={source === "generated" ? "AI-generated invitation" : "Uploaded invitation"}
-          className="w-full rounded-xl border border-navy-950/10 object-cover"
-        />
+        <div className="aspect-[3/4] w-full overflow-hidden rounded-xl border border-navy-950/10 bg-navy-950/5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={result.url}
+            alt={source === "generated" ? "AI-generated invitation" : "Uploaded invitation"}
+            className="h-full w-full object-cover"
+          />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline" size="sm">
             <a href={result.url} download target="_blank" rel="noopener noreferrer">
@@ -505,16 +507,26 @@ export function AiImageGenerator({
       <div className="grid gap-6">
         {generatedResult ? (
           renderResultPanel(generatedResult, "generated")
+        ) : generating ? (
+          <div className="grid aspect-[3/4] w-full animate-pulse place-items-center gap-3 rounded-xl border border-dashed border-gold-500/30 bg-gold-500/5 px-6 text-center">
+            <Sparkles className="text-gold-500/60" size={28} />
+            <p className="text-sm font-medium text-navy-700/70">{LOADING_STEPS[loadingStep]}</p>
+          </div>
         ) : (
-          <div className="flex h-full min-h-[180px] items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
-            {generating ? "Generating..." : "Your AI-generated image will appear here."}
+          <div className="flex aspect-[3/4] w-full items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
+            Your AI-generated image will appear here.
           </div>
         )}
         {uploadedResult ? (
           renderResultPanel(uploadedResult, "upload")
+        ) : uploading ? (
+          <div className="grid aspect-[3/4] w-full animate-pulse place-items-center gap-3 rounded-xl border border-dashed border-gold-500/30 bg-gold-500/5 px-6 text-center">
+            <Upload className="text-gold-500/60" size={28} />
+            <p className="text-sm font-medium text-navy-700/70">Uploading...</p>
+          </div>
         ) : (
-          <div className="flex h-full min-h-[180px] items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
-            {uploading ? "Uploading..." : "Your uploaded image will appear here."}
+          <div className="flex aspect-[3/4] w-full items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
+            Your uploaded image will appear here.
           </div>
         )}
       </div>

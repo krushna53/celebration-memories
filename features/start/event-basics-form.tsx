@@ -468,7 +468,7 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
         <div>
           <label className={labelClasses}>Notices (one per line — e.g. &ldquo;No gifts please&rdquo;)</label>
           <textarea
-            className={`${inputClasses} mt-1.5 min-h-20`}
+            className={`${inputClasses} mt-1.5 min-h-20 resize-none`}
             value={form.additionalNotes}
             onChange={(e) => set("additionalNotes", e.target.value)}
           />
@@ -476,7 +476,7 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
         <div>
           <label className={labelClasses}>Wish Message</label>
           <textarea
-            className={`${inputClasses} mt-1.5 min-h-20`}
+            className={`${inputClasses} mt-1.5 min-h-20 resize-none`}
             value={form.wishMessage}
             onChange={(e) => set("wishMessage", e.target.value)}
           />

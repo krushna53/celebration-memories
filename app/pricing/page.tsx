@@ -58,7 +58,7 @@ export default async function PricingPage() {
                 className="flex items-center gap-2.5 rounded-xl border border-navy-950/10 bg-white px-4 py-3"
               >
                 <Icon size={16} className="shrink-0 text-gold-600" />
-                <span className="text-xs font-medium text-navy-700">{label}</span>
+                <span className="text-sm font-medium text-navy-700">{label}</span>
               </div>
             ))}
           </div>

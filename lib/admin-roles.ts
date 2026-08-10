@@ -11,6 +11,7 @@ import type { AdminRole } from "@/services/admin-auth";
  */
 export const CLIENT_ALLOWED_PATHS: readonly string[] = [
   "/admin",
+  "/admin/apps",
   "/admin/event-settings",
   "/admin/team",
   "/admin/templates",

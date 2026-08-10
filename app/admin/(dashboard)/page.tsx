@@ -58,12 +58,16 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
         <div>
           <h1 className="font-display text-2xl text-navy-950">Overview</h1>
           <p className="mt-1 text-sm text-navy-700/60">{event.honoreeName} — {event.eventTitle}</p>
-          <Link
-            href="/admin/simple"
-            className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-gold-700 underline underline-offset-4 hover:text-gold-800"
-          >
-            <LayoutGrid size={12} /> Prefer fewer tabs? Try the simplified view
-          </Link>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs font-medium text-gold-700">
+            <LayoutGrid size={12} />
+            <Link href="/admin/simple" className="underline underline-offset-4 hover:text-gold-800">
+              Try the simplified view
+            </Link>
+            <span className="text-navy-700/30">·</span>
+            <Link href="/admin/apps" className="underline underline-offset-4 hover:text-gold-800">
+              Try the app-icon view
+            </Link>
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link

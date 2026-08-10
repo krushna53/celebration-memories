@@ -129,15 +129,9 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
         <section className="rounded-xl border border-navy-950/10 bg-white p-5">
           <h2 className="font-display text-lg text-navy-950">Your Site</h2>
           <p className="mt-1 text-sm text-navy-700/60">
-            This is the full public page, built from everything you&rsquo;ve added so far.
+            This is the full public page, built from everything you&rsquo;ve added so far. Preview it,
+            then create your account below to keep it and go live.
           </p>
-          <Link
-            href={publicUrl}
-            target="_blank"
-            className="mt-4 inline-flex items-center gap-2 rounded-full bg-navy-950 px-5 py-2.5 text-sm font-medium text-ivory-50 hover:brightness-125"
-          >
-            View Your Site <ExternalLink size={15} />
-          </Link>
         </section>
 
         {shareImageUrl ? (
@@ -170,9 +164,16 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
                 Create an account to keep this event, unlock the full dashboard, and share
                 your final link with guests. Nothing you&rsquo;ve built will be lost.
               </p>
-              <Link href={`/start/${token}/account`} className="mt-4 inline-block">
-                <Button size="lg">Create Account &amp; Continue</Button>
-              </Link>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Button asChild size="lg">
+                  <Link href={`/start/${token}/account`}>Create Account &amp; Continue</Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link href={publicUrl} target="_blank">
+                    View Your Site <ExternalLink size={15} />
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         </section>

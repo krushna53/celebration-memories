@@ -93,7 +93,7 @@ export default async function WizardAccountPage({ params, searchParams }: Wizard
   }
 
   return (
-    <div className="mx-auto max-w-sm px-4 py-16">
+    <div className="mx-auto max-w-xl px-4 py-16">
       <AccountForm token={token} eventId={event.id} />
     </div>
   );
