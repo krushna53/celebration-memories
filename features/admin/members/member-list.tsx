@@ -1,14 +1,28 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { AlertTriangle, Crown, Loader2, Trash2, UserMinus, X } from "lucide-react";
+import { AlertTriangle, Crown, KeyRound, Loader2, Mail, Trash2, UserMinus, UserPlus, X } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { removeAdminAccessAction, deleteAdminAccountAction } from "@/features/admin/members/actions";
+import {
+  removeAdminAccessAction,
+  deleteAdminAccountAction,
+  addMemberByInviteAction,
+  addMemberWithPasswordAction,
+} from "@/features/admin/members/actions";
 import type { AdminUserSummary } from "@/services/admin-users";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-400/30";
+const addFormInputClasses =
+  "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
+const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70";
+
+export interface EventOption {
+  id: string;
+  label: string;
+}
 
 /**
  * Owner-only list of every dashboard-login account (app/admin/(dashboard)
@@ -23,13 +37,24 @@ const inputClasses =
  *   deleteAdminAccountAndAssets). Gated behind typing the account's own
  *   email to confirm.
  *
- * Owner accounts get neither.
+ * Owner accounts get neither. An "Add Member" form lets the owner grant
+ * a new client login to any event right from this page (previously this
+ * required visiting that event's row on /admin/events instead) — see
+ * AddMemberForm below, which reuses the same invite-email/set-password
+ * mechanism (and per-event 4-member cap) as a client's own /admin/team.
  */
-export function MemberList({ initialMembers }: { initialMembers: AdminUserSummary[] }) {
+export function MemberList({
+  initialMembers,
+  events,
+}: {
+  initialMembers: AdminUserSummary[];
+  events: EventOption[];
+}) {
   const [members, setMembers] = useState(initialMembers);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUserSummary | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [, startTransition] = useTransition();
 
   function remove(id: string, label: string) {
@@ -139,6 +164,27 @@ export function MemberList({ initialMembers }: { initialMembers: AdminUserSummar
           }}
         />
       ) : null}
+
+      {showAddForm ? (
+        <AddMemberForm
+          events={events}
+          onClose={() => setShowAddForm(false)}
+          onAdded={(member) => {
+            setMembers((prev) => [...prev, member]);
+            setShowAddForm(false);
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          disabled={events.length === 0}
+          onClick={() => setShowAddForm(true)}
+          className="tap-target mt-4 flex items-center gap-2 rounded-full border border-gold-500/40 px-4 py-2 text-sm font-medium text-gold-700 transition-luxury duration-200 hover:border-gold-500 hover:bg-gold-500/5 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <UserPlus size={16} />
+          {events.length === 0 ? "No events yet — create one first" : "Add Member"}
+        </button>
+      )}
     </div>
   );
 }
@@ -235,6 +281,194 @@ function DeleteAccountDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AddMemberForm({
+  events,
+  onClose,
+  onAdded,
+}: {
+  events: EventOption[];
+  onClose: () => void;
+  onAdded: (member: AdminUserSummary) => void;
+}) {
+  const [method, setMethod] = useState<"invite" | "password">("invite");
+  const [eventId, setEventId] = useState(events[0]?.id ?? "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!eventId) {
+      setError("Please choose an event.");
+      return;
+    }
+    setSubmitting(true);
+
+    const result =
+      method === "invite"
+        ? await addMemberByInviteAction(eventId, name, email)
+        : await addMemberWithPasswordAction(eventId, name, email, password);
+
+    setSubmitting(false);
+
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+
+    // The server actions don't return the new admins row (they only
+    // revalidate the page) — good enough optimistic placeholder for an
+    // immediately-responsive list; a page refresh shows the real id/
+    // createdAt either way, same pattern as features/admin/team's
+    // AddMemberForm.
+    onAdded({
+      id: `pending-${Date.now()}`,
+      name: name.trim(),
+      email: email.trim(),
+      role: "client",
+      eventLabel: events.find((e) => e.id === eventId)?.label ?? null,
+      resolvedEventId: eventId,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  return (
+    <div className="mt-4 rounded-xl border border-gold-500/20 bg-gold-500/5 p-5">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-base text-navy-950">Add Member</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cancel"
+          className="tap-target text-navy-700/50 hover:text-navy-950"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setMethod("invite")}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-luxury duration-200",
+            method === "invite"
+              ? "border-gold-500 bg-gold-500/10 text-navy-950"
+              : "border-navy-950/15 text-navy-700/60",
+          )}
+        >
+          <Mail size={13} /> Send Invite Email
+        </button>
+        <button
+          type="button"
+          onClick={() => setMethod("password")}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-luxury duration-200",
+            method === "password"
+              ? "border-gold-500 bg-gold-500/10 text-navy-950"
+              : "border-navy-950/15 text-navy-700/60",
+          )}
+        >
+          <KeyRound size={13} /> Set Password Myself
+        </button>
+      </div>
+
+      <p className="mt-3 text-xs text-navy-700/60">
+        {method === "invite"
+          ? "They'll get an email with a link to set their own password."
+          : "You choose the password now and share it with them yourself — their account is ready immediately."}
+        {" "}Every new login here gets the &ldquo;Client&rdquo; role, scoped to whichever event you pick below —
+        the same as inviting a teammate from that event&rsquo;s own Team page. Each event allows up to 4 logins.
+      </p>
+
+      <form onSubmit={onSubmit} className="mt-4 grid gap-3">
+        <div>
+          <label className={labelClasses} htmlFor="add-member-event">
+            Event
+          </label>
+          <select
+            id="add-member-event"
+            required
+            value={eventId}
+            onChange={(e) => setEventId(e.target.value)}
+            className={`${addFormInputClasses} mt-1.5`}
+          >
+            {events.map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelClasses} htmlFor="add-member-name">
+            Name
+          </label>
+          <input
+            id="add-member-name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={`${addFormInputClasses} mt-1.5`}
+          />
+        </div>
+        <div>
+          <label className={labelClasses} htmlFor="add-member-email">
+            Email
+          </label>
+          <input
+            id="add-member-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={`${addFormInputClasses} mt-1.5`}
+          />
+        </div>
+        {method === "password" ? (
+          <div>
+            <label className={labelClasses} htmlFor="add-member-password">
+              Password
+            </label>
+            <input
+              id="add-member-password"
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`${addFormInputClasses} mt-1.5`}
+            />
+          </div>
+        ) : null}
+
+        {error ? (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-1 flex items-center justify-center gap-2 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:brightness-110 disabled:opacity-60"
+        >
+          {submitting ? (
+            <Loader2 className="animate-spin" size={16} />
+          ) : method === "invite" ? (
+            "Send Invite"
+          ) : (
+            "Add Member"
+          )}
+        </button>
+      </form>
     </div>
   );
 }

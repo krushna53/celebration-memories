@@ -5,8 +5,57 @@ import { revalidatePath } from "next/cache";
 import { requireOwner } from "@/services/admin-auth";
 import { deleteAdminAccess, getAdminEmailById } from "@/services/admin-users";
 import { deleteAdminAccountAndAssets } from "@/services/admin-danger-zone";
+import { addTeamMemberWithPassword, inviteTeamMemberByEmail } from "@/services/admin-team";
 
 export type RemoveAdminResult = { success: true } | { success: false; error: string };
+
+export type AddMemberResult = { success: true } | { success: false; error: string };
+
+/**
+ * Owner-only — lets the owner add a new "client" (full-access) member to
+ * ANY event directly from /admin/members, rather than having to visit
+ * that event's row on /admin/events first. Reuses the exact same
+ * services/admin-team.ts functions (and TEAM_MEMBER_CAP-of-4-per-event
+ * enforcement) that a client uses to invite their own teammates from
+ * /admin/team — the only difference is the owner picks which event here,
+ * since /admin/team always operates on "whichever event is currently
+ * active" and this page isn't scoped to one event at all.
+ */
+export async function addMemberByInviteAction(
+  eventId: string,
+  name: string,
+  email: string,
+): Promise<AddMemberResult> {
+  await requireOwner();
+  try {
+    await inviteTeamMemberByEmail({ eventId, name, email });
+    revalidatePath("/admin/members");
+    revalidatePath("/admin/events");
+    revalidatePath("/admin/team");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to send invite." };
+  }
+}
+
+/** Same as addMemberByInviteAction, but the owner sets the password directly instead of emailing an invite link. */
+export async function addMemberWithPasswordAction(
+  eventId: string,
+  name: string,
+  email: string,
+  password: string,
+): Promise<AddMemberResult> {
+  await requireOwner();
+  try {
+    await addTeamMemberWithPassword({ eventId, name, email, password });
+    revalidatePath("/admin/members");
+    revalidatePath("/admin/events");
+    revalidatePath("/admin/team");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to add member." };
+  }
+}
 
 /**
  * Owner-only — revokes a client admin's dashboard access (see

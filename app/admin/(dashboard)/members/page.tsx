@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { listAdmins } from "@/services/admin-users";
+import { listAllActiveEvents } from "@/services/events";
 import { MemberList } from "@/features/admin/members/member-list";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,8 @@ export default async function AdminMembersPage() {
   const admin = await getCurrentAdmin();
   if (admin?.role !== "owner") redirect("/admin");
 
-  const members = await listAdmins();
+  const [members, events] = await Promise.all([listAdmins(), listAllActiveEvents()]);
+  const eventOptions = events.map((event) => ({ id: event.id, label: event.honoreeName }));
 
   return (
     <div>
@@ -27,17 +28,8 @@ export default async function AdminMembersPage() {
         has no login at all.
       </p>
       <div className="mt-6">
-        <MemberList initialMembers={members} />
+        <MemberList initialMembers={members} events={eventOptions} />
       </div>
-      <p className="mt-4 text-xs text-navy-700/50">
-        To add a new client login, use the &ldquo;Create Login&rdquo; link on that event&rsquo;s
-        row in{" "}
-        <Link href="/admin/events" className="text-gold-600 underline underline-offset-2">
-          All Events
-        </Link>{" "}
-        (or the manual SQL method in the README) — creating a member here isn&rsquo;t supported
-        yet, only viewing, removing access, and permanently deleting.
-      </p>
     </div>
   );
 }
