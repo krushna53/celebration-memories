@@ -28,6 +28,13 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
   if (admin?.role === "client" && from === "login") {
     redirect("/admin/simple");
   }
+  // A session_organizer has no Overview at all — SESSION_ORGANIZER_ALLOWED_PATHS
+  // (lib/admin-roles.ts) only covers /admin/my-sessions + /admin/help, so send
+  // them straight there instead of rendering an event-wide dashboard they
+  // aren't scoped to see.
+  if (admin?.role === "session_organizer") {
+    redirect("/admin/my-sessions");
+  }
 
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {

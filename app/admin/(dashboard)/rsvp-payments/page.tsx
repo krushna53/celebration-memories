@@ -1,12 +1,19 @@
+import { redirect } from "next/navigation";
+
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
+import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listRsvpPaymentsForEvent } from "@/services/rsvp-payments";
 import { RsvpPaymentList } from "@/features/admin/rsvp-payments/rsvp-payment-list";
 
 export const dynamic = "force-dynamic";
 
+// Whole-event payment list — session_organizer is redirected to
+// /admin/my-sessions instead, which shows only their own session's
+// payments (services/rsvp-payments.ts's listRsvpPaymentsForScheduleItem).
 export default async function RsvpPaymentsPage() {
   const admin = await getCurrentAdmin();
+  if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event is assigned to this account yet.</p>;

@@ -19,6 +19,7 @@ export type EventPaymentSettingsActionResult = { success: true } | { success: fa
 export async function submitEventPaymentSettingsAction(
   eventId: string,
   input: EventPaymentSettingsInput,
+  scheduleItemId: string | null = null,
 ): Promise<EventPaymentSettingsActionResult> {
   let admin;
   try {
@@ -28,7 +29,7 @@ export async function submitEventPaymentSettingsAction(
   }
 
   try {
-    await submitEventPaymentSettings(eventId, input, admin.id);
+    await submitEventPaymentSettings(eventId, input, admin.id, scheduleItemId);
 
     const event = await getEventById(eventId);
     if (event) {

@@ -5,7 +5,18 @@ import { getRsvpPaymentById, markRsvpPaymentPaid, markRsvpPaymentFailed } from "
 import { getEventPaymentSettingsRaw } from "@/services/event-payment-settings";
 import { getInviteeById } from "@/services/invitees";
 import { notifyAdminsOfRsvpPayment } from "@/services/admin-notifications";
+import { getScheduleItemById } from "@/services/event-day";
+import { createSessionRegistration } from "@/services/session-registrations";
 import { SITE_URL } from "@/lib/constants";
+
+/** Session-specific settings first, falling back to the event's own default — same precedence as initiateSessionRegistrationAction. */
+async function resolvePaymentSettings(eventId: string, scheduleItemId: string | null) {
+  if (scheduleItemId) {
+    const sessionSettings = await getEventPaymentSettingsRaw(eventId, scheduleItemId);
+    if (sessionSettings?.status === "approved") return sessionSettings;
+  }
+  return getEventPaymentSettingsRaw(eventId, null);
+}
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -39,7 +50,7 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.redirect(returnUrl);
   }
 
-  const settings = await getEventPaymentSettingsRaw(payment.eventId);
+  const settings = await resolvePaymentSettings(payment.eventId, payment.scheduleItemId);
   if (!settings?.ccavenueWorkingKey) {
     await markRsvpPaymentFailed(paymentId);
     returnUrl.searchParams.set("ccavenue_error", "not_configured");
@@ -69,12 +80,25 @@ export async function POST(request: Request): Promise<Response> {
 
     const found = await getInviteeById(payment.inviteeId);
     if (found) {
+      let sessionTitle: string | null = null;
+      if (payment.scheduleItemId) {
+        const session = await getScheduleItemById(payment.scheduleItemId);
+        sessionTitle = session?.title ?? null;
+        await createSessionRegistration({
+          eventId: payment.eventId,
+          scheduleItemId: payment.scheduleItemId,
+          inviteeId: payment.inviteeId,
+          rsvpPaymentId: payment.id,
+        }).catch((err) => console.error("createSessionRegistration failed:", err));
+      }
       notifyAdminsOfRsvpPayment({
         eventId: payment.eventId,
         guestName: found.invitee.name,
         amount: payment.amount,
         currency: payment.currency,
         needsReview: false,
+        scheduleItemId: payment.scheduleItemId,
+        sessionTitle,
       }).catch((err) => console.error("notifyAdminsOfRsvpPayment failed:", err));
     }
 

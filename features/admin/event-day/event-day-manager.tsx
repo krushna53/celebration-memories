@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, Copy, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Copy, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { MenuDietaryTag, MenuItemRecord, ScheduleItemRecord } from "@/types/content";
@@ -68,6 +69,79 @@ export function EventDayManager({
   const [scheduleForm, setScheduleForm] = useState(EMPTY_SCHEDULE);
   const [scheduleBusy, setScheduleBusy] = useState(false);
   const [scheduleBusyId, setScheduleBusyId] = useState<string | null>(null);
+
+  // Registration & pricing (#63) — an inline editor per schedule item, collapsed by default.
+  const [expandedPricingId, setExpandedPricingId] = useState<string | null>(null);
+  const [pricingForms, setPricingForms] = useState<
+    Record<
+      string,
+      {
+        requiresRegistration: boolean;
+        isPaidSession: boolean;
+        regularPrice: string;
+        earlyBirdPrice: string;
+        earlyBirdDeadline: string;
+        currency: string;
+      }
+    >
+  >({});
+  const [pricingBusyId, setPricingBusyId] = useState<string | null>(null);
+
+  function pricingDraftFor(item: ScheduleItemRecord) {
+    return (
+      pricingForms[item.id] ?? {
+        requiresRegistration: item.requiresRegistration,
+        isPaidSession: item.isPaidSession,
+        regularPrice: item.regularPrice !== null ? String(item.regularPrice) : "",
+        earlyBirdPrice: item.earlyBirdPrice !== null ? String(item.earlyBirdPrice) : "",
+        earlyBirdDeadline: item.earlyBirdDeadline ? item.earlyBirdDeadline.slice(0, 10) : "",
+        currency: item.currency || "INR",
+      }
+    );
+  }
+
+  function toggleExpandedPricing(item: ScheduleItemRecord) {
+    if (expandedPricingId === item.id) {
+      setExpandedPricingId(null);
+      return;
+    }
+    setPricingForms((prev) => ({ ...prev, [item.id]: pricingDraftFor(item) }));
+    setExpandedPricingId(item.id);
+  }
+
+  async function handleSavePricing(item: ScheduleItemRecord) {
+    const draft = pricingDraftFor(item);
+    setPricingBusyId(item.id);
+    const result = await updateScheduleItemAction(item.id, {
+      requiresRegistration: draft.requiresRegistration,
+      isPaidSession: draft.isPaidSession,
+      regularPrice: draft.regularPrice.trim() ? Number(draft.regularPrice) : null,
+      earlyBirdPrice: draft.earlyBirdPrice.trim() ? Number(draft.earlyBirdPrice) : null,
+      earlyBirdDeadline: draft.earlyBirdDeadline.trim() ? new Date(draft.earlyBirdDeadline).toISOString() : null,
+      currency: draft.currency.trim() || "INR",
+    });
+    setPricingBusyId(null);
+    if (result.success) {
+      setScheduleItems((prev) =>
+        prev.map((s) =>
+          s.id === item.id
+            ? {
+                ...s,
+                requiresRegistration: draft.requiresRegistration,
+                isPaidSession: draft.isPaidSession,
+                regularPrice: draft.regularPrice.trim() ? Number(draft.regularPrice) : null,
+                earlyBirdPrice: draft.earlyBirdPrice.trim() ? Number(draft.earlyBirdPrice) : null,
+                earlyBirdDeadline: draft.earlyBirdDeadline.trim() ? new Date(draft.earlyBirdDeadline).toISOString() : null,
+                currency: draft.currency.trim() || "INR",
+              }
+            : s,
+        ),
+      );
+      setExpandedPricingId(null);
+    } else {
+      alert(result.error);
+    }
+  }
 
   const [menuItems, setMenuItems] = useState([...initialMenuItems].sort((a, b) => a.sortOrder - b.sortOrder));
   const [menuForm, setMenuForm] = useState(EMPTY_MENU);
@@ -321,44 +395,162 @@ export function EventDayManager({
         </div>
 
         <div className="mt-4 space-y-2">
-          {scheduleItems.map((item, index) => (
-            <div key={item.id} className="flex items-start gap-3 rounded-xl border border-navy-950/10 bg-white p-4">
-              <div className="flex flex-col gap-1">
-                <button
-                  type="button"
-                  disabled={index === 0 || scheduleBusy}
-                  onClick={() => moveSchedule(index, -1)}
-                  className="tap-target flex items-center justify-center text-navy-700/50 hover:text-gold-600 disabled:opacity-30"
-                >
-                  <ArrowUp size={16} />
-                </button>
-                <button
-                  type="button"
-                  disabled={index === scheduleItems.length - 1 || scheduleBusy}
-                  onClick={() => moveSchedule(index, 1)}
-                  className="tap-target flex items-center justify-center text-navy-700/50 hover:text-gold-600 disabled:opacity-30"
-                >
-                  <ArrowDown size={16} />
-                </button>
+          {scheduleItems.map((item, index) => {
+            const draft = pricingDraftFor(item);
+            const expanded = expandedPricingId === item.id;
+            return (
+              <div key={item.id} className="rounded-xl border border-navy-950/10 bg-white">
+                <div className="flex items-start gap-3 p-4">
+                  <div className="flex flex-col gap-1">
+                    <button
+                      type="button"
+                      disabled={index === 0 || scheduleBusy}
+                      onClick={() => moveSchedule(index, -1)}
+                      className="tap-target flex items-center justify-center text-navy-700/50 hover:text-gold-600 disabled:opacity-30"
+                    >
+                      <ArrowUp size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index === scheduleItems.length - 1 || scheduleBusy}
+                      onClick={() => moveSchedule(index, 1)}
+                      className="tap-target flex items-center justify-center text-navy-700/50 hover:text-gold-600 disabled:opacity-30"
+                    >
+                      <ArrowDown size={16} />
+                    </button>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs uppercase tracking-wide text-gold-600">
+                      {item.startLabel}
+                      {item.endLabel ? ` – ${item.endLabel}` : ""}
+                    </p>
+                    <p className="font-display text-lg text-navy-950">{item.title}</p>
+                    {item.description ? <p className="text-sm text-navy-700/70">{item.description}</p> : null}
+                    {item.requiresRegistration ? (
+                      <p className="mt-1 text-xs text-gold-600">
+                        Registration required{item.isPaidSession && item.regularPrice ? ` · ${item.currency} ${item.regularPrice}` : " · Free"}
+                      </p>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleExpandedPricing(item)}
+                    className="tap-target flex items-center gap-1 whitespace-nowrap text-xs text-navy-700/60 hover:text-gold-600"
+                  >
+                    Registration & Pricing {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={scheduleBusyId === item.id}
+                    onClick={() => handleDeleteSchedule(item.id)}
+                    className="tap-target flex items-center justify-center text-navy-700/50 hover:text-red-600"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
+                {expanded ? (
+                  <div className="border-t border-navy-950/10 bg-navy-950/[0.02] p-4">
+                    <label className="flex items-center gap-2 text-sm text-navy-950">
+                      <input
+                        type="checkbox"
+                        checked={draft.requiresRegistration}
+                        onChange={(e) =>
+                          setPricingForms((prev) => ({
+                            ...prev,
+                            [item.id]: { ...draft, requiresRegistration: e.target.checked },
+                          }))
+                        }
+                      />
+                      Guests must register for this session
+                    </label>
+
+                    {draft.requiresRegistration ? (
+                      <>
+                        <label className="mt-3 flex items-center gap-2 text-sm text-navy-950">
+                          <input
+                            type="checkbox"
+                            checked={draft.isPaidSession}
+                            onChange={(e) =>
+                              setPricingForms((prev) => ({
+                                ...prev,
+                                [item.id]: { ...draft, isPaidSession: e.target.checked },
+                              }))
+                            }
+                          />
+                          This session is paid
+                        </label>
+
+                        {draft.isPaidSession ? (
+                          <div className="mt-3 grid gap-2.5 sm:grid-cols-4">
+                            <div>
+                              <label className="text-xs text-navy-700/60">Regular price</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={draft.regularPrice}
+                                onChange={(e) =>
+                                  setPricingForms((prev) => ({ ...prev, [item.id]: { ...draft, regularPrice: e.target.value } }))
+                                }
+                                className={inputClasses}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-navy-700/60">Early-bird price</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={draft.earlyBirdPrice}
+                                onChange={(e) =>
+                                  setPricingForms((prev) => ({ ...prev, [item.id]: { ...draft, earlyBirdPrice: e.target.value } }))
+                                }
+                                className={inputClasses}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-navy-700/60">Early-bird deadline</label>
+                              <input
+                                type="date"
+                                value={draft.earlyBirdDeadline}
+                                onChange={(e) =>
+                                  setPricingForms((prev) => ({ ...prev, [item.id]: { ...draft, earlyBirdDeadline: e.target.value } }))
+                                }
+                                className={inputClasses}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-navy-700/60">Currency</label>
+                              <input
+                                value={draft.currency}
+                                onChange={(e) =>
+                                  setPricingForms((prev) => ({ ...prev, [item.id]: { ...draft, currency: e.target.value.toUpperCase() } }))
+                                }
+                                className={inputClasses}
+                              />
+                            </div>
+                          </div>
+                        ) : null}
+                      </>
+                    ) : null}
+
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <Button size="sm" onClick={() => handleSavePricing(item)} disabled={pricingBusyId === item.id}>
+                        {pricingBusyId === item.id ? <Loader2 className="animate-spin" size={13} /> : null} Save
+                      </Button>
+                      {draft.requiresRegistration && draft.isPaidSession ? (
+                        <Link
+                          href={`/admin/payment-settings-request?scheduleItemId=${item.id}`}
+                          className="text-xs text-gold-600 underline underline-offset-4 hover:text-gold-500"
+                        >
+                          Set a payment method just for this session (optional — otherwise uses your event default)
+                        </Link>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs uppercase tracking-wide text-gold-600">
-                  {item.startLabel}
-                  {item.endLabel ? ` – ${item.endLabel}` : ""}
-                </p>
-                <p className="font-display text-lg text-navy-950">{item.title}</p>
-                {item.description ? <p className="text-sm text-navy-700/70">{item.description}</p> : null}
-              </div>
-              <button
-                type="button"
-                disabled={scheduleBusyId === item.id}
-                onClick={() => handleDeleteSchedule(item.id)}
-                className="tap-target flex items-center justify-center text-navy-700/50 hover:text-red-600"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
+            );
+          })}
           {scheduleItems.length === 0 ? (
             <p className="rounded-xl border border-dashed border-navy-950/15 py-10 text-center text-sm text-navy-700/50">
               No schedule items yet — add the first one above.

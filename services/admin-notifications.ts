@@ -2,6 +2,7 @@ import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendRsvpSubmittedNotification } from "@/lib/email";
+import { getOrganizersForSession } from "@/services/session-organizers";
 import type { RsvpFormValues } from "@/types/rsvp";
 
 export type AdminNotificationType =
@@ -239,27 +240,46 @@ export async function notifyAdminsOfRsvpPayment(params: {
   amount: number;
   currency: string;
   needsReview: boolean;
+  /** Set only for a per-session payment (#63) — additionally notifies that session's organizer(s), not just the event's own admins. */
+  scheduleItemId?: string | null;
+  sessionTitle?: string | null;
 }): Promise<void> {
   const admins = await getAdminsToNotifyForEvent(params.eventId);
-  if (admins.length === 0) return;
 
   const type: AdminNotificationType = params.needsReview ? "rsvp_payment_submitted" : "rsvp_payment_received";
   const title = params.needsReview ? "Payment needs review" : "Payment received";
+  const sessionSuffix = params.sessionTitle ? ` (${params.sessionTitle})` : "";
   const body = params.needsReview
-    ? `${params.guestName} submitted a payment reference for ${params.currency} ${params.amount} — review it under RSVP Payments.`
-    : `${params.guestName} paid ${params.currency} ${params.amount} to confirm their RSVP.`;
+    ? `${params.guestName} submitted a payment reference for ${params.currency} ${params.amount}${sessionSuffix} — review it under RSVP Payments.`
+    : `${params.guestName} paid ${params.currency} ${params.amount}${sessionSuffix} to confirm their registration.`;
+
+  const notifyIds = new Set<string>();
+  const recipients: { id: string; email: string; name: string | null }[] = [...admins];
+
+  if (params.scheduleItemId) {
+    const organizers = await getOrganizersForSession(params.scheduleItemId);
+    for (const organizer of organizers) {
+      if (!recipients.some((r) => r.id === organizer.id)) recipients.push(organizer);
+    }
+  }
 
   await Promise.all(
-    admins.map((admin) =>
-      createAdminNotification({
-        adminId: admin.id,
-        eventId: params.eventId,
-        type,
-        title,
-        body,
-        link: "/admin/rsvp-payments",
-      }),
-    ),
+    recipients
+      .filter((admin) => {
+        if (notifyIds.has(admin.id)) return false;
+        notifyIds.add(admin.id);
+        return true;
+      })
+      .map((admin) =>
+        createAdminNotification({
+          adminId: admin.id,
+          eventId: params.eventId,
+          type,
+          title,
+          body,
+          link: "/admin/rsvp-payments",
+        }),
+      ),
   );
 }
 

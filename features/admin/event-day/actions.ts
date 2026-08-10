@@ -101,7 +101,19 @@ export async function createScheduleItemAction(input: {
 
 export async function updateScheduleItemAction(
   id: string,
-  input: { startLabel?: string; endLabel?: string | null; title?: string; description?: string | null; sortOrder?: number },
+  input: {
+    startLabel?: string;
+    endLabel?: string | null;
+    title?: string;
+    description?: string | null;
+    sortOrder?: number;
+    requiresRegistration?: boolean;
+    isPaidSession?: boolean;
+    regularPrice?: number | null;
+    earlyBirdPrice?: number | null;
+    earlyBirdDeadline?: string | null;
+    currency?: string;
+  },
 ) {
   try {
     await requireAdminForScheduleItem(id);

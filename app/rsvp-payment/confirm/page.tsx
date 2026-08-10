@@ -5,8 +5,19 @@ import { getRsvpPaymentById, markRsvpPaymentPaid, markRsvpPaymentFailed } from "
 import { getEventPaymentSettingsRaw } from "@/services/event-payment-settings";
 import { getInviteeById } from "@/services/invitees";
 import { notifyAdminsOfRsvpPayment } from "@/services/admin-notifications";
+import { getScheduleItemById } from "@/services/event-day";
+import { createSessionRegistration } from "@/services/session-registrations";
 import { retrieveEventStripeSession, verifyRazorpayCallbackSignature } from "@/lib/event-checkout";
 import { SiteShell } from "@/components/layout/site-shell";
+
+/** Session-specific settings first, falling back to the event's own default — same precedence as initiateSessionRegistrationAction. */
+async function resolvePaymentSettings(eventId: string, scheduleItemId: string | null) {
+  if (scheduleItemId) {
+    const sessionSettings = await getEventPaymentSettingsRaw(eventId, scheduleItemId);
+    if (sessionSettings?.status === "approved") return sessionSettings;
+  }
+  return getEventPaymentSettingsRaw(eventId, null);
+}
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +53,7 @@ export default async function RsvpPaymentConfirmPage({ searchParams }: ConfirmPa
       outcome = "paid";
     } else if (provider === "stripe") {
       const sessionId = str(params.session_id);
-      const settings = sessionId ? await getEventPaymentSettingsRaw(payment.eventId) : null;
+      const settings = sessionId ? await resolvePaymentSettings(payment.eventId, payment.scheduleItemId) : null;
       if (sessionId && settings?.stripeSecretKey) {
         try {
           const session = await retrieveEventStripeSession(settings.stripeSecretKey, sessionId);
@@ -65,7 +76,7 @@ export default async function RsvpPaymentConfirmPage({ searchParams }: ConfirmPa
       const paymentLinkStatus = str(params.razorpay_payment_link_status);
       const razorpayPaymentId = str(params.razorpay_payment_id);
       const signature = str(params.razorpay_signature);
-      const settings = await getEventPaymentSettingsRaw(payment.eventId);
+      const settings = await resolvePaymentSettings(payment.eventId, payment.scheduleItemId);
 
       if (paymentLinkId && paymentLinkRefId && paymentLinkStatus && razorpayPaymentId && signature && settings?.razorpayKeySecret) {
         const valid = verifyRazorpayCallbackSignature({
@@ -94,12 +105,26 @@ export default async function RsvpPaymentConfirmPage({ searchParams }: ConfirmPa
     if (outcome === "paid") {
       const found = await getInviteeById(payment.inviteeId);
       if (found) {
+        let sessionTitle: string | null = null;
+        if (payment.scheduleItemId) {
+          const session = await getScheduleItemById(payment.scheduleItemId);
+          sessionTitle = session?.title ?? null;
+          // Record the registration now that payment is confirmed — idempotent, mirrors initiateSessionRegistrationAction's reconciliation branch.
+          await createSessionRegistration({
+            eventId: payment.eventId,
+            scheduleItemId: payment.scheduleItemId,
+            inviteeId: payment.inviteeId,
+            rsvpPaymentId: payment.id,
+          }).catch((err) => console.error("createSessionRegistration failed:", err));
+        }
         notifyAdminsOfRsvpPayment({
           eventId: payment.eventId,
           guestName: found.invitee.name,
           amount: payment.amount,
           currency: payment.currency,
           needsReview: false,
+          scheduleItemId: payment.scheduleItemId,
+          sessionTitle,
         }).catch((err) => console.error("notifyAdminsOfRsvpPayment failed:", err));
       }
     }

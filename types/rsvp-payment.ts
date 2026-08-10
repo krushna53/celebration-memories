@@ -8,6 +8,8 @@ export interface RsvpPaymentRecord {
   id: string;
   eventId: string;
   inviteeId: string;
+  /** Null = an event-level RSVP payment (#62). Set = a specific Event Day session's payment (#63). */
+  scheduleItemId: string | null;
   amount: number;
   currency: string;
   pricingTier: RsvpPricingTier;

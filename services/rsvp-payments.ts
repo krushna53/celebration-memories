@@ -7,6 +7,7 @@ interface RsvpPaymentRow {
   id: string;
   event_id: string;
   invitee_id: string;
+  schedule_item_id: string | null;
   amount: number;
   currency: string;
   pricing_tier: RsvpPaymentRecord["pricingTier"];
@@ -25,6 +26,7 @@ function mapRow(row: RsvpPaymentRow): RsvpPaymentRecord {
     id: row.id,
     eventId: row.event_id,
     inviteeId: row.invitee_id,
+    scheduleItemId: row.schedule_item_id,
     amount: row.amount,
     currency: row.currency,
     pricingTier: row.pricing_tier,
@@ -42,6 +44,7 @@ function mapRow(row: RsvpPaymentRow): RsvpPaymentRecord {
 export async function createRsvpPayment(input: {
   eventId: string;
   inviteeId: string;
+  scheduleItemId?: string | null;
   amount: number;
   currency: string;
   pricingTier: RsvpPaymentRecord["pricingTier"];
@@ -53,6 +56,7 @@ export async function createRsvpPayment(input: {
     .insert({
       event_id: input.eventId,
       invitee_id: input.inviteeId,
+      schedule_item_id: input.scheduleItemId ?? null,
       amount: input.amount,
       currency: input.currency,
       pricing_tier: input.pricingTier,
@@ -72,12 +76,28 @@ export async function getRsvpPaymentById(id: string): Promise<RsvpPaymentRecord 
   return data ? mapRow(data) : null;
 }
 
-/** Most recent payment for this invitee — used to short-circuit the RSVP payment panel ("you've already paid") on a repeat visit. */
+/** Most recent event-level (non-session) payment for this invitee — used to short-circuit the RSVP payment panel ("you've already paid") on a repeat visit. */
 export async function getLatestRsvpPaymentForInvitee(inviteeId: string): Promise<RsvpPaymentRecord | null> {
   const { data, error } = await supabaseAdmin()
     .from("rsvp_payments")
     .select("*")
     .eq("invitee_id", inviteeId)
+    .is("schedule_item_id", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<RsvpPaymentRow>();
+
+  if (error) throw new Error(`Failed to load payment: ${error.message}`);
+  return data ? mapRow(data) : null;
+}
+
+/** Most recent payment for this invitee against ONE session — the #63 counterpart to getLatestRsvpPaymentForInvitee. */
+export async function getLatestSessionPaymentForInvitee(inviteeId: string, scheduleItemId: string): Promise<RsvpPaymentRecord | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("rsvp_payments")
+    .select("*")
+    .eq("invitee_id", inviteeId)
+    .eq("schedule_item_id", scheduleItemId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle<RsvpPaymentRow>();
@@ -102,6 +122,24 @@ export async function listRsvpPaymentsForEvent(eventId: string): Promise<RsvpPay
     .from("rsvp_payments")
     .select("*, invitees(name, phone, email)")
     .eq("event_id", eventId)
+    .order("created_at", { ascending: false })
+    .returns<RsvpPaymentWithInviteeRow[]>();
+
+  if (error) throw new Error(`Failed to load payments: ${error.message}`);
+  return data.map((row) => ({
+    ...mapRow(row),
+    inviteeName: row.invitees?.name ?? "",
+    inviteePhone: row.invitees?.phone ?? null,
+    inviteeEmail: row.invitees?.email ?? null,
+  }));
+}
+
+/** Every payment for ONE session, newest first — the #63 session-organizer's own "My Sessions" view (features/admin/session-organizers). */
+export async function listRsvpPaymentsForScheduleItem(scheduleItemId: string): Promise<RsvpPaymentQueueItem[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("rsvp_payments")
+    .select("*, invitees(name, phone, email)")
+    .eq("schedule_item_id", scheduleItemId)
     .order("created_at", { ascending: false })
     .returns<RsvpPaymentWithInviteeRow[]>();
 

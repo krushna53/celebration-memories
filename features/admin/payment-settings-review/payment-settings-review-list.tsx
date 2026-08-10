@@ -73,8 +73,12 @@ export function PaymentSettingsReviewList({ initialItems }: { initialItems: Even
               <div>
                 <h3 className="font-display text-base text-navy-950">
                   {item.eventHonoreeName} — {item.eventTitle}
+                  {item.sessionTitle ? <span className="text-navy-700/60"> · {item.sessionTitle}</span> : null}
                 </h3>
-                <p className="mt-0.5 text-xs text-navy-700/50">/events/{item.eventSlug}</p>
+                <p className="mt-0.5 text-xs text-navy-700/50">
+                  /events/{item.eventSlug}
+                  {item.sessionTitle ? " (session override)" : " (event default)"}
+                </p>
               </div>
               <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${status.className}`}>
                 <StatusIcon size={12} /> {status.label}

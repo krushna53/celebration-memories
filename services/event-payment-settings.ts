@@ -81,28 +81,35 @@ export async function getEventPaymentSettingsRaw(
   return data ? mapRow(data) : null;
 }
 
-/** Masked record for the client's own settings page — shows what's on file without re-exposing the raw secret. */
-export async function getEventPaymentSettingsSummary(eventId: string): Promise<EventPaymentSettingsRecord | null> {
-  const record = await getEventPaymentSettingsRaw(eventId);
+/** Masked record for the client's own settings page — shows what's on file without re-exposing the raw secret. scheduleItemId set = the per-session override for one Event Day session (#63); null = the event's own default. */
+export async function getEventPaymentSettingsSummary(
+  eventId: string,
+  scheduleItemId: string | null = null,
+): Promise<EventPaymentSettingsRecord | null> {
+  const record = await getEventPaymentSettingsRaw(eventId, scheduleItemId);
   return record ? maskRecord(record) : null;
 }
 
 /**
- * Creates or replaces this event's default payment config, always
- * resetting status back to "pending_review" — even an edit to an
- * already-approved config must be re-reviewed, since the owner
- * approved the specific credentials that were on file, not "whatever
- * this client enters from now on." One row per event (schedule_item_id
- * IS NULL) is enforced by event_payment_settings_event_default_uq.
+ * Creates or replaces this event's payment config — its own default
+ * (scheduleItemId null) or a per-session override (#63, scheduleItemId
+ * set) — always resetting status back to "pending_review", even on an
+ * edit to an already-approved config, since the owner approved the
+ * specific credentials that were on file, not "whatever this client
+ * enters from now on." One row per event default is enforced by
+ * event_payment_settings_event_default_uq (a partial unique index,
+ * WHERE schedule_item_id IS NULL); per-session rows are uniqued by
+ * schedule_item_id itself instead.
  */
 export async function submitEventPaymentSettings(
   eventId: string,
   input: EventPaymentSettingsInput,
   submittedBy: string,
+  scheduleItemId: string | null = null,
 ): Promise<EventPaymentSettingsRecord> {
   const patch: Record<string, unknown> = {
     event_id: eventId,
-    schedule_item_id: null,
+    schedule_item_id: scheduleItemId,
     provider: input.provider,
     status: "pending_review",
     review_note: null,
@@ -121,17 +128,14 @@ export async function submitEventPaymentSettings(
   if (input.currency !== undefined) patch.currency = input.currency || "INR";
 
   // Explicit select-then-update-or-insert rather than .upsert(onConflict:
-  // "event_id") — the uniqueness guarantee is a *partial* index
-  // (event_payment_settings_event_default_uq, WHERE schedule_item_id IS
-  // NULL), and PostgREST's upsert can't target a partial index via a
-  // bare column list. Same "read, then branch" shape as
-  // services/payments.ts's getPaymentSettings().
-  const existing = await supabaseAdmin()
-    .from("event_payment_settings")
-    .select("id")
-    .eq("event_id", eventId)
-    .is("schedule_item_id", null)
-    .maybeSingle<{ id: string }>();
+  // "event_id"/"schedule_item_id") — the event-default uniqueness
+  // guarantee is a *partial* index (event_payment_settings_event_default_uq,
+  // WHERE schedule_item_id IS NULL), and PostgREST's upsert can't target
+  // a partial index via a bare column list. Same "read, then branch"
+  // shape as services/payments.ts's getPaymentSettings().
+  let existingQuery = supabaseAdmin().from("event_payment_settings").select("id").eq("event_id", eventId);
+  existingQuery = scheduleItemId ? existingQuery.eq("schedule_item_id", scheduleItemId) : existingQuery.is("schedule_item_id", null);
+  const existing = await existingQuery.maybeSingle<{ id: string }>();
 
   if (existing.error) throw new Error(`Failed to load payment settings: ${existing.error.message}`);
 
@@ -146,20 +150,22 @@ export async function submitEventPaymentSettings(
 
 interface EventPaymentSettingsWithEventRow extends EventPaymentSettingsRow {
   events: { slug: string; honoree_name: string; event_title: string } | null;
+  event_schedule_items: { title: string } | null;
 }
 
 export interface EventPaymentSettingsQueueItem extends EventPaymentSettingsRecord {
   eventSlug: string;
   eventHonoreeName: string;
   eventTitle: string;
+  /** Set when this row is a per-session override (#63) rather than the event's own default. */
+  sessionTitle: string | null;
 }
 
-/** Owner's review queue — every event's default config (no per-session rows yet), newest submission first, optionally filtered by status. */
+/** Owner's review queue — every event's default config PLUS every per-session override (#63), newest submission first, optionally filtered by status. */
 export async function listEventPaymentSettings(status?: EventPaymentSettingsStatus): Promise<EventPaymentSettingsQueueItem[]> {
   let query = supabaseAdmin()
     .from("event_payment_settings")
-    .select("*, events(slug, honoree_name, event_title)")
-    .is("schedule_item_id", null)
+    .select("*, events(slug, honoree_name, event_title), event_schedule_items(title)")
     .order("updated_at", { ascending: false });
 
   if (status) query = query.eq("status", status);
@@ -172,6 +178,7 @@ export async function listEventPaymentSettings(status?: EventPaymentSettingsStat
     eventSlug: row.events?.slug ?? "",
     eventHonoreeName: row.events?.honoree_name ?? "",
     eventTitle: row.events?.event_title ?? "",
+    sessionTitle: row.event_schedule_items?.title ?? null,
   }));
 }
 

@@ -26,6 +26,12 @@ interface ScheduleItemRow {
   title: string;
   description: string | null;
   sort_order: number;
+  requires_registration: boolean;
+  is_paid_session: boolean;
+  regular_price: number | null;
+  early_bird_price: number | null;
+  early_bird_deadline: string | null;
+  currency: string;
   created_at: string;
 }
 
@@ -49,6 +55,12 @@ function mapScheduleItem(row: ScheduleItemRow): ScheduleItemRecord {
     title: row.title,
     description: row.description,
     sortOrder: row.sort_order,
+    requiresRegistration: row.requires_registration ?? false,
+    isPaidSession: row.is_paid_session ?? false,
+    regularPrice: row.regular_price,
+    earlyBirdPrice: row.early_bird_price,
+    earlyBirdDeadline: row.early_bird_deadline,
+    currency: row.currency || "INR",
     createdAt: row.created_at,
   };
 }
@@ -120,6 +132,12 @@ export async function updateScheduleItem(
     title?: string;
     description?: string | null;
     sortOrder?: number;
+    requiresRegistration?: boolean;
+    isPaidSession?: boolean;
+    regularPrice?: number | null;
+    earlyBirdPrice?: number | null;
+    earlyBirdDeadline?: string | null;
+    currency?: string;
   },
 ): Promise<void> {
   const patch: Record<string, unknown> = {};
@@ -128,6 +146,12 @@ export async function updateScheduleItem(
   if (input.title !== undefined) patch.title = input.title;
   if (input.description !== undefined) patch.description = input.description;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
+  if (input.requiresRegistration !== undefined) patch.requires_registration = input.requiresRegistration;
+  if (input.isPaidSession !== undefined) patch.is_paid_session = input.isPaidSession;
+  if (input.regularPrice !== undefined) patch.regular_price = input.regularPrice;
+  if (input.earlyBirdPrice !== undefined) patch.early_bird_price = input.earlyBirdPrice;
+  if (input.earlyBirdDeadline !== undefined) patch.early_bird_deadline = input.earlyBirdDeadline;
+  if (input.currency !== undefined) patch.currency = input.currency;
 
   const { error } = await supabaseAdmin().from("event_schedule_items").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update schedule item: ${error.message}`);
@@ -275,16 +299,23 @@ function normalizePhone(phone: string): string {
 }
 
 /**
- * Check-only guest verification for private-mode event-day access: does
- * this phone number belong to a real invitee on this event? Unlike
+ * Guest verification for private-mode event-day access: does this
+ * phone number belong to a real invitee on this event? Unlike
  * findOrCreateSelfInvitee (used by RSVP/Games), this never creates a new
  * invitee — a guest who isn't found is simply denied, since there's
- * nothing here for them to "join."
+ * nothing here for them to "join." Returns the matched invitee (needed
+ * to know WHO is registering for a paid session — see
+ * features/event-day/actions.ts) rather than just a boolean.
  */
-export async function verifyInviteeByPhone(eventId: string, phone: string): Promise<boolean> {
+export async function findInviteeByPhoneForEventDay(eventId: string, phone: string) {
   const normalized = normalizePhone(phone);
-  if (!normalized || normalized.length < 7) return false;
+  if (!normalized || normalized.length < 7) return null;
 
   const invitees = await listInvitees(eventId);
-  return invitees.some((inv) => inv.phone && normalizePhone(inv.phone) === normalized);
+  return invitees.find((inv) => inv.phone && normalizePhone(inv.phone) === normalized) ?? null;
+}
+
+/** Boolean-only sibling of findInviteeByPhoneForEventDay, kept for any caller that only needs a yes/no. */
+export async function verifyInviteeByPhone(eventId: string, phone: string): Promise<boolean> {
+  return Boolean(await findInviteeByPhoneForEventDay(eventId, phone));
 }

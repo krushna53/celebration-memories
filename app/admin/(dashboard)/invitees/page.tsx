@@ -1,6 +1,9 @@
+import { redirect } from "next/navigation";
+
 import { listInviteesWithRsvp } from "@/services/admin-invitees";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
+import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { InviteeManager } from "@/features/admin/invitees/invitee-manager";
 
 export const dynamic = "force-dynamic";
@@ -9,9 +12,12 @@ export const dynamic = "force-dynamic";
 // be owner-only, but a client host has every reason to see and manage
 // their own guest list. Event scoping (so a client only ever sees their
 // own invitees, never another client's) comes from resolveAdminEvent,
-// same as every other admin page.
+// same as every other admin page. session_organizer is redirected away
+// entirely — this is the full guest list with contact info, well beyond
+// their "just my own session's attendees" scope.
 export default async function AdminInviteesPage() {
   const admin = await getCurrentAdmin();
+  if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;

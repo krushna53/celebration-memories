@@ -1,4 +1,5 @@
 import type { EventRecord } from "@/types/event";
+import type { ScheduleItemRecord } from "@/types/content";
 
 export type RsvpPricingTier = "early_bird" | "regular";
 
@@ -8,35 +9,75 @@ export interface RsvpPrice {
   currency: string;
 }
 
+interface PricingTiers {
+  isPaid: boolean;
+  regularPrice: number | null;
+  earlyBirdPrice: number | null;
+  earlyBirdDeadline: string | null;
+  currency: string;
+}
+
 /**
- * Computes what a guest owes to confirm a "coming" RSVP for a paid
- * event, right now. Null means "don't show a payment step" — either
- * the event isn't paid, or it's paid but no regular price has been set
- * yet (a client toggled "paid event" on but hasn't finished pricing).
+ * Shared by computeRsvpPrice (event-level ticket) and
+ * computeSessionPrice (per-session, #63) — both use the identical
+ * early-bird-before-a-deadline shape. Null means "don't show a payment
+ * step": either not paid, or paid but no regular price set yet (a
+ * client toggled pricing on but hasn't finished configuring it).
  *
- * Early-bird logic: rsvpEarlyBirdPrice applies strictly before
- * rsvpEarlyBirdDeadline; at or after the deadline (or with no deadline
- * set at all), rsvpRegularPrice applies. An early-bird price with no
- * deadline is treated as "no early-bird tier" — same as not setting an
- * early-bird price — since there's no way to know when it should stop.
+ * Early-bird logic: earlyBirdPrice applies strictly before
+ * earlyBirdDeadline; at or after the deadline (or with no deadline set
+ * at all), regularPrice applies. An early-bird price with no deadline
+ * is treated as "no early-bird tier" — same as not setting one — since
+ * there's no way to know when it should stop.
  */
+function computePrice(tiers: PricingTiers, now: Date): RsvpPrice | null {
+  if (!tiers.isPaid) return null;
+  if (tiers.regularPrice === null || tiers.regularPrice <= 0) return null;
+
+  const currency = tiers.currency || "INR";
+
+  if (
+    tiers.earlyBirdPrice !== null &&
+    tiers.earlyBirdPrice > 0 &&
+    tiers.earlyBirdDeadline &&
+    now.getTime() < new Date(tiers.earlyBirdDeadline).getTime()
+  ) {
+    return { tier: "early_bird", amount: tiers.earlyBirdPrice, currency };
+  }
+
+  return { tier: "regular", amount: tiers.regularPrice, currency };
+}
+
+/** What a guest owes to confirm a "coming" RSVP for a paid event, right now. */
 export function computeRsvpPrice(
   event: Pick<EventRecord, "isPaidEvent" | "rsvpRegularPrice" | "rsvpEarlyBirdPrice" | "rsvpEarlyBirdDeadline" | "rsvpCurrency">,
   now: Date = new Date(),
 ): RsvpPrice | null {
-  if (!event.isPaidEvent) return null;
-  if (event.rsvpRegularPrice === null || event.rsvpRegularPrice <= 0) return null;
+  return computePrice(
+    {
+      isPaid: event.isPaidEvent,
+      regularPrice: event.rsvpRegularPrice,
+      earlyBirdPrice: event.rsvpEarlyBirdPrice,
+      earlyBirdDeadline: event.rsvpEarlyBirdDeadline,
+      currency: event.rsvpCurrency,
+    },
+    now,
+  );
+}
 
-  const currency = event.rsvpCurrency || "INR";
-
-  if (
-    event.rsvpEarlyBirdPrice !== null &&
-    event.rsvpEarlyBirdPrice > 0 &&
-    event.rsvpEarlyBirdDeadline &&
-    now.getTime() < new Date(event.rsvpEarlyBirdDeadline).getTime()
-  ) {
-    return { tier: "early_bird", amount: event.rsvpEarlyBirdPrice, currency };
-  }
-
-  return { tier: "regular", amount: event.rsvpRegularPrice, currency };
+/** What a guest owes to register for one paid Event Day session, right now (#63). Null when the session doesn't require payment (free registration) or isn't priced yet. */
+export function computeSessionPrice(
+  session: Pick<ScheduleItemRecord, "isPaidSession" | "regularPrice" | "earlyBirdPrice" | "earlyBirdDeadline" | "currency">,
+  now: Date = new Date(),
+): RsvpPrice | null {
+  return computePrice(
+    {
+      isPaid: session.isPaidSession,
+      regularPrice: session.regularPrice,
+      earlyBirdPrice: session.earlyBirdPrice,
+      earlyBirdDeadline: session.earlyBirdDeadline,
+      currency: session.currency,
+    },
+    now,
+  );
 }

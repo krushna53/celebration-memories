@@ -35,9 +35,14 @@ const STATUS_COPY: Record<EventPaymentSettingsRecord["status"], { label: string;
 export function PaymentSettingsForm({
   eventId,
   existing,
+  scheduleItemId = null,
+  sessionTitle = null,
 }: {
   eventId: string;
   existing: EventPaymentSettingsRecord | null;
+  /** Set only when this form is the per-session override (#63) — otherwise this edits the event's own default. */
+  scheduleItemId?: string | null;
+  sessionTitle?: string | null;
 }) {
   const [provider, setProvider] = useState<EventPaymentProvider>(existing?.provider ?? "manual");
   const [bankDetails, setBankDetails] = useState(existing?.bankDetails ?? "");
@@ -74,7 +79,7 @@ export function PaymentSettingsForm({
     }
 
     startTransition(async () => {
-      const result = await submitEventPaymentSettingsAction(eventId, input);
+      const result = await submitEventPaymentSettingsAction(eventId, input, scheduleItemId);
       if (result.success) {
         setSuccess(true);
         setStripeSecretKey("");
@@ -91,6 +96,11 @@ export function PaymentSettingsForm({
 
   return (
     <div className="max-w-xl">
+      {sessionTitle ? (
+        <p className="mb-4 text-sm text-navy-700/60">
+          This overrides the event default for just <span className="font-medium text-navy-950">{sessionTitle}</span>.
+        </p>
+      ) : null}
       {status ? (
         <div className={`mb-6 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${status.className}`}>
           {StatusIcon ? <StatusIcon size={13} /> : null}

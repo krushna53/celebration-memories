@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (evening)",
+    items: [
+      {
+        title: "Per-session registration, payment, and Session Organizers (task #63)",
+        detail:
+          "For workshop-style events with multiple sessions: each Event Day session (Admin → Event Day) can now require registration and optionally be paid, with its own Regular Price and Early-Bird Price + deadline, independent of the event's own RSVP price. A session can also have its own payment method override (bank/UPI or gateway keys, owner-reviewed same as before) instead of using the event's default. Guests register/pay per-session from their personal, phone-verified /event-day link — the anonymous public homepage schedule stays read-only, since there's no guest identity to attach a registration to there. New \"Session Organizers\" role: a client can give someone a narrow, view-only login scoped to one or more specific sessions (Admin → Session Organizers to manage them; they land on Admin → My Sessions, seeing only their own session's attendee list and payments, nothing else about the event). Everyone relevant — client, owner, and that session's organizer(s) — gets notified when a registration or payment comes in.",
+        test:
+          "In Admin → Event Day, open a schedule item's \"Registration & Pricing,\" turn on registration (and optionally paid + prices), save. Visit that event's private Event Day link, verify your phone, and confirm a Register/Register & Pay button appears on that session — test both a free registration and a paid one (manual reference-number path is easiest). In Admin → Session Organizers, add someone scoped to that session (either invite method); sign in as them and confirm they land on My Sessions showing only that session's attendees/payments, and that every other nav link is gone and direct URLs to other admin pages redirect them away.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (later)",
     items: [
       {

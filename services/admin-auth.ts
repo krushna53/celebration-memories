@@ -3,7 +3,15 @@ import "server-only";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export type AdminRole = "owner" | "client";
+/**
+ * "session_organizer" (added for #63) is a much narrower role than
+ * "client" — scoped not just to one event but to one or more specific
+ * Event Day sessions within it (see session_organizer_assignments,
+ * services/session-organizers.ts). They can only view their own
+ * session's attendee list + payments — see lib/admin-roles.ts's
+ * SESSION_ORGANIZER_ALLOWED_PATHS for the (very short) allow-list.
+ */
+export type AdminRole = "owner" | "client" | "session_organizer";
 
 export interface CurrentAdmin {
   id: string;
@@ -98,10 +106,26 @@ export async function requireOwner(): Promise<CurrentAdmin> {
  * see services/admin-invitees.ts — rather than relying on this check
  * alone, so a client can never affect another client's row even if they
  * tamper with the eventId this receives.
+ *
+ * session_organizer (#63) is deliberately rejected here, even though
+ * its admins.event_id is set the same way a client's is — every
+ * requireAdminForEvent-gated action represents real event-management
+ * (create/update/delete something), which is out of scope for a role
+ * that's meant to be read-only over one or two sessions. Their reads
+ * (getAssignedSessionIds, listAttendeesForSession,
+ * listRsvpPaymentsForScheduleItem) are called directly from
+ * /admin/my-sessions, gated by that page's own
+ * `admin.role !== "session_organizer"` check, not through this
+ * function — so this reject is the single choke point that keeps a
+ * session organizer from reaching any client-level mutation even by
+ * navigating straight to a client page's URL or its Server Action.
  */
 export async function requireAdminForEvent(eventId: string): Promise<CurrentAdmin> {
   const admin = await getCurrentAdmin();
   if (!admin) throw new Error("Not authorized.");
+  if (admin.role === "session_organizer") {
+    throw new Error("Session organizers have read-only access — this action isn't available to your account.");
+  }
   if (admin.role !== "owner" && admin.eventId !== eventId) {
     throw new Error("You don't have access to this event.");
   }

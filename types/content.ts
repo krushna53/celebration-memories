@@ -50,6 +50,14 @@ export interface ScheduleItemRecord {
   title: string;
   description: string | null;
   sortOrder: number;
+  /** When true, guests see a "Register" (or "Register & Pay") control for this session on Event Day. See features/rsvp-payment/actions.ts's initiateSessionRegistrationAction. */
+  requiresRegistration: boolean;
+  /** Only meaningful when requiresRegistration is true — false means registering is free (just creates a session_registrations row, no payment). */
+  isPaidSession: boolean;
+  regularPrice: number | null;
+  earlyBirdPrice: number | null;
+  earlyBirdDeadline: string | null;
+  currency: string;
   createdAt: string;
 }
 

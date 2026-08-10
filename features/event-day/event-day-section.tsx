@@ -1,5 +1,7 @@
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
+import { SessionRegisterButton } from "@/features/event-day/session-register-button";
+import { computeSessionPrice } from "@/lib/rsvp-pricing";
 import type { MenuDietaryTag, MenuItemRecord, MenuStyle, ScheduleItemRecord } from "@/types/content";
 
 interface EventDaySectionProps {
@@ -8,6 +10,18 @@ interface EventDaySectionProps {
   menuStyle: MenuStyle;
   /** Dark navy background + section id, matching the homepage stack — set to false on the standalone private /event-day/[token] page, which supplies its own page chrome instead. */
   asHomepageSection?: boolean;
+  /**
+   * Guest identity, only ever available on the private, phone-verified
+   * /event-day/[token] page (event-day-gate.tsx) — the anonymous public
+   * homepage embed passes none of these, and Register controls simply
+   * don't render for it (a full identify-yourself flow for anonymous
+   * visitors was deliberately out of scope for #63).
+   */
+  eventId?: string;
+  inviteeId?: string;
+  registeredScheduleItemIds?: string[];
+  /** Where to return the guest after a redirect-based payment provider — /event-day/[token]. */
+  returnPath?: string;
 }
 
 const DIETARY_LABELS: Record<MenuDietaryTag, string> = {
@@ -42,8 +56,20 @@ function groupByCategory(items: MenuItemRecord[]): Array<[string, MenuItemRecord
  * /event-day/[token] page when "private" (see event-day-gate.tsx).
  * Renders nothing if the host hasn't added a schedule or menu yet.
  */
-export function EventDaySection({ scheduleItems, menuItems, menuStyle, asHomepageSection = true }: EventDaySectionProps) {
+export function EventDaySection({
+  scheduleItems,
+  menuItems,
+  menuStyle,
+  asHomepageSection = true,
+  eventId,
+  inviteeId,
+  registeredScheduleItemIds,
+  returnPath,
+}: EventDaySectionProps) {
   if (scheduleItems.length === 0 && menuItems.length === 0) return null;
+
+  const canRegister = Boolean(eventId && inviteeId);
+  const registeredSet = new Set(registeredScheduleItemIds ?? []);
 
   const menuGroups = groupByCategory(menuItems);
 
@@ -73,6 +99,18 @@ export function EventDaySection({ scheduleItems, menuItems, menuStyle, asHomepag
                 <h3 className="mt-2 font-display text-xl text-ivory-50 sm:text-2xl">{item.title}</h3>
                 {item.description ? (
                   <p className="mt-2 text-sm leading-relaxed text-ivory-100/70 sm:text-base">{item.description}</p>
+                ) : null}
+                {item.requiresRegistration && canRegister ? (
+                  <SessionRegisterButton
+                    eventId={eventId as string}
+                    scheduleItemId={item.id}
+                    inviteeId={inviteeId as string}
+                    returnPath={returnPath ?? "/"}
+                    price={computeSessionPrice(item)}
+                    initiallyRegistered={registeredSet.has(item.id)}
+                  />
+                ) : item.requiresRegistration ? (
+                  <p className="mt-3 text-xs text-ivory-100/50">Registration required — view this on your personal Event Day link.</p>
                 ) : null}
               </li>
             </Reveal>

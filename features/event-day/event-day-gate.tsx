@@ -16,10 +16,13 @@ interface EventDayGateProps {
 }
 
 interface VerifiedData {
+  eventId: string;
+  inviteeId: string;
   eventTitle: string;
   menuStyle: MenuStyle;
   scheduleItems: ScheduleItemRecord[];
   menuItems: MenuItemRecord[];
+  registeredScheduleItemIds: string[];
 }
 
 /**
@@ -43,10 +46,13 @@ export function EventDayGate({ token, honoreeName }: EventDayGateProps) {
     setBusy(false);
     if (result.success) {
       setVerified({
+        eventId: result.data.eventId,
+        inviteeId: result.data.inviteeId,
         eventTitle: result.data.eventTitle,
         menuStyle: result.data.menuStyle,
         scheduleItems: result.data.scheduleItems,
         menuItems: result.data.menuItems,
+        registeredScheduleItemIds: result.data.registeredScheduleItemIds,
       });
     } else {
       setError(result.error);
@@ -66,6 +72,10 @@ export function EventDayGate({ token, honoreeName }: EventDayGateProps) {
             menuItems={verified.menuItems}
             menuStyle={verified.menuStyle}
             asHomepageSection={false}
+            eventId={verified.eventId}
+            inviteeId={verified.inviteeId}
+            registeredScheduleItemIds={verified.registeredScheduleItemIds}
+            returnPath={`/event-day/${token}`}
           />
         </div>
       </div>

@@ -5,11 +5,14 @@ import { getEventPaymentSettingsRaw, isEventPaymentConfigured } from "@/services
 import {
   createRsvpPayment,
   getLatestRsvpPaymentForInvitee,
+  getLatestSessionPaymentForInvitee,
   attachRsvpPaymentReferenceNote,
   getRsvpPaymentById,
 } from "@/services/rsvp-payments";
+import { getScheduleItemById } from "@/services/event-day";
+import { createSessionRegistration, getSessionRegistration } from "@/services/session-registrations";
 import { notifyAdminsOfRsvpPayment } from "@/services/admin-notifications";
-import { computeRsvpPrice } from "@/lib/rsvp-pricing";
+import { computeRsvpPrice, computeSessionPrice } from "@/lib/rsvp-pricing";
 import {
   createEventStripeCheckoutUrl,
   createEventRazorpayPaymentLink,
@@ -159,6 +162,194 @@ export async function initiateRsvpPaymentPublicAction(eventSlug: string, invitee
   return initiateRsvpPayment(found, `/events/${eventSlug}/rsvp`);
 }
 
+export type InitiateSessionRegistrationResult =
+  | { success: false; error: string }
+  | { success: true; alreadyRegistered: true }
+  | { success: true; alreadyRegistered: false; free: true }
+  | { success: true; alreadyRegistered: false; free: false; provider: "manual"; paymentId: string; amount: number; currency: string; bankDetails: string | null; upiId: string | null }
+  | { success: true; alreadyRegistered: false; free: false; provider: "stripe" | "razorpay"; redirectUrl: string }
+  | { success: true; alreadyRegistered: false; free: false; provider: "ccavenue"; formPost: { url: string; fields: Record<string, string> } };
+
+/**
+ * Per-session registration (#63) — /event-day/[token]'s private, phone-
+ * verified mode only (the anonymous public homepage embed has no
+ * invitee identity to register, by design). inviteeId must already have
+ * been resolved server-side from the guest's verified phone number
+ * (findInviteeByPhoneForEventDay) — never accepted as raw client input.
+ * Mirrors initiateRsvpPayment's shape but for one schedule item instead
+ * of the whole event, and short-circuits straight to a free registration
+ * when the session isn't paid.
+ */
+export async function initiateSessionRegistrationAction(
+  eventId: string,
+  scheduleItemId: string,
+  inviteeId: string,
+  returnPath: string,
+): Promise<InitiateSessionRegistrationResult> {
+  const found = await getInviteeById(inviteeId);
+  if (!found || found.event.id !== eventId) {
+    return { success: false, error: "We couldn't verify your invitation — please check in again." };
+  }
+  const { invitee, event } = found;
+
+  const session = await getScheduleItemById(scheduleItemId);
+  if (!session || session.eventId !== eventId) {
+    return { success: false, error: "This session couldn't be found." };
+  }
+  if (!session.requiresRegistration) {
+    return { success: false, error: "This session doesn't need registration." };
+  }
+
+  const existingRegistration = await getSessionRegistration(scheduleItemId, invitee.id);
+  if (existingRegistration) {
+    return { success: true, alreadyRegistered: true };
+  }
+
+  if (!session.isPaidSession) {
+    await createSessionRegistration({ eventId, scheduleItemId, inviteeId: invitee.id });
+    notifySessionActivity({
+      eventId,
+      guestName: invitee.name,
+      scheduleItemId,
+      sessionTitle: session.title,
+      needsReview: false,
+      amount: 0,
+      currency: session.currency,
+    }).catch((err) => console.error("notifyAdminsOfRsvpPayment (free session) failed:", err));
+    return { success: true, alreadyRegistered: false, free: true };
+  }
+
+  const existingPayment = await getLatestSessionPaymentForInvitee(invitee.id, scheduleItemId);
+  if (existingPayment?.status === "paid") {
+    // Payment succeeded before but the registration row is somehow missing — reconcile instead of double-charging.
+    await createSessionRegistration({ eventId, scheduleItemId, inviteeId: invitee.id, rsvpPaymentId: existingPayment.id });
+    return { success: true, alreadyRegistered: true };
+  }
+
+  const price = computeSessionPrice(session);
+  if (!price) {
+    return { success: false, error: "Pricing hasn't been set up for this session yet — please check back soon." };
+  }
+
+  // Prefer a session-specific payment-method override; fall back to the event's own default configuration.
+  let settings = await getEventPaymentSettingsRaw(eventId, scheduleItemId);
+  if (!settings || settings.status !== "approved") {
+    settings = await getEventPaymentSettingsRaw(eventId, null);
+  }
+  if (!settings || settings.status !== "approved") {
+    return { success: false, error: "Payment isn't set up for this session yet — please contact the host." };
+  }
+
+  const payment = await createRsvpPayment({
+    eventId,
+    inviteeId: invitee.id,
+    scheduleItemId,
+    amount: price.amount,
+    currency: price.currency,
+    pricingTier: price.tier,
+    provider: settings.provider,
+  });
+
+  const description = `${event.honoreeName}'s ${event.eventTitle} — ${session.title} registration`;
+  const cancelUrl = `${SITE_URL}${returnPath}`;
+
+  try {
+    if (settings.provider === "manual") {
+      return {
+        success: true,
+        alreadyRegistered: false,
+        free: false,
+        provider: "manual",
+        paymentId: payment.id,
+        amount: price.amount,
+        currency: price.currency,
+        bankDetails: settings.bankDetails,
+        upiId: settings.upiId,
+      };
+    }
+
+    if (settings.provider === "stripe") {
+      const { stripeSecretKey } = requireProviderCredentials(settings) as { stripeSecretKey: string };
+      const successUrl = `${SITE_URL}/rsvp-payment/confirm?paymentId=${payment.id}&provider=stripe&session_id={CHECKOUT_SESSION_ID}&return=${encodeURIComponent(returnPath)}`;
+      const redirectUrl = await createEventStripeCheckoutUrl({
+        secretKey: stripeSecretKey,
+        amount: price.amount,
+        currency: price.currency,
+        description,
+        successUrl,
+        cancelUrl,
+        customerEmail: invitee.email ?? undefined,
+        metadata: { rsvpPaymentId: payment.id, eventId, inviteeId: invitee.id, scheduleItemId },
+      });
+      return { success: true, alreadyRegistered: false, free: false, provider: "stripe", redirectUrl };
+    }
+
+    if (settings.provider === "razorpay") {
+      const { razorpayKeyId, razorpayKeySecret } = requireProviderCredentials(settings) as {
+        razorpayKeyId: string;
+        razorpayKeySecret: string;
+      };
+      const callbackUrl = `${SITE_URL}/rsvp-payment/confirm?paymentId=${payment.id}&provider=razorpay&return=${encodeURIComponent(returnPath)}`;
+      const redirectUrl = await createEventRazorpayPaymentLink({
+        keyId: razorpayKeyId,
+        keySecret: razorpayKeySecret,
+        amount: price.amount,
+        currency: price.currency,
+        description,
+        customerName: invitee.name,
+        customerEmail: invitee.email ?? undefined,
+        callbackUrl,
+        notes: { rsvpPaymentId: payment.id, eventId, inviteeId: invitee.id, scheduleItemId },
+      });
+      return { success: true, alreadyRegistered: false, free: false, provider: "razorpay", redirectUrl };
+    }
+
+    // ccavenue
+    const { ccavenueMerchantId, ccavenueAccessCode, ccavenueWorkingKey } = requireProviderCredentials(settings) as {
+      ccavenueMerchantId: string;
+      ccavenueAccessCode: string;
+      ccavenueWorkingKey: string;
+    };
+    const responseUrl = `${SITE_URL}/api/webhooks/rsvp-ccavenue?paymentId=${payment.id}&return=${encodeURIComponent(returnPath)}`;
+    const formPost = buildEventCCAvenueForm({
+      merchantId: ccavenueMerchantId,
+      accessCode: ccavenueAccessCode,
+      workingKey: ccavenueWorkingKey,
+      amount: price.amount,
+      currency: price.currency,
+      orderId: `${payment.id.slice(0, 8)}-${Date.now()}`,
+      responseUrl,
+      cancelUrl,
+      billingName: invitee.name,
+      billingEmail: invitee.email ?? undefined,
+      merchantParam1: payment.id,
+    });
+    return { success: true, alreadyRegistered: false, free: false, provider: "ccavenue", formPost };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to start payment. Please try again." };
+  }
+}
+
+async function notifySessionActivity(params: {
+  eventId: string;
+  guestName: string;
+  scheduleItemId: string;
+  sessionTitle: string;
+  needsReview: boolean;
+  amount: number;
+  currency: string;
+}) {
+  await notifyAdminsOfRsvpPayment({
+    eventId: params.eventId,
+    guestName: params.guestName,
+    amount: params.amount,
+    currency: params.currency,
+    needsReview: params.needsReview,
+    scheduleItemId: params.scheduleItemId,
+    sessionTitle: params.sessionTitle,
+  });
+}
+
 export type SubmitManualRsvpProofResult = { success: true } | { success: false; error: string };
 
 /** Guest attaches a bank/UPI reference note to their pending manual payment — an admin still has to approve it (features/admin/rsvp-payments/actions.ts). */
@@ -187,11 +378,18 @@ async function notifyPaymentSubmitted(paymentId: string) {
   if (!payment) return;
   const found = await getInviteeById(payment.inviteeId);
   if (!found) return;
+  let sessionTitle: string | null = null;
+  if (payment.scheduleItemId) {
+    const session = await getScheduleItemById(payment.scheduleItemId);
+    sessionTitle = session?.title ?? null;
+  }
   await notifyAdminsOfRsvpPayment({
     eventId: payment.eventId,
     guestName: found.invitee.name,
     amount: payment.amount,
     currency: payment.currency,
     needsReview: true,
+    scheduleItemId: payment.scheduleItemId,
+    sessionTitle,
   });
 }

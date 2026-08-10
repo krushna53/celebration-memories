@@ -38,6 +38,7 @@ import {
   Landmark,
   ShieldCheck,
   ReceiptText,
+  UserRoundCog,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -75,6 +76,8 @@ const NAV = [
   { href: "/admin/payment-settings-request", label: "My Payment Method", icon: Landmark },
   { href: "/admin/payment-settings-review", label: "Payment Approvals", icon: ShieldCheck },
   { href: "/admin/rsvp-payments", label: "RSVP Payments", icon: ReceiptText },
+  { href: "/admin/session-organizers", label: "Session Organizers", icon: UserRoundCog },
+  { href: "/admin/my-sessions", label: "My Sessions", icon: CalendarClock },
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox },
   { href: "/admin/payment-settings", label: "Payment Settings", icon: QrCode },
@@ -122,6 +125,11 @@ export default async function AdminDashboardLayout({
             {admin.role === "client" ? (
               <span className="hidden rounded-full border border-gold-500/30 px-2.5 py-1 text-xs text-gold-300 sm:inline">
                 Host access
+              </span>
+            ) : null}
+            {admin.role === "session_organizer" ? (
+              <span className="hidden rounded-full border border-gold-500/30 px-2.5 py-1 text-xs text-gold-300 sm:inline">
+                Session Organizer
               </span>
             ) : null}
             <Link
