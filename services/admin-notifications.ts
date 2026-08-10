@@ -4,7 +4,13 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendRsvpSubmittedNotification } from "@/lib/email";
 import type { RsvpFormValues } from "@/types/rsvp";
 
-export type AdminNotificationType = "rsvp_submitted" | "feature_nudge" | "storage_usage" | "new_event_prompt";
+export type AdminNotificationType =
+  | "rsvp_submitted"
+  | "feature_nudge"
+  | "storage_usage"
+  | "new_event_prompt"
+  | "event_payment_settings_submitted"
+  | "event_payment_settings_reviewed";
 
 export interface AdminNotification {
   id: string;
@@ -158,6 +164,64 @@ export async function hasRecentNotification(params: {
     return true; // fail closed — better to skip a send than double-send on a query error
   }
   return (data?.length ?? 0) > 0;
+}
+
+/** Owners only, never the event's own client admin — used when a client submits something that needs owner review (e.g. event payment settings), so the submitter doesn't get notified about their own action. */
+async function getOwnersToNotify(): Promise<{ id: string; email: string; name: string | null }[]> {
+  const { data, error } = await supabaseAdmin().from("admins").select("id, email, name").eq("role", "owner");
+  if (error) {
+    console.error("getOwnersToNotify failed:", error.message);
+    return [];
+  }
+  return (data ?? []) as { id: string; email: string; name: string | null }[];
+}
+
+/** A client submitted (or resubmitted) their event's own payment settings for review — see features/admin/event-payment-settings/actions.ts. */
+export async function notifyOwnersOfEventPaymentSettingsSubmission(params: {
+  eventId: string;
+  eventTitle: string;
+  honoreeName: string;
+}): Promise<void> {
+  const owners = await getOwnersToNotify();
+  if (owners.length === 0) return;
+
+  const title = "New payment settings need review";
+  const body = `${params.honoreeName}'s ${params.eventTitle} submitted payment settings — review before guests can pay through them.`;
+
+  await Promise.all(
+    owners.map((owner) =>
+      createAdminNotification({
+        adminId: owner.id,
+        eventId: params.eventId,
+        type: "event_payment_settings_submitted",
+        title,
+        body,
+        link: "/admin/payment-settings-review",
+      }),
+    ),
+  );
+}
+
+/** The owner approved or rejected a client's submitted payment settings — see features/admin/payment-settings-review/actions.ts. */
+export async function notifyClientOfEventPaymentSettingsReview(params: {
+  adminId: string;
+  eventId: string;
+  approved: boolean;
+  note: string | null;
+}): Promise<void> {
+  const title = params.approved ? "Payment settings approved" : "Payment settings need changes";
+  const body = params.approved
+    ? "Your payment settings were approved — guests can now pay through your configuration."
+    : `Your payment settings were sent back for changes${params.note ? `: ${params.note}` : "."}`;
+
+  await createAdminNotification({
+    adminId: params.adminId,
+    eventId: params.eventId,
+    type: "event_payment_settings_reviewed",
+    title,
+    body,
+    link: "/admin/payment-settings-request",
+  });
 }
 
 /** All admins who should hear about activity on one event: the client admin scoped to it (if any) plus every owner. Used by the RSVP-submitted producer and could be reused by any other per-event producer. */

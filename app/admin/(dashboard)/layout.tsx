@@ -35,6 +35,8 @@ import {
   Store,
   HardDrive,
   Gauge,
+  Landmark,
+  ShieldCheck,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -69,6 +71,8 @@ const NAV = [
   { href: "/admin/slideshow", label: "Slideshow Video", icon: Film },
   { href: "/admin/video-editor", label: "Video Editor", icon: Clapperboard },
   { href: "/admin/domain-search", label: "Domain Search", icon: Globe },
+  { href: "/admin/payment-settings-request", label: "My Payment Method", icon: Landmark },
+  { href: "/admin/payment-settings-review", label: "Payment Approvals", icon: ShieldCheck },
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox },
   { href: "/admin/payment-settings", label: "Payment Settings", icon: QrCode },

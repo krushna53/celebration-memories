@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10",
+    items: [
+      {
+        title: "Clients can add their own payment method (owner-reviewed) — foundation for paid workshops",
+        detail:
+          "New \"My Payment Method\" page in the admin sidebar lets a host add their own bank/UPI details, or their own Stripe/Razorpay/CCAvenue keys, scoped to just their event. Submissions don't go live automatically — the owner reviews them on the new \"Payment Approvals\" page (owner-only) and approves or sends them back with a note; the client gets notified either way. This is the first piece of paid workshop registration — the RSVP payment step and per-session payments come next. Also added a \"Not satisfied with the templates available? We can design a custom one just for your event\" WhatsApp contact CTA on the Template picker (shows on both the admin Templates page and the wizard's Template step).",
+        test:
+          "As a client admin, open \"My Payment Method\" in the sidebar, pick a method (Bank/UPI, Stripe, Razorpay, or CCAvenue), fill in the fields, and submit — you should see a \"Pending review\" badge. As the owner, open \"Payment Approvals\" — the submission should appear with its details; approve it (or reject it with a note) and confirm the client's status badge updates and they get a notification. On any Template picker screen, confirm the \"Request a Custom Design\" button opens WhatsApp with a prefilled message.",
+      },
+    ],
+  },
+  {
     date: "Sunday, August 9 (newest of all)",
     items: [
       {
