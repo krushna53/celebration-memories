@@ -526,6 +526,16 @@ export function AiImageGenerator({
       </div>
 
       <div className="grid gap-6">
+        {/*
+          Both panels can show at once once they each have a real result
+          (that's the point of "alongside any AI-generated image below"
+          in the upload tab's helper text) — but the *empty placeholder*
+          for whichever tab isn't active only renders while that tab is
+          selected. Previously both empty placeholders rendered
+          unconditionally, so switching to "Upload Your Own" still showed
+          a tall, empty "Your AI-generated image will appear here" box
+          sitting above the real upload preview — a large, confusing gap.
+        */}
         {generatedResult ? (
           renderResultPanel(generatedResult, "generated")
         ) : generating ? (
@@ -534,11 +544,11 @@ export function AiImageGenerator({
             <p className="text-sm font-medium text-navy-700/70">{LOADING_STEPS[loadingStep]}</p>
             <p className="text-xs text-navy-700/40">{elapsedSeconds}s elapsed</p>
           </div>
-        ) : (
+        ) : mode === "generate" ? (
           <div className="flex aspect-[3/4] w-full items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
             Your AI-generated image will appear here.
           </div>
-        )}
+        ) : null}
         {uploadedResult ? (
           renderResultPanel(uploadedResult, "upload")
         ) : uploading ? (
@@ -546,11 +556,11 @@ export function AiImageGenerator({
             <Upload className="text-gold-500/60" size={28} />
             <p className="text-sm font-medium text-navy-700/70">Uploading...</p>
           </div>
-        ) : (
+        ) : mode === "upload" ? (
           <div className="flex aspect-[3/4] w-full items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
             Your uploaded image will appear here.
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
