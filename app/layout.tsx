@@ -15,6 +15,7 @@ import {
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import { ClarityScript } from "@/features/analytics/clarity-script";
 import { ServiceWorkerRegister } from "@/features/pwa/service-worker-register";
+import { TopProgressBar } from "@/components/layout/top-progress-bar";
 
 import "./globals.css";
 
@@ -68,6 +69,7 @@ export default function RootLayout({
       className={`${playfair.variable} ${poppins.variable} ${dancingScript.variable} ${baloo2.variable} ${bebasNeue.variable} ${inter.variable} ${righteous.variable} ${ebGaramond.variable} ${cormorantGaramond.variable} ${quicksand.variable}`}
     >
       <body className="antialiased">
+        <TopProgressBar />
         {children}
         <ClarityScript />
         <ServiceWorkerRegister />

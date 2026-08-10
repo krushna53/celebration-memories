@@ -198,10 +198,10 @@ export function PlatformMarketingContent() {
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-500/10 text-gold-600">
                     <feature.icon size={20} />
                   </div>
-                  <h3 className="mt-4 font-display text-lg text-navy-950">
+                  <h3 className="mt-4 font-display text-xl text-navy-950">
                     {feature.title}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-navy-700/75">
+                  <p className="mt-2 text-base leading-relaxed text-navy-700/75">
                     {feature.description}
                   </p>
                 </div>
