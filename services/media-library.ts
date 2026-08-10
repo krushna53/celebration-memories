@@ -5,6 +5,21 @@ import { listMemoriesForModeration } from "@/services/admin-memories";
 import { listCompletedAiImageJobs } from "@/services/ai-image-jobs";
 import { listCompletedSlideshowVideoJobs } from "@/services/slideshow-video-jobs";
 import { listVideoEditJobs } from "@/services/video-editor";
+import type { MediaLibraryItem } from "@/lib/media-library-kinds";
+
+// Re-exported for backward compatibility with existing imports of these
+// from this module — the actual definitions live in
+// lib/media-library-kinds.ts now (a client-safe module with no
+// "server-only" guard), since MEDIA_LIBRARY_KIND_LABEL etc. are real
+// runtime constants, not just types, and a client component importing
+// a runtime value from a "server-only" module fails the build. See
+// that file's header comment for the full story.
+export type { MediaLibraryKind, MediaLibraryItem } from "@/lib/media-library-kinds";
+export {
+  MEDIA_LIBRARY_KIND_LABEL,
+  MEDIA_LIBRARY_FEATURABLE_KINDS,
+  MEDIA_LIBRARY_TRASHABLE_KINDS,
+} from "@/lib/media-library-kinds";
 
 /**
  * A single combined, browsable library across every piece of visual
@@ -20,34 +35,6 @@ import { listVideoEditJobs } from "@/services/video-editor";
  * this just gives the admin one place to browse and act on all of it at
  * once instead of hopping between five separate pages.
  */
-export type MediaLibraryKind = "gallery" | "photo" | "video" | "audio" | "ai_image" | "slideshow_video" | "video_edit";
-
-export const MEDIA_LIBRARY_KIND_LABEL: Record<MediaLibraryKind, string> = {
-  gallery: "Gallery",
-  photo: "Memory Wall Photo",
-  video: "Memory Wall Video",
-  audio: "Memory Wall Audio",
-  ai_image: "AI Image",
-  slideshow_video: "Slideshow Video",
-  video_edit: "Video Edit",
-};
-
-/** Whether a kind supports the "Feature" toggle — only the guest-facing Memory Wall kinds have a `featured` column (see services/admin-memories.ts's setMemoryFeatured); Gallery and the three admin-generated kinds don't. */
-export const MEDIA_LIBRARY_FEATURABLE_KINDS: readonly MediaLibraryKind[] = ["photo", "video", "audio"];
-
-/** Whether a kind is covered by the Recycle Bin (services/recycle-bin.ts) on delete, vs. an immediate hard delete — see each kind's delete branch in features/admin/media-library/actions.ts. */
-export const MEDIA_LIBRARY_TRASHABLE_KINDS: readonly MediaLibraryKind[] = ["gallery", "photo", "video", "audio"];
-
-export interface MediaLibraryItem {
-  id: string;
-  kind: MediaLibraryKind;
-  url: string;
-  caption: string | null;
-  guestName: string | null;
-  /** null when the kind doesn't support featuring at all (see MEDIA_LIBRARY_FEATURABLE_KINDS) — distinct from false ("supports it, just not featured"). */
-  featured: boolean | null;
-  createdAt: string;
-}
 
 export async function listMediaLibrary(eventId: string): Promise<MediaLibraryItem[]> {
   const [gallery, moderationItems, aiImages, slideshows, videoEdits] = await Promise.all([

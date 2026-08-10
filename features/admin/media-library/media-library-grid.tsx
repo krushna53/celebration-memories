@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { Check, Copy, Download, Loader2, Share2, Sparkles, Square, SquareCheck, Trash2, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { MediaLibraryItem, MediaLibraryKind } from "@/services/media-library";
-import { MEDIA_LIBRARY_KIND_LABEL } from "@/services/media-library";
+import type { MediaLibraryItem, MediaLibraryKind } from "@/lib/media-library-kinds";
+import { MEDIA_LIBRARY_KIND_LABEL } from "@/lib/media-library-kinds";
 import {
   createShareCollectionAction,
   deleteMediaLibraryItemAction,
