@@ -26,7 +26,7 @@ export default async function MediaLibraryPage() {
         Videos, and Video Edits. Select multiple items to feature, download, or delete them together.
       </p>
 
-      <MediaLibraryGrid items={items} />
+      <MediaLibraryGrid eventId={event.id} items={items} />
     </div>
   );
 }

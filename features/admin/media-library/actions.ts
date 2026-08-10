@@ -8,6 +8,7 @@ import { getRecycleItemEventId, moveToTrash } from "@/services/recycle-bin";
 import { deleteAiImageJob, getAiImageJobEventId } from "@/services/ai-image-jobs";
 import { deleteSlideshowVideoJob, getSlideshowVideoJobEventId } from "@/services/slideshow-video-jobs";
 import { deleteVideoEditJob, getVideoEditJobEventId } from "@/services/video-editor";
+import { createShareCollection, type ShareCollectionInputItem } from "@/services/share-collections";
 import type { MediaLibraryKind } from "@/services/media-library";
 
 function revalidateMediaLibraryPaths() {
@@ -93,6 +94,17 @@ export async function deleteMediaLibraryItemAction(kind: MediaLibraryKind, id: s
     }
     revalidateMediaLibraryPaths();
     return { success: true as const };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/** Bundles the caller's current selection into one shareable link (task #83) — see services/share-collections.ts. Trusts eventId only as far as requireAdminForEvent allows; createShareCollection itself re-verifies every item actually belongs to that event before saving. */
+export async function createShareCollectionAction(eventId: string, items: ShareCollectionInputItem[]) {
+  try {
+    const admin = await requireAdminForEvent(eventId);
+    const token = await createShareCollection({ eventId, adminId: admin.id, title: null, items });
+    return { success: true as const, data: { token } };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
   }

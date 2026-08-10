@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (Share Collection links)",
+    items: [
+      {
+        title: "\"Get Share Link\" — bundle several Media Library items into one shareable page",
+        detail:
+          "In Media Library, select multiple items (any mix of Gallery/Memory Wall/AI Images/Slideshow/Video Edits) and hit \"Get Share Link\" in the toolbar to get one link to a public page showing that whole selection — with WhatsApp/Facebook/X/Telegram/Email/Copy-Link buttons, same branded sharing as the existing single-photo share buttons. No login needed to view it, and nothing unapproved or deleted ever shows on the page even if the underlying items change later.",
+        test:
+          "In Media Library, select 2-3 items across different sections (e.g. a Gallery photo + an AI Image), click \"Get Share Link\", then open the resulting link in a private/incognito window and confirm all the selected items show up with working share buttons.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (Media Library)",
     items: [
       {

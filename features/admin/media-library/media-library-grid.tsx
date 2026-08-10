@@ -1,14 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Loader2, Sparkles, Square, SquareCheck, Trash2 } from "lucide-react";
+import { Check, Copy, Download, Loader2, Share2, Sparkles, Square, SquareCheck, Trash2, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { MediaLibraryItem, MediaLibraryKind } from "@/services/media-library";
 import { MEDIA_LIBRARY_KIND_LABEL } from "@/services/media-library";
-import { deleteMediaLibraryItemAction, toggleMediaLibraryFeaturedAction } from "@/features/admin/media-library/actions";
+import {
+  createShareCollectionAction,
+  deleteMediaLibraryItemAction,
+  toggleMediaLibraryFeaturedAction,
+} from "@/features/admin/media-library/actions";
 
 interface MediaLibraryGridProps {
+  eventId: string;
   items: MediaLibraryItem[];
 }
 
@@ -49,12 +54,14 @@ async function downloadOne(item: MediaLibraryItem) {
   }
 }
 
-export function MediaLibraryGrid({ items: initialItems }: MediaLibraryGridProps) {
+export function MediaLibraryGrid({ eventId, items: initialItems }: MediaLibraryGridProps) {
   const [items, setItems] = useState(initialItems);
   const [activeFilter, setActiveFilter] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const filtered = useMemo(() => {
     const kinds = FILTERS[activeFilter]!.kinds;
@@ -138,6 +145,31 @@ export function MediaLibraryGrid({ items: initialItems }: MediaLibraryGridProps)
     setBulkBusy(false);
   }
 
+  async function handleCreateShareLink() {
+    setBulkBusy(true);
+    const result = await createShareCollectionAction(
+      eventId,
+      selectedItems.map((it) => ({ kind: it.kind, id: it.id })),
+    );
+    if (result.success) {
+      setShareLink(`${window.location.origin}/share/${result.data.token}`);
+    } else {
+      alert(result.error);
+    }
+    setBulkBusy(false);
+  }
+
+  async function handleCopyShareLink() {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1800);
+    } catch (err) {
+      console.error("Copy link failed:", err);
+    }
+  }
+
   async function handleBulkDownload() {
     setBulkBusy(true);
     // Sequential on purpose (not Promise.all) — staggering the blob-download
@@ -193,6 +225,13 @@ export function MediaLibraryGrid({ items: initialItems }: MediaLibraryGridProps)
           </button>
           <button
             disabled={bulkBusy}
+            onClick={handleCreateShareLink}
+            className="tap-target flex items-center gap-1 rounded-full border border-navy-950/15 px-3 py-1.5 text-navy-700/70 hover:border-gold-500/50 disabled:opacity-50"
+          >
+            <Share2 size={14} /> Get Share Link
+          </button>
+          <button
+            disabled={bulkBusy}
             onClick={handleBulkDelete}
             className="tap-target flex items-center gap-1 rounded-full border border-red-200 px-3 py-1.5 text-red-600 hover:border-red-400 disabled:opacity-50"
           >
@@ -200,6 +239,25 @@ export function MediaLibraryGrid({ items: initialItems }: MediaLibraryGridProps)
           </button>
           <button onClick={clearSelection} className="ml-auto text-xs text-navy-700/50 hover:text-navy-950">
             Clear selection
+          </button>
+        </div>
+      ) : null}
+
+      {shareLink ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-gold-500/30 bg-gold-500/5 p-3 text-sm">
+          <span className="font-medium text-navy-950">Share link ready:</span>
+          <a href={shareLink} target="_blank" rel="noopener noreferrer" className="truncate text-gold-700 underline underline-offset-4">
+            {shareLink}
+          </a>
+          <button
+            onClick={handleCopyShareLink}
+            className="tap-target flex items-center gap-1 rounded-full border border-navy-950/15 px-3 py-1.5 text-navy-700/70 hover:border-gold-500/50"
+          >
+            {linkCopied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+            {linkCopied ? "Copied!" : "Copy"}
+          </button>
+          <button onClick={() => setShareLink(null)} className="ml-auto text-navy-700/50 hover:text-navy-950">
+            <X size={16} />
           </button>
         </div>
       ) : null}
