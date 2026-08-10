@@ -32,6 +32,7 @@ export function MemoryCard({ item }: MemoryCardProps) {
             url={item.url}
             fileNameBase={`${item.author.name}-photo`}
             shareText={`A photo from ${item.author.name}`}
+            pageUrl={`/p/photo/${item.id}`}
             className="absolute right-2 top-2 flex gap-1.5"
           />
         </div>
@@ -44,6 +45,7 @@ export function MemoryCard({ item }: MemoryCardProps) {
             url={item.url}
             fileNameBase={`${item.author.name}-video`}
             shareText={`A video from ${item.author.name}`}
+            pageUrl={`/p/video/${item.id}`}
             className="absolute right-2 top-2 z-10 flex gap-1.5"
           />
         </div>

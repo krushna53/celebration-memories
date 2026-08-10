@@ -100,6 +100,7 @@ export function GallerySection({ photos }: GallerySectionProps) {
                       url={item.url}
                       fileNameBase={`gallery-${item.category}`}
                       shareText={item.caption ?? undefined}
+                      pageUrl={`/p/gallery/${item.id}`}
                       className="absolute right-2 top-2 flex gap-1.5"
                     />
                   </div>

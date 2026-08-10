@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (very late night)",
+    items: [
+      {
+        title: "Branded social share buttons on every Gallery and Memory Wall photo/video (task #80)",
+        detail:
+          "Every photo/video card (site Gallery and the Memory Wall) now has a third button next to Download/Share — a small menu with WhatsApp, Facebook, X, Telegram, and Email share links, plus Copy Link. Unlike the existing native-Share button (which hands guests the raw file for their phone's own share sheet), these open a proper webpage for that one item first — a new public /p/[kind]/[id] link with a real preview card (title, description, image) — since WhatsApp/Facebook/X/Telegram all build their link-preview by crawling a page's tags, not a bare file URL. That page also shows the item full-size with a link back to the event site. Guest-uploaded photos/videos only get one of these links once an admin has approved them on Memories — same as they already had to be to show up on the Memory Wall at all.",
+        test:
+          "On the public Gallery or Memory Wall, click the new link-style button on any photo or video, then WhatsApp — confirm it opens WhatsApp Web/app with a message containing a link. Open that link directly and confirm it shows the photo/video with a proper page (not a raw file), and that pasting the link into a WhatsApp/Telegram chat shows an image preview card. Try Copy Link too and confirm it copies successfully (shows \"Copied!\").",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (night)",
     items: [
       {
