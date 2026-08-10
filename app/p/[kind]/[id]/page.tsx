@@ -85,6 +85,7 @@ export default async function PublicMediaPage({ params }: PublicMediaPageProps) 
       navLinks={[{ label: `Visit ${data.honoreeName}'s site`, href: `/events/${item.event.slug}` }]}
       footerVariant="minimal"
       hideChatWidget
+      homeHref={`/events/${item.event.slug}`}
     >
       <div className="mx-auto max-w-2xl px-4 pb-20 pt-28 sm:px-6">
         <Link

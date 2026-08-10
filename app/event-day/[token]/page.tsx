@@ -29,7 +29,7 @@ export default async function EventDayPage({ params }: { params: Promise<{ token
   }
 
   return (
-    <SiteShell honoreeName={event.honoreeName} footerVariant="minimal">
+    <SiteShell honoreeName={event.honoreeName} footerVariant="minimal" homeHref={`/events/${event.slug}`}>
       <EventDayGate token={token} honoreeName={event.honoreeName} />
     </SiteShell>
   );

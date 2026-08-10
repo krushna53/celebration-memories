@@ -30,6 +30,8 @@ interface SiteShellProps {
   footerVariant?: "full" | "minimal";
   /** Hides the floating support chat bubble — off for the public "share a memory" page, which is a focused single task (upload a photo/video/audio) for guests who may not be comfortable with phones; a floating chat bubble is one more thing to misread as part of the upload flow. Defaults to false (shown), which is every other public page. */
   hideChatWidget?: boolean;
+  /** Passed straight through to Navbar — see its doc comment. Defaults to "/". */
+  homeHref?: string;
 }
 
 /**
@@ -47,6 +49,7 @@ export function SiteShell({
   transparentUntilScroll,
   footerVariant,
   hideChatWidget,
+  homeHref,
 }: SiteShellProps) {
   return (
     <>
@@ -55,6 +58,7 @@ export function SiteShell({
         navLinks={navLinks}
         showLogin={showLogin}
         transparentUntilScroll={transparentUntilScroll}
+        homeHref={homeHref}
       />
       <main>{children}</main>
       <Footer designerCredit={designerCredit} variant={footerVariant} />

@@ -54,7 +54,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
   });
 
   return (
-    <SiteShell honoreeName={event.honoreeName} footerVariant="minimal">
+    <SiteShell honoreeName={event.honoreeName} footerVariant="minimal" homeHref={`/events/${event.slug}`}>
       <EngagementOptInBanner token={token} honoreeName={event.honoreeName} />
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">

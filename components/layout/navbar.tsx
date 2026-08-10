@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 
 import { ACTIVE_EVENT, NAV_LINKS, SITE_NAME } from "@/lib/constants";
@@ -37,6 +38,20 @@ interface NavbarProps {
    * homepage (which opens on its own bg-navy-950 section) opt into true.
    */
   transparentUntilScroll?: boolean;
+  /**
+   * Where the brand mark/name in the top-left goes. Defaults to "/" —
+   * right for the platform homepage and every platform marketing page
+   * (Pricing, Discover, Contact, ...). Event-scoped pages that aren't
+   * the event's own one-page site (RSVP, invite, Memories, Event Day,
+   * Big Screen Display, Games, Planner share) should pass the event's
+   * own URL (e.g. `/events/${event.slug}`) here instead, so the brand
+   * mark actually goes somewhere on those pages. Previously this was a
+   * bare `<a href="#hero">`, which only ever worked on the one page
+   * that actually has a `#hero` section (the event homepage itself) —
+   * everywhere else, clicking the logo silently did nothing, reported
+   * as "logo click doesn't work."
+   */
+  homeHref?: string;
 }
 
 export function Navbar({
@@ -44,9 +59,22 @@ export function Navbar({
   navLinks = NAV_LINKS,
   showLogin = false,
   transparentUntilScroll = false,
+  homeHref = "/",
 }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const isOnHomeHref = pathname === homeHref;
+
+  function handleBrandClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    // Already on the page the brand mark points to (e.g. the event's
+    // own homepage, or the platform homepage) — scroll smoothly to top
+    // instead of a no-op same-URL navigation.
+    if (isOnHomeHref) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
 
   useEffect(() => {
     if (!transparentUntilScroll) return;
@@ -68,8 +96,9 @@ export function Navbar({
       )}
     >
       <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 text-ivory-50 sm:px-6 sm:py-4">
-        <a
-          href="#hero"
+        <Link
+          href={homeHref}
+          onClick={handleBrandClick}
           className="flex items-center gap-2 truncate font-display text-base tracking-wide text-gold-300 sm:text-lg"
         >
           {/*
@@ -85,7 +114,7 @@ export function Navbar({
             <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-7 w-7 shrink-0" />
           ) : null}
           {honoreeName}
-        </a>
+        </Link>
 
         <ul className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (

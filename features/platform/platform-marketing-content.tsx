@@ -20,7 +20,6 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
-import { TestimonialsSection } from "@/features/testimonials/testimonials-section";
 import { BUILDER, SUPPORT } from "@/lib/constants";
 
 const LIVE_FEATURES = [
@@ -140,7 +139,7 @@ export function PlatformMarketingContent() {
   return (
     <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin transparentUntilScroll>
       <div className="bg-navy-950 pb-24 pt-32 text-ivory-50 sm:pt-40">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
           <Reveal>
             <p className="text-xs uppercase tracking-[0.35em] text-gold-300">
               A Krushna Web Works Product
@@ -181,8 +180,6 @@ export function PlatformMarketingContent() {
           </Reveal>
         </div>
       </div>
-
-      <TestimonialsSection />
 
       <div className="bg-ivory-50 py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">

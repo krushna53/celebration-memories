@@ -32,7 +32,7 @@ interface FooterProps {
 export function Footer({ designerCredit, variant = "full" }: FooterProps = {}) {
   return (
     <footer className="border-t border-gold-500/20 bg-navy-950 py-10 text-center text-ivory-100/70">
-      <p className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs tracking-wide">
+      <p className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm tracking-wide">
         {variant === "full" ? (
           <>
             <Link
@@ -104,7 +104,7 @@ export function Footer({ designerCredit, variant = "full" }: FooterProps = {}) {
           Contact Us
         </Link>
       </p>
-      <p className="mt-4 flex items-center justify-center gap-1.5 text-sm">
+      <p className="mt-4 flex items-center justify-center gap-1.5 text-base">
         Made with <Heart size={14} className="fill-gold-400 text-gold-400" />{" "}
         by{" "}
         <a
@@ -116,11 +116,11 @@ export function Footer({ designerCredit, variant = "full" }: FooterProps = {}) {
           {BUILDER.name}
         </a>
       </p>
-      <p className="mt-2 text-xs text-ivory-100/40">
+      <p className="mt-2 text-sm text-ivory-100/40">
         &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
       </p>
       {designerCredit ? (
-        <p className="mt-2 text-xs text-ivory-100/50">
+        <p className="mt-2 text-sm text-ivory-100/50">
           Template design by{" "}
           {designerCredit.website ? (
             <a
