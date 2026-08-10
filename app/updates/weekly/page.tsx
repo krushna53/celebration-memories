@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (Free public AI Image tool)",
+    items: [
+      {
+        title: "New public \"AI Invitation Image\" tool at /ai-invitation-image — no account needed",
+        detail:
+          "A free, standalone marketing/lead-gen page where anyone can describe their event and get an AI-generated invitation image, with a \"Build Your Full Site\" call-to-action pointing at the wizard. Since this is reachable by anyone (not just logged-in admins) and calls a real pay-per-image API, it's rate-limited — 3 free images per visitor per day, 40 total per day platform-wide — enforced server-side so the limit can't be bypassed by calling the endpoint directly.",
+        test:
+          "Visit /ai-invitation-image in a private/incognito window, generate an image, and confirm it downloads correctly. Try generating 4 in a row from the same browser and confirm the 4th shows the daily-limit message instead of erroring.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (Share Collection links)",
     items: [
       {

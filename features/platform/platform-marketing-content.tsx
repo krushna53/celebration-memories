@@ -119,6 +119,7 @@ const LIVE_FEATURES = [
  * exist on it.
  */
 export const PLATFORM_NAV_LINKS = [
+  { label: "AI Image Tool", href: "/ai-invitation-image" },
   { label: "Discover", href: "/discover" },
   { label: "Browse Events", href: "/events" },
   { label: "Pricing", href: "/pricing" },
@@ -175,6 +176,10 @@ export function PlatformMarketingContent() {
               {" · "}
               <Link href="/events" className="text-gold-300 underline underline-offset-2 hover:text-gold-200">
                 Browse live events
+              </Link>
+              {" · "}
+              <Link href="/ai-invitation-image" className="text-gold-300 underline underline-offset-2 hover:text-gold-200">
+                Try the free AI Image tool
               </Link>
             </p>
           </Reveal>
