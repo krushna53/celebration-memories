@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (night)",
+    items: [
+      {
+        title: "Client self-serve account deletion (task #71)",
+        detail:
+          "New \"Delete Account\" page in the admin sidebar (client hosts only). Two steps: send a 6-digit code to the account's own email, then enter it plus type \"DELETE\" to confirm. On confirmation, everything is permanently removed — the login, the event, every invitee/RSVP, all gallery/timeline/guest-uploaded photos and videos (including the actual files in storage, not just the database rows), backups, the works. Reuses the same cascade-delete the owner's existing account-management tool already had, just gated behind an emailed code instead of an owner typing someone else's email. Refuses to run if any other team member or session organizer still has their own login on the event — remove them first.",
+        test:
+          "As a client admin, open \"Delete Account,\" click \"Send Me a Verification Code,\" and confirm an email arrives with a 6-digit code. Enter it plus \"DELETE\" and confirm the browser warning — the event and all its data should be gone, and you should be signed out and redirected home. Also confirm it refuses to proceed if a team member or session organizer is still attached to the event.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (late evening)",
     items: [
       {

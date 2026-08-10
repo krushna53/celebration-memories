@@ -40,6 +40,7 @@ import {
   ReceiptText,
   UserRoundCog,
   History,
+  Trash2,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -80,6 +81,7 @@ const NAV = [
   { href: "/admin/session-organizers", label: "Session Organizers", icon: UserRoundCog },
   { href: "/admin/my-sessions", label: "My Sessions", icon: CalendarClock },
   { href: "/admin/backups", label: "Backups", icon: History },
+  { href: "/admin/delete-account", label: "Delete Account", icon: Trash2 },
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox },
   { href: "/admin/payment-settings", label: "Payment Settings", icon: QrCode },

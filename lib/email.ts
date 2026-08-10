@@ -206,6 +206,30 @@ export async function sendRsvpSubmittedNotification(input: {
   });
 }
 
+/**
+ * The one-time code a client must enter to confirm permanently deleting
+ * their own account/event (task #71) — see
+ * features/admin/delete-account/actions.ts. Deliberately blunt/urgent
+ * copy since this is the last checkpoint before an irreversible action.
+ */
+export async function sendAccountDeletionCode(input: {
+  to: string;
+  code: string;
+  eventTitle: string;
+  minutesValid: number;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: `Your account deletion code — ${SITE_NAME}`,
+    html: `
+      <p>Someone (hopefully you) requested to permanently delete your ${SITE_NAME} account and everything in <strong>${escapeHtml(input.eventTitle)}</strong> — every guest, RSVP, photo, video, and message.</p>
+      <p style="font-size:28px;font-weight:700;letter-spacing:4px;margin:20px 0;">${escapeHtml(input.code)}</p>
+      <p>Enter this code on the Delete Account page to confirm. It expires in ${input.minutesValid} minutes.</p>
+      <p style="color:#888;font-size:12px;">If you didn't request this, ignore this email — nothing will be deleted without the code.</p>
+    `,
+  });
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
