@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useController, useForm, useWatch, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Loader2 } from "lucide-react";
 
@@ -103,6 +103,61 @@ function PreviewCard({ values }: { values: TemplateSubmissionFormValues }) {
       <div className="px-4 py-3 text-center text-xs" style={{ backgroundColor: theme.colors.ivory50, color: theme.colors.navy700 }}>
         Live preview — actual template uses your full site content
       </div>
+    </div>
+  );
+}
+
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+
+/**
+ * One color field: a native swatch picker (`type="color"`) paired with
+ * a typeable hex text input, both editing the same value. Previously
+ * both inputs called `register(name)` independently — react-hook-form
+ * treats each `register()` call as its own uncontrolled ref, so picking
+ * a color in the swatch updated form state internally but never wrote
+ * back into the text input's DOM value (and vice versa): the swatch
+ * would visibly change but the hex box beside it looked frozen, which
+ * read as "the color picker doesn't work." Using useController makes
+ * both inputs controlled off the same field.value/onChange, so they
+ * always agree, and the live preview card (which already watches form
+ * state via useWatch) updates immediately either way.
+ */
+function ColorField({
+  name,
+  control,
+  label,
+  error,
+}: {
+  name: "baseDarkColor" | "baseAccentColor" | "baseLightColor";
+  control: Control<TemplateSubmissionFormValues>;
+  label: string;
+  error?: string;
+}) {
+  const { field } = useController({ name, control });
+  const swatchValue = HEX_COLOR_RE.test(field.value ?? "") ? field.value : "#000000";
+
+  return (
+    <div>
+      <label className={labelClasses} htmlFor={name}>
+        {label}
+      </label>
+      <div className="mt-1.5 flex items-center gap-2">
+        <input
+          id={name}
+          type="color"
+          className="h-10 w-10 shrink-0 cursor-pointer rounded border border-navy-950/15"
+          value={swatchValue}
+          onChange={(e) => field.onChange(e.target.value)}
+        />
+        <input
+          className={inputClasses}
+          value={field.value ?? ""}
+          onChange={(e) => field.onChange(e.target.value)}
+          onBlur={field.onBlur}
+          placeholder="#000000"
+        />
+      </div>
+      {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
     </div>
   );
 }
@@ -218,36 +273,9 @@ export function SubmitTemplateForm() {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-3">
-          <div>
-            <label className={labelClasses} htmlFor="baseDarkColor">
-              Dark / Base Color
-            </label>
-            <div className="mt-1.5 flex items-center gap-2">
-              <input type="color" className="h-10 w-10 shrink-0 cursor-pointer rounded border border-navy-950/15" {...register("baseDarkColor")} />
-              <input className={inputClasses} {...register("baseDarkColor")} />
-            </div>
-            {errors.baseDarkColor ? <p className="mt-1 text-xs text-red-600">{errors.baseDarkColor.message}</p> : null}
-          </div>
-          <div>
-            <label className={labelClasses} htmlFor="baseAccentColor">
-              Accent Color
-            </label>
-            <div className="mt-1.5 flex items-center gap-2">
-              <input type="color" className="h-10 w-10 shrink-0 cursor-pointer rounded border border-navy-950/15" {...register("baseAccentColor")} />
-              <input className={inputClasses} {...register("baseAccentColor")} />
-            </div>
-            {errors.baseAccentColor ? <p className="mt-1 text-xs text-red-600">{errors.baseAccentColor.message}</p> : null}
-          </div>
-          <div>
-            <label className={labelClasses} htmlFor="baseLightColor">
-              Light / Ivory Color
-            </label>
-            <div className="mt-1.5 flex items-center gap-2">
-              <input type="color" className="h-10 w-10 shrink-0 cursor-pointer rounded border border-navy-950/15" {...register("baseLightColor")} />
-              <input className={inputClasses} {...register("baseLightColor")} />
-            </div>
-            {errors.baseLightColor ? <p className="mt-1 text-xs text-red-600">{errors.baseLightColor.message}</p> : null}
-          </div>
+          <ColorField name="baseDarkColor" control={control} label="Dark / Base Color" error={errors.baseDarkColor?.message} />
+          <ColorField name="baseAccentColor" control={control} label="Accent Color" error={errors.baseAccentColor?.message} />
+          <ColorField name="baseLightColor" control={control} label="Light / Ivory Color" error={errors.baseLightColor?.message} />
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">

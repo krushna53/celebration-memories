@@ -120,6 +120,26 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  /*
+   * Several honeypot anti-bot fields across the app (RSVP, guest
+   * uploads, invitee/wizard forms, template submission — see any
+   * `-left-[9999px]` usage) intentionally position an input far off
+   * the left edge of the viewport to hide it from real visitors. A
+   * plain `position: absolute; left: -9999px` element still counts
+   * toward its containing block's scrollable overflow even though
+   * it's off-canvas, which without this rule widened <body>'s
+   * scrollable area and produced a spurious horizontal scrollbar/
+   * scroll-drag on both the public header and the admin header —
+   * reported as "horizontal scrolling issue in header" whether logged
+   * in or out. This is the standard fix rather than reworking every
+   * honeypot individually. Deliberately not `overflow-x: clip`
+   * (marginally safer for `position: sticky` descendants but
+   * inconsistent handling of the honeypot's negative-offset in older
+   * WebKit) — this app's only sticky usage (the template-submission
+   * live preview card) is a straightforward single-ancestor case that
+   * `hidden` handles fine.
+   */
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
