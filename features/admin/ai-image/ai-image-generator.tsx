@@ -344,12 +344,27 @@ export function AiImageGenerator({
         <p className="text-xs font-medium uppercase tracking-[0.15em] text-navy-700/50">
           {source === "generated" ? "AI Generated" : "Your Upload"}
         </p>
-        <div className="aspect-[3/4] w-full overflow-hidden rounded-xl border border-navy-950/10 bg-navy-950/5">
+        {/*
+          The OpenAI generation always comes back at a fixed 1024x1024
+          (square — see supabase/functions/generate-ai-image's `size`),
+          but this box used to be forced to a 3:4 portrait with
+          object-cover, which crops a square image to fit — chopping off
+          the decorative border on the sides (reported by user with
+          screenshots). "generated" now gets a matching square box;
+          "upload" (an arbitrary guest photo, unknown aspect ratio) keeps
+          the portrait box but switches to object-contain so it's
+          letterboxed instead of cropped, never losing any of the image.
+        */}
+        <div
+          className={`w-full overflow-hidden rounded-xl border border-navy-950/10 bg-navy-950/5 ${
+            source === "generated" ? "aspect-square" : "aspect-[3/4]"
+          }`}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={result.url}
             alt={source === "generated" ? "AI-generated invitation" : "Uploaded invitation"}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -539,13 +554,13 @@ export function AiImageGenerator({
         {generatedResult ? (
           renderResultPanel(generatedResult, "generated")
         ) : generating ? (
-          <div className="grid aspect-[3/4] w-full animate-pulse place-items-center gap-3 rounded-xl border border-dashed border-gold-500/30 bg-gold-500/5 px-6 text-center">
+          <div className="grid aspect-square w-full animate-pulse place-items-center gap-3 rounded-xl border border-dashed border-gold-500/30 bg-gold-500/5 px-6 text-center">
             <Sparkles className="text-gold-500/60" size={28} />
             <p className="text-sm font-medium text-navy-700/70">{LOADING_STEPS[loadingStep]}</p>
             <p className="text-xs text-navy-700/40">{elapsedSeconds}s elapsed</p>
           </div>
         ) : mode === "generate" ? (
-          <div className="flex aspect-[3/4] w-full items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
+          <div className="flex aspect-square w-full items-center justify-center rounded-xl border border-dashed border-navy-950/15 text-sm text-navy-700/40">
             Your AI-generated image will appear here.
           </div>
         ) : null}
