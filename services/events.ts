@@ -60,6 +60,8 @@ export interface EventRow {
   rsvp_early_bird_price: number | null;
   rsvp_early_bird_deadline: string | null;
   rsvp_currency: string;
+  live_stream_enabled: boolean;
+  live_stream_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -118,6 +120,8 @@ export function mapEvent(row: EventRow): EventRecord {
     rsvpEarlyBirdPrice: row.rsvp_early_bird_price,
     rsvpEarlyBirdDeadline: row.rsvp_early_bird_deadline,
     rsvpCurrency: row.rsvp_currency || "INR",
+    liveStreamEnabled: row.live_stream_enabled ?? false,
+    liveStreamUrl: row.live_stream_url,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -321,6 +325,8 @@ export interface EventUpdateInput {
   rsvpEarlyBirdPrice?: number | null;
   rsvpEarlyBirdDeadline?: string | null;
   rsvpCurrency?: string;
+  liveStreamEnabled?: boolean;
+  liveStreamUrl?: string | null;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -428,6 +434,8 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.rsvpEarlyBirdPrice !== undefined) patch.rsvp_early_bird_price = input.rsvpEarlyBirdPrice;
   if (input.rsvpEarlyBirdDeadline !== undefined) patch.rsvp_early_bird_deadline = input.rsvpEarlyBirdDeadline;
   if (input.rsvpCurrency !== undefined) patch.rsvp_currency = input.rsvpCurrency;
+  if (input.liveStreamEnabled !== undefined) patch.live_stream_enabled = input.liveStreamEnabled;
+  if (input.liveStreamUrl !== undefined) patch.live_stream_url = input.liveStreamUrl;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

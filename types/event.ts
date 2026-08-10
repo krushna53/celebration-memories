@@ -201,6 +201,19 @@ export interface EventRecord {
   /** Cutoff — before this instant, rsvpEarlyBirdPrice applies (if set); at/after, rsvpRegularPrice applies. Null with an early-bird price set = early-bird pricing never expires. */
   rsvpEarlyBirdDeadline: string | null;
   rsvpCurrency: string;
+  /**
+   * Simple-embed live streaming (#72) — an admin-pasted YouTube Live or
+   * Facebook Live share URL, rendered as an embedded player in its own
+   * homepage section when enabled. This is the "no new infrastructure"
+   * tier: the actual stream still runs through YouTube/Facebook, not a
+   * self-hosted server — see lib/live-stream.ts and
+   * migration 0042_live_stream_embed.sql for the full reasoning.
+   * Off by default, and the toggle is independent of the URL so an
+   * admin can turn the section off between events without losing the
+   * saved link.
+   */
+  liveStreamEnabled: boolean;
+  liveStreamUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }

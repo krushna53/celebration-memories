@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (Live Stream embed)",
+    items: [
+      {
+        title: "New \"Live Stream\" section — embed a YouTube Live or Facebook Live feed on your event page",
+        detail:
+          "In Event Settings, turn on Live Stream and paste a normal YouTube Live or Facebook Live share link — it embeds as its own section on your event homepage (reorderable/hideable like every other section), with a pulsing \"LIVE\" badge. This is the simple-embed approach (no new infrastructure or hosting cost) rather than a fully self-hosted streaming server — the stream itself still runs through YouTube/Facebook. Off by default, and the toggle is independent of the saved URL so you can turn it off between events without losing the link.",
+        test:
+          "In Event Settings, turn on Live Stream, paste a YouTube Live watch URL, save, and confirm the section appears on the event's public page with a working embedded player. Try reordering/hiding it in the Section Order manager and confirm the change reflects both in the live preview and on the real page after saving.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (Free public AI Image tool)",
     items: [
       {

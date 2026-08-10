@@ -4,6 +4,7 @@ import { HeroSection } from "@/features/hero/hero-section";
 import { CountdownSection } from "@/features/countdown/countdown-section";
 import { InvitationSection } from "@/features/invitation/invitation-section";
 import { EventDetailsSection } from "@/features/event-details/event-details-section";
+import { LiveStreamSection } from "@/features/live-stream/live-stream-section";
 import { GallerySection } from "@/features/gallery/gallery-section";
 import { TimelineSection } from "@/features/timeline/timeline-section";
 import { EventDayHomepageSection } from "@/features/event-day/event-day-homepage-section";
@@ -43,6 +44,7 @@ export function EventSections({ event, displayData: data, galleryPhotos, milesto
     countdown: <CountdownSection isoStart={data.isoStart} />,
     invitation: <InvitationSection data={data} />,
     eventDetails: <EventDetailsSection data={data} />,
+    liveStream: <LiveStreamSection enabled={event?.liveStreamEnabled ?? false} url={event?.liveStreamUrl ?? null} />,
     gallery: <GallerySection photos={galleryPhotos} />,
     timeline: <TimelineSection milestones={milestones} />,
     rsvp: (

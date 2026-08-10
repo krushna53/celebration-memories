@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, type ReactNode } from "react";
-import { CalendarDays, Car, CheckCircle2, Clock, Images, MapPin, Shirt } from "lucide-react";
+import { CalendarDays, Car, CheckCircle2, Clock, Images, MapPin, Radio, Shirt } from "lucide-react";
 
 import { getWishSectionCopy } from "@/lib/event-category";
 import { normalizeSectionConfig, type SectionConfigItem, type SectionKey } from "@/lib/section-registry";
@@ -140,6 +140,14 @@ export function EventSettingsPreview({ data }: { data: EventSettingsPreviewData 
               <Car size={12} className="text-gold-600" /> {data.parkingInfo}
             </p>
           ) : null}
+        </div>
+      </PreviewSectionShell>
+    ),
+    liveStream: (
+      <PreviewSectionShell tone="dark">
+        <p className={previewLabel}>Live Now</p>
+        <div className="mx-auto mt-2.5 flex max-w-[220px] aspect-video items-center justify-center rounded-lg border border-white/10 bg-black/30">
+          <Radio size={16} className="text-red-400" />
         </div>
       </PreviewSectionShell>
     ),

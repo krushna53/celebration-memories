@@ -49,6 +49,7 @@ import { validateCustomCss } from "@/lib/custom-css";
 import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
 import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
 import { zonedInputValueToUtcIso, utcIsoToZonedInputValue, listSupportedTimezones } from "@/lib/timezone";
+import { parseLiveStreamUrl } from "@/lib/live-stream";
 import { EVENT_SLUG } from "@/lib/constants";
 import type { EventRecord } from "@/types/event";
 
@@ -103,6 +104,8 @@ export function EventSettingsForm({
     publicMemoriesEnabled: event.publicMemoriesEnabled,
     aiAvatarEnabled: event.aiAvatarEnabled,
     aiAvatarDailyMessageLimit: event.aiAvatarDailyMessageLimit,
+    liveStreamEnabled: event.liveStreamEnabled,
+    liveStreamUrl: event.liveStreamUrl ?? "",
     isPaidEvent: event.isPaidEvent,
     rsvpRegularPrice: event.rsvpRegularPrice ?? null,
     rsvpEarlyBirdPrice: event.rsvpEarlyBirdPrice ?? null,
@@ -464,6 +467,8 @@ export function EventSettingsForm({
       publicMemoriesEnabled: form.publicMemoriesEnabled,
       aiAvatarEnabled: form.aiAvatarEnabled,
       aiAvatarDailyMessageLimit: form.aiAvatarDailyMessageLimit,
+      liveStreamEnabled: form.liveStreamEnabled,
+      liveStreamUrl: form.liveStreamUrl || null,
       isPaidEvent: form.isPaidEvent,
       rsvpRegularPrice: form.rsvpRegularPrice,
       rsvpEarlyBirdPrice: form.rsvpEarlyBirdPrice,
@@ -1259,6 +1264,73 @@ export function EventSettingsForm({
               Once this many messages have been answered today, the Avatar tells guests to check back tomorrow or
               contact you directly — a safety cap on cost, not a guest-visible feature.
             </p>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Live Stream</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          Paste a YouTube Live or Facebook Live link and it embeds as its own section on your event page — for
+          relatives who can&rsquo;t make it in person. The stream itself still runs through YouTube/Facebook; this
+          just embeds it here. Turn it off between events without losing the saved link.
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, liveStreamEnabled: false }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              !form.liveStreamEnabled
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            Off
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, liveStreamEnabled: true }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              form.liveStreamEnabled
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            On — show the Live Stream section
+          </button>
+        </div>
+        {form.liveStreamEnabled ? (
+          <div>
+            <label className={labelClasses}>YouTube Live or Facebook Live URL</label>
+            <input
+              type="url"
+              value={form.liveStreamUrl}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, liveStreamUrl: e.target.value }));
+                setSaved(false);
+              }}
+              placeholder="https://www.youtube.com/watch?v=... or https://www.facebook.com/.../videos/..."
+              className={inputClasses}
+            />
+            {form.liveStreamUrl.trim() ? (
+              parseLiveStreamUrl(form.liveStreamUrl).embedUrl ? (
+                <p className="mt-1.5 text-xs text-green-700">Looks good — this will embed on your event page.</p>
+              ) : (
+                <p className="mt-1.5 text-xs text-red-600">
+                  That doesn&rsquo;t look like a YouTube or Facebook video URL — double-check the link.
+                </p>
+              )
+            ) : (
+              <p className="mt-1.5 text-xs text-navy-700/50">
+                Paste the normal share/watch link — not an embed code.
+              </p>
+            )}
           </div>
         ) : null}
       </section>
