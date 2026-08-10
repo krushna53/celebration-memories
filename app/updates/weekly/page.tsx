@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (Recycle Bin + view switcher)",
+    items: [
+      {
+        title: "Recycle Bin for deleted media (30-day undo) + a real Simple/Icons view switcher",
+        detail:
+          "Deleting a Gallery photo or a Memory Wall photo/video/audio in the admin no longer removes it right away — it moves to a new \"Recycle Bin\" page (in the main nav and in both the Simplified and App-Icon views) where it stays for 30 days, restorable with one tap, before it's automatically and permanently purged overnight. A \"Delete Forever\" button is also there if you want it gone immediately. Guest book messages are unaffected (text, not media, so they still delete immediately as before). Also added a proper List/Icons switcher to the top of both the Simplified view and the App-Icon view, so you can flip between the two with one tap instead of hunting for a link at the bottom of the page.",
+        test:
+          "In Gallery or Memories, delete a photo/video/audio item, then open Recycle Bin (nav, or from Simple/Apps view) and confirm it's listed with a \"Purges in 30 days\" note. Restore it and confirm it reappears in Gallery/Memories. Delete another item and use \"Delete Forever\" and confirm it's gone immediately. On /admin/simple and /admin/apps, use the new List/Icons switcher in the header to flip between the two views.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (after midnight)",
     items: [
       {

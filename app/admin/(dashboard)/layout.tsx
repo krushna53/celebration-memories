@@ -41,6 +41,7 @@ import {
   UserRoundCog,
   History,
   Trash2,
+  RotateCcw,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -81,6 +82,7 @@ const NAV = [
   { href: "/admin/session-organizers", label: "Session Organizers", icon: UserRoundCog },
   { href: "/admin/my-sessions", label: "My Sessions", icon: CalendarClock },
   { href: "/admin/backups", label: "Backups", icon: History },
+  { href: "/admin/recycle-bin", label: "Recycle Bin", icon: RotateCcw },
   { href: "/admin/delete-account", label: "Delete Account", icon: Trash2 },
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox },

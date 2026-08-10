@@ -44,6 +44,12 @@ export async function listMemoriesForModeration(
         .eq("event_id", eventId)
         .order("created_at", { ascending: false });
 
+      // guestbook has no deleted_at column (text, not media — see
+      // services/recycle-bin.ts's header comment) so this filter only
+      // applies to the three media kinds; a trashed photo/video/audio
+      // item should drop out of the moderation queue immediately, same
+      // as everywhere else.
+      if (kind !== "guestbook") query = query.is("deleted_at", null);
       if (filter === "pending") query = query.eq("approved", false);
 
       const { data, error } = await query;

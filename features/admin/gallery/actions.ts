@@ -6,15 +6,16 @@ import { requireAdminForEvent } from "@/services/admin-auth";
 import { createSignedGalleryUpload } from "@/services/uploads";
 import {
   createGalleryPhoto,
-  deleteGalleryPhoto,
   getGalleryPhotoById,
   updateGalleryPhoto,
 } from "@/services/gallery-photos";
+import { moveToTrash } from "@/services/recycle-bin";
 import { snapshotGallery } from "@/services/event-snapshots";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
 
 function revalidateGalleryPaths() {
   revalidatePath("/admin/gallery");
+  revalidatePath("/admin/recycle-bin");
   revalidatePath("/");
 }
 
@@ -74,11 +75,12 @@ export async function updateGalleryPhotoAction(
   }
 }
 
+/** Moves the photo to the Recycle Bin (soft delete) instead of removing it immediately — see services/recycle-bin.ts. It stays recoverable there for 30 days before the automatic purge sweep removes it for good. */
 export async function deleteGalleryPhotoAction(id: string) {
   try {
     const { admin, photo } = await requireAdminForPhoto(id);
     await snapshotGallery(photo.eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
-    await deleteGalleryPhoto(id);
+    await moveToTrash("gallery", id);
     revalidateGalleryPaths();
     return { success: true as const };
   } catch (err) {

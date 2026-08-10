@@ -25,6 +25,7 @@ import { listVideoEditJobs } from "@/services/video-editor";
 import { getOrCreateMobileAccessCode } from "@/services/admin-mobile-auth";
 import { signOutAction } from "@/features/admin/auth-actions";
 import { StatCard } from "@/features/admin/components/stat-card";
+import { ViewSwitcher } from "@/features/admin/components/view-switcher";
 import { QuickShareLinks } from "@/features/admin/simple/quick-share-links";
 import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
 import { VisibilityToggle } from "@/features/admin/events/visibility-toggle";
@@ -62,6 +63,7 @@ function SimpleHeader() {
           EveryMoment
         </Link>
         <div className="flex items-center gap-4">
+          <ViewSwitcher active="simple" />
           <Link
             href="/admin"
             className="hidden items-center gap-1.5 text-sm text-ivory-100/70 hover:text-gold-300 sm:flex"
@@ -303,10 +305,6 @@ export default async function AdminSimplePage() {
             Need something else — Templates, Check-In, Domain Search?{" "}
             <Link href="/admin" className="font-medium text-gold-700 underline underline-offset-4 hover:text-gold-800">
               Open the full dashboard
-            </Link>
-            {" · "}
-            <Link href="/admin/apps" className="font-medium text-gold-700 underline underline-offset-4 hover:text-gold-800">
-              Try the app-icon view
             </Link>
           </p>
         </div>

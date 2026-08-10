@@ -63,6 +63,7 @@ export async function getPublicMediaItem(kind: PublicMediaKind, id: string): Pro
     .select("id, event_id, caption, storage_path, approved, invitees(name)")
     .eq("id", id)
     .eq("approved", true)
+    .is("deleted_at", null)
     .maybeSingle<GuestMediaRow>();
 
   if (error || !data) return null;

@@ -32,6 +32,7 @@ export async function listGalleryPhotos(eventId: string): Promise<GalleryPhotoRe
     .from("gallery_photos")
     .select("*")
     .eq("event_id", eventId)
+    .is("deleted_at", null)
     .order("category", { ascending: true })
     .order("sort_order", { ascending: true });
 
@@ -45,6 +46,7 @@ export async function getCoverPhoto(eventId: string): Promise<string | null> {
     .from("gallery_photos")
     .select("storage_path")
     .eq("event_id", eventId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -53,12 +55,13 @@ export async function getCoverPhoto(eventId: string): Promise<string | null> {
   return data ? publicMediaUrl("gallery", data.storage_path) : null;
 }
 
-/** Used by the wizard's draft-scoped delete action to verify a photo actually belongs to the caller's draft event before deleting it — see features/start/actions/gallery.ts. */
+/** Used by the wizard's draft-scoped delete action to verify a photo actually belongs to the caller's draft event before deleting it — see features/start/actions/gallery.ts. Filters out trashed photos (deleted_at not null) same as every other normal read — a moved-to-trash item should behave as "not found" everywhere except the Recycle Bin's own queries (see services/recycle-bin.ts's getRecycleItemEventId for the unfiltered equivalent). */
 export async function getGalleryPhotoById(id: string): Promise<GalleryPhotoRecord | null> {
   const { data, error } = await supabaseAdmin()
     .from("gallery_photos")
     .select("*")
     .eq("id", id)
+    .is("deleted_at", null)
     .maybeSingle<GalleryPhotoRow>();
 
   if (error) throw new Error(`Failed to look up gallery photo: ${error.message}`);

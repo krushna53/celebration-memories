@@ -19,6 +19,7 @@ import {
   ReceiptText,
   UserRoundCog,
   History,
+  RotateCcw,
   Trash2,
   HelpCircle,
   Settings,
@@ -28,6 +29,7 @@ import {
   CalendarCheck,
   MonitorPlay,
   LayoutGrid,
+  List,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -37,6 +39,7 @@ import { isPathAllowedForRole } from "@/lib/admin-roles";
 import { signOutAction } from "@/features/admin/auth-actions";
 import { NotificationBell } from "@/features/admin/notifications/notification-bell";
 import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
+import { ViewSwitcher } from "@/features/admin/components/view-switcher";
 
 export const dynamic = "force-dynamic";
 
@@ -82,6 +85,7 @@ const APP_TILES: AppTile[] = [
   { href: "/admin/share-image", label: "Share Image", icon: ImagePlus, color: "bg-orange-500" },
   { href: "/admin/domain-search", label: "Domain Search", icon: Globe, color: "bg-sky-500" },
   { href: "/admin/backups", label: "Backups", icon: History, color: "bg-yellow-600" },
+  { href: "/admin/recycle-bin", label: "Recycle Bin", icon: RotateCcw, color: "bg-slate-500" },
   { href: "/admin/delete-account", label: "Delete Account", icon: Trash2, color: "bg-red-700" },
   { href: "/admin/help", label: "Help", icon: HelpCircle, color: "bg-gray-500" },
 ];
@@ -96,6 +100,7 @@ function AppsHeader() {
           EveryMoment
         </Link>
         <div className="flex items-center gap-4">
+          <ViewSwitcher active="apps" />
           <Link
             href="/admin"
             className="hidden items-center gap-1.5 text-sm text-ivory-100/70 hover:text-gold-300 sm:flex"
@@ -196,10 +201,8 @@ export default async function AdminAppsPage() {
         </div>
 
         <p className="mt-10 text-center text-sm text-navy-700/50">
-          Prefer a list with progress and hints instead?{" "}
-          <Link href="/admin/simple" className="font-medium text-gold-700 underline underline-offset-4 hover:text-gold-800">
-            Try the simplified view
-          </Link>
+          Prefer a list with progress and hints instead? Use the{" "}
+          <List size={12} className="inline -mt-0.5" aria-hidden="true" /> switch above.
         </p>
       </main>
     </div>

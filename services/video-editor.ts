@@ -53,6 +53,7 @@ async function fetchWallMedia(
     .from(table)
     .select("id, storage_path, caption, approved, created_at")
     .eq("event_id", eventId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {

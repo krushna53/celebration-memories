@@ -20,6 +20,7 @@ async function fetchApproved(table: string, eventId: string, limit: number) {
     .select("*, invitees(name, relationship)")
     .eq("event_id", eventId)
     .eq("approved", true)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
 
