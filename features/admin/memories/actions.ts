@@ -15,6 +15,7 @@ import { moveToTrash, type RecycleBinKind } from "@/services/recycle-bin";
 function revalidateMemoryPaths() {
   revalidatePath("/admin/memories");
   revalidatePath("/admin/recycle-bin");
+  revalidatePath("/admin/media-library");
   revalidatePath("/admin");
   revalidatePath("/");
 }

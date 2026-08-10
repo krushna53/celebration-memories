@@ -16,6 +16,7 @@ import type { GalleryCategory } from "@/features/gallery/gallery-data";
 function revalidateGalleryPaths() {
   revalidatePath("/admin/gallery");
   revalidatePath("/admin/recycle-bin");
+  revalidatePath("/admin/media-library");
   revalidatePath("/");
 }
 

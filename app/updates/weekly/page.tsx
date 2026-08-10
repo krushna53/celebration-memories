@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (Media Library)",
+    items: [
+      {
+        title: "New Media Library — every photo/video/audio in one place, with bulk actions",
+        detail:
+          "A new \"Media Library\" page (in the main nav, Simple view, and App-Icon view) combines Gallery photos, approved Memory Wall uploads, AI Images, Slideshow Video renders, and Video Editor renders into one browsable grid with filter tabs. Select multiple items at once to Feature, Download, or Delete them together — Gallery/Memory Wall deletes go to the new Recycle Bin (30-day undo); AI Image/Slideshow/Video Edit deletes are immediate since those aren't guest-submitted content.",
+        test:
+          "Open Media Library, switch between the filter tabs (All/Gallery/Memory Wall/AI Images/Slideshow Videos/Video Edits), select a few items with the checkbox, and try the Feature/Download/Delete bulk actions in the toolbar that appears. Confirm a deleted Gallery/Memory Wall item shows up in Recycle Bin afterward.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (Recycle Bin + view switcher)",
     items: [
       {

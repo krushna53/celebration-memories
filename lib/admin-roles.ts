@@ -20,6 +20,7 @@ export const CLIENT_ALLOWED_PATHS: readonly string[] = [
   "/admin/timeline",
   "/admin/event-day",
   "/admin/memories",
+  "/admin/media-library",
   "/admin/planner",
   "/admin/games",
   "/admin/share-image",

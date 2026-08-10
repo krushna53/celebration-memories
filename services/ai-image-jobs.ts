@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { publicMediaUrl } from "@/services/uploads";
 
 /**
  * Creates a pending job row that the Supabase Edge Function
@@ -121,4 +122,71 @@ export async function recordAiImageUpload(params: {
   });
 
   if (error) throw new Error(`Failed to record uploaded image: ${error.message}`);
+}
+
+export interface CompletedAiImageJob {
+  id: string;
+  url: string;
+  prompt: string;
+  isUpload: boolean;
+  createdAt: string;
+}
+
+/** Every completed AI Image job (generated or uploaded) for an event, newest first — backs the Media Library's "AI Images" section. See getLatestCompletedAiImageJob/getLatestUploadedAiImageJob above for the single-item equivalents used by the generator's own preview panel. */
+export async function listCompletedAiImageJobs(eventId: string): Promise<CompletedAiImageJob[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("ai_image_jobs")
+    .select("id, result_path, prompt, is_upload, created_at")
+    .eq("event_id", eventId)
+    .eq("status", "done")
+    .not("result_path", "is", null)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("listCompletedAiImageJobs failed:", error.message);
+    return [];
+  }
+
+  return (
+    data as Array<{ id: string; result_path: string; prompt: string; is_upload: boolean; created_at: string }>
+  ).map((row) => ({
+    id: row.id,
+    url: publicMediaUrl("gallery", row.result_path),
+    prompt: row.prompt,
+    isUpload: row.is_upload,
+    createdAt: row.created_at,
+  }));
+}
+
+/** Looks up which event an AI Image job belongs to, for the Media Library's auth check before feature/delete actions — same "re-resolve from id" pattern as getMemoryEventId (services/admin-memories.ts). */
+export async function getAiImageJobEventId(jobId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("ai_image_jobs")
+    .select("event_id")
+    .eq("id", jobId)
+    .maybeSingle<{ event_id: string }>();
+  if (error) {
+    console.error("getAiImageJobEventId failed:", error.message);
+    return null;
+  }
+  return data?.event_id ?? null;
+}
+
+/** Permanently removes a completed AI Image job — Storage object plus row. Ownership-checked against eventId first, same "re-resolve, don't trust the client" pattern used everywhere else. Not part of the Recycle Bin (services/recycle-bin.ts) — that's scoped to guest/gallery media tables only — so this is an immediate, non-recoverable delete. */
+export async function deleteAiImageJob(eventId: string, jobId: string): Promise<void> {
+  const client = supabaseAdmin();
+  const { data: job, error: lookupError } = await client
+    .from("ai_image_jobs")
+    .select("id, event_id, result_path")
+    .eq("id", jobId)
+    .maybeSingle<{ id: string; event_id: string; result_path: string | null }>();
+
+  if (lookupError) throw new Error(`Failed to look up AI image job: ${lookupError.message}`);
+  if (!job || job.event_id !== eventId) throw new Error("That AI image doesn't belong to this event.");
+
+  if (job.result_path) {
+    await client.storage.from("gallery").remove([job.result_path]);
+  }
+  const { error: deleteError } = await client.from("ai_image_jobs").delete().eq("id", jobId);
+  if (deleteError) throw new Error(`Failed to delete AI image: ${deleteError.message}`);
 }

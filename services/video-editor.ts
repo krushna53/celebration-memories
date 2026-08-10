@@ -317,6 +317,39 @@ export async function getVideoEditJob(jobId: string): Promise<VideoEditJob | nul
   return data ? mapJobRow(data) : null;
 }
 
+/** Looks up which event a video edit job belongs to, for the Media Library's auth check before delete — same pattern as getAiImageJobEventId (services/ai-image-jobs.ts). */
+export async function getVideoEditJobEventId(jobId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("video_edit_jobs")
+    .select("event_id")
+    .eq("id", jobId)
+    .maybeSingle<{ event_id: string }>();
+  if (error) {
+    console.error("getVideoEditJobEventId failed:", error.message);
+    return null;
+  }
+  return data?.event_id ?? null;
+}
+
+/** Permanently removes a saved video edit (draft or completed render) — Storage object (if any) plus row. Backs the Media Library's Delete action for the "Video Edits" section; not part of the Recycle Bin, so this is immediate and non-recoverable. */
+export async function deleteVideoEditJob(eventId: string, jobId: string): Promise<void> {
+  const client = supabaseAdmin();
+  const { data: job, error: lookupError } = await client
+    .from("video_edit_jobs")
+    .select("id, event_id, result_path")
+    .eq("id", jobId)
+    .maybeSingle<{ id: string; event_id: string; result_path: string | null }>();
+
+  if (lookupError) throw new Error(`Failed to look up video edit: ${lookupError.message}`);
+  if (!job || job.event_id !== eventId) throw new Error("That video edit doesn't belong to this event.");
+
+  if (job.result_path) {
+    await client.storage.from("gallery").remove([job.result_path]);
+  }
+  const { error: deleteError } = await client.from("video_edit_jobs").delete().eq("id", jobId);
+  if (deleteError) throw new Error(`Failed to delete video edit: ${deleteError.message}`);
+}
+
 /** Marks a draft job as queued for rendering — the actual Shotstack submission happens in the render-video-edit Edge Function (task #83). */
 export async function markVideoEditJobRendering(jobId: string, shotstackRenderId: string | null): Promise<void> {
   const { error } = await supabaseAdmin()

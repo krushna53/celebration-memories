@@ -42,6 +42,7 @@ import {
   History,
   Trash2,
   RotateCcw,
+  LayoutPanelTop,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -66,6 +67,7 @@ const NAV = [
   { href: "/admin/timeline", label: "Timeline", icon: Clock },
   { href: "/admin/event-day", label: "Event Day", icon: CalendarClock },
   { href: "/admin/memories", label: "Memories", icon: ImageIcon },
+  { href: "/admin/media-library", label: "Media Library", icon: LayoutPanelTop },
   { href: "/admin/planner", label: "Planner", icon: ListChecks },
   { href: "/admin/games", label: "Games", icon: Gamepad2 },
   { href: "/admin/marketplace", label: "Marketplace", icon: Store },
