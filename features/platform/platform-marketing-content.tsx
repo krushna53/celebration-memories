@@ -140,18 +140,18 @@ export function PlatformMarketingContent() {
   return (
     <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin transparentUntilScroll>
       <div className="bg-navy-950 pb-24 pt-32 text-ivory-50 sm:pt-40">
-        <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
+        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           <Reveal>
             <p className="text-xs uppercase tracking-[0.35em] text-gold-300">
               A Krushna Web Works Product
             </p>
-            <h1 className="mt-5 font-display text-4xl sm:text-5xl">
+            <h1 className="mt-5 font-display text-4xl sm:text-5xl lg:text-6xl">
               EveryMoment
             </h1>
             <p className="mt-3 font-display text-xl italic text-gold-300 sm:text-2xl">
               Every Moment Matters.
             </p>
-            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-ivory-100/75 sm:text-lg">
+            <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-ivory-100/75 sm:text-lg">
               Create. Celebrate. Remember. A premium, mobile-first invitation
               site for the moments worth gathering for — birthdays, weddings,
               anniversaries, retirements, baby showers, memorials, workshops,
@@ -187,7 +187,7 @@ export function PlatformMarketingContent() {
       </div>
 
       <div className="bg-ivory-50 py-20 sm:py-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             eyebrow="Live Today"
             title="Everything You Need To Host, Digitally"

@@ -29,113 +29,122 @@ interface FooterProps {
  * page) that sit alongside any individual event's site — see `variant`
  * above for where that's dialed back.
  */
+const footerLinkClass = "transition-luxury duration-300 hover:text-gold-300";
+
+const FOOTER_COLUMNS: Array<{ heading: string; links: Array<{ href: string; label: string }> }> = [
+  {
+    heading: "Explore",
+    links: [
+      { href: "/events", label: "Explore Public Events" },
+      { href: "/guide", label: "Visitor Guide" },
+      { href: "/roles", label: "Who Can Do What" },
+    ],
+  },
+  {
+    heading: "Get Started",
+    links: [
+      { href: "/", label: "Build Your Own Celebration Site" },
+      { href: "/pricing", label: "Pricing" },
+      { href: "/templates/submit", label: "Submit a Template" },
+    ],
+  },
+  {
+    heading: "Legal",
+    links: [
+      { href: "/terms", label: "Terms & Conditions" },
+      { href: "/privacy", label: "Privacy Notice" },
+      { href: "/refund-policy", label: "Cancellation & Refunds" },
+      { href: "/shipping-policy", label: "Shipping Policy" },
+    ],
+  },
+  {
+    heading: "Support",
+    links: [{ href: "/contact", label: "Contact Us" }],
+  },
+];
+
+const MINIMAL_LINKS = [
+  { href: "/terms", label: "Terms & Conditions" },
+  { href: "/privacy", label: "Privacy Notice" },
+  { href: "/refund-policy", label: "Cancellation & Refunds" },
+  { href: "/shipping-policy", label: "Shipping Policy" },
+  { href: "/contact", label: "Contact Us" },
+];
+
 export function Footer({ designerCredit, variant = "full" }: FooterProps = {}) {
   return (
-    <footer className="border-t border-gold-500/20 bg-navy-950 py-10 text-center text-ivory-100/70">
-      <p className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm tracking-wide">
+    <footer className="border-t border-gold-500/20 bg-navy-950 py-12 text-ivory-100/70">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {variant === "full" ? (
-          <>
-            <Link
-              href="/guide"
-              className="transition-luxury duration-300 hover:text-gold-300"
-            >
-              Visitor Guide
-            </Link>
-            <Link
-              href="/events"
-              className="transition-luxury duration-300 hover:text-gold-300"
-            >
-              Explore Public Events
-            </Link>
-            <Link
-              href="/"
-              className="transition-luxury duration-300 hover:text-gold-300"
-            >
-              Build Your Own Celebration Site
-            </Link>
-            <Link
-              href="/pricing"
-              className="transition-luxury duration-300 hover:text-gold-300"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/templates/submit"
-              className="transition-luxury duration-300 hover:text-gold-300"
-            >
-              Submit a Template
-            </Link>
-            <Link
-              href="/roles"
-              className="transition-luxury duration-300 hover:text-gold-300"
-            >
-              Who Can Do What
-            </Link>
-          </>
-        ) : null}
-        <Link
-          href="/terms"
-          className="transition-luxury duration-300 hover:text-gold-300"
+          <div className="grid grid-cols-2 gap-8 text-center sm:grid-cols-4 sm:text-left">
+            {FOOTER_COLUMNS.map((column) => (
+              <div key={column.heading}>
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold-300/70">
+                  {column.heading}
+                </p>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  {column.links.map((link) => (
+                    <li key={link.href}>
+                      <Link href={link.href} className={footerLinkClass}>
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center text-sm tracking-wide">
+            {MINIMAL_LINKS.map((link) => (
+              <Link key={link.href} href={link.href} className={footerLinkClass}>
+                {link.label}
+              </Link>
+            ))}
+          </p>
+        )}
+
+        <div
+          className={
+            variant === "full"
+              ? "mt-10 border-t border-gold-500/10 pt-8 text-center"
+              : "mt-6 text-center"
+          }
         >
-          Terms & Conditions
-        </Link>
-        <Link
-          href="/privacy"
-          className="transition-luxury duration-300 hover:text-gold-300"
-        >
-          Privacy Notice
-        </Link>
-        <Link
-          href="/refund-policy"
-          className="transition-luxury duration-300 hover:text-gold-300"
-        >
-          Cancellation & Refunds
-        </Link>
-        <Link
-          href="/shipping-policy"
-          className="transition-luxury duration-300 hover:text-gold-300"
-        >
-          Shipping Policy
-        </Link>
-        <Link
-          href="/contact"
-          className="transition-luxury duration-300 hover:text-gold-300"
-        >
-          Contact Us
-        </Link>
-      </p>
-      <p className="mt-4 flex items-center justify-center gap-1.5 text-base">
-        Made with <Heart size={14} className="fill-gold-400 text-gold-400" />{" "}
-        by{" "}
-        <a
-          href={BUILDER.whatsappUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-gold-300 transition-luxury duration-300 hover:text-gold-200"
-        >
-          {BUILDER.name}
-        </a>
-      </p>
-      <p className="mt-2 text-sm text-ivory-100/40">
-        &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
-      </p>
-      {designerCredit ? (
-        <p className="mt-2 text-sm text-ivory-100/50">
-          Template design by{" "}
-          {designerCredit.website ? (
+          <p className="text-sm text-ivory-100/40">
+            &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
+          </p>
+          {designerCredit ? (
+            <p className="mt-2 text-sm text-ivory-100/50">
+              Template design by{" "}
+              {designerCredit.website ? (
+                <a
+                  href={designerCredit.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gold-300/80 underline underline-offset-2 hover:text-gold-200"
+                >
+                  {designerCredit.name}
+                </a>
+              ) : (
+                <span className="text-ivory-100/70">{designerCredit.name}</span>
+              )}
+            </p>
+          ) : null}
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-ivory-100/50">
+            Made with <Heart size={11} className="fill-gold-400 text-gold-400" />{" "}
+            by{" "}
             <a
-              href={designerCredit.website}
+              href={BUILDER.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gold-300/80 underline underline-offset-2 hover:text-gold-200"
+              className="font-medium text-gold-300/90 transition-luxury duration-300 hover:text-gold-200"
             >
-              {designerCredit.name}
+              {BUILDER.name}
             </a>
-          ) : (
-            <span className="text-ivory-100/70">{designerCredit.name}</span>
-          )}
-        </p>
-      ) : null}
+          </p>
+        </div>
+      </div>
     </footer>
   );
 }
