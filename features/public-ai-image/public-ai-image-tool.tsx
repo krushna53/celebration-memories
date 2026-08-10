@@ -111,7 +111,7 @@ export function PublicAiImageTool() {
           )}
         </Button>
         <p className="mt-2 text-center text-xs text-navy-700/40">
-          A few free tries per day, no account needed.
+          1 free generation per hour, no account needed.
         </p>
       </div>
 

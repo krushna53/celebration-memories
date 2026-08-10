@@ -44,7 +44,7 @@ export default function PublicAiImagePage() {
 
       <div className="bg-ivory-50 py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <SectionHeading eyebrow="Try It Now" title="Generate Your Invitation Image" description="A few free tries per day." />
+          <SectionHeading eyebrow="Try It Now" title="Generate Your Invitation Image" description="1 free generation per hour." />
           <div className="mt-10">
             <PublicAiImageTool />
           </div>
