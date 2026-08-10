@@ -114,7 +114,7 @@ function buildTiers(planPrices: Record<PricingPlanId, PricingPlanSetting>): Tier
 }
 
 const STUDIO_WHATSAPP_URL =
-  "https://wa.me/919987982969?text=Hi%20Harshal%2C%20I%27d%20like%20to%20talk%20about%20a%20Studio%2FAgency%20plan.";
+  "https://wa.me/919987982969?text=Hi%2C%20I%27d%20like%20to%20talk%20about%20a%20Studio%2FAgency%20plan.";
 
 function formatPrice(price: Price, currency: Currency): string {
   if (currency === "INR") {

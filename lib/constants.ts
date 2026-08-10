@@ -65,7 +65,7 @@ export const VENUE = {
 export const BUILDER = {
   name: "Krushna Web Works",
   whatsappUrl:
-    "https://wa.me/919987982969?text=Hi%20Harshal,%20I%20visited%20your%20event%20website%20and%20would%20like%20to%20create%20something%20similar.",
+    "https://wa.me/919987982969?text=Hi,%20I%20visited%20your%20event%20website%20and%20would%20like%20to%20create%20something%20similar.",
 } as const;
 
 /**
@@ -77,7 +77,7 @@ export const BUILDER = {
  * "upi://pay?pa=yourvpa@bank&pn=Krushna%20Web%20Works").
  */
 export const SUPPORT = {
-  url: "https://wa.me/919987982969?text=Hi%20Harshal,%20I%27d%20like%20to%20support%20EveryMoment.",
+  url: "https://wa.me/919987982969?text=Hi,%20I%27d%20like%20to%20support%20EveryMoment.",
 } as const;
 
 /**
@@ -90,7 +90,7 @@ export const SUPPORT = {
  * SUPPORT above rather than printing a raw phone number on the page.
  */
 export const CUSTOM_TEMPLATE_REQUEST = {
-  url: "https://wa.me/919987982969?text=Hi%20Harshal,%20I%27m%20not%20satisfied%20with%20the%20templates%20available%20and%20would%20like%20a%20custom%20design%20for%20my%20event.",
+  url: "https://wa.me/919987982969?text=Hi,%20I%27m%20not%20satisfied%20with%20the%20templates%20available%20and%20would%20like%20a%20custom%20design%20for%20my%20event.",
 } as const;
 
 export const NAV_LINKS = [
