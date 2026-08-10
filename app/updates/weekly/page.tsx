@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (late evening)",
+    items: [
+      {
+        title: "Backups — automatic version history for Event Settings, Gallery, Timeline, and Invitees (task #70)",
+        detail:
+          "New \"Backups\" page in the admin sidebar. Every time you save Event Settings (including switching Templates or editing Custom CSS), or add/edit/delete something in Gallery, Timeline, or Invitees, a snapshot of what things looked like right before is saved automatically — no button to remember to press. Backups shows a tab per area with a list of recent versions (when, and who made the change) and a Restore button. Restoring itself takes a snapshot first, so you can always undo an undo. A couple of area-specific safety notes: Gallery and Timeline restores are a full revert to that point in time (anything added after the backup, including its file, is removed), while Invitees restores are gentler by design — they undo edits or bring back deleted guests, but never remove a guest added after the backup, so an invite link you already sent out never breaks. Both the event's client host and the site owner can see history and restore.",
+        test:
+          "Edit something in Event Settings, save, then edit it again with a different value and save. Open Admin → Backups, switch to the \"Event Settings & Template\" tab, and confirm you see two versions with timestamps. Restore the older one and confirm the field goes back to its first value. Repeat quickly for Gallery (upload a photo, delete it, restore the backup from before the delete, confirm the photo reappears) and Invitees (add a guest, then check that restoring an older backup does NOT remove that guest).",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (evening)",
     items: [
       {

@@ -39,6 +39,7 @@ import {
   ShieldCheck,
   ReceiptText,
   UserRoundCog,
+  History,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -78,6 +79,7 @@ const NAV = [
   { href: "/admin/rsvp-payments", label: "RSVP Payments", icon: ReceiptText },
   { href: "/admin/session-organizers", label: "Session Organizers", icon: UserRoundCog },
   { href: "/admin/my-sessions", label: "My Sessions", icon: CalendarClock },
+  { href: "/admin/backups", label: "Backups", icon: History },
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox },
   { href: "/admin/payment-settings", label: "Payment Settings", icon: QrCode },

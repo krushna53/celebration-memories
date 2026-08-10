@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminForEvent } from "@/services/admin-auth";
 import { createMilestone, deleteMilestone, getMilestoneById, updateMilestone } from "@/services/timeline";
 import { createSignedTimelineImageUpload } from "@/services/uploads";
+import { snapshotTimeline } from "@/services/event-snapshots";
 
 function revalidateTimelinePaths() {
   revalidatePath("/admin/timeline");
@@ -15,8 +16,8 @@ function revalidateTimelinePaths() {
 async function requireAdminForMilestone(id: string) {
   const milestone = await getMilestoneById(id);
   if (!milestone) throw new Error("Milestone not found.");
-  await requireAdminForEvent(milestone.eventId);
-  return milestone;
+  const admin = await requireAdminForEvent(milestone.eventId);
+  return { admin, milestone };
 }
 
 export async function createMilestoneAction(input: {
@@ -27,7 +28,8 @@ export async function createMilestoneAction(input: {
   sortOrder: number;
 }) {
   try {
-    await requireAdminForEvent(input.eventId);
+    const admin = await requireAdminForEvent(input.eventId);
+    await snapshotTimeline(input.eventId, admin.id).catch((err) => console.error("snapshotTimeline failed:", err));
     await createMilestone(input);
     revalidateTimelinePaths();
     return { success: true as const };
@@ -47,7 +49,15 @@ export async function updateMilestoneAction(
   },
 ) {
   try {
-    await requireAdminForMilestone(id);
+    const { admin, milestone } = await requireAdminForMilestone(id);
+    // Skip snapshotting a pure reorder (sortOrder-only patch) — the timeline
+    // manager fires one updateMilestoneAction per row on every drag, which
+    // would otherwise flood the history with near-duplicate snapshots for a
+    // single user gesture. Any real content change still snapshots first.
+    const isPureReorder = Object.keys(input).every((key) => key === "sortOrder");
+    if (!isPureReorder) {
+      await snapshotTimeline(milestone.eventId, admin.id).catch((err) => console.error("snapshotTimeline failed:", err));
+    }
     await updateMilestone(id, input);
     revalidateTimelinePaths();
     return { success: true as const };
@@ -73,7 +83,8 @@ export async function requestTimelineImageUploadUrlAction(
 
 export async function confirmTimelineImageUploadAction(milestoneId: string, path: string) {
   try {
-    await requireAdminForMilestone(milestoneId);
+    const { admin, milestone } = await requireAdminForMilestone(milestoneId);
+    await snapshotTimeline(milestone.eventId, admin.id).catch((err) => console.error("snapshotTimeline failed:", err));
     await updateMilestone(milestoneId, { imagePath: path });
     revalidateTimelinePaths();
     return { success: true as const };
@@ -84,7 +95,8 @@ export async function confirmTimelineImageUploadAction(milestoneId: string, path
 
 export async function removeTimelineImageAction(milestoneId: string) {
   try {
-    await requireAdminForMilestone(milestoneId);
+    const { admin, milestone } = await requireAdminForMilestone(milestoneId);
+    await snapshotTimeline(milestone.eventId, admin.id).catch((err) => console.error("snapshotTimeline failed:", err));
     await updateMilestone(milestoneId, { imagePath: null });
     revalidateTimelinePaths();
     return { success: true as const };
@@ -95,7 +107,8 @@ export async function removeTimelineImageAction(milestoneId: string) {
 
 export async function deleteMilestoneAction(id: string) {
   try {
-    await requireAdminForMilestone(id);
+    const { admin, milestone } = await requireAdminForMilestone(id);
+    await snapshotTimeline(milestone.eventId, admin.id).catch((err) => console.error("snapshotTimeline failed:", err));
     await deleteMilestone(id);
     revalidateTimelinePaths();
     return { success: true as const };

@@ -10,6 +10,7 @@ import {
   getGalleryPhotoById,
   updateGalleryPhoto,
 } from "@/services/gallery-photos";
+import { snapshotGallery } from "@/services/event-snapshots";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
 
 function revalidateGalleryPaths() {
@@ -39,7 +40,9 @@ export async function confirmGalleryUploadAction(
   caption: string,
 ) {
   try {
-    await requireAdminForEvent(eventId);
+    const admin = await requireAdminForEvent(eventId);
+    // Best-effort — never let a snapshot failure block the actual save.
+    await snapshotGallery(eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
     await createGalleryPhoto({ eventId, category, storagePath: path, caption });
     revalidateGalleryPaths();
     return { success: true as const };
@@ -52,7 +55,8 @@ export async function confirmGalleryUploadAction(
 async function requireAdminForPhoto(id: string) {
   const photo = await getGalleryPhotoById(id);
   if (!photo) throw new Error("Photo not found.");
-  await requireAdminForEvent(photo.eventId);
+  const admin = await requireAdminForEvent(photo.eventId);
+  return { admin, photo };
 }
 
 export async function updateGalleryPhotoAction(
@@ -60,7 +64,8 @@ export async function updateGalleryPhotoAction(
   input: { category?: GalleryCategory; caption?: string | null },
 ) {
   try {
-    await requireAdminForPhoto(id);
+    const { admin, photo } = await requireAdminForPhoto(id);
+    await snapshotGallery(photo.eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
     await updateGalleryPhoto(id, input);
     revalidateGalleryPaths();
     return { success: true as const };
@@ -71,7 +76,8 @@ export async function updateGalleryPhotoAction(
 
 export async function deleteGalleryPhotoAction(id: string) {
   try {
-    await requireAdminForPhoto(id);
+    const { admin, photo } = await requireAdminForPhoto(id);
+    await snapshotGallery(photo.eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
     await deleteGalleryPhoto(id);
     revalidateGalleryPaths();
     return { success: true as const };

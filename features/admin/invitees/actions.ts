@@ -13,6 +13,7 @@ import {
   updateInvitee,
   type InviteeInput,
 } from "@/services/admin-invitees";
+import { snapshotInvitees } from "@/services/event-snapshots";
 import { toCsv } from "@/lib/csv";
 import { inviteChannelLabel } from "@/lib/invite-channel";
 
@@ -36,10 +37,12 @@ export async function createInviteeAction(
   input: InviteeInput,
 ): Promise<AdminActionResult> {
   try {
-    await requireAdminForEvent(eventId);
+    const admin = await requireAdminForEvent(eventId);
     if (!input.name?.trim()) {
       return { success: false, error: "Name is required." };
     }
+    // Best-effort — never let a snapshot failure block the actual save.
+    await snapshotInvitees(eventId, admin.id).catch((err) => console.error("snapshotInvitees failed:", err));
     await createInvitee(eventId, input);
     revalidatePath("/admin/invitees");
     revalidatePath("/admin");
@@ -55,7 +58,8 @@ export async function updateInviteeAction(
   input: InviteeInput,
 ): Promise<AdminActionResult> {
   try {
-    await requireAdminForEvent(eventId);
+    const admin = await requireAdminForEvent(eventId);
+    await snapshotInvitees(eventId, admin.id).catch((err) => console.error("snapshotInvitees failed:", err));
     await updateInvitee(id, eventId, input);
     revalidatePath("/admin/invitees");
     return { success: true };
@@ -66,7 +70,8 @@ export async function updateInviteeAction(
 
 export async function deleteInviteeAction(id: string, eventId: string): Promise<AdminActionResult> {
   try {
-    await requireAdminForEvent(eventId);
+    const admin = await requireAdminForEvent(eventId);
+    await snapshotInvitees(eventId, admin.id).catch((err) => console.error("snapshotInvitees failed:", err));
     await deleteInvitee(id, eventId);
     revalidatePath("/admin/invitees");
     revalidatePath("/admin");
@@ -153,7 +158,9 @@ export async function bulkImportInviteesAction(
   { success: true; created: number; skipped: number } | { success: false; error: string }
 > {
   try {
-    await requireAdminForEvent(eventId);
+    const admin = await requireAdminForEvent(eventId);
+    // One snapshot for the whole import, not per row — a bad CSV import is exactly the "undo my mistake" case this feature exists for.
+    await snapshotInvitees(eventId, admin.id, "Before CSV import").catch((err) => console.error("snapshotInvitees failed:", err));
     const result = await bulkImportInvitees(eventId, rows);
     revalidatePath("/admin/invitees");
     revalidatePath("/admin");

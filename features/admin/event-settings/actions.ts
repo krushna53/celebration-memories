@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdminForEvent } from "@/services/admin-auth";
 import { getEventById, updateEvent, type EventUpdateInput } from "@/services/events";
+import { snapshotEventSettings } from "@/services/event-snapshots";
 import {
   createSignedHighlightReelUpload,
   createSignedShareImageUpload,
@@ -136,8 +137,9 @@ export async function updateEventAction(
   eventId: string,
   input: EventUpdateInput,
 ): Promise<AdminActionResult> {
+  let admin;
   try {
-    await requireAdminForEvent(eventId);
+    admin = await requireAdminForEvent(eventId);
   } catch (err) {
     return unauthorized(err);
   }
@@ -148,6 +150,8 @@ export async function updateEventAction(
   }
 
   try {
+    // Best-effort — never let a snapshot failure block the actual save.
+    await snapshotEventSettings(eventId, admin.id).catch((err) => console.error("snapshotEventSettings failed:", err));
     await updateEvent(eventId, input);
     revalidatePath("/admin/event-settings");
     revalidatePath("/admin");
@@ -163,13 +167,15 @@ export async function updateSectionConfigAction(
   eventId: string,
   config: SectionConfigItem[],
 ): Promise<AdminActionResult> {
+  let admin;
   try {
-    await requireAdminForEvent(eventId);
+    admin = await requireAdminForEvent(eventId);
   } catch (err) {
     return unauthorized(err);
   }
 
   try {
+    await snapshotEventSettings(eventId, admin.id).catch((err) => console.error("snapshotEventSettings failed:", err));
     await updateEvent(eventId, { sectionConfig: config });
     revalidatePath("/admin/event-settings");
     revalidatePath("/");
