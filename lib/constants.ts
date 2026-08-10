@@ -80,6 +80,19 @@ export const SUPPORT = {
   url: "https://wa.me/919987982969?text=Hi%20Harshal,%20I%27d%20like%20to%20support%20EveryMoment.",
 } as const;
 
+/**
+ * "None of these fit" escape hatch shown on the Template picker (admin
+ * Templates page + wizard's Template step share the one TemplatePicker
+ * component, see features/admin/templates/template-picker.tsx) — opens
+ * a WhatsApp chat with Krushna Web Works to request a fully custom
+ * design instead of leaving a host stuck choosing between templates
+ * that don't fit their event. Same click-to-chat pattern as BUILDER/
+ * SUPPORT above rather than printing a raw phone number on the page.
+ */
+export const CUSTOM_TEMPLATE_REQUEST = {
+  url: "https://wa.me/919987982969?text=Hi%20Harshal,%20I%27m%20not%20satisfied%20with%20the%20templates%20available%20and%20would%20like%20a%20custom%20design%20for%20my%20event.",
+} as const;
+
 export const NAV_LINKS = [
   { label: "Home", href: "#hero" },
   { label: "Event Details", href: "#details" },

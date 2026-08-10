@@ -8,6 +8,7 @@ import { updateEventAction } from "@/features/admin/event-settings/actions";
 import type { AdminActionResult } from "@/features/admin/event-settings/actions";
 import type { TemplateSummary } from "@/lib/template-catalog";
 import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
+import { CUSTOM_TEMPLATE_REQUEST } from "@/lib/constants";
 import type { EventCategory } from "@/types/event";
 
 export type PickerTemplate = TemplateSummary & {
@@ -159,6 +160,20 @@ export function TemplatePicker({
         wired up yet — selecting one applies it immediately at no charge for
         now. Payment collection is on the roadmap (see /platform).
       </p>
+
+      <div className="mt-4 flex flex-col items-start gap-3 rounded-xl border border-gold-500/20 bg-gold-500/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-navy-700/80">
+          Not satisfied with the templates available? We can design a custom one just for your event.
+        </p>
+        <a
+          href={CUSTOM_TEMPLATE_REQUEST.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-navy-950 px-4 py-2 text-xs font-medium text-ivory-100 transition-colors hover:bg-navy-900"
+        >
+          Request a Custom Design
+        </a>
+      </div>
     </div>
   );
 }
