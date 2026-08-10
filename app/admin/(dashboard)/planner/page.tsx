@@ -1,5 +1,8 @@
+import { redirect } from "next/navigation";
+
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
+import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { ensurePlannerShareToken, listPlannerTasks, listPlannerNotes } from "@/services/event-planner";
 import { PlannerShareLinkPanel } from "@/features/admin/planner/share-link-panel";
 import { PlannerAdminClient } from "@/features/admin/planner/planner-admin-client";
@@ -8,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPlannerPage() {
   const admin = await getCurrentAdmin();
+  if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return (

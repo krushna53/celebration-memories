@@ -1,5 +1,8 @@
+import { redirect } from "next/navigation";
+
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
+import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { GODADDY_CONFIGURED } from "@/lib/godaddy";
 import { DomainSearchForm } from "@/features/admin/domain-search/domain-search-form";
 
@@ -11,6 +14,7 @@ export const dynamic = "force-dynamic";
 // happens on GoDaddy's own site via a deep link.
 export default async function AdminDomainSearchPage() {
   const admin = await getCurrentAdmin();
+  if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   const event = admin ? await resolveAdminEvent(admin) : null;
   const suggestion = event ? event.slug.replace(/[^a-z0-9-]/gi, "") : "";
 

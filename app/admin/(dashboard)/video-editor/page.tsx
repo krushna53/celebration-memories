@@ -1,5 +1,8 @@
+import { redirect } from "next/navigation";
+
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
+import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listVideoEditorMediaLibrary, listVideoEditJobs } from "@/services/video-editor";
 import { VideoEditorClientBoundary } from "@/features/admin/video-editor/video-editor-client-boundary";
 
@@ -21,6 +24,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function AdminVideoEditorPage() {
   const admin = await getCurrentAdmin();
+  if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!admin || !event) {
     return (

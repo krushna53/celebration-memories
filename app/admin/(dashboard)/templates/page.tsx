@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
+import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listApprovedTemplateSubmissions } from "@/services/template-submissions";
 import { communitySubmissionToTemplateSummary } from "@/lib/community-theme";
 import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
@@ -11,6 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminTemplatesPage() {
   const admin = await getCurrentAdmin();
+  if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   const [event, approvedSubmissions] = await Promise.all([
     admin ? resolveAdminEvent(admin) : Promise.resolve(null),
     listApprovedTemplateSubmissions(),

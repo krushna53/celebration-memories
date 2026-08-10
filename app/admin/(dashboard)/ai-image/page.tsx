@@ -1,6 +1,9 @@
+import { redirect } from "next/navigation";
+
 import { getTemplateBySlug } from "@/lib/templates";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
+import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { buildInvitationCardPrompt } from "@/lib/ai-image-prompt";
 import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { countAiImageGenerations } from "@/services/ai-image-generations";
@@ -15,6 +18,7 @@ export const dynamic = "force-dynamic";
 // this calls a real per-image-cost API; owner is exempt from the cap.
 export default async function AdminAiImagePage() {
   const admin = await getCurrentAdmin();
+  if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
