@@ -10,7 +10,9 @@ export type AdminNotificationType =
   | "storage_usage"
   | "new_event_prompt"
   | "event_payment_settings_submitted"
-  | "event_payment_settings_reviewed";
+  | "event_payment_settings_reviewed"
+  | "rsvp_payment_submitted"
+  | "rsvp_payment_received";
 
 export interface AdminNotification {
   id: string;
@@ -222,6 +224,43 @@ export async function notifyClientOfEventPaymentSettingsReview(params: {
     body,
     link: "/admin/payment-settings-request",
   });
+}
+
+/**
+ * A guest's RSVP payment either needs manual review (a bank/UPI
+ * reference note was just submitted) or just succeeded (gateway-
+ * verified, or an admin approved a manual one) — notifies every admin
+ * tied to the event (client host + owner). Session-organizer
+ * notification is deferred to #63 (no organizer concept exists yet).
+ */
+export async function notifyAdminsOfRsvpPayment(params: {
+  eventId: string;
+  guestName: string;
+  amount: number;
+  currency: string;
+  needsReview: boolean;
+}): Promise<void> {
+  const admins = await getAdminsToNotifyForEvent(params.eventId);
+  if (admins.length === 0) return;
+
+  const type: AdminNotificationType = params.needsReview ? "rsvp_payment_submitted" : "rsvp_payment_received";
+  const title = params.needsReview ? "Payment needs review" : "Payment received";
+  const body = params.needsReview
+    ? `${params.guestName} submitted a payment reference for ${params.currency} ${params.amount} — review it under RSVP Payments.`
+    : `${params.guestName} paid ${params.currency} ${params.amount} to confirm their RSVP.`;
+
+  await Promise.all(
+    admins.map((admin) =>
+      createAdminNotification({
+        adminId: admin.id,
+        eventId: params.eventId,
+        type,
+        title,
+        body,
+        link: "/admin/rsvp-payments",
+      }),
+    ),
+  );
 }
 
 /** All admins who should hear about activity on one event: the client admin scoped to it (if any) plus every owner. Used by the RSVP-submitted producer and could be reused by any other per-event producer. */

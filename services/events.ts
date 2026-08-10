@@ -55,6 +55,11 @@ export interface EventRow {
   share_memory_nudge_days_before: number;
   storage_quota_gb: number;
   engagement_notifications_enabled: boolean;
+  is_paid_event: boolean;
+  rsvp_regular_price: number | null;
+  rsvp_early_bird_price: number | null;
+  rsvp_early_bird_deadline: string | null;
+  rsvp_currency: string;
   created_at: string;
   updated_at: string;
 }
@@ -108,6 +113,11 @@ export function mapEvent(row: EventRow): EventRecord {
     shareMemoryNudgeDaysBefore: row.share_memory_nudge_days_before ?? 3,
     storageQuotaGb: row.storage_quota_gb ?? 5,
     engagementNotificationsEnabled: row.engagement_notifications_enabled ?? true,
+    isPaidEvent: row.is_paid_event ?? false,
+    rsvpRegularPrice: row.rsvp_regular_price,
+    rsvpEarlyBirdPrice: row.rsvp_early_bird_price,
+    rsvpEarlyBirdDeadline: row.rsvp_early_bird_deadline,
+    rsvpCurrency: row.rsvp_currency || "INR",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -306,6 +316,11 @@ export interface EventUpdateInput {
   shareMemoryNudgeDaysBefore?: number;
   storageQuotaGb?: number;
   engagementNotificationsEnabled?: boolean;
+  isPaidEvent?: boolean;
+  rsvpRegularPrice?: number | null;
+  rsvpEarlyBirdPrice?: number | null;
+  rsvpEarlyBirdDeadline?: string | null;
+  rsvpCurrency?: string;
 }
 
 /** Admin-facing update for the event settings form. */
@@ -408,6 +423,11 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.storageQuotaGb !== undefined) patch.storage_quota_gb = input.storageQuotaGb;
   if (input.engagementNotificationsEnabled !== undefined)
     patch.engagement_notifications_enabled = input.engagementNotificationsEnabled;
+  if (input.isPaidEvent !== undefined) patch.is_paid_event = input.isPaidEvent;
+  if (input.rsvpRegularPrice !== undefined) patch.rsvp_regular_price = input.rsvpRegularPrice;
+  if (input.rsvpEarlyBirdPrice !== undefined) patch.rsvp_early_bird_price = input.rsvpEarlyBirdPrice;
+  if (input.rsvpEarlyBirdDeadline !== undefined) patch.rsvp_early_bird_deadline = input.rsvpEarlyBirdDeadline;
+  if (input.rsvpCurrency !== undefined) patch.rsvp_currency = input.rsvpCurrency;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { submitPublicRsvpAction } from "@/features/rsvp/public-rsvp-actions";
 import { logRsvpStartedAction } from "@/features/tracking/actions";
+import { RsvpPaymentPanel } from "@/features/rsvp-payment/rsvp-payment-panel";
+import type { RsvpPrice } from "@/lib/rsvp-pricing";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_OPTIONS,
@@ -27,6 +29,8 @@ interface PublicRsvpFormProps {
   eventSlug: string;
   eventId: string;
   honoreeName: string;
+  /** Non-null only when the event is a paid event with pricing configured (lib/rsvp-pricing.ts) — shows the payment step after a "coming" RSVP. */
+  rsvpPrice?: RsvpPrice | null;
 }
 
 /**
@@ -38,9 +42,11 @@ interface PublicRsvpFormProps {
  * honeypot field guards against bots since this page has no secret
  * token gating it.
  */
-export function PublicRsvpForm({ eventSlug, eventId, honoreeName }: PublicRsvpFormProps) {
+export function PublicRsvpForm({ eventSlug, eventId, honoreeName, rsvpPrice }: PublicRsvpFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submittedName, setSubmittedName] = useState("");
+  const [submittedInviteeId, setSubmittedInviteeId] = useState<string | null>(null);
+  const [submittedComing, setSubmittedComing] = useState<RsvpFormValues["coming"] | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
   const startedTracked = useRef(false);
@@ -78,6 +84,8 @@ export function PublicRsvpForm({ eventSlug, eventId, honoreeName }: PublicRsvpFo
     const result = await submitPublicRsvpAction(eventSlug, values, honeypot);
     if (result.success) {
       setSubmittedName(values.name);
+      setSubmittedInviteeId(result.inviteeId);
+      setSubmittedComing(values.coming);
       setSubmitted(true);
     } else {
       setServerError(result.error);
@@ -98,6 +106,11 @@ export function PublicRsvpForm({ eventSlug, eventId, honoreeName }: PublicRsvpFo
         <Button variant="outline" onClick={() => setSubmitted(false)}>
           Edit my RSVP
         </Button>
+        {submittedComing === "coming" && rsvpPrice && submittedInviteeId ? (
+          <div className="w-full text-left">
+            <RsvpPaymentPanel source={{ mode: "public", eventSlug, inviteeId: submittedInviteeId }} price={rsvpPrice} />
+          </div>
+        ) : null}
       </div>
     );
   }

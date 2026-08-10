@@ -185,6 +185,22 @@ export interface EventRecord {
   storageQuotaGb: number;
   /** Broadcast countdown-milestone + new-content-digest push notifications to opted-in guests running the installed PWA. See features/push/engagement-opt-in-banner.tsx and supabase/functions/send-engagement-push. */
   engagementNotificationsEnabled: boolean;
+  /**
+   * When true, RSVPing "coming" leads into a payment step before the
+   * registration is considered confirmed — primarily for paid
+   * workshops. Charges go through this event's OWN approved
+   * event_payment_settings (see services/event-payment-settings.ts),
+   * never the platform's own billing. See lib/rsvp-pricing.ts and
+   * features/rsvp-payment/.
+   */
+  isPaidEvent: boolean;
+  /** Ticket price charged once rsvpEarlyBirdDeadline has passed (or always, if no early-bird price is set). Null = not priced yet (isPaidEvent should be treated as not-yet-configured). */
+  rsvpRegularPrice: number | null;
+  /** Optional discounted price charged before rsvpEarlyBirdDeadline. Null = no early-bird tier, regular price always applies. */
+  rsvpEarlyBirdPrice: number | null;
+  /** Cutoff — before this instant, rsvpEarlyBirdPrice applies (if set); at/after, rsvpRegularPrice applies. Null with an early-bird price set = early-bird pricing never expires. */
+  rsvpEarlyBirdDeadline: string | null;
+  rsvpCurrency: string;
   createdAt: string;
   updatedAt: string;
 }

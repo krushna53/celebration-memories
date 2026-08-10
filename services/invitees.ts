@@ -113,3 +113,39 @@ export async function getInviteeByToken(
     existingRsvp: rsvpRow ? mapRsvp(rsvpRow) : null,
   };
 }
+
+/**
+ * Same shape as getInviteeByToken but keyed by id instead of token —
+ * used where a caller already has a trustworthy invitee id from
+ * elsewhere in the same request rather than a secret token (e.g. the
+ * public, no-token RSVP flow's payment step, which only ever learns an
+ * id via submitPublicRsvpAction's own return value, never from raw
+ * client input). NOT a substitute for token-based auth anywhere a
+ * client could otherwise supply an arbitrary id.
+ */
+export async function getInviteeById(id: string): Promise<InviteeWithEvent | null> {
+  const client = supabaseAdmin();
+
+  const { data, error } = await client
+    .from("invitees")
+    .select("*, events(*)")
+    .eq("id", id)
+    .maybeSingle<InviteeRow>();
+
+  if (error) throw new Error(`Failed to look up invitee: ${error.message}`);
+  if (!data) return null;
+
+  const { data: rsvpRow, error: rsvpError } = await client
+    .from("rsvps")
+    .select("*")
+    .eq("invitee_id", data.id)
+    .maybeSingle<RsvpRow>();
+
+  if (rsvpError) throw new Error(`Failed to look up RSVP: ${rsvpError.message}`);
+
+  return {
+    invitee: mapInvitee(data),
+    event: mapEvent(data.events),
+    existingRsvp: rsvpRow ? mapRsvp(rsvpRow) : null,
+  };
+}

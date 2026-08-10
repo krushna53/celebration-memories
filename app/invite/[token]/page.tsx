@@ -7,6 +7,7 @@ import { getInviteeByToken } from "@/services/invitees";
 import { logInviteOpened } from "@/services/tracking";
 import { formatEventDate, formatEventTime } from "@/lib/format";
 import { buildEventMetadata } from "@/lib/event-metadata";
+import { computeRsvpPrice } from "@/lib/rsvp-pricing";
 import { RsvpForm } from "@/features/rsvp/rsvp-form";
 import { MediaUploadsSection } from "@/features/uploads/media-uploads-section";
 import { EngagementOptInBanner } from "@/features/push/engagement-opt-in-banner";
@@ -44,6 +45,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
   }
 
   const { invitee, event, existingRsvp } = found;
+  const rsvpPrice = computeRsvpPrice(event);
 
   const requestHeaders = await headers();
   await logInviteOpened(invitee.id, {
@@ -81,6 +83,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
               token={token}
               eventId={event.id}
               guestName={invitee.name}
+              rsvpPrice={rsvpPrice}
               defaultValues={
                 existingRsvp
                   ? {

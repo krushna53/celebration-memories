@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, August 10 (later)",
+    items: [
+      {
+        title: "Paid RSVP — guests can pay to confirm registration (task #62)",
+        detail:
+          "Event Settings has a new \"Paid Registration\" section — turn on \"require payment,\" set a Regular Price, and optionally an Early-Bird Price with a deadline. Once on, RSVPing \"coming\" (personal invite link or the public no-token RSVP page) leads into a payment step charged through the event's own approved payment method (from \"My Payment Method,\" the previous update) — Stripe/Razorpay/CCAvenue redirect to a secure checkout and confirm automatically on return; Bank/UPI shows the details and a \"submit for confirmation\" box for a reference number, which then needs a quick approval on the new \"RSVP Payments\" admin page. Everyone tied to the event (client host + owner) gets notified the moment a payment comes in or a manual one needs review.",
+        test:
+          "In Event Settings, turn on Paid Registration, set a Regular Price (and optionally an Early-Bird Price + deadline), and save. RSVP \"coming\" on that event's invite link or public RSVP page — a payment step should appear with the right price. If the event's payment method is Bank/UPI, submit a reference number and confirm it shows up (as pending) on Admin → RSVP Payments, then Approve it and confirm the guest's status updates. If it's Stripe/Razorpay/CCAvenue, complete a real test payment and confirm you land back on a \"Payment received\" page and the row shows Paid in RSVP Payments.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10",
     items: [
       {

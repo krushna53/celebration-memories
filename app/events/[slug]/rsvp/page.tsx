@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 
 import { getEventBySlug } from "@/services/events";
 import { formatEventDate, formatEventTime } from "@/lib/format";
+import { computeRsvpPrice } from "@/lib/rsvp-pricing";
 import { buildEventMetadata } from "@/lib/event-metadata";
 import { getTemplateBySlug } from "@/lib/templates";
 import { templateAccentStyle } from "@/lib/template-theme-css";
@@ -51,6 +52,7 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
   }
 
   const template = getTemplateBySlug(event.templateSlug);
+  const rsvpPrice = computeRsvpPrice(event);
 
   // Only fetched/rendered for the event's own admin (owner, or the
   // client scoped to this event) — a real guest incurs no extra query
@@ -104,7 +106,7 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
         <div className="mx-auto mt-12 max-w-xl px-4 sm:px-6">
           {event.publicRsvpEnabled ? (
             <Reveal delay={0.1}>
-              <PublicRsvpForm eventSlug={slug} eventId={event.id} honoreeName={event.honoreeName} />
+              <PublicRsvpForm eventSlug={slug} eventId={event.id} honoreeName={event.honoreeName} rsvpPrice={rsvpPrice} />
             </Reveal>
           ) : (
             <Reveal delay={0.1}>

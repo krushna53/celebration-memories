@@ -103,6 +103,13 @@ export function EventSettingsForm({
     publicMemoriesEnabled: event.publicMemoriesEnabled,
     aiAvatarEnabled: event.aiAvatarEnabled,
     aiAvatarDailyMessageLimit: event.aiAvatarDailyMessageLimit,
+    isPaidEvent: event.isPaidEvent,
+    rsvpRegularPrice: event.rsvpRegularPrice ?? null,
+    rsvpEarlyBirdPrice: event.rsvpEarlyBirdPrice ?? null,
+    rsvpEarlyBirdDeadline: event.rsvpEarlyBirdDeadline
+      ? utcIsoToZonedInputValue(event.rsvpEarlyBirdDeadline, event.timezone)
+      : "",
+    rsvpCurrency: event.rsvpCurrency,
     guestReminderEnabled: event.guestReminderEnabled,
     guestReminderDelayMinutes: event.guestReminderDelayMinutes,
     shareMemoryNudgeEnabled: event.shareMemoryNudgeEnabled,
@@ -457,6 +464,13 @@ export function EventSettingsForm({
       publicMemoriesEnabled: form.publicMemoriesEnabled,
       aiAvatarEnabled: form.aiAvatarEnabled,
       aiAvatarDailyMessageLimit: form.aiAvatarDailyMessageLimit,
+      isPaidEvent: form.isPaidEvent,
+      rsvpRegularPrice: form.rsvpRegularPrice,
+      rsvpEarlyBirdPrice: form.rsvpEarlyBirdPrice,
+      rsvpEarlyBirdDeadline: form.rsvpEarlyBirdDeadline
+        ? zonedInputValueToUtcIso(form.rsvpEarlyBirdDeadline, form.timezone)
+        : null,
+      rsvpCurrency: form.rsvpCurrency,
       guestReminderEnabled: form.guestReminderEnabled,
       guestReminderDelayMinutes: form.guestReminderDelayMinutes,
       shareMemoryNudgeEnabled: form.shareMemoryNudgeEnabled,
@@ -1245,6 +1259,106 @@ export function EventSettingsForm({
               Once this many messages have been answered today, the Avatar tells guests to check back tomorrow or
               contact you directly — a safety cap on cost, not a guest-visible feature.
             </p>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <h2 className="font-display text-lg text-navy-950">Paid Registration</h2>
+        <p className="text-xs leading-relaxed text-navy-700/60">
+          Require payment to confirm a &ldquo;coming&rdquo; RSVP — mainly for paid workshops. Guests pay through
+          your own payment method (see &ldquo;My Payment Method&rdquo; in the sidebar) once the site owner has
+          approved it.
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, isPaidEvent: false }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              !form.isPaidEvent
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            Off — free to RSVP
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setForm((f) => ({ ...f, isPaidEvent: true }));
+              setSaved(false);
+            }}
+            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-luxury duration-300 ${
+              form.isPaidEvent
+                ? "border-gold-500 bg-gold-500/10 text-gold-700"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            On — require payment
+          </button>
+        </div>
+        {form.isPaidEvent ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelClasses}>Regular Price</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.rsvpRegularPrice ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value === "" ? null : Number(e.target.value);
+                  setForm((f) => ({ ...f, rsvpRegularPrice: value }));
+                  setSaved(false);
+                }}
+                className={inputClasses}
+              />
+            </div>
+            <div>
+              <label className={labelClasses}>Currency</label>
+              <input
+                value={form.rsvpCurrency}
+                maxLength={3}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, rsvpCurrency: e.target.value.toUpperCase() }));
+                  setSaved(false);
+                }}
+                className={`${inputClasses} w-24 uppercase`}
+              />
+            </div>
+            <div>
+              <label className={labelClasses}>Early-Bird Price (optional)</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.rsvpEarlyBirdPrice ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value === "" ? null : Number(e.target.value);
+                  setForm((f) => ({ ...f, rsvpEarlyBirdPrice: value }));
+                  setSaved(false);
+                }}
+                className={inputClasses}
+              />
+            </div>
+            <div>
+              <label className={labelClasses}>Early-Bird Deadline</label>
+              <input
+                type="datetime-local"
+                value={form.rsvpEarlyBirdDeadline}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, rsvpEarlyBirdDeadline: e.target.value }));
+                  setSaved(false);
+                }}
+                className={inputClasses}
+              />
+              <p className="mt-1.5 text-xs text-navy-700/50">
+                Before this time, the early-bird price applies. At/after, the regular price applies.
+              </p>
+            </div>
           </div>
         ) : null}
       </section>

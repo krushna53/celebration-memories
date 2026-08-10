@@ -10,7 +10,7 @@ import { rsvpFormSchema, type RsvpFormValues } from "@/types/rsvp";
 import { notifyAdminsOfRsvpSubmission } from "@/services/admin-notifications";
 
 export type SubmitPublicRsvpResult =
-  | { success: true }
+  | { success: true; inviteeId: string }
   | { success: false; error: string };
 
 /**
@@ -32,7 +32,9 @@ export async function submitPublicRsvpAction(
   honeypot?: string,
 ): Promise<SubmitPublicRsvpResult> {
   if (honeypot) {
-    return { success: true };
+    // Quietly report success without writing anything — inviteeId is
+    // never used by the client on this path since nothing was saved.
+    return { success: true, inviteeId: "" };
   }
 
   const parsed = rsvpFormSchema.safeParse(values);
@@ -52,12 +54,14 @@ export async function submitPublicRsvpAction(
     return { success: false, error: "Public RSVP isn't open for this event." };
   }
 
+  let inviteeId: string;
   try {
     const invitee = await findOrCreateSelfInvitee(event.id, {
       name: parsed.data.name,
       phone: parsed.data.phone,
       email: parsed.data.email,
     });
+    inviteeId = invitee.id;
     await submitRsvp(invitee.id, parsed.data);
   } catch (err) {
     console.error("submitPublicRsvpAction failed:", err);
@@ -91,5 +95,5 @@ export async function submitPublicRsvpAction(
   }).catch((err) => console.error("notifyAdminsOfRsvpSubmission failed:", err));
 
   revalidatePath(`/events/${eventSlug}/rsvp`);
-  return { success: true };
+  return { success: true, inviteeId };
 }

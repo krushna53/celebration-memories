@@ -27,6 +27,7 @@ export const CLIENT_ALLOWED_PATHS: readonly string[] = [
   "/admin/video-editor",
   "/admin/domain-search",
   "/admin/payment-settings-request",
+  "/admin/rsvp-payments",
   "/admin/help",
 ];
 

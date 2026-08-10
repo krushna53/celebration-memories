@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { submitRsvpAction } from "@/features/rsvp/actions";
 import { logRsvpStartedAction } from "@/features/tracking/actions";
 import { NotificationPrompt } from "@/features/push/notification-prompt";
+import { RsvpPaymentPanel } from "@/features/rsvp-payment/rsvp-payment-panel";
+import type { RsvpPrice } from "@/lib/rsvp-pricing";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_OPTIONS,
@@ -29,9 +31,11 @@ interface RsvpFormProps {
   eventId: string;
   defaultValues: Partial<RsvpFormValues>;
   guestName: string;
+  /** Non-null only when the event is a paid event with pricing configured (lib/rsvp-pricing.ts) — shows the payment step after a "coming" RSVP. */
+  rsvpPrice?: RsvpPrice | null;
 }
 
-export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormProps) {
+export function RsvpForm({ token, eventId, defaultValues, guestName, rsvpPrice }: RsvpFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submittedComing, setSubmittedComing] = useState<RsvpFormValues["coming"] | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -87,6 +91,11 @@ export function RsvpForm({ token, eventId, defaultValues, guestName }: RsvpFormP
         <Button variant="outline" onClick={() => setSubmitted(false)}>
           Edit my RSVP
         </Button>
+        {submittedComing === "coming" && rsvpPrice ? (
+          <div className="w-full text-left">
+            <RsvpPaymentPanel source={{ mode: "token", token }} price={rsvpPrice} />
+          </div>
+        ) : null}
         {submittedComing === "coming" || submittedComing === "maybe" ? (
           <div className="w-full text-left">
             <NotificationPrompt
