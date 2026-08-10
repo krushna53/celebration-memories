@@ -95,7 +95,7 @@ export function Navbar({
           : "bg-transparent",
       )}
     >
-      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 text-ivory-50 sm:px-6 sm:py-4">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 text-ivory-50 sm:px-6 sm:py-4 lg:px-8">
         <Link
           href={homeHref}
           onClick={handleBrandClick}

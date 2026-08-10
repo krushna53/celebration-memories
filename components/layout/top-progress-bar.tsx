@@ -33,23 +33,37 @@ export function TopProgressBar() {
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const safetyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set synchronously the instant start() is called, before the deferred
+  // setTimeout below runs — guards against a second pushState/
+  // replaceState firing in the same tick and double-scheduling.
+  const startingRef = useRef(false);
 
   useEffect(() => {
     function start() {
-      if (tickRef.current) return; // already mid-transition
-      setVisible(true);
-      setProgress(12);
-      tickRef.current = setInterval(() => {
-        // Eases toward 88% and waits there — the real jump to 100%
-        // only happens once finish() fires, so the bar never lies
-        // about being done before the new page has actually rendered.
-        setProgress((p) => (p < 88 ? Math.min(88, p + Math.max(1, (90 - p) / 12)) : p));
-      }, 180);
-      if (safetyRef.current) clearTimeout(safetyRef.current);
-      safetyRef.current = setTimeout(finish, 4000);
+      if (tickRef.current || startingRef.current) return; // already mid-transition
+      startingRef.current = true;
+      // Next.js 15's App Router sometimes calls history.pushState (which
+      // this file patches) synchronously from inside a useInsertionEffect
+      // — the phase CSS-in-JS libraries use to inject styles. React
+      // forbids scheduling state updates from that phase ("useInsertionEffect
+      // must not schedule updates"). Deferring with setTimeout(...,0) pushes
+      // these updates to a macrotask, safely outside any render phase.
+      setTimeout(() => {
+        setVisible(true);
+        setProgress(12);
+        tickRef.current = setInterval(() => {
+          // Eases toward 88% and waits there — the real jump to 100%
+          // only happens once finish() fires, so the bar never lies
+          // about being done before the new page has actually rendered.
+          setProgress((p) => (p < 88 ? Math.min(88, p + Math.max(1, (90 - p) / 12)) : p));
+        }, 180);
+        if (safetyRef.current) clearTimeout(safetyRef.current);
+        safetyRef.current = setTimeout(finish, 4000);
+      }, 0);
     }
 
     function finish() {
+      startingRef.current = false;
       if (tickRef.current) {
         clearInterval(tickRef.current);
         tickRef.current = null;

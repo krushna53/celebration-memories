@@ -44,7 +44,6 @@ const FOOTER_COLUMNS: Array<{ heading: string; links: Array<{ href: string; labe
     heading: "Get Started",
     links: [
       { href: "/", label: "Build Your Own Celebration Site" },
-      { href: "/pricing", label: "Pricing" },
       { href: "/templates/submit", label: "Submit a Template" },
     ],
   },
@@ -74,7 +73,7 @@ const MINIMAL_LINKS = [
 export function Footer({ designerCredit, variant = "full" }: FooterProps = {}) {
   return (
     <footer className="border-t border-gold-500/20 bg-navy-950 py-12 text-ivory-100/70">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {variant === "full" ? (
           <div className="grid grid-cols-2 gap-8 text-center sm:grid-cols-4 sm:text-left">
             {FOOTER_COLUMNS.map((column) => (

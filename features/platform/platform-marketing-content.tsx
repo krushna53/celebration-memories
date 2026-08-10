@@ -122,7 +122,6 @@ export const PLATFORM_NAV_LINKS = [
   { label: "AI Image Tool", href: "/ai-invitation-image" },
   { label: "Discover", href: "/discover" },
   { label: "Browse Events", href: "/events" },
-  { label: "Pricing", href: "/pricing" },
   { label: "Templates", href: "/templates/submit" },
   { label: "Who Can Do What", href: "/roles" },
   { label: "Contact", href: "/contact" },
