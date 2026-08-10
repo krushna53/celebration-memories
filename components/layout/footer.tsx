@@ -58,7 +58,10 @@ const FOOTER_COLUMNS: Array<{ heading: string; links: Array<{ href: string; labe
   },
   {
     heading: "Support",
-    links: [{ href: "/contact", label: "Contact Us" }],
+    links: [
+      { href: "/contact", label: "Contact Us" },
+      { href: "/donate", label: "Support & Contribute" },
+    ],
   },
 ];
 
