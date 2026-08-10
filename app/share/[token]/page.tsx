@@ -10,7 +10,7 @@ import { getCoverPhoto } from "@/services/gallery-photos";
 import { publicMediaUrl } from "@/services/uploads";
 import { toEventDisplayData } from "@/lib/event-display";
 import { SITE_NAME } from "@/lib/constants";
-import { MEDIA_LIBRARY_KIND_LABEL, type MediaLibraryKind } from "@/services/media-library";
+import { MEDIA_LIBRARY_KIND_LABEL, type MediaLibraryKind } from "@/lib/media-library-kinds";
 import { CollectionShareBar } from "@/features/share-collection/collection-share-bar";
 
 export const revalidate = 60;
@@ -20,7 +20,7 @@ interface SharePageProps {
 }
 
 const IMAGE_KINDS: readonly MediaLibraryKind[] = ["gallery", "photo", "ai_image"];
-const VIDEO_KINDS: readonly MediaLibraryKind[] = ["video", "slideshow_video", "video_edit"];
+const VIDEO_KINDS: readonly MediaLibraryKind[] = ["video", "slideshow_video", "video_edit", "timeline_movie"];
 
 /**
  * Public, no-login page for a multi-select "Share Collection" link

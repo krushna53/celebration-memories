@@ -25,6 +25,35 @@ npm run dev
 See `supabase/README.md` for how to provision the database (migrations +
 seed data).
 
+## API keys reference
+
+Every optional third-party integration on this platform degrades
+gracefully when its key is unset — the relevant admin page just shows
+a "not configured" message instead of erroring, and nothing else is
+affected. Nothing below is required to run the core platform (events,
+RSVP, guest uploads, admin dashboard); each row is independently
+optional. See each feature's own README section (linked) for full
+setup steps — this table is just the fast lookup.
+
+| Env var | What it's for | Get it at | Set it in |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Required — the database/storage/auth backend itself, not optional | Your Supabase project → Settings → API | Netlify env vars (+ `.env.local` for local dev) |
+| `RESEND_API_KEY` | Transactional email (RSVP/inquiry notifications) — see "[Optional integrations: analytics + email](#optional-integrations-analytics--email)" | [resend.com](https://resend.com) | Netlify env vars |
+| `OPENAI_API_KEY` | AI Image, AI Custom CSS, AI Avatar chat + voice — see "[AI Image](#ai-image-optional-owner-only)" | [platform.openai.com](https://platform.openai.com) | Netlify env vars **and** Supabase Edge Function secret (AI Image's Edge Function reads it separately) |
+| `SHOTSTACK_API_KEY`, `SHOTSTACK_ENV` | Slideshow Video rendering — see "[Slideshow Video](#slideshow-video-optional)" | [dashboard.shotstack.io/register](https://dashboard.shotstack.io/register) | Supabase Edge Function secret only |
+| `HEYGEN_API_KEY` | AI Timeline Movie (AI-narrated highlight video) — see "[AI Timeline Movie](#ai-timeline-movie-optional)" | [app.heygen.com](https://app.heygen.com), API key at [developers.heygen.com/docs/api-key](https://developers.heygen.com/docs/api-key) | **Both** Netlify env vars (avatar/voice picker) **and** Supabase Edge Function secret (the two render functions) |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ONE_TIME`, `STRIPE_PRICE_SUBSCRIPTION` | Wizard checkout (one payment option) | [dashboard.stripe.com](https://dashboard.stripe.com) | Netlify env vars |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_PLAN_SUBSCRIPTION`, `RAZORPAY_AMOUNT_ONE_TIME` | Wizard checkout (alternative to Stripe) | [dashboard.razorpay.com](https://dashboard.razorpay.com) | Netlify env vars |
+| `GODADDY_API_KEY`, `GODADDY_API_SECRET`, `GODADDY_API_ENV` | Domain Search tool — see "[Domain Search](#domain-search-optional)" | [developer.godaddy.com](https://developer.godaddy.com) | Netlify env vars |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web Push (guest reminders, admin notifications) | Generated locally (`npx web-push generate-vapid-keys`), not a signup | **Both** Netlify env vars **and** Supabase Edge Function secret (the push-sending functions) |
+| `CRON_SECRET` | Authenticates pg_cron's daily requests to the admin-notifications route | Any random string you generate yourself | Netlify env vars (+ the same value referenced in the `pg_cron` job) |
+| `NEXT_PUBLIC_CLARITY_PROJECT_ID` | Microsoft Clarity heatmaps/session recordings | [clarity.microsoft.com](https://clarity.microsoft.com) | Netlify env vars |
+
+A per-event CCAvenue merchant id/access code (a third payment option
+alongside Stripe/Razorpay) is configured per-event through
+`/admin/payment-settings`, not a global env var — see that page and
+`lib/ccavenue.ts`.
+
 ## Deployment
 
 Deploys to **Netlify** via `@netlify/plugin-nextjs` (see `netlify.toml`).
@@ -707,6 +736,79 @@ limitation, not a bug.
 WebM output it can be used directly as the Event Settings **Link Preview
 Video** (which requires MP4, ≤20MB) via the composer's "Use as Link
 Preview Video" button — no manual conversion step needed anymore.
+
+### AI Timeline Movie (optional)
+
+`/admin/timeline-movie` turns your Timeline into a narrated highlight
+video: pick which milestones to include, pick an AI host avatar and
+voice, and it renders a real MP4 where the avatar reads each
+milestone's title/description aloud with a matching photo (the
+milestone's own photo if it has one, otherwise a Gallery photo) behind
+them. A separate, distinct feature from Slideshow Video above — that's
+music-backed photos with no narration; this is a narrated AI host.
+There's also a plain "Upload your own video" tab if you'd rather skip
+AI generation entirely and use a video you already have.
+
+Available to both owner and client accounts; client-role admins are
+capped at `events.timeline_movie_generation_limit` (default 2) *AI*
+renders per event — uploads don't count against this, since they don't
+call HeyGen. The owner is exempt. Raise or lower it per event with:
+```sql
+update events set timeline_movie_generation_limit = 10 where slug = 'your-event-slug';
+```
+
+**How generation actually runs:** powered by [HeyGen](https://heygen.com),
+an AI avatar video API, via two Supabase Edge Functions — the same
+submit-then-poll shape as Slideshow Video/Shotstack above, for the same
+reason (HeyGen's `video.generate` is asynchronous; a multi-scene render
+typically takes a few minutes):
+
+1. `generate-timeline-movie` — called by the browser once
+   `startTimelineMovieAction` (a Server Action) has created a job row
+   and checked the per-event quota. Builds one HeyGen "scene" per
+   selected milestone (avatar + voice + narration script + background
+   photo) and submits it, recording the returned HeyGen video id.
+2. `timeline-movie-status` — polled by the browser every 5 seconds
+   after that. Checks HeyGen's render status; once it reports
+   `completed`, downloads the finished MP4 (HeyGen's URL expires in 7
+   days) and re-uploads it into this project's own Storage (`videos`
+   bucket, `timeline-movie/` prefix), then marks the job row done.
+
+**Getting a HeyGen API key** (you do this yourself):
+1. Go to [app.heygen.com](https://app.heygen.com), create an account,
+   and add funds to your API balance (Settings → API → minimum top-up
+   is $5; HeyGen's own `test: true` mode renders for free with a
+   watermark if you want to verify the integration first — this app
+   doesn't currently expose a test-mode toggle in the UI, so ask if you
+   want that wired up before spending real credits).
+2. Generate an API key under **Settings → API → API token** — see
+   [developers.heygen.com/docs/api-key](https://developers.heygen.com/docs/api-key).
+   You can't view the key again after leaving the page, so copy it
+   somewhere safe immediately.
+3. Set `HEYGEN_API_KEY` in **two** places — this feature spans both a
+   Next.js Server Component (the avatar/voice picker) and the two Edge
+   Functions above, which run in separate environments:
+   - **Netlify** (Next.js side): Site settings → Environment variables.
+   - **Supabase** (Edge Function side): Project Settings → Edge
+     Functions → Secrets, or `supabase secrets set HEYGEN_API_KEY=...`
+     via CLI.
+
+Leave `HEYGEN_API_KEY` unset and the composer's AI tab shows a "not
+configured" message instead of the avatar/voice picker — the Upload tab
+still works regardless, and nothing else on the site is affected.
+
+**Cost** (2026 pricing, subject to change): HeyGen bills per second of
+finished video, roughly $0.017–$0.067/second depending on avatar
+quality tier (~$1–$4/minute). A typical Timeline Movie (5–10 milestones)
+lands around 2–4 minutes of output, so roughly $4–$12 per AI render —
+meaningfully more than a Slideshow Video render, hence the lower
+default quota (2 vs. 3). See
+[HeyGen's API pricing](https://www.g2.com/articles/heygen-api-pricing)
+for current rates.
+
+**Scene cap:** capped at 20 selected milestones per render
+(`MAX_SCENES` in `generate-timeline-movie`) to keep a single render's
+cost and render time bounded.
 
 ### Admin Feature Tour
 

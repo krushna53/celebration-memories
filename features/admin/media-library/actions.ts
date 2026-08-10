@@ -8,8 +8,9 @@ import { getRecycleItemEventId, moveToTrash } from "@/services/recycle-bin";
 import { deleteAiImageJob, getAiImageJobEventId } from "@/services/ai-image-jobs";
 import { deleteSlideshowVideoJob, getSlideshowVideoJobEventId } from "@/services/slideshow-video-jobs";
 import { deleteVideoEditJob, getVideoEditJobEventId } from "@/services/video-editor";
+import { deleteTimelineMovieJob, getTimelineMovieJobEventId } from "@/services/timeline-movie-jobs";
 import { createShareCollection, type ShareCollectionInputItem } from "@/services/share-collections";
-import type { MediaLibraryKind } from "@/services/media-library";
+import type { MediaLibraryKind } from "@/lib/media-library-kinds";
 
 function revalidateMediaLibraryPaths() {
   revalidatePath("/admin/media-library");
@@ -19,6 +20,7 @@ function revalidateMediaLibraryPaths() {
   revalidatePath("/admin/ai-image");
   revalidatePath("/admin/slideshow");
   revalidatePath("/admin/video-editor");
+  revalidatePath("/admin/timeline-movie");
   revalidatePath("/admin");
   revalidatePath("/");
 }
@@ -43,6 +45,9 @@ async function requireAdminForMediaItem(kind: MediaLibraryKind, id: string): Pro
       break;
     case "video_edit":
       eventId = await getVideoEditJobEventId(id);
+      break;
+    case "timeline_movie":
+      eventId = await getTimelineMovieJobEventId(id);
       break;
   }
   if (!eventId) throw new Error("Item not found.");
@@ -90,6 +95,9 @@ export async function deleteMediaLibraryItemAction(kind: MediaLibraryKind, id: s
         break;
       case "video_edit":
         await deleteVideoEditJob(eventId, id);
+        break;
+      case "timeline_movie":
+        await deleteTimelineMovieJob(eventId, id);
         break;
     }
     revalidateMediaLibraryPaths();

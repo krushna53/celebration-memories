@@ -113,6 +113,8 @@ export interface EventRecord {
   slideshowVideoGenerationLimit: number;
   /** Max Video Editor renders a client-role admin may make for this event. Owner is exempt. See services/video-editor.ts's countVideoEditGenerations. */
   videoEditorGenerationLimit: number;
+  /** Max AI (HeyGen) Timeline Movie renders a client-role admin may make for this event. Owner is exempt. Uploaded (non-AI) movies don't count. See services/timeline-movie-generations.ts. */
+  timelineMovieGenerationLimit: number;
   /** Short free-text notices ("No gifts please", "Dress code: formal"), shown in Event Details. One per line, admin-editable. */
   additionalNotes: string | null;
   /** Free-text message shown in its own homepage section (default: below RSVP) — heading adapts to `category`, see lib/event-category.ts. */

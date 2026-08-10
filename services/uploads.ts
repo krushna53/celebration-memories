@@ -599,6 +599,42 @@ export async function createSignedVideoEditorUpload(params: {
 }
 
 /**
+ * Same signed-upload pattern, for an admin uploading their own pre-made
+ * video directly as an event's AI Timeline Movie (features/admin/
+ * timeline-movie/) instead of generating one via HeyGen — see
+ * services/timeline-movie-jobs.ts's createUploadedTimelineMovieJob.
+ * Uses the `videos` bucket, same as every other video upload in this
+ * file (except the platform-level feature video, which isn't event-
+ * scoped).
+ */
+export async function createSignedTimelineMovieUpload(params: {
+  eventId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { eventId, fileName, contentType, fileSize } = params;
+
+  if (contentType !== "video/mp4" && contentType !== "video/quicktime") {
+    throw new UploadValidationError("Only MP4 or MOV video is supported for the Timeline Movie.");
+  }
+
+  const limit = UPLOAD_LIMITS.video;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `${eventId}/timeline-movie/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage.from("videos").createSignedUploadUrl(path);
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "videos", path, token: data.token, signedUrl: data.signedUrl };
+}
+
+/**
  * Same signed-upload pattern, for a Marketplace vendor's own profile/
  * cover/gallery photos (see features/business/*). Stored in the
  * dedicated `business` bucket rather than reusing `gallery`, since

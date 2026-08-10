@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { publicMediaUrl } from "@/services/uploads";
 import { getEventById } from "@/services/events";
 import { generateDraftToken } from "@/lib/tokens";
-import type { MediaLibraryKind } from "@/services/media-library";
+import type { MediaLibraryKind } from "@/lib/media-library-kinds";
 import type { EventRecord } from "@/types/event";
 
 /**
@@ -24,6 +24,7 @@ const TABLE: Record<MediaLibraryKind, string> = {
   ai_image: "ai_image_jobs",
   slideshow_video: "slideshow_video_jobs",
   video_edit: "video_edit_jobs",
+  timeline_movie: "timeline_movie_jobs",
 };
 
 const BUCKET: Record<MediaLibraryKind, string> = {
@@ -34,6 +35,7 @@ const BUCKET: Record<MediaLibraryKind, string> = {
   ai_image: "gallery",
   slideshow_video: "gallery",
   video_edit: "gallery",
+  timeline_movie: "videos",
 };
 
 const PATH_COLUMN: Record<MediaLibraryKind, string> = {
@@ -44,6 +46,24 @@ const PATH_COLUMN: Record<MediaLibraryKind, string> = {
   ai_image: "result_path",
   slideshow_video: "result_path",
   video_edit: "result_path",
+  timeline_movie: "result_path",
+};
+
+/**
+ * Only kinds whose table actually has a caption-like column go here —
+ * slideshow_video_jobs and timeline_movie_jobs have neither, so those
+ * two (and any future kind not listed) fall back to a null caption
+ * rather than guessing a nonexistent column name, which would make the
+ * whole resolve query for that kind fail with a Postgrest "column does
+ * not exist" error (silently dropping those items from the collection).
+ */
+const CAPTION_COLUMN: Partial<Record<MediaLibraryKind, string>> = {
+  gallery: "caption",
+  photo: "caption",
+  video: "caption",
+  audio: "caption",
+  ai_image: "prompt",
+  video_edit: "title",
 };
 
 export interface ShareCollectionInputItem {
@@ -172,8 +192,9 @@ export async function getShareCollectionByToken(token: string): Promise<ShareCol
   await Promise.all(
     Array.from(byKind.entries()).map(async ([kind, ids]) => {
       const pathColumn = PATH_COLUMN[kind];
-      const captionColumn = kind === "ai_image" ? "prompt" : kind === "video_edit" ? "title" : "caption";
-      let query = client.from(TABLE[kind]).select(`id, ${pathColumn}, ${captionColumn}`).in("id", ids);
+      const captionColumn = CAPTION_COLUMN[kind];
+      const selectColumns = captionColumn ? `id, ${pathColumn}, ${captionColumn}` : `id, ${pathColumn}`;
+      let query = client.from(TABLE[kind]).select(selectColumns).in("id", ids);
       if (kind === "photo" || kind === "video" || kind === "audio") {
         query = query.eq("approved", true).is("deleted_at", null);
       } else if (kind === "gallery") {
@@ -195,7 +216,7 @@ export async function getShareCollectionByToken(token: string): Promise<ShareCol
           kind,
           id: row.id,
           url: publicMediaUrl(BUCKET[kind], path),
-          caption: (row[captionColumn] as string | null | undefined) ?? null,
+          caption: captionColumn ? ((row[captionColumn] as string | null | undefined) ?? null) : null,
         });
       }
     }),

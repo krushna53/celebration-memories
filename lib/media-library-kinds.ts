@@ -11,7 +11,15 @@
  * erased at compile time and were never the actual problem — only the
  * label map was.
  */
-export type MediaLibraryKind = "gallery" | "photo" | "video" | "audio" | "ai_image" | "slideshow_video" | "video_edit";
+export type MediaLibraryKind =
+  | "gallery"
+  | "photo"
+  | "video"
+  | "audio"
+  | "ai_image"
+  | "slideshow_video"
+  | "video_edit"
+  | "timeline_movie";
 
 export const MEDIA_LIBRARY_KIND_LABEL: Record<MediaLibraryKind, string> = {
   gallery: "Gallery",
@@ -21,6 +29,7 @@ export const MEDIA_LIBRARY_KIND_LABEL: Record<MediaLibraryKind, string> = {
   ai_image: "AI Image",
   slideshow_video: "Slideshow Video",
   video_edit: "Video Edit",
+  timeline_movie: "AI Timeline Movie",
 };
 
 /** Whether a kind supports the "Feature" toggle — only the guest-facing Memory Wall kinds have a `featured` column (see services/admin-memories.ts's setMemoryFeatured); Gallery and the three admin-generated kinds don't. */

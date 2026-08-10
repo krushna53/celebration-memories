@@ -24,6 +24,7 @@ const FILTERS: Array<{ label: string; kinds: MediaLibraryKind[] | null }> = [
   { label: "AI Images", kinds: ["ai_image"] },
   { label: "Slideshow Videos", kinds: ["slideshow_video"] },
   { label: "Video Edits", kinds: ["video_edit"] },
+  { label: "Timeline Movies", kinds: ["timeline_movie"] },
 ];
 
 const FEATURABLE_KINDS: readonly MediaLibraryKind[] = ["photo", "video", "audio"];
@@ -32,7 +33,7 @@ function isPlayableImage(kind: MediaLibraryKind) {
   return kind === "gallery" || kind === "photo" || kind === "ai_image";
 }
 function isPlayableVideo(kind: MediaLibraryKind) {
-  return kind === "video" || kind === "slideshow_video" || kind === "video_edit";
+  return kind === "video" || kind === "slideshow_video" || kind === "video_edit" || kind === "timeline_movie";
 }
 
 async function downloadOne(item: MediaLibraryItem) {

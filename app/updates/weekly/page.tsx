@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Tuesday, August 11 (AI Timeline Movie)",
+    items: [
+      {
+        title: "New \"AI Timeline Movie\" — narrated highlight video from your Timeline (HeyGen)",
+        detail:
+          "Admin > AI Timeline Movie: pick which Timeline milestones to include, pick an AI host avatar and voice, and it renders an MP4 where the avatar narrates each moment aloud with a matching photo behind them. Available to owner and client accounts (client-role capped at 2 AI renders per event by default). A separate \"Upload your own video\" tab lets you skip AI entirely. Requires a HeyGen API key (see README) — shows a friendly \"not configured\" message otherwise, and Upload still works either way. Finished movies show up in the Media Library alongside everything else.",
+        test:
+          "In Admin > AI Timeline Movie, select a few Timeline entries, pick an avatar/voice, and click Generate Movie — confirm it renders and plays back. Try the Upload tab with a short MP4 instead. Check the result appears in Admin > Media Library under \"Timeline Movies\" and can be deleted from there.",
+      },
+    ],
+  },
+  {
     date: "Tuesday, August 11",
     items: [
       {

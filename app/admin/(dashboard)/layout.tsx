@@ -44,6 +44,7 @@ import {
   RotateCcw,
   LayoutPanelTop,
   Video,
+  Wand2,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -77,6 +78,7 @@ const NAV = [
   { href: "/admin/share-image", label: "Share Image", icon: ImagePlus },
   { href: "/admin/ai-image", label: "AI Image", icon: Sparkles },
   { href: "/admin/slideshow", label: "Slideshow Video", icon: Film },
+  { href: "/admin/timeline-movie", label: "AI Timeline Movie", icon: Wand2 },
   { href: "/admin/video-editor", label: "Video Editor", icon: Clapperboard },
   { href: "/admin/domain-search", label: "Domain Search", icon: Globe },
   { href: "/admin/payment-settings-request", label: "My Payment Method", icon: Landmark },

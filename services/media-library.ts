@@ -5,6 +5,7 @@ import { listMemoriesForModeration } from "@/services/admin-memories";
 import { listCompletedAiImageJobs } from "@/services/ai-image-jobs";
 import { listCompletedSlideshowVideoJobs } from "@/services/slideshow-video-jobs";
 import { listVideoEditJobs } from "@/services/video-editor";
+import { listCompletedTimelineMovieJobs } from "@/services/timeline-movie-jobs";
 import type { MediaLibraryItem } from "@/lib/media-library-kinds";
 
 // Re-exported for backward compatibility with existing imports of these
@@ -37,12 +38,13 @@ export {
  */
 
 export async function listMediaLibrary(eventId: string): Promise<MediaLibraryItem[]> {
-  const [gallery, moderationItems, aiImages, slideshows, videoEdits] = await Promise.all([
+  const [gallery, moderationItems, aiImages, slideshows, videoEdits, timelineMovies] = await Promise.all([
     listGalleryPhotos(eventId),
     listMemoriesForModeration(eventId, "all"),
     listCompletedAiImageJobs(eventId),
     listCompletedSlideshowVideoJobs(eventId),
     listVideoEditJobs(eventId),
+    listCompletedTimelineMovieJobs(eventId),
   ]);
 
   const items: MediaLibraryItem[] = [
@@ -108,6 +110,17 @@ export async function listMediaLibrary(eventId: string): Promise<MediaLibraryIte
           createdAt: v.createdAt,
         }),
       ),
+    ...timelineMovies.map(
+      (t): MediaLibraryItem => ({
+        id: t.id,
+        kind: "timeline_movie",
+        url: t.url,
+        caption: null,
+        guestName: null,
+        featured: null,
+        createdAt: t.createdAt,
+      }),
+    ),
   ];
 
   return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
