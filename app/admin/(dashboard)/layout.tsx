@@ -43,6 +43,7 @@ import {
   Trash2,
   RotateCcw,
   LayoutPanelTop,
+  Video,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -94,6 +95,7 @@ const NAV = [
   { href: "/admin/drafts", label: "Drafts", icon: FileClock },
   { href: "/admin/billing", label: "Billing", icon: CreditCard },
   { href: "/admin/pricing-settings", label: "Pricing Settings", icon: Tags },
+  { href: "/admin/platform-video", label: "Feature Video", icon: Video },
   { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareHeart },
   { href: "/admin/promo-codes", label: "Promo Codes", icon: Ticket },
   { href: "/admin/help", label: "Help", icon: HelpCircle },

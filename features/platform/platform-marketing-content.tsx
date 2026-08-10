@@ -21,6 +21,8 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
 import { BUILDER, SUPPORT } from "@/lib/constants";
+import { getPlatformVideoSettings } from "@/services/platform-video-settings";
+import { FeatureVideoSection } from "@/features/platform/feature-video-section";
 
 const LIVE_FEATURES = [
   {
@@ -135,7 +137,9 @@ export const PLATFORM_NAV_LINKS = [
  * every other event. /platform still resolves (redirects here) so old
  * links keep working.
  */
-export function PlatformMarketingContent() {
+export async function PlatformMarketingContent() {
+  const videoSettings = await getPlatformVideoSettings();
+
   return (
     <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin transparentUntilScroll>
       <div className="bg-navy-950 pb-24 pt-32 text-ivory-50 sm:pt-40">
@@ -184,6 +188,8 @@ export function PlatformMarketingContent() {
           </Reveal>
         </div>
       </div>
+
+      <FeatureVideoSection settings={videoSettings} />
 
       <div className="bg-ivory-50 py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

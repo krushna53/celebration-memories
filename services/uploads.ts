@@ -635,4 +635,42 @@ export async function createSignedBusinessImageUpload(params: {
   return { bucket: "business", path, token: data.token, signedUrl: data.signedUrl };
 }
 
+/**
+ * Same signed-upload pattern, for the owner's platform-level "See It In
+ * Action" feature video (services/platform-video-settings.ts) — not
+ * scoped to any event, unlike every other video upload in this file.
+ * Uses the `videos` bucket (same 1GB limit as a guest video upload) so
+ * a marketing/product-tour video has plenty of room; restricted to
+ * MP4/MOV only (not webm) since that bucket's own Storage-level
+ * `allowed_mime_types` only permits those two — see this file's header
+ * comment on ACCEPTED_MIME_TYPES.video for why webm is accepted at the
+ * application layer for guest recordings but was never added to the
+ * bucket itself.
+ */
+export async function createSignedPlatformVideoUpload(params: {
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { fileName, contentType, fileSize } = params;
+
+  if (contentType !== "video/mp4" && contentType !== "video/quicktime") {
+    throw new UploadValidationError("Only MP4 or MOV video is supported for the feature video.");
+  }
+
+  const limit = UPLOAD_LIMITS.video;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `platform/feature-video/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage.from("videos").createSignedUploadUrl(path);
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "videos", path, token: data.token, signedUrl: data.signedUrl };
+}
+
 export type { MemoryKind };

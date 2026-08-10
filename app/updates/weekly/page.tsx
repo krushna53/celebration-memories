@@ -36,6 +36,35 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Tuesday, August 11",
+    items: [
+      {
+        title: "Fixed a Netlify build failure blocking deploys",
+        detail:
+          "The Media Library admin page's client component was importing a value from a server-only module, which Next.js forbids and fails the whole build on — nothing new could go live until this was fixed. Moved the affected constants into a client-safe module; every other client component was audited for the same pattern and none had it.",
+        test: "No user-facing test needed — this just unblocks deploys going forward.",
+      },
+      {
+        title: "New \"Feature Video\" admin setting — show a promo/walkthrough video on the homepage",
+        detail:
+          "Admin > Feature Video lets the owner paste a YouTube/Vimeo link or upload an MP4/MOV file directly. When turned on, it shows in a \"See It In Action\" section on the public homepage, right below the hero and above the features grid. Off by default.",
+        test:
+          "In Admin > Feature Video, paste a YouTube link, turn it on, and save — confirm the section appears on the homepage with a working embed. Try the Upload tab with a short MP4 instead and confirm it plays with a native video player.",
+      },
+      {
+        title: "Hid the Pricing page from navigation",
+        detail: "Removed the \"Pricing\" link from the top nav and footer. The page itself still works at /pricing, just isn't linked from anywhere.",
+        test: "Confirm \"Pricing\" no longer appears in the header or footer on the homepage.",
+      },
+      {
+        title: "Fixed a console error and tightened up homepage/nav/footer width",
+        detail:
+          "Fixed a \"useInsertionEffect must not schedule updates\" error that could show up in the browser console during page navigation (caused by the top-loading progress bar). Also widened the header and footer to match the homepage's content width, fixing a layout mismatch that showed up as extra side padding on wide screens.",
+        test: "Browse the site on a wide monitor and confirm the header, hero, and footer all line up with the same side margins, and confirm no console errors appear while navigating between pages.",
+      },
+    ],
+  },
+  {
     date: "Monday, August 10 (Live Stream embed)",
     items: [
       {
