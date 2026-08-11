@@ -36,6 +36,36 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Wednesday, August 12",
+    items: [
+      {
+        title: "Owner can now add a dashboard login right from Members",
+        detail:
+          "Admin > Members has a new \"Add Member\" button — pick which event, enter a name/email, and either send an invite email or set the password directly, without leaving the page. Previously this required going to Admin > All Events and using \"Create Login\" on that event's row instead.",
+        test:
+          "In Admin > Members, click \"Add Member\", pick an event, fill in a name/email, and send an invite (or set a password) — confirm the new row appears in the Members list with the right event.",
+      },
+      {
+        title: "Fixed the AI Image tool's preview layout",
+        detail:
+          "The AI-generated invitation image was being cropped — the box forced a portrait shape onto what's actually a square image, cutting off the decorative border. It now shows the full image uncropped. Also fixed an issue where switching to \"Upload Your Own\" left a tall empty \"AI-generated image\" placeholder sitting above your actual upload.",
+        test:
+          "In Admin > AI Image, generate an image and confirm the full design (including its border) is visible, not cropped. Switch to \"Upload Your Own\" and upload a photo — confirm the preview appears right away with no empty box above it.",
+      },
+      {
+        title: "New \"Support & Contribute\" page, linked from the footer",
+        detail:
+          "A new /donate page explains how to support the platform's growth (hosting/AI costs, referrals, feedback) and links out to WhatsApp. Added to the footer's Support column on every page using the full footer.",
+        test: "Scroll to the footer on the homepage and confirm \"Support & Contribute\" appears under Support and opens the new page.",
+      },
+      {
+        title: "Cleaned up WhatsApp message text",
+        detail: "The pre-filled WhatsApp messages (Contact, Support, Custom Template Request, Studio/Agency plan) now open with a generic \"Hi,\" instead of a specific name.",
+        test: "No user-facing test needed — just double-check any WhatsApp CTA link opens with \"Hi,\" not a name.",
+      },
+    ],
+  },
+  {
     date: "Tuesday, August 11 (AI Timeline Movie)",
     items: [
       {
