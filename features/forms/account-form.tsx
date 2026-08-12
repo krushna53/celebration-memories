@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { CheckCircle2, Loader2, UserPlus } from "lucide-react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -18,9 +18,20 @@ const inputClasses =
  * form_owners row AND claims this specific form (see
  * createFormOwnerAccountAction) in one step. Skipping this is always
  * fine — the builder link (draft_token) keeps working either way.
+ *
+ * This Supabase project has email confirmation ON (see the "Confirm
+ * signup" template), so signUp() never returns an active session —
+ * only after the person clicks the link in their confirmation email
+ * can they actually sign in. Earlier this claimed "You're in" and
+ * auto-redirected to /forms/dashboard, which just bounced back to
+ * /forms/login since there was no session yet. Now matches the
+ * already-correct pattern used for admin/host signup
+ * (features/admin/register/register-form.tsx's "Check your email... then
+ * come back and sign in" + /admin/login's `?verified=1` banner) instead
+ * of promising something that can't happen yet. `emailRedirectTo` below
+ * points the confirmation link at /forms/login?verified=1 for that banner.
  */
 export function FormOwnerAccountForm({ token }: { token: string }) {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,7 +52,10 @@ export function FormOwnerAccountForm({ token }: { token: string }) {
     const { data, error: signUpError } = await supabaseBrowser().auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: {
+        data: { name },
+        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/forms/login?verified=1` : undefined,
+      },
     });
 
     if (signUpError || !data.user) {
@@ -63,14 +77,23 @@ export function FormOwnerAccountForm({ token }: { token: string }) {
     }
 
     setSubmitted(true);
-    setTimeout(() => router.push("/forms/dashboard"), 1000);
   }
 
   if (submitted) {
     return (
       <div className="rounded-xl border border-gold-500/20 bg-gold-500/5 p-5 text-center">
         <CheckCircle2 className="mx-auto text-gold-600" size={24} />
-        <p className="mt-2 text-sm text-navy-950">You&rsquo;re in — taking you to your dashboard...</p>
+        <p className="mt-2 text-sm font-medium text-navy-950">Check your email</p>
+        <p className="mt-1 text-xs text-navy-700/60">
+          We&rsquo;ve sent a verification link to <strong className="text-navy-950">{email}</strong>. Click it to
+          activate your account, then come back and sign in.
+        </p>
+        <Link
+          href="/forms/login"
+          className="mt-4 inline-block text-xs font-medium text-gold-700 underline underline-offset-4 hover:text-gold-800"
+        >
+          Back to sign in
+        </Link>
       </div>
     );
   }

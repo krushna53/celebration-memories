@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Wednesday, August 12",
     items: [
       {
+        title: "Fixed: creating a form-owner account claimed \"you're in\" but bounced to sign-in",
+        detail:
+          "Email confirmation is required on this project, so signing up for a form-owner account never actually logs you in right away — it just previously said \"You're in — taking you to your dashboard\" and then landed on the sign-in page, which looked broken. It now shows an honest \"Check your email, then come back and sign in\" message (same pattern as host/admin signup), and clicking the confirmation link takes you to /forms/login with an \"Email verified — you can sign in now\" banner so it's clear what to do next.",
+        test:
+          "Publish a form, create an account from the builder, and confirm you see \"Check your email\" (not a false \"You're in\"). Click the confirmation link in the email and confirm /forms/login shows the green \"Email verified\" banner, then sign in with the password you set.",
+      },
+      {
         title: "Icons on the RSVP-type picker + site header/footer on /forms/new",
         detail:
           "Each of the 8 \"what kind of RSVP is this\" cards on /forms/new (Step 1) now has its own icon. The wizard page was also missing the normal site header and footer entirely — it now has both, on all 3 steps, matching every other standalone tool page (Discover, AI Image, Submit a Template).",

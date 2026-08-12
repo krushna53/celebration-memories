@@ -2,17 +2,28 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Loader2, LogIn } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle2, Loader2, LogIn } from "lucide-react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 
-/** Mirrors features/business/login-form.tsx's flow exactly — same auth.signInWithPassword call, different landing route and allowlist table (form_owners, checked server-side by /forms/dashboard). */
+/**
+ * Mirrors features/business/login-form.tsx's flow exactly — same
+ * auth.signInWithPassword call, different landing route and allowlist
+ * table (form_owners, checked server-side by /forms/dashboard).
+ * `?verified=1` (set by FormOwnerAccountForm's emailRedirectTo, landed
+ * on after clicking the confirmation email) shows the same "Email
+ * verified" banner /admin/login uses — same reasoning: signUp() alone
+ * never grants a session while email confirmation is on, so this is
+ * the actual "come back and sign in" step, not a formality.
+ */
 export function FormOwnerLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const justVerified = searchParams.get("verified") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +52,12 @@ export function FormOwnerLoginForm() {
       </div>
       <h1 className="mt-4 font-display text-2xl text-ivory-50">Sign In</h1>
       <p className="mt-1 text-sm text-ivory-100/60">View and manage your form responses.</p>
+
+      {justVerified ? (
+        <p className="mt-4 flex items-center justify-center gap-1.5 rounded-lg bg-green-500/10 px-3 py-2 text-xs text-green-300">
+          <CheckCircle2 size={14} /> Email verified — you can sign in now.
+        </p>
+      ) : null}
 
       <form onSubmit={onSubmit} className="mt-6 grid gap-4 text-left">
         <div>
