@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { SectionHeading } from "@/components/ui/section-heading";
@@ -39,6 +40,23 @@ export default function ContactPage() {
             </a>{" "}
             directly.
           </p>
+
+          <Reveal>
+            <div className="mt-10 rounded-2xl border border-navy-950/10 bg-white p-6">
+              <h2 className="font-display text-lg text-navy-950">Who You&rsquo;re Paying</h2>
+              <p className="mt-2 text-sm leading-relaxed text-navy-700/75">
+                {SITE_NAME} is built and operated by <strong className="text-navy-950">{BUILDER.name}</strong>. Any
+                paid plan or purchase made on {SITE_NAME} is billed by {BUILDER.name} — this is the name that will
+                appear on your card or bank statement, and the entity your payment processor (Razorpay, Stripe, or
+                CCAvenue, depending on what&rsquo;s offered at checkout) settles funds to. For billing questions,
+                receipts, or refund requests, use the form above or WhatsApp — see our{" "}
+                <Link href="/refund-policy" className="text-gold-600 underline underline-offset-2">
+                  Cancellation &amp; Refund Policy
+                </Link>{" "}
+                for how refunds work.
+              </p>
+            </div>
+          </Reveal>
         </div>
       </div>
     </SiteShell>
