@@ -71,7 +71,7 @@ export function NewFormWizard() {
   return (
     <div className="mx-auto min-h-screen max-w-2xl px-4 py-10 sm:px-6">
       <p className="text-center text-xs font-medium uppercase tracking-[0.2em] text-gold-600">Step {step} of 3</p>
-      <h1 className="mt-2 text-center font-display text-3xl text-navy-950">Build a Form</h1>
+      <h1 className="mt-2 text-center font-display text-3xl text-navy-950">Build RSVP / Form</h1>
 
       {step === 1 ? (
         <div className="mt-8">

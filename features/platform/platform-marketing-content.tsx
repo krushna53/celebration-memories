@@ -122,7 +122,7 @@ const LIVE_FEATURES = [
  */
 export const PLATFORM_NAV_LINKS = [
   { label: "AI Image Tool", href: "/ai-invitation-image" },
-  { label: "Build a Form", href: "/forms/new" },
+  { label: "Build RSVP / Form", href: "/forms/new" },
   { label: "Discover", href: "/discover" },
   { label: "Browse Events", href: "/events" },
   { label: "Templates", href: "/templates/submit" },

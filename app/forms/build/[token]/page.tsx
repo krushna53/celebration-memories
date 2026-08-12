@@ -31,7 +31,7 @@ export default async function FormBuilderPage({ params }: FormBuilderPageProps) 
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <p className="text-xs uppercase tracking-[0.35em] text-gold-500">Build a Form</p>
+      <p className="text-xs uppercase tracking-[0.35em] text-gold-500">Build RSVP / Form</p>
       <h1 className="mt-2 font-display text-2xl text-navy-950 sm:text-3xl">Design your form</h1>
       <p className="mt-1 text-sm text-navy-700/60">
         Bookmark this page — it&rsquo;s your private link to keep editing this form.

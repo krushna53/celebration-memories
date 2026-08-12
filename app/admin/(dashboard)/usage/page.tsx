@@ -42,7 +42,7 @@ function formatUsdPrecise(amount: number): string {
  * and page-guard pattern as /admin/storage (see that page's comment) —
  * deliberately excluded from CLIENT_ALLOWED_PATHS in lib/admin-roles.ts.
  *
- * Also includes a separate "Build a Form — AI Generation" section
+ * Also includes a separate "Build RSVP / Form — AI Generation" section
  * (services/form-ai-usage.ts) for the Custom Form Builder's AI form
  * generation — platform-wide rather than per-event (forms have no
  * event_id), so it doesn't fit the per-event breakdown below and is
@@ -109,7 +109,7 @@ export default async function AdminUsagePage() {
       </div>
 
       <div className="mt-8 rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm">
-        <h2 className="font-display text-lg text-navy-950">Build a Form — AI Generation</h2>
+        <h2 className="font-display text-lg text-navy-950">Build RSVP / Form — AI Generation</h2>
         <p className="mt-1 text-xs text-navy-700/50">
           Platform-wide, not tied to any event — every &ldquo;Describe it&rdquo; or &ldquo;Upload a
           form image&rdquo; call from /forms/new or the builder&rsquo;s &ldquo;Build with AI&rdquo;

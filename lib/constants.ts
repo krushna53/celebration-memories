@@ -123,5 +123,5 @@ export const NAV_LINKS = [
   // needs to navigate away rather than scroll. Next's <Link> resolves
   // an absolute href the same way regardless of its siblings being
   // anchors.
-  { label: "Build a Form", href: "/forms/new" },
+  { label: "Build RSVP / Form", href: "/forms/new" },
 ] as const;

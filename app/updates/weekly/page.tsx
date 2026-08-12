@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Wednesday, August 12",
     items: [
       {
+        title: "Renamed \"Build a Form\" to \"Build RSVP / Form\" everywhere",
+        detail:
+          "The nav link, the wizard heading at /forms/new, and the builder page label all now read \"Build RSVP / Form\" instead of \"Build a Form\" — makes it clearer up front that this tool is for RSVP-style forms as much as general ones, matching the new Step 1 \"what kind of RSVP is this\" picker.",
+        test:
+          "Check the nav on any page for \"Build RSVP / Form,\" then click it and confirm the wizard heading at /forms/new and the builder page label at /forms/build/[token] match.",
+      },
+      {
         title: "New \"Build a Form\" accounts now default to the RSVP dashboard view",
         detail:
           "Signing up for a form-owner account now starts you on the \"RSVP Forms Only\" view of your dashboard instead of \"All Forms\" — since most people using this tool are building RSVP forms, your dashboard opens already scoped to those. Switch to \"All Forms\" any time (top of /forms/dashboard) if you also build general-purpose forms and want to see everything. Existing accounts aren't affected.",

@@ -49,7 +49,7 @@ export const VIDEO_EDITOR_ASSUMED_MINUTES = 1.5;
 /**
  * Text-model pricing for the Custom Form Builder's AI form generation
  * (lib/ai-form-generator.ts, /forms/new + the builder's "Build with
- * AI" panel) — see /admin/usage's "Build a Form — AI Generation"
+ * AI" panel) — see /admin/usage's "Build RSVP / Form — AI Generation"
  * section, services/form-ai-usage.ts.
  *
  * Unlike AI_IMAGE_COST_PER_GENERATION_USD above (a flat per-call
