@@ -208,6 +208,39 @@ export async function sendRsvpSubmittedNotification(input: {
 }
 
 /**
+ * Notifies a Custom Form's chosen notify_email address of a new
+ * response, if `notifyOnSubmit` is on (see features/forms/actions.ts's
+ * submitCustomFormResponseAction). `dashboardUrl` is only usable if the
+ * builder has created an account and claimed the form — included
+ * regardless since it's harmless to show either way (a bare login wall
+ * for someone who hasn't signed up yet).
+ */
+export async function sendCustomFormSubmissionNotification(input: {
+  to: string;
+  formTitle: string;
+  responsePreview: { label: string; value: string }[];
+  dashboardUrl: string;
+}): Promise<void> {
+  const previewRows = input.responsePreview
+    .slice(0, 6)
+    .map(
+      (row) =>
+        `<tr><td style="padding:4px 12px 4px 0;color:#888;">${escapeHtml(row.label)}</td><td style="padding:4px 0;">${escapeHtml(row.value)}</td></tr>`,
+    )
+    .join("");
+
+  await sendEmail({
+    to: input.to,
+    subject: `New response — ${input.formTitle}`,
+    html: `
+      <p>You've got a new response on <strong>${escapeHtml(input.formTitle)}</strong>.</p>
+      ${previewRows ? `<table style="border-collapse:collapse;font-size:13px;">${previewRows}</table>` : ""}
+      <p style="color:#888;font-size:12px;">View every response at <a href="${input.dashboardUrl}">${input.dashboardUrl}</a>.</p>
+    `,
+  });
+}
+
+/**
  * The one-time code a client must enter to confirm permanently deleting
  * their own account/event (task #71) — see
  * features/admin/delete-account/actions.ts. Deliberately blunt/urgent

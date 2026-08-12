@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Wednesday, August 12",
     items: [
       {
+        title: "New: standalone Custom Form Builder — no login to build, own dashboard for responses",
+        detail:
+          "A brand-new, independent tool at /forms/new: build any kind of form (RSVP or otherwise) with a cover photo and custom fields — no account needed. Publish to get a shareable link, then optionally create a free account to search, edit, delete, export, and CSV-import responses in your own dashboard at /forms/dashboard. \"Build a Form\" is now in the nav on every page.",
+        test:
+          "Go to /forms/new, add a couple of fields, publish, and open the public link in a private window to submit a test response. Back on the builder, create an account and confirm the response shows up at /forms/dashboard.",
+      },
+      {
         title: "New \"Organizer\" role — delegate Invitees, Gallery, Timeline, and Check-In independently",
         detail:
           "A new dashboard role sits between Client and Session Organizer: someone can now run your guest list, photos, timeline, and event-day check-in on their own, without seeing Event Settings, billing, or any AI tools. Add one from Admin > Organizers (new nav link) the same way you'd add a team member — send an invite email or set a password yourself.",

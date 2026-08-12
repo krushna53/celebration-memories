@@ -117,4 +117,11 @@ export const NAV_LINKS = [
   { label: "Timeline", href: "#timeline" },
   { label: "RSVP", href: "#rsvp" },
   { label: "Memories", href: "#memories" },
+  // Absolute path, unlike every other item here (which are same-page
+  // anchors) — deliberate: the Custom Form Builder (#95-101) is a
+  // standalone, platform-wide tool, not part of this event, so it
+  // needs to navigate away rather than scroll. Next's <Link> resolves
+  // an absolute href the same way regardless of its siblings being
+  // anchors.
+  { label: "Build a Form", href: "/forms/new" },
 ] as const;

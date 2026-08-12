@@ -709,4 +709,42 @@ export async function createSignedPlatformVideoUpload(params: {
   return { bucket: "videos", path, token: data.token, signedUrl: data.signedUrl };
 }
 
+/**
+ * Same signed-upload pattern as createSignedTestimonialPhotoUpload —
+ * platform-level, not per-event, for a Custom Form's optional cover
+ * photo (features/forms/). Gated by the builder's draft_token check in
+ * the calling Server Action, not here — this function just mints the
+ * URL, same as every other upload path in this file.
+ */
+export async function createSignedCustomFormCoverUpload(params: {
+  formId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { formId, fileName, contentType, fileSize } = params;
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported image type: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS.photo;
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+  }
+
+  const path = `custom-forms/${formId}/cover/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage
+    .from("gallery")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+}
+
 export type { MemoryKind };

@@ -1032,6 +1032,60 @@ typed an email or phone at all, and this can't automatically *send* a
 WhatsApp message — there's no WhatsApp Business API wired into this
 app, only the tap-to-open `wa.me` link.
 
+### Custom Form Builder
+
+A standalone, platform-wide form builder (#95-101) — completely
+independent of the per-event RSVP system above. Anyone can build a
+form with no account at all; an account is only useful afterward, to
+see responses in a searchable dashboard.
+
+**Building a form (no login):** `/forms/new` creates a draft and
+redirects into `/forms/build/[token]` — a long random token in the URL
+is the only credential needed to keep editing (same "possession of the
+token is the credential" model as the event wizard's `/start/[token]`,
+see `services/event-drafts.ts`). Bookmark that URL to come back later.
+From there: set a title/description, an optional cover photo, an
+optional notify-on-submit email, and add fields (short/long answer,
+email, phone, number, date, dropdown, multiple choice, checkboxes —
+each with a required toggle and reorderable). Hitting **Publish**
+makes the form live at its public URL, `/f/[slug]`; fields can still be
+edited after publishing.
+
+**Creating an account:** offered right after publishing (never
+required) — `features/forms/account-form.tsx` calls the same
+`supabaseBrowser().auth.signUp()` pattern as the Marketplace vendor
+signup (`features/business/signup-form.tsx`), then a Server Action
+creates a `form_owners` row and claims that one form
+(`custom_forms.owner_id`) in the same step. `form_owners` is a
+deliberately separate, lightweight allowlist from the event-scoped
+`admins` table (mirrors `services/business-auth.ts`'s
+`business_accounts`) — one person can own many forms, with no event
+relationship at all. Sign back in anytime at `/forms/login`.
+
+**Response dashboard** (`/forms/dashboard`, login required): every
+form the account owns, and per-form at `/forms/dashboard/[formId]` —
+search across every response, inline edit, delete, CSV export, and CSV
+import (columns matched to field labels, same "best effort, skip
+unmatched rows" shape as the Invitees CSV import). A form can be
+closed (stops accepting responses, shows a friendly message at its
+public URL) and reopened anytime from the same page.
+
+**Storage & schema:** cover photos reuse the existing `gallery`
+Storage bucket under a `custom-forms/{formId}/cover/` prefix (no new
+bucket needed). Four new tables — `form_owners`, `custom_forms`,
+`custom_form_fields`, `custom_form_responses` — see
+`supabase/migrations/0046_custom_form_builder.sql`. Response data is
+stored as JSONB keyed by field id (not label), so renaming a field
+later never orphans already-submitted answers.
+
+**Known limitations:** one respondent = one submission with no
+duplicate-prevention (no per-respondent identity, unlike the
+per-invitee RSVP system); no field-level answer validation beyond
+required/type (e.g. no regex/min-max); a form can't be shared between
+multiple owner accounts (single `owner_id`); no WhatsApp share button
+or CSV-based pre-filled personal links yet (discussed as fast follow-
+ups, not built this round).
+
 ### Custom Domains
 
 **What exists today:** a host can ask for a custom domain from the
