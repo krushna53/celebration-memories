@@ -21,6 +21,7 @@ export function PublicFormFill({ formId, fields }: { formId: string; fields: Cus
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [honeypot, setHoneypot] = useState("");
 
   function setValue(fieldId: string, value: FieldValue) {
     setValues((prev) => ({ ...prev, [fieldId]: value }));
@@ -46,7 +47,7 @@ export function PublicFormFill({ formId, fields }: { formId: string; fields: Cus
     }
 
     setSubmitting(true);
-    const result = await submitCustomFormResponseAction(formId, values);
+    const result = await submitCustomFormResponseAction(formId, values, honeypot);
     setSubmitting(false);
 
     if (!result.success) {
@@ -67,7 +68,13 @@ export function PublicFormFill({ formId, fields }: { formId: string; fields: Cus
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-5 rounded-2xl border border-navy-950/10 bg-white p-6 shadow-sm">
+    <form onSubmit={onSubmit} noValidate className="grid gap-5 rounded-2xl border border-navy-950/10 bg-white p-6 shadow-sm">
+      {/* Honeypot — hidden from real respondents via CSS, left blank by them; bots that fill every field trip it. Same pattern as public-rsvp-form.tsx. */}
+      <div className="absolute -left-[9999px]" aria-hidden="true">
+        <label htmlFor="website">Leave this field blank</label>
+        <input id="website" name="website" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+      </div>
+
       {fields.map((field) => (
         <div key={field.id}>
           <label className="text-sm font-medium text-navy-950">

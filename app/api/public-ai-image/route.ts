@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Please keep the description under ${MAX_PROMPT_LENGTH} characters.` }, { status: 400 });
   }
 
-  const ipHash = hashIp(getClientIp(request));
+  const ipHash = hashIp(getClientIp(request.headers));
   const rateLimit = await checkPublicAiImageRateLimit(ipHash);
   if (!rateLimit.allowed) {
     return NextResponse.json({ error: rateLimit.reason }, { status: 429 });

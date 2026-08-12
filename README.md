@@ -1072,11 +1072,36 @@ public URL) and reopened anytime from the same page.
 
 **Storage & schema:** cover photos reuse the existing `gallery`
 Storage bucket under a `custom-forms/{formId}/cover/` prefix (no new
-bucket needed). Four new tables — `form_owners`, `custom_forms`,
-`custom_form_fields`, `custom_form_responses` — see
-`supabase/migrations/0046_custom_form_builder.sql`. Response data is
-stored as JSONB keyed by field id (not label), so renaming a field
-later never orphans already-submitted answers.
+bucket needed). Five new tables — `form_owners`, `custom_forms`,
+`custom_form_fields`, `custom_form_responses`,
+`custom_form_submission_requests` — see
+`supabase/migrations/0046_custom_form_builder.sql` and
+`0047_custom_form_submission_rate_limit.sql`. Response data is stored
+as JSONB keyed by field id (not label), so renaming a field later
+never orphans already-submitted answers.
+
+**Spam defense** on the public submission (no login gate to lean on,
+same problem every other public form in this app already solves):
+
+- **Honeypot** — a hidden field real respondents never see or fill in
+  (`features/forms/public-form-fill.tsx`); a bot that fills every field
+  trips it, and the submission is silently no-op'd. Same pattern as
+  the public RSVP form, public memory uploads, and template
+  submissions (`features/rsvp/public-rsvp-actions.ts` etc.) — one
+  proven convention reused rather than a new one invented.
+- **Per-IP, per-form rate limit**
+  (`services/custom-form-rate-limit.ts`) — mirrors the public AI Image
+  tool's limiter shape (`services/public-ai-image-rate-limit.ts`,
+  hashed IP + rolling window), but scoped per-form and looser (10
+  submissions/IP/hour, 500/form/day) since this endpoint doesn't call
+  a paid API — the risk here is junk responses and a flooded
+  notify-email inbox, not runaway spend. Unlike the AI Image limiter,
+  this fails **open** (allows the submission) if the rate-limit query
+  itself errors, since blocking a real respondent over a transient DB
+  hiccup is worse than occasionally missing a spam check on a free
+  feature. IP is read via `headers()` in the Server Action itself
+  (`lib/ip-hash.ts`'s `getClientIp` now takes a headers-like object so
+  it works from both a Route Handler and a Server Action).
 
 **Known limitations:** one respondent = one submission with no
 duplicate-prevention (no per-respondent identity, unlike the

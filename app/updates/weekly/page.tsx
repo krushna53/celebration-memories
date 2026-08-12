@@ -46,6 +46,13 @@ const CHANGES: ChangeGroup[] = [
           "Go to /forms/new, add a couple of fields, publish, and open the public link in a private window to submit a test response. Back on the builder, create an account and confirm the response shows up at /forms/dashboard.",
       },
       {
+        title: "Spam protection added to the Custom Form Builder's public link",
+        detail:
+          "Anyone with a published form's link can submit without an account, so it now has the same spam guards as the RSVP form and memory uploads: a hidden trap field that silently ignores bot submissions, plus a per-visitor rate limit (10 submissions/hour per form) so a script can't flood a form or your inbox.",
+        test:
+          "No user-facing test needed for normal use — submitting a form normally is unaffected. If you want to verify the rate limit, submit the same form 10+ times quickly from one browser and confirm further attempts show a friendly \"try again later\" message.",
+      },
+      {
         title: "New \"Organizer\" role — delegate Invitees, Gallery, Timeline, and Check-In independently",
         detail:
           "A new dashboard role sits between Client and Session Organizer: someone can now run your guest list, photos, timeline, and event-day check-in on their own, without seeing Event Settings, billing, or any AI tools. Add one from Admin > Organizers (new nav link) the same way you'd add a team member — send an invite email or set a password yourself.",
