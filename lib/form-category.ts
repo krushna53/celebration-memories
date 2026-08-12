@@ -14,8 +14,14 @@
  * from client components — the `fieldType` values below are a
  * hand-kept literal union mirroring `CustomFieldType` there rather
  * than a type import, to avoid a cross-module coupling that isn't
- * needed for a handful of string literals.
+ * needed for a handful of string literals. lucide-react icon
+ * components are fine to import here though (plain React components,
+ * no server/client restriction), so the Step 1 picker's icon lives
+ * alongside its label/description in one registry entry rather than a
+ * second icon-only lookup in features/forms/new-form-wizard.tsx.
  */
+import { Baby, Briefcase, Cake, FileText, Gem, Heart, Palmtree, Users, type LucideIcon } from "lucide-react";
+
 import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
 
 export type FormCategory =
@@ -48,15 +54,15 @@ export const FORM_CATEGORY_LABELS: Record<FormCategory, string> = {
   general: "General / Not an RSVP",
 };
 
-export const FORM_CATEGORY_OPTIONS: { value: FormCategory; label: string; description: string }[] = [
-  { value: "wedding", label: "Wedding", description: "Meal choice, plus-one, a note for the couple" },
-  { value: "birthday", label: "Birthday", description: "Guest count, meal preference, a birthday message" },
-  { value: "baby_shower", label: "Baby Shower", description: "Guest count, gift note, meal preference" },
-  { value: "anniversary", label: "Anniversary", description: "Guest count, a message for the couple" },
-  { value: "retirement", label: "Retirement", description: "Guest count, a message for the retiree" },
-  { value: "corporate", label: "Corporate Event", description: "Company name, attendee count, dietary needs" },
-  { value: "reunion", label: "Reunion", description: "Batch/group, guest count, a note to old friends" },
-  { value: "general", label: "General / Other", description: "Not tied to an occasion — a survey, sign-up, contact form, etc." },
+export const FORM_CATEGORY_OPTIONS: { value: FormCategory; label: string; description: string; icon: LucideIcon }[] = [
+  { value: "wedding", label: "Wedding", description: "Meal choice, plus-one, a note for the couple", icon: Heart },
+  { value: "birthday", label: "Birthday", description: "Guest count, meal preference, a birthday message", icon: Cake },
+  { value: "baby_shower", label: "Baby Shower", description: "Guest count, gift note, meal preference", icon: Baby },
+  { value: "anniversary", label: "Anniversary", description: "Guest count, a message for the couple", icon: Gem },
+  { value: "retirement", label: "Retirement", description: "Guest count, a message for the retiree", icon: Palmtree },
+  { value: "corporate", label: "Corporate Event", description: "Company name, attendee count, dietary needs", icon: Briefcase },
+  { value: "reunion", label: "Reunion", description: "Batch/group, guest count, a note to old friends", icon: Users },
+  { value: "general", label: "General / Other", description: "Not tied to an occasion — a survey, sign-up, contact form, etc.", icon: FileText },
 ];
 
 /** Starter fields dropped into a brand-new form when built manually (Step 4) — all fully editable/deletable afterward, just a head start. "general" intentionally starts empty, matching today's default builder experience. */

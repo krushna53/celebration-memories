@@ -69,7 +69,7 @@ export function NewFormWizard() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-2xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-2xl px-4 sm:px-6">
       <p className="text-center text-xs font-medium uppercase tracking-[0.2em] text-gold-600">Step {step} of 3</p>
       <h1 className="mt-2 text-center font-display text-3xl text-navy-950">Build RSVP / Form</h1>
 
@@ -84,7 +84,10 @@ export function NewFormWizard() {
                 onClick={() => selectCategory(option.value)}
                 className="rounded-xl border border-navy-950/10 bg-white p-4 text-left transition-luxury duration-200 hover:border-gold-500/50 hover:shadow-sm"
               >
-                <p className="font-display text-base text-navy-950">{option.label}</p>
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold-500/10 text-gold-600">
+                  <option.icon size={18} />
+                </div>
+                <p className="mt-2.5 font-display text-base text-navy-950">{option.label}</p>
                 <p className="mt-1 text-xs text-navy-700/50">{option.description}</p>
               </button>
             ))}

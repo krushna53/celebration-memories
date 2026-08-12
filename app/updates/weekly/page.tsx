@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Wednesday, August 12",
     items: [
       {
+        title: "Icons on the RSVP-type picker + site header/footer on /forms/new",
+        detail:
+          "Each of the 8 \"what kind of RSVP is this\" cards on /forms/new (Step 1) now has its own icon. The wizard page was also missing the normal site header and footer entirely — it now has both, on all 3 steps, matching every other standalone tool page (Discover, AI Image, Submit a Template).",
+        test:
+          "Go to /forms/new and confirm a header with nav links and a footer are visible on Step 1, and stay visible through Step 2 and Step 3. Confirm each RSVP-type card has an icon.",
+      },
+      {
         title: "Renamed \"Build a Form\" to \"Build RSVP / Form\" everywhere",
         detail:
           "The nav link, the wizard heading at /forms/new, and the builder page label all now read \"Build RSVP / Form\" instead of \"Build a Form\" — makes it clearer up front that this tool is for RSVP-style forms as much as general ones, matching the new Step 1 \"what kind of RSVP is this\" picker.",
