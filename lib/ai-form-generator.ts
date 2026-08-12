@@ -46,6 +46,18 @@ const GeneratedFormSchema = z.object({
 
 export type GeneratedForm = z.infer<typeof GeneratedFormSchema>;
 
+/** Real token counts from the OpenAI response (response.usage) — the basis for the cost report on /admin/usage (lib/usage-pricing.ts's computeFormAiGenerationCostUsd), not an assumed/flat per-call estimate like AI Image's. */
+export interface GenerationUsage {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface GenerationResult {
+  form: GeneratedForm;
+  usage: GenerationUsage;
+}
+
 const SYSTEM_INSTRUCTIONS = `You design forms for "EveryMoment," a form-builder tool. Given either a plain-language description of a form, or a photo/screenshot of an existing paper or digital form, you produce a structured form definition.
 
 Output ONLY a single raw JSON object — no markdown code fences, no explanation, no text before or after it. The JSON must match exactly this shape:
@@ -95,7 +107,7 @@ function parseModelOutput(raw: string): GeneratedForm {
   return result.data;
 }
 
-export async function generateFormFromPrompt(prompt: string, category?: FormCategory | null): Promise<GeneratedForm> {
+export async function generateFormFromPrompt(prompt: string, category?: FormCategory | null): Promise<GenerationResult> {
   const client = getClient();
   if (!client) {
     throw new AiFormGeneratorError("AI form generation isn't configured — add OPENAI_API_KEY to enable it.");
@@ -123,11 +135,14 @@ export async function generateFormFromPrompt(prompt: string, category?: FormCate
   if (!raw) {
     throw new AiFormGeneratorError("The AI didn't return anything. Try rephrasing your description.");
   }
-  return parseModelOutput(raw);
+  return {
+    form: parseModelOutput(raw),
+    usage: { model, inputTokens: response.usage?.input_tokens ?? 0, outputTokens: response.usage?.output_tokens ?? 0 },
+  };
 }
 
 /** `imageDataUrl` is a full data URL (e.g. "data:image/png;base64,...") — the caller (features/forms/builder-actions.ts) builds this client-side before the file ever leaves the browser as anything but base64 text, so no image is ever written to Storage just to be analyzed once. */
-export async function generateFormFromImage(imageDataUrl: string, category?: FormCategory | null): Promise<GeneratedForm> {
+export async function generateFormFromImage(imageDataUrl: string, category?: FormCategory | null): Promise<GenerationResult> {
   const client = getClient();
   if (!client) {
     throw new AiFormGeneratorError("AI form generation isn't configured — add OPENAI_API_KEY to enable it.");
@@ -160,5 +175,8 @@ export async function generateFormFromImage(imageDataUrl: string, category?: For
   if (!raw) {
     throw new AiFormGeneratorError("The AI couldn't make out a form in that image. Try a clearer photo.");
   }
-  return parseModelOutput(raw);
+  return {
+    form: parseModelOutput(raw),
+    usage: { model, inputTokens: response.usage?.input_tokens ?? 0, outputTokens: response.usage?.output_tokens ?? 0 },
+  };
 }

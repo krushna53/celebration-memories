@@ -1186,6 +1186,31 @@ RSVP-only access to forms I built" system would need a real
 sharing/ownership model and was explicitly scoped out as a bigger,
 separate build.
 
+**AI generation usage & cost report** — `/admin/usage`'s "Build a
+Form — AI Generation" section (owner-only, platform-wide — this
+feature has no `event_id`, so it doesn't fit the per-event breakdown
+elsewhere on that page). Backed by `services/form-ai-usage.ts`,
+reading `custom_form_ai_generation_requests`, which now records real
+OpenAI token counts per call (`input_tokens`/`output_tokens` from
+`response.usage`, migration `0050_custom_form_ai_generation_usage_detail.sql`)
+alongside mode (`prompt`/`image`), model, and the form's category —
+not just the `ip_hash`/timestamp it started as for rate-limiting.
+
+The report shows: total estimated cost, generation count (prompt vs.
+image split), total input/output tokens, cost by RSVP category, and a
+14-day trend. Token counts are **real**, pulled straight from the
+OpenAI response; the dollar figure is an **estimate** — it multiplies
+those real tokens by a published per-token rate
+(`lib/usage-pricing.ts`'s `TEXT_MODEL_PRICING_USD_PER_1M_TOKENS`, GPT-5.6
+Luna at $0.20/$1.20 per 1M input/output tokens as of this writing,
+sourced from a third-party rate-card aggregator, checked August 2026)
+rather than a live pull from OpenAI's billing API — same "estimate,
+not invoice" caveat the AI Image/Shotstack figures above already
+carry. Verify against your actual OpenAI billing dashboard if this
+number matters for accounting, and update the constant in
+`lib/usage-pricing.ts` if you override `OPENAI_TEXT_MODEL` to a
+different model or OpenAI's published rates change.
+
 ### Custom Domains
 
 **What exists today:** a host can ask for a custom domain from the

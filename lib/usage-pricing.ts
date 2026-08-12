@@ -45,3 +45,43 @@ export const SHOTSTACK_COST_PER_MINUTE_USD = 0.4;
  */
 export const SLIDESHOW_ASSUMED_MINUTES = 1;
 export const VIDEO_EDITOR_ASSUMED_MINUTES = 1.5;
+
+/**
+ * Text-model pricing for the Custom Form Builder's AI form generation
+ * (lib/ai-form-generator.ts, /forms/new + the builder's "Build with
+ * AI" panel) — see /admin/usage's "Build a Form — AI Generation"
+ * section, services/form-ai-usage.ts.
+ *
+ * Unlike AI_IMAGE_COST_PER_GENERATION_USD above (a flat per-call
+ * estimate, since neither Shotstack nor the image endpoint returns a
+ * real per-call cost), this one IS computed from real numbers: OpenAI's
+ * Responses API returns actual input/output token counts per call
+ * (response.usage), captured and stored per-request in
+ * custom_form_ai_generation_requests. Only the *price per token* below
+ * is a published-rate estimate, not a live billing pull — same
+ * "estimate, not invoice" caveat as the rest of this file.
+ *
+ * Rates as USD per 1,000,000 tokens, checked August 2026
+ * (https://devtk.ai/en/blog/openai-api-pricing-guide-2026/, updated
+ * 2026-08-01 for OpenAI's August price cuts — verify against your own
+ * OpenAI billing dashboard, since third-party rate cards can lag or
+ * miss volume/regional adjustments). `gpt-5.6` is documented as an
+ * alias for `gpt-5.6-sol`. Any model name not listed here falls back
+ * to the Luna rate (this feature's actual default, per
+ * `OPENAI_TEXT_MODEL || "gpt-5.6-luna"` in lib/ai-form-generator.ts)
+ * rather than silently reporting $0.
+ */
+export const TEXT_MODEL_PRICING_USD_PER_1M_TOKENS: Record<string, { input: number; output: number }> = {
+  "gpt-5.6-luna": { input: 0.2, output: 1.2 },
+  "gpt-5.6-terra": { input: 2.0, output: 12.0 },
+  "gpt-5.6-sol": { input: 5.0, output: 30.0 },
+  "gpt-5.6": { input: 5.0, output: 30.0 },
+};
+
+const FALLBACK_TEXT_MODEL_RATE = TEXT_MODEL_PRICING_USD_PER_1M_TOKENS["gpt-5.6-luna"]!;
+
+/** USD cost for one AI form-generation call, from its real input/output token counts. */
+export function computeFormAiGenerationCostUsd(model: string, inputTokens: number, outputTokens: number): number {
+  const rate = TEXT_MODEL_PRICING_USD_PER_1M_TOKENS[model] ?? FALLBACK_TEXT_MODEL_RATE;
+  return (inputTokens / 1_000_000) * rate.input + (outputTokens / 1_000_000) * rate.output;
+}

@@ -237,8 +237,15 @@ export async function generateFormFromPromptAction(token: string, prompt: string
     const rateLimit = await checkAiGenerationRateLimit();
     if (!rateLimit.ok) return { success: false, error: rateLimit.error };
 
-    const generated = await generateFormFromPrompt(prompt, form.category);
-    await recordCustomFormAiGenerationRequest(rateLimit.ipHash);
+    const { form: generated, usage } = await generateFormFromPrompt(prompt, form.category);
+    await recordCustomFormAiGenerationRequest(rateLimit.ipHash, {
+      mode: "prompt",
+      model: usage.model,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      formId: form.id,
+      category: form.category,
+    });
     return await applyGeneratedForm(token, generated);
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to generate the form." };
@@ -252,8 +259,15 @@ export async function generateFormFromImageAction(token: string, imageDataUrl: s
     const rateLimit = await checkAiGenerationRateLimit();
     if (!rateLimit.ok) return { success: false, error: rateLimit.error };
 
-    const generated = await generateFormFromImage(imageDataUrl, form.category);
-    await recordCustomFormAiGenerationRequest(rateLimit.ipHash);
+    const { form: generated, usage } = await generateFormFromImage(imageDataUrl, form.category);
+    await recordCustomFormAiGenerationRequest(rateLimit.ipHash, {
+      mode: "image",
+      model: usage.model,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      formId: form.id,
+      category: form.category,
+    });
     return await applyGeneratedForm(token, generated);
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to read that image." };

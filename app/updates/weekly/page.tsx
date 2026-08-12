@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Wednesday, August 12",
     items: [
       {
+        title: "AI form generation now has a real cost report",
+        detail:
+          "Admin > Usage has a new \"Build a Form — AI Generation\" section: total estimated OpenAI cost, how many generations were \"Describe it\" vs \"Upload a form image,\" total tokens used, cost by RSVP type, and a 14-day trend. Token counts are real (pulled from OpenAI's own response on every call); the dollar figure is an estimate using a published per-token rate, same caveat as the AI Image/Shotstack numbers already on that page.",
+        test:
+          "Generate a form or two via AI (/forms/new, choose \"Generate with AI\"), then check Admin > Usage and confirm the \"Build a Form — AI Generation\" section shows the generation count and a non-zero cost.",
+      },
+      {
         title: "New form-builder wizard — pick an RSVP type, then AI or build-it-yourself",
         detail:
           "\"Build a Form\" now opens a short wizard instead of dropping you straight into an empty form. Step 1: pick what kind of RSVP it is (Wedding, Birthday, Baby Shower, Anniversary, Retirement, Corporate, Reunion, or General/Other). Step 2: generate it with AI or build it yourself — building it yourself now starts with a few suggested fields for that occasion already added (fully editable). Picking AI carries the occasion into the prompt, so a short description leans toward the right fields automatically. There's also a new self-service dashboard toggle — flip your account to \"RSVP Forms Only\" to hide any general-purpose forms you've built and see just the RSVP ones.",

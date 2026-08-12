@@ -62,7 +62,34 @@ export async function checkCustomFormAiGenerationRateLimit(ipHash: string): Prom
   return { allowed: true };
 }
 
-export async function recordCustomFormAiGenerationRequest(ipHash: string): Promise<void> {
-  const { error } = await supabaseAdmin().from("custom_form_ai_generation_requests").insert({ ip_hash: ipHash });
+export interface RecordGenerationDetail {
+  mode: "prompt" | "image";
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  formId: string;
+  category: string | null;
+}
+
+/**
+ * `detail` is optional only for backward compatibility with existing
+ * call shapes — every real call site (features/forms/builder-actions.ts)
+ * always passes it now, since this row doubles as both the rate-limit
+ * counter (ip_hash/created_at, as before) and the source data for the
+ * usage/cost report (services/form-ai-usage.ts, /admin/usage) — same
+ * insert either way, richer columns.
+ */
+export async function recordCustomFormAiGenerationRequest(ipHash: string, detail?: RecordGenerationDetail): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .from("custom_form_ai_generation_requests")
+    .insert({
+      ip_hash: ipHash,
+      mode: detail?.mode ?? null,
+      model: detail?.model ?? null,
+      input_tokens: detail?.inputTokens ?? 0,
+      output_tokens: detail?.outputTokens ?? 0,
+      form_id: detail?.formId ?? null,
+      category: detail?.category ?? null,
+    });
   if (error) console.error("recordCustomFormAiGenerationRequest failed:", error.message);
 }
