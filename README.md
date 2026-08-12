@@ -1111,6 +1111,41 @@ multiple owner accounts (single `owner_id`); no WhatsApp share button
 or CSV-based pre-filled personal links yet (discussed as fast follow-
 ups, not built this round).
 
+**AI form generation** — at the top of the builder
+(`features/forms/ai-form-generator.tsx`), before any manual field
+editing, a builder can skip hand-building entirely two ways:
+
+- **Describe it** — type a sentence (e.g. "a wedding RSVP with meal
+  choice, plus-one, and a note for the couple") and the AI writes a
+  title, description, and a full field set.
+- **Upload a form image** — a photo or screenshot of an existing
+  paper/PDF/web form; the AI reads it and rebuilds it as a live
+  EveryMoment form. The image is sent as a base64 data URL built
+  client-side and analyzed once — it's never uploaded to Supabase
+  Storage or persisted anywhere, unlike every other upload path in
+  this app.
+
+Both call `lib/ai-form-generator.ts` (`generateFormFromPrompt` /
+`generateFormFromImage`) via Server Actions in
+`features/forms/builder-actions.ts`, using the OpenAI Responses API
+(same `OPENAI_API_KEY` env var as AI Image/AI CSS/AI Avatar — see the
+API keys reference table above; no separate key needed). The model
+defaults to `gpt-5.6-luna` and can be overridden with
+`OPENAI_TEXT_MODEL`. If `OPENAI_API_KEY` isn't set, both actions
+return a friendly "not configured" error instead of failing — same
+graceful-degradation behavior as the app's other optional AI features.
+
+Generating **replaces** the form's title, description, and entire
+field set — a confirmation dialog warns before this if the form
+already has fields. This is a deliberately public, unauthenticated
+endpoint (reachable by anyone holding the form's draft_token, which
+is trivial to obtain — just visit `/forms/new`), so it's rate-limited
+separately from response submission and **fails closed**:
+`services/custom-form-ai-rate-limit.ts` caps it at 5 generations/IP/
+hour and 100/day platform-wide, same fail-closed reasoning as the
+public AI Image tool, since this calls a paid API rather than the
+free response-submission endpoint above.
+
 ### Custom Domains
 
 **What exists today:** a host can ask for a custom domain from the

@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Wednesday, August 12",
     items: [
       {
+        title: "AI form generation — describe a form or upload a photo of one, and the builder writes it for you",
+        detail:
+          "The Custom Form Builder now has a \"Build with AI\" panel at the top of the page. Type a sentence describing the form you want and AI writes the title, description, and every field. Or upload a photo/screenshot of an existing paper or PDF form and AI rebuilds it as a live EveryMoment form — the image is only analyzed once and never stored. Generating replaces the current fields, so it asks first if the form already has any.",
+        test:
+          "Go to /forms/new, then in the \"Build with AI\" panel try \"Describe it\" with something like \"a baby shower RSVP with meal choice and a gift note,\" and confirm the title and fields fill in. Then try \"Upload a form image\" with a photo of any form and confirm it's transcribed into fields.",
+      },
+      {
         title: "New: standalone Custom Form Builder — no login to build, own dashboard for responses",
         detail:
           "A brand-new, independent tool at /forms/new: build any kind of form (RSVP or otherwise) with a cover photo and custom fields — no account needed. Publish to get a shareable link, then optionally create a free account to search, edit, delete, export, and CSV-import responses in your own dashboard at /forms/dashboard. \"Build a Form\" is now in the nav on every page.",

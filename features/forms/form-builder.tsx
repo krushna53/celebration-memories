@@ -27,6 +27,7 @@ import {
   updateFormMetaAction,
 } from "@/features/forms/builder-actions";
 import { FormOwnerAccountForm } from "@/features/forms/account-form";
+import { AiFormGenerator } from "@/features/forms/ai-form-generator";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -158,8 +159,18 @@ export function FormBuilder({ token, publicUrl, initialForm, initialFields }: Fo
     reorderFieldsAction(token, reordered.map((f) => f.id)).catch(() => {});
   }
 
+  /** AI generation (features/forms/ai-form-generator.tsx) persists directly and hands back the saved rows, so this just swaps local state to match — same "server is the source of truth" approach as saveMeta/handleCoverFile above. */
+  function handleGenerated(result: { title: string; description: string | null; fields: CustomFormField[] }) {
+    setForm((prev) => ({ ...prev, title: result.title, description: result.description }));
+    setTitle(result.title);
+    setDescription(result.description ?? "");
+    setFields(result.fields);
+  }
+
   return (
     <div className="grid gap-6">
+      <AiFormGenerator token={token} hasExistingFields={fields.length > 0} onGenerated={handleGenerated} />
+
       <section className="rounded-xl border border-navy-950/10 bg-white p-5">
         <label className={labelClasses} htmlFor="form-title">
           Form title

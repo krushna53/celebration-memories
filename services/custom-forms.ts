@@ -270,6 +270,41 @@ export async function createField(input: CreateFieldInput): Promise<CustomFormFi
   return mapField(data);
 }
 
+/**
+ * Wholesale replaces every field on a form — used by AI generation
+ * (features/forms/builder-actions.ts), where the whole point is to
+ * hand back a complete, freshly-designed field set rather than append
+ * to whatever was already there. Deletes then bulk-inserts rather than
+ * looping createField() calls, so sort order comes out correct in one
+ * pass instead of N round trips.
+ */
+export async function replaceFormFields(formId: string, fields: Omit<CreateFieldInput, "formId">[]): Promise<CustomFormField[]> {
+  const client = supabaseAdmin();
+
+  const { error: deleteError } = await client.from("custom_form_fields").delete().eq("form_id", formId);
+  if (deleteError) throw new Error(`Failed to clear existing fields: ${deleteError.message}`);
+
+  if (fields.length === 0) return [];
+
+  const { data, error: insertError } = await client
+    .from("custom_form_fields")
+    .insert(
+      fields.map((field, index) => ({
+        form_id: formId,
+        label: field.label.trim(),
+        field_type: field.fieldType,
+        options: field.options ?? null,
+        required: field.required,
+        sort_order: index,
+      })),
+    )
+    .select("*")
+    .returns<CustomFormFieldRow[]>();
+
+  if (insertError || !data) throw new Error(`Failed to save generated fields: ${insertError?.message}`);
+  return data.map(mapField).sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
 export interface UpdateFieldInput {
   label?: string;
   fieldType?: CustomFieldType;

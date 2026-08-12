@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 import {
   createDraftForm,
@@ -11,13 +12,21 @@ import {
   getFormByDraftToken,
   publishForm,
   reorderFields,
+  replaceFormFields,
   updateField,
   updateForm,
   type CreateFieldInput,
+  type CustomFormField,
   type UpdateFieldInput,
   type UpdateFormInput,
 } from "@/services/custom-forms";
 import { createSignedCustomFormCoverUpload } from "@/services/uploads";
+import { generateFormFromImage, generateFormFromPrompt } from "@/lib/ai-form-generator";
+import {
+  checkCustomFormAiGenerationRateLimit,
+  recordCustomFormAiGenerationRequest,
+} from "@/services/custom-form-ai-rate-limit";
+import { getClientIp, hashIp } from "@/lib/ip-hash";
 
 export type FormActionResult = { success: true } | { success: false; error: string };
 
@@ -174,5 +183,68 @@ export async function createFormOwnerAccountAction(
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to create your account." };
+  }
+}
+
+export type GenerateFormActionResult =
+  | { success: true; title: string; description: string | null; fields: CustomFormField[] }
+  | { success: false; error: string };
+
+/**
+ * Shared by both AI generation entry points below — persists the
+ * model's output as this form's new title/description/fields
+ * (wholesale replacing any existing fields, see
+ * services/custom-forms.ts's replaceFormFields doc comment) and
+ * returns the persisted rows so the builder UI can update its state
+ * from a single source of truth rather than trusting the client's copy
+ * of what it sent.
+ */
+async function applyGeneratedForm(
+  token: string,
+  generated: { title: string; description: string | null; fields: { label: string; fieldType: CreateFieldInput["fieldType"]; required: boolean; options: string[] | null }[] },
+): Promise<GenerateFormActionResult> {
+  const form = await requireFormByToken(token);
+  await updateForm(form.id, { title: generated.title, description: generated.description });
+  const fields = await replaceFormFields(form.id, generated.fields);
+  revalidatePath(`/forms/build/${token}`);
+  return { success: true, title: generated.title, description: generated.description, fields };
+}
+
+/** Checks the shared per-IP/global AI-generation rate limit (services/custom-form-ai-rate-limit.ts) — reachable by anyone holding a form's draft_token, so this is the real cost guard, not the token itself. Records the attempt only after a successful OpenAI call, so a request that fails validation doesn't unfairly count against the caller's quota. */
+async function checkAiGenerationRateLimit(): Promise<{ ok: true; ipHash: string } | { ok: false; error: string }> {
+  const ipHash = hashIp(getClientIp(await headers()));
+  const rateLimit = await checkCustomFormAiGenerationRateLimit(ipHash);
+  if (!rateLimit.allowed) {
+    return { ok: false, error: rateLimit.reason ?? "Please try again later." };
+  }
+  return { ok: true, ipHash };
+}
+
+export async function generateFormFromPromptAction(token: string, prompt: string): Promise<GenerateFormActionResult> {
+  try {
+    await requireFormByToken(token);
+    const rateLimit = await checkAiGenerationRateLimit();
+    if (!rateLimit.ok) return { success: false, error: rateLimit.error };
+
+    const generated = await generateFormFromPrompt(prompt);
+    await recordCustomFormAiGenerationRequest(rateLimit.ipHash);
+    return await applyGeneratedForm(token, generated);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to generate the form." };
+  }
+}
+
+/** `imageDataUrl` is a full data URL built client-side from the picked file — never written to Storage, since it's only needed for this one-off analysis. */
+export async function generateFormFromImageAction(token: string, imageDataUrl: string): Promise<GenerateFormActionResult> {
+  try {
+    await requireFormByToken(token);
+    const rateLimit = await checkAiGenerationRateLimit();
+    if (!rateLimit.ok) return { success: false, error: rateLimit.error };
+
+    const generated = await generateFormFromImage(imageDataUrl);
+    await recordCustomFormAiGenerationRequest(rateLimit.ipHash);
+    return await applyGeneratedForm(token, generated);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to read that image." };
   }
 }
