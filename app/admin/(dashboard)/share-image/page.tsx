@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
-import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
+import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { toEventDisplayData } from "@/lib/event-display";
 import { getTemplateBySlug } from "@/lib/templates";
 import { ShareImageGenerator } from "@/features/admin/share-image/share-image-generator";
@@ -16,6 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminShareImagePage() {
   const admin = await getCurrentAdmin();
   if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
+  if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;

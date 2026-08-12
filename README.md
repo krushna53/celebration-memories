@@ -430,6 +430,40 @@ restricted page, and a `requireOwner()` check inside every owner-only
 Server Action/route — so a client account can't reach restricted data
 even by guessing a URL or replaying a form submission.
 
+### Narrower roles: organizer and session_organizer
+
+Two more `admins.role` values exist for delegating a slice of one event
+without handing out full `client` access:
+
+- **`organizer`** (added this round) — real management access (create/
+  edit/delete, not read-only) over exactly four areas of one event:
+  Invitees, Gallery, Timeline, and Check-In. No Event Settings, no
+  billing, no AI tools, no Memories moderation, and an organizer can't
+  manage other organizers. This is the role to use for "I want someone
+  to independently run guest list + photos + the day's check-in, but
+  nothing else about my event." Managed from **`/admin/organizers`**
+  (owner or the event's own client can add/remove one; the same two
+  invite mechanisms as everywhere else — emailed invite link, or set a
+  password yourself). Enforcement mirrors the `client` role's three
+  layers, plus a fourth: every Server Action in the four allowed areas
+  calls `requireAdminForOrganizerArea(eventId, area)`
+  (`services/admin-auth.ts`) instead of the generic
+  `requireAdminForEvent`, so organizer access can never silently widen
+  just because a new feature happens to reuse an existing action.
+- **`session_organizer`** (#63) — much narrower still: read-only access
+  to one or more specific Event Day sessions' attendee list and
+  payments (`/admin/my-sessions`), managed from
+  `/admin/session-organizers`. Predates `organizer` and solves a
+  different problem (per-session volunteers on event day, not ongoing
+  event management).
+
+Both roles' allow-lists live in `lib/admin-roles.ts`
+(`ORGANIZER_ALLOWED_PATHS` / `SESSION_ORGANIZER_ALLOWED_PATHS`), and
+both get redirected away from every other admin page via
+`shouldRedirectOrganizerAway` / `shouldRedirectSessionOrganizerAway` —
+nav-hiding alone doesn't stop someone from typing a restricted URL
+directly, so every sensitive page carries its own redirect guard too.
+
 ### Managing every client's event as the owner
 
 Every admin page (Overview, Event Settings, Gallery, Timeline, Memories,

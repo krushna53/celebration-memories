@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
-import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
+import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listSessionOrganizers } from "@/services/session-organizers";
 import { listScheduleItems } from "@/services/event-day";
 import { SessionOrganizerManager } from "@/features/admin/session-organizers/session-organizer-manager";
@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function SessionOrganizersPage() {
   const admin = await getCurrentAdmin();
   if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
+  if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!admin || !event) {
     return (

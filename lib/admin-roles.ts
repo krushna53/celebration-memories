@@ -31,6 +31,7 @@ export const CLIENT_ALLOWED_PATHS: readonly string[] = [
   "/admin/payment-settings-request",
   "/admin/rsvp-payments",
   "/admin/session-organizers",
+  "/admin/organizers",
   "/admin/backups",
   "/admin/recycle-bin",
   "/admin/delete-account",
@@ -46,9 +47,30 @@ export const CLIENT_ALLOWED_PATHS: readonly string[] = [
  */
 export const SESSION_ORGANIZER_ALLOWED_PATHS: readonly string[] = ["/admin/my-sessions", "/admin/help"];
 
+/**
+ * An organizer (#105) sits between "client" and "session_organizer" —
+ * real management access (not read-only), but confined to one whole
+ * event's Invitees, Gallery, Timeline, and Check-In. No Overview cards,
+ * no Event Settings, no billing, no AI tools, no "/admin/organizers"
+ * itself (an organizer can't manage other organizers). See
+ * services/admin-auth.ts's requireAdminForOrganizerArea for the
+ * matching Server Action gate, and shouldRedirectOrganizerAway below
+ * for the direct-navigation guard applied to every page this list
+ * excludes.
+ */
+export const ORGANIZER_ALLOWED_PATHS: readonly string[] = [
+  "/admin",
+  "/admin/invitees",
+  "/admin/gallery",
+  "/admin/timeline",
+  "/admin/checkin",
+  "/admin/help",
+];
+
 export function isPathAllowedForRole(path: string, role: AdminRole): boolean {
   if (role === "owner") return true;
   if (role === "session_organizer") return SESSION_ORGANIZER_ALLOWED_PATHS.includes(path);
+  if (role === "organizer") return ORGANIZER_ALLOWED_PATHS.includes(path);
   return CLIENT_ALLOWED_PATHS.includes(path);
 }
 
@@ -67,4 +89,20 @@ export function isPathAllowedForRole(path: string, role: AdminRole): boolean {
  */
 export function shouldRedirectSessionOrganizerAway(role: AdminRole): boolean {
   return role === "session_organizer";
+}
+
+/**
+ * Same reasoning as shouldRedirectSessionOrganizerAway above, for the
+ * organizer role (#105): nav-hiding alone (isPathAllowedForRole) only
+ * hides a link, it doesn't stop a direct visit to a page outside
+ * ORGANIZER_ALLOWED_PATHS. Applied on every admin page that already
+ * carries the session_organizer redirect, except Invitees/Gallery/
+ * Timeline/Check-In/Help, which organizer is actually allowed to see.
+ * A separate function (not folded into shouldRedirectSessionOrganizerAway)
+ * so each caller can redirect to a sensible home for that role —
+ * session_organizer goes to /admin/my-sessions, organizer goes to
+ * /admin/invitees.
+ */
+export function shouldRedirectOrganizerAway(role: AdminRole): boolean {
+  return role === "organizer";
 }

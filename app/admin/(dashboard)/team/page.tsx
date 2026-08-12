@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
-import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
+import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { getTeamMembers, TEAM_MEMBER_CAP } from "@/services/admin-team";
 import { TeamManager } from "@/features/admin/team/team-manager";
 
@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminTeamPage() {
   const admin = await getCurrentAdmin();
   if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
+  if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!admin || !event) {
     return (

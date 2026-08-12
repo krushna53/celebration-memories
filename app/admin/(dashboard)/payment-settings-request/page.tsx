@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
-import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
+import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { getEventPaymentSettingsSummary } from "@/services/event-payment-settings";
 import { getScheduleItemById } from "@/services/event-day";
 import { PaymentSettingsForm } from "@/features/admin/event-payment-settings/payment-settings-form";
@@ -17,6 +17,7 @@ export default async function EventPaymentSettingsRequestPage({ searchParams }: 
   const { scheduleItemId } = await searchParams;
   const admin = await getCurrentAdmin();
   if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
+  if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event is assigned to this account yet.</p>;

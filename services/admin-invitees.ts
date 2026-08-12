@@ -135,6 +135,18 @@ export async function deleteInvitee(id: string, eventId: string): Promise<void> 
   if (!data || data.length === 0) throw new Error("Invitee not found for this event.");
 }
 
+/** Looks up which event a guest belongs to, by id alone — used by toggleCheckInAction to resolve the eventId needed for its access check before any client-supplied eventId can be trusted. */
+export async function getInviteeEventId(id: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("invitees")
+    .select("event_id")
+    .eq("id", id)
+    .maybeSingle<{ event_id: string }>();
+
+  if (error) throw new Error(`Failed to look up guest: ${error.message}`);
+  return data?.event_id ?? null;
+}
+
 export async function setCheckedIn(id: string, checkedIn: boolean): Promise<void> {
   const { error } = await supabaseAdmin()
     .from("invitees")

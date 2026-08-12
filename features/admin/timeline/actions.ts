@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdminForEvent } from "@/services/admin-auth";
+import { requireAdminForOrganizerArea } from "@/services/admin-auth";
 import { createMilestone, deleteMilestone, getMilestoneById, updateMilestone } from "@/services/timeline";
 import { createSignedTimelineImageUpload } from "@/services/uploads";
 import { snapshotTimeline } from "@/services/event-snapshots";
@@ -16,7 +16,7 @@ function revalidateTimelinePaths() {
 async function requireAdminForMilestone(id: string) {
   const milestone = await getMilestoneById(id);
   if (!milestone) throw new Error("Milestone not found.");
-  const admin = await requireAdminForEvent(milestone.eventId);
+  const admin = await requireAdminForOrganizerArea(milestone.eventId, "timeline");
   return { admin, milestone };
 }
 
@@ -28,7 +28,7 @@ export async function createMilestoneAction(input: {
   sortOrder: number;
 }) {
   try {
-    const admin = await requireAdminForEvent(input.eventId);
+    const admin = await requireAdminForOrganizerArea(input.eventId, "timeline");
     await snapshotTimeline(input.eventId, admin.id).catch((err) => console.error("snapshotTimeline failed:", err));
     await createMilestone(input);
     revalidateTimelinePaths();
@@ -73,7 +73,7 @@ export async function requestTimelineImageUploadUrlAction(
   fileSize: number,
 ) {
   try {
-    await requireAdminForEvent(eventId);
+    await requireAdminForOrganizerArea(eventId, "timeline");
     const upload = await createSignedTimelineImageUpload({ eventId, fileName, contentType, fileSize });
     return { success: true as const, data: upload };
   } catch (err) {

@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Wednesday, August 12",
     items: [
       {
+        title: "New \"Organizer\" role — delegate Invitees, Gallery, Timeline, and Check-In independently",
+        detail:
+          "A new dashboard role sits between Client and Session Organizer: someone can now run your guest list, photos, timeline, and event-day check-in on their own, without seeing Event Settings, billing, or any AI tools. Add one from Admin > Organizers (new nav link) the same way you'd add a team member — send an invite email or set a password yourself.",
+        test:
+          "Go to Admin > Organizers, add an organizer with a password, then sign in as them in a private window — confirm they can reach Invitees/Gallery/Timeline/Check-In and are redirected away from everything else (Event Settings, Memories, AI Image, etc.).",
+      },
+      {
         title: "Owner can now add a dashboard login right from Members",
         detail:
           "Admin > Members has a new \"Add Member\" button — pick which event, enter a name/email, and either send an invite email or set the password directly, without leaving the page. Previously this required going to Admin > All Events and using \"Create Login\" on that event's row instead.",

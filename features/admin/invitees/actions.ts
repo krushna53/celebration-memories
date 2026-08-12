@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireOwner, requireAdminForEvent } from "@/services/admin-auth";
+import { requireAdminForOrganizerArea } from "@/services/admin-auth";
 import {
   bulkImportInvitees,
   createInvitee,
   deleteInvitee,
+  getInviteeEventId,
   getRsvpExportRows,
   markInviteSent,
   setCheckedIn,
@@ -25,11 +26,12 @@ export type AdminActionResult =
  * Every admin Server Action re-checks the `admins` allowlist itself.
  * Server Actions are independently callable HTTP endpoints — relying
  * only on the dashboard layout's redirect would leave these mutations
- * reachable by anyone who guesses the action's endpoint. Invitees used
- * to be owner-only; a client host now manages their own event's guest
- * list too, so these call requireAdminForEvent(eventId) — owner-or-
- * matching-client — instead of requireOwner(). Check-In
- * (toggleCheckInAction below) stays owner-only, unaffected by this.
+ * reachable by anyone who guesses the action's endpoint. Invitees is
+ * one of the four areas the "organizer" role (#105) can manage, in
+ * addition to owner and the matching client — see
+ * requireAdminForOrganizerArea in services/admin-auth.ts. Check-In
+ * (toggleCheckInAction below) is the one area of the four "client"
+ * doesn't get — only owner and organizer.
  */
 
 export async function createInviteeAction(
@@ -37,7 +39,7 @@ export async function createInviteeAction(
   input: InviteeInput,
 ): Promise<AdminActionResult> {
   try {
-    const admin = await requireAdminForEvent(eventId);
+    const admin = await requireAdminForOrganizerArea(eventId, "invitees");
     if (!input.name?.trim()) {
       return { success: false, error: "Name is required." };
     }
@@ -58,7 +60,7 @@ export async function updateInviteeAction(
   input: InviteeInput,
 ): Promise<AdminActionResult> {
   try {
-    const admin = await requireAdminForEvent(eventId);
+    const admin = await requireAdminForOrganizerArea(eventId, "invitees");
     await snapshotInvitees(eventId, admin.id).catch((err) => console.error("snapshotInvitees failed:", err));
     await updateInvitee(id, eventId, input);
     revalidatePath("/admin/invitees");
@@ -70,7 +72,7 @@ export async function updateInviteeAction(
 
 export async function deleteInviteeAction(id: string, eventId: string): Promise<AdminActionResult> {
   try {
-    const admin = await requireAdminForEvent(eventId);
+    const admin = await requireAdminForOrganizerArea(eventId, "invitees");
     await snapshotInvitees(eventId, admin.id).catch((err) => console.error("snapshotInvitees failed:", err));
     await deleteInvitee(id, eventId);
     revalidatePath("/admin/invitees");
@@ -81,12 +83,20 @@ export async function deleteInviteeAction(id: string, eventId: string): Promise<
   }
 }
 
+/**
+ * Looks up which event a guest belongs to before checking access —
+ * closes the gap where any logged-in admin could check in another
+ * event's guest by id alone, same pattern as gallery/timeline's
+ * requireAdminForPhoto/requireAdminForMilestone helpers.
+ */
 export async function toggleCheckInAction(
   id: string,
   checkedIn: boolean,
 ): Promise<AdminActionResult> {
   try {
-    await requireOwner();
+    const eventId = await getInviteeEventId(id);
+    if (!eventId) return { success: false, error: "Guest not found." };
+    await requireAdminForOrganizerArea(eventId, "checkin");
     await setCheckedIn(id, checkedIn);
     revalidatePath("/admin/checkin");
     revalidatePath("/admin");
@@ -104,7 +114,7 @@ export async function toggleCheckInAction(
  */
 export async function markInviteSentAction(id: string, eventId: string): Promise<AdminActionResult> {
   try {
-    await requireAdminForEvent(eventId);
+    await requireAdminForOrganizerArea(eventId, "invitees");
     await markInviteSent(id, eventId);
     revalidatePath("/admin/invitees");
     return { success: true };
@@ -121,12 +131,12 @@ export type ExportRsvpCsvResult =
  * Returns the CSV as plain text rather than writing a file anywhere —
  * the browser turns it into a download client-side (see
  * invitee-manager.tsx's handleExport, which builds a Blob and clicks a
- * temporary <a download>). Available to owner and client roles, same as
- * the rest of this file post-fix, scoped to the caller's own event.
+ * temporary <a download>). Available to owner, client, and organizer,
+ * same as the rest of this file, scoped to the caller's own event.
  */
 export async function exportRsvpCsvAction(eventId: string, eventSlug: string): Promise<ExportRsvpCsvResult> {
   try {
-    await requireAdminForEvent(eventId);
+    await requireAdminForOrganizerArea(eventId, "invitees");
     const rows = await getRsvpExportRows(eventId);
     const csvRows = rows.map((row) => ({ ...row, inviteChannel: inviteChannelLabel(row.inviteChannel) }));
     const csv = toCsv(csvRows, [
@@ -158,7 +168,7 @@ export async function bulkImportInviteesAction(
   { success: true; created: number; skipped: number } | { success: false; error: string }
 > {
   try {
-    const admin = await requireAdminForEvent(eventId);
+    const admin = await requireAdminForOrganizerArea(eventId, "invitees");
     // One snapshot for the whole import, not per row — a bad CSV import is exactly the "undo my mistake" case this feature exists for.
     await snapshotInvitees(eventId, admin.id, "Before CSV import").catch((err) => console.error("snapshotInvitees failed:", err));
     const result = await bulkImportInvitees(eventId, rows);

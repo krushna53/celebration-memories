@@ -10,8 +10,18 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
  * services/session-organizers.ts). They can only view their own
  * session's attendee list + payments — see lib/admin-roles.ts's
  * SESSION_ORGANIZER_ALLOWED_PATHS for the (very short) allow-list.
+ *
+ * "organizer" (#105) sits between the two: scoped to one whole event
+ * like "client", but only for four specific areas — Invitees, Gallery,
+ * Timeline, and Check-In — with no access to Event Settings, billing,
+ * AI tools, or anything else "client" can reach. Created and removed by
+ * the owner/client via services/organizers.ts (mirrors
+ * services/session-organizers.ts's two invite mechanisms). See
+ * lib/admin-roles.ts's ORGANIZER_ALLOWED_PATHS/shouldRedirectOrganizerAway
+ * for the page-level allow-list, and requireAdminForOrganizerArea below
+ * for the Server Action gate.
  */
-export type AdminRole = "owner" | "client" | "session_organizer";
+export type AdminRole = "owner" | "client" | "session_organizer" | "organizer";
 
 export interface CurrentAdmin {
   id: string;
@@ -119,6 +129,17 @@ export async function requireOwner(): Promise<CurrentAdmin> {
  * function — so this reject is the single choke point that keeps a
  * session organizer from reaching any client-level mutation even by
  * navigating straight to a client page's URL or its Server Action.
+ *
+ * organizer (#105) is rejected here for the same structural reason,
+ * even though it's a much broader role than session_organizer — it's
+ * still meant to be confined to exactly four areas (Invitees, Gallery,
+ * Timeline, Check-In), and this function is shared by every other
+ * event-scoped action (Event Settings, Memories, Media Library, AI
+ * tools, payments, backups, and more). Actions in those four areas call
+ * requireAdminForOrganizerArea below instead, which admits organizer
+ * (and, for three of the four, "client" too) — everything else keeps
+ * using this function so organizer's reach can never silently widen by
+ * a future action forgetting to special-case it.
  */
 export async function requireAdminForEvent(eventId: string): Promise<CurrentAdmin> {
   const admin = await getCurrentAdmin();
@@ -126,10 +147,42 @@ export async function requireAdminForEvent(eventId: string): Promise<CurrentAdmi
   if (admin.role === "session_organizer") {
     throw new Error("Session organizers have read-only access — this action isn't available to your account.");
   }
+  if (admin.role === "organizer") {
+    throw new Error("Organizers have access to Invitees, Gallery, Timeline, and Check-In only — this action isn't available to your account.");
+  }
   if (admin.role !== "owner" && admin.eventId !== eventId) {
     throw new Error("You don't have access to this event.");
   }
   return admin;
+}
+
+export type OrganizerArea = "invitees" | "gallery" | "timeline" | "checkin";
+
+/**
+ * The event-scoped gate for the four areas the "organizer" role (#105)
+ * may manage — like requireAdminForEvent, but additionally admits an
+ * organizer-role admin scoped to this event. Every other
+ * requireAdminForEvent-gated action (Event Settings, Memories, Media
+ * Library, AI tools, payments, backups, etc.) must keep calling
+ * requireAdminForEvent directly instead, so organizer access stays
+ * confined to exactly these four areas — see lib/admin-roles.ts's
+ * ORGANIZER_ALLOWED_PATHS for the matching page-level allow-list.
+ *
+ * "checkin" is the one area of the four a plain "client" admin does
+ * NOT already have (toggleCheckInAction has stayed owner-only since
+ * Check-In first shipped) — the `area` param preserves that: "checkin"
+ * only admits owner or organizer, the other three areas admit owner,
+ * client, or organizer, matching each area's pre-existing access level
+ * plus organizer.
+ */
+export async function requireAdminForOrganizerArea(eventId: string, area: OrganizerArea): Promise<CurrentAdmin> {
+  const admin = await getCurrentAdmin();
+  if (!admin) throw new Error("Not authorized.");
+  if (admin.role === "owner") return admin;
+  if (admin.eventId !== eventId) throw new Error("You don't have access to this event.");
+  if (admin.role === "organizer") return admin;
+  if (admin.role === "client" && area !== "checkin") return admin;
+  throw new Error("You don't have access to this feature.");
 }
 
 /**

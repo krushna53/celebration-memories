@@ -45,6 +45,7 @@ import {
   LayoutPanelTop,
   Video,
   Wand2,
+  UserRoundPlus,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -85,6 +86,7 @@ const NAV = [
   { href: "/admin/payment-settings-review", label: "Payment Approvals", icon: ShieldCheck },
   { href: "/admin/rsvp-payments", label: "RSVP Payments", icon: ReceiptText },
   { href: "/admin/session-organizers", label: "Session Organizers", icon: UserRoundCog },
+  { href: "/admin/organizers", label: "Organizers", icon: UserRoundPlus },
   { href: "/admin/my-sessions", label: "My Sessions", icon: CalendarClock },
   { href: "/admin/backups", label: "Backups", icon: History },
   { href: "/admin/recycle-bin", label: "Recycle Bin", icon: RotateCcw },
@@ -142,6 +144,11 @@ export default async function AdminDashboardLayout({
             {admin.role === "session_organizer" ? (
               <span className="hidden rounded-full border border-gold-500/30 px-2.5 py-1 text-xs text-gold-300 sm:inline">
                 Session Organizer
+              </span>
+            ) : null}
+            {admin.role === "organizer" ? (
+              <span className="hidden rounded-full border border-gold-500/30 px-2.5 py-1 text-xs text-gold-300 sm:inline">
+                Organizer
               </span>
             ) : null}
             <Link

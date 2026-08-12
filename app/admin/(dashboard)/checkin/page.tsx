@@ -9,7 +9,12 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminCheckinPage() {
   const admin = await getCurrentAdmin();
-  if (admin?.role !== "owner") redirect("/admin");
+  // Owner and organizer (#105) only — Check-In has stayed off-limits to
+  // a plain "client" admin since it first shipped; organizer is the one
+  // new role that gets it, alongside Invitees/Gallery/Timeline. See
+  // services/admin-auth.ts's requireAdminForOrganizerArea for the
+  // matching Server Action gate on toggleCheckInAction.
+  if (admin?.role !== "owner" && admin?.role !== "organizer") redirect("/admin");
 
   const event = await resolveAdminEvent(admin);
   if (!event) {

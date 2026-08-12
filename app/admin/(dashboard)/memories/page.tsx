@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
-import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
+import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listMemoriesForModeration } from "@/services/admin-memories";
 import { ModerationList } from "@/features/admin/memories/moderation-list";
 
@@ -19,6 +19,7 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
 
   const admin = await getCurrentAdmin();
   if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
+  if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
-import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
+import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listMilestones } from "@/services/timeline";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { isHeygenConfigured, listHeygenAvatars, listHeygenVoices } from "@/lib/heygen";
@@ -21,6 +21,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminTimelineMoviePage() {
   const admin = await getCurrentAdmin();
   if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
+  if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return (

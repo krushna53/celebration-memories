@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdminForEvent } from "@/services/admin-auth";
+import { requireAdminForOrganizerArea } from "@/services/admin-auth";
 import { createSignedGalleryUpload } from "@/services/uploads";
 import {
   createGalleryPhoto,
@@ -27,7 +27,7 @@ export async function requestGalleryUploadUrlAction(
   fileSize: number,
 ) {
   try {
-    await requireAdminForEvent(eventId);
+    await requireAdminForOrganizerArea(eventId, "gallery");
     const upload = await createSignedGalleryUpload({ eventId, fileName, contentType, fileSize });
     return { success: true as const, data: upload };
   } catch (err) {
@@ -42,7 +42,7 @@ export async function confirmGalleryUploadAction(
   caption: string,
 ) {
   try {
-    const admin = await requireAdminForEvent(eventId);
+    const admin = await requireAdminForOrganizerArea(eventId, "gallery");
     // Best-effort — never let a snapshot failure block the actual save.
     await snapshotGallery(eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
     await createGalleryPhoto({ eventId, category, storagePath: path, caption });
@@ -57,7 +57,7 @@ export async function confirmGalleryUploadAction(
 async function requireAdminForPhoto(id: string) {
   const photo = await getGalleryPhotoById(id);
   if (!photo) throw new Error("Photo not found.");
-  const admin = await requireAdminForEvent(photo.eventId);
+  const admin = await requireAdminForOrganizerArea(photo.eventId, "gallery");
   return { admin, photo };
 }
 
