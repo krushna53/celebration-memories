@@ -351,6 +351,13 @@ extra click. An account that isn't set up under any of the three
 tables sees an inline message pointing at the relevant signup flow
 instead of a dead end.
 
+All three signup forms (host registration, vendor/`/business/signup`,
+and form-owner) check whether `signUp()` actually returned a session
+before claiming success — this project has email confirmation ON, so
+it normally doesn't, and each form shows an honest "Check your email,
+then come back and sign in" card instead of a premature "You're in!"
+that would just bounce back to `/login` with no session.
+
 ### Admin access
 
 The dashboard lives at `/admin` and is protected by Supabase Auth plus

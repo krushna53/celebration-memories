@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Thursday, August 13",
     items: [
       {
+        title: "Fixed: vendor signup claimed \"you're in\" but bounced to sign-in, same as the earlier forms bug",
+        detail:
+          "Business/vendor signup (/business/signup) had the same issue already fixed for Build RSVP / Form accounts: it always said \"You're in — taking you to your dashboard\" and redirected after a second, even though email confirmation is required, so it landed back on the sign-in page with no session. It now checks whether sign-up actually returned a session — if not, it shows \"Check your email, then come back and sign in\" instead, and your listing draft is still there once you do.",
+        test:
+          "Sign up a new vendor account at /business/signup and confirm you see \"Check your email\" (not \"You're in!\"). Click the confirmation link in the email, confirm it lands on /login with the \"Email verified\" banner, then sign in and confirm your listing draft is intact.",
+      },
+      {
         title: "One shared sign-in page for Admin, Business, and Build RSVP / Form",
         detail:
           "Admin, Marketplace vendor, and Build RSVP / Form accounts now share a single sign-in page at /login instead of three separate look-alike login screens. The old URLs (/admin/login, /business/login, /forms/login) still work — they just redirect to /login now, so nothing breaks if it's bookmarked. If one email happens to have more than one type of account, signing in takes you straight to the highest one — admin first, then Marketplace, then Build RSVP / Form — with no extra \"which dashboard?\" screen to click through.",

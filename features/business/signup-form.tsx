@@ -18,8 +18,21 @@ const inputClasses =
  * event-host register-form.tsx uses (same Supabase Auth project), but
  * creates a business_accounts row instead of an admins row, and isn't
  * gated behind an eventId. See services/business-auth.ts's
- * createBusinessAccount() doc comment for why this doesn't wait on
- * email confirmation.
+ * createBusinessAccount() doc comment for why the *row* isn't gated on
+ * email confirmation — it's created right away regardless.
+ *
+ * The *redirect*, however, is gated on whether signUp() actually
+ * returned a session: this Supabase project has email confirmation
+ * ON, so signUp() normally does NOT return an active session, and
+ * /business/dashboard requires one (services/business-auth.ts's
+ * getCurrentBusinessAccount() reads the cookie-based session). This
+ * used to unconditionally show "You're in!" and redirect after 1.2s
+ * regardless, which just bounced back to /login with no session —
+ * same bug already fixed for form-owner signup, see
+ * features/forms/account-form.tsx's doc comment. Now checks
+ * data.session: if present (confirmation is off, or this address was
+ * already verified), go straight in as before; if not, show the same
+ * honest "Check your email" card used everywhere else in the app.
  */
 export function BusinessSignupForm() {
   const router = useRouter();
@@ -30,6 +43,7 @@ export function BusinessSignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -70,8 +84,12 @@ export function BusinessSignupForm() {
       return;
     }
 
-    setSubmitted(true);
-    setTimeout(() => router.push("/business/dashboard"), 1200);
+    if (data.session) {
+      setSubmitted(true);
+      setTimeout(() => router.push("/business/dashboard"), 1200);
+    } else {
+      setAwaitingVerification(true);
+    }
   }
 
   if (submitted) {
@@ -82,6 +100,27 @@ export function BusinessSignupForm() {
         </div>
         <h1 className="mt-4 font-display text-2xl text-ivory-50">You&rsquo;re in!</h1>
         <p className="mt-2 text-sm text-ivory-100/70">Taking you to your dashboard...</p>
+      </div>
+    );
+  }
+
+  if (awaitingVerification) {
+    return (
+      <div className="w-full max-w-sm rounded-2xl border border-gold-500/20 bg-navy-900 p-8 text-center shadow-xl">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold-500/15 text-gold-300">
+          <CheckCircle2 size={22} />
+        </div>
+        <h1 className="mt-4 font-display text-2xl text-ivory-50">Check your email</h1>
+        <p className="mt-2 text-sm text-ivory-100/70">
+          We&rsquo;ve sent a verification link to <strong className="text-ivory-50">{email}</strong>. Click it to
+          activate your account, then come back and sign in — your listing draft will be waiting.
+        </p>
+        <Link
+          href="/login"
+          className="mt-6 inline-block text-sm text-gold-300 underline underline-offset-4 hover:text-gold-200"
+        >
+          Back to sign in
+        </Link>
       </div>
     );
   }
