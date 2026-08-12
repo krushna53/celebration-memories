@@ -86,3 +86,22 @@ export function previewInviteMessage(
 }
 
 export const CREDIT_WHATSAPP_URL = BUILDER.whatsappUrl;
+
+/**
+ * Tap-to-open wa.me link TO a captured lead's own phone number (not
+ * BUILDER's) — used in the wizard-account-lead notification email
+ * (lib/email.ts's sendWizardAccountLeadNotification) so Krushna Web
+ * Works can follow up with someone who dropped off mid-signup in one
+ * tap, pre-filled with a friendly opener. Returns null when no phone was
+ * captured, since there's nothing to link to.
+ */
+export function buildLeadOutreachWhatsAppUrl(name: string | null, phone: string | null): string | null {
+  if (!phone) return null;
+  const digitsOnly = phone.replace(/[^0-9]/g, "");
+  if (!digitsOnly) return null;
+
+  const greetingName = name?.trim() || "there";
+  const message = `Hi ${greetingName}, this is Krushna Web Works — I noticed you were setting up an event site on EveryMoment and wanted to check if you ran into any trouble or had questions I can help with.`;
+
+  return `https://wa.me/${digitsOnly}?text=${encodeURIComponent(message)}`;
+}

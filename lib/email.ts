@@ -1,7 +1,8 @@
 import "server-only";
 import { Resend } from "resend";
 
-import { SITE_NAME } from "@/lib/constants";
+import { SITE_NAME, WIZARD_LEAD_NOTIFICATION } from "@/lib/constants";
+import { buildLeadOutreachWhatsAppUrl } from "@/lib/whatsapp";
 
 /**
  * Thin wrapper around Resend for transactional email (inquiry
@@ -226,6 +227,51 @@ export async function sendAccountDeletionCode(input: {
       <p style="font-size:28px;font-weight:700;letter-spacing:4px;margin:20px 0;">${escapeHtml(input.code)}</p>
       <p>Enter this code on the Delete Account page to confirm. It expires in ${input.minutesValid} minutes.</p>
       <p style="color:#888;font-size:12px;">If you didn't request this, ignore this email — nothing will be deleted without the code.</p>
+    `,
+  });
+}
+
+/**
+ * Notifies Krushna Web Works (WIZARD_LEAD_NOTIFICATION.email, a fixed
+ * inbox — see that constant's doc comment) whenever a would-be host
+ * reaches the self-serve wizard's "Create Account" step but doesn't make
+ * it through cleanly — either the signup call itself errored, or they
+ * typed something in and left without submitting (see
+ * services/wizard-leads.ts's recordWizardAccountLead, the single call
+ * site for this). Includes a one-tap "Message them on WhatsApp" link
+ * when a phone number was captured, since there's no WhatsApp Business
+ * API wired into this app to send that message automatically.
+ */
+export async function sendWizardAccountLeadNotification(input: {
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  reason: "error" | "abandoned";
+  errorMessage: string | null;
+  eventTitle: string | null;
+}): Promise<void> {
+  const whatsappUrl = buildLeadOutreachWhatsAppUrl(input.name, input.phone);
+  const headline =
+    input.reason === "error"
+      ? "hit an error while creating their account"
+      : "started creating an account but didn't finish";
+
+  await sendEmail({
+    to: WIZARD_LEAD_NOTIFICATION.email,
+    subject: `Signup drop-off: ${input.name || input.email || "a visitor"} — ${SITE_NAME}`,
+    html: `
+      <p><strong>${escapeHtml(input.name || "Someone")}</strong> ${headline} on ${SITE_NAME}'s self-serve wizard.</p>
+      <ul style="padding-left:18px;color:#333;">
+        ${input.email ? `<li>Email: ${escapeHtml(input.email)}</li>` : "<li>Email: not captured</li>"}
+        ${input.phone ? `<li>Phone: ${escapeHtml(input.phone)}</li>` : "<li>Phone: not captured</li>"}
+        ${input.eventTitle ? `<li>Event in progress: ${escapeHtml(input.eventTitle)}</li>` : ""}
+        ${input.errorMessage ? `<li>Error: ${escapeHtml(input.errorMessage)}</li>` : ""}
+      </ul>
+      ${
+        whatsappUrl
+          ? `<p><a href="${whatsappUrl}" style="display:inline-block;background:#ff6b57;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:600;">Message them on WhatsApp</a></p>`
+          : `<p style="color:#888;font-size:12px;">No phone number was captured, so there's no WhatsApp link — email is the only follow-up channel for this one.</p>`
+      }
     `,
   });
 }

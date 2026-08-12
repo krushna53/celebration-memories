@@ -93,6 +93,23 @@ export const CUSTOM_TEMPLATE_REQUEST = {
   url: "https://wa.me/919987982969?text=Hi,%20I%27m%20not%20satisfied%20with%20the%20templates%20available%20and%20would%20like%20a%20custom%20design%20for%20my%20event.",
 } as const;
 
+/**
+ * Where "someone almost signed up but dropped off" lead notifications go
+ * (see services/wizard-leads.ts + lib/email.ts's
+ * sendWizardAccountLeadNotification) — a fixed inbox rather than
+ * ADMIN_NOTIFICATION_EMAIL (lib/email.ts, used for inquiries/payments/
+ * custom-domain requests), since these are sales leads Krushna Web Works
+ * specifically wants surfaced here regardless of what
+ * ADMIN_NOTIFICATION_EMAIL is set to elsewhere. `whatsappDigits` (no "+"
+ * or spaces) is BUILDER's own WhatsApp number, reused here only as a
+ * fallback display — the actual follow-up link in the notification email
+ * points at the *lead's* phone number, not this one, when captured.
+ */
+export const WIZARD_LEAD_NOTIFICATION = {
+  email: "info@krushna53.com",
+  whatsappDigits: "919987982969",
+} as const;
+
 export const NAV_LINKS = [
   { label: "Home", href: "#hero" },
   { label: "Event Details", href: "#details" },

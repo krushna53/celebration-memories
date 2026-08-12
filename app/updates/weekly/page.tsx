@@ -63,6 +63,18 @@ const CHANGES: ChangeGroup[] = [
         detail: "The pre-filled WhatsApp messages (Contact, Support, Custom Template Request, Studio/Agency plan) now open with a generic \"Hi,\" instead of a specific name.",
         test: "No user-facing test needed — just double-check any WhatsApp CTA link opens with \"Hi,\" not a name.",
       },
+      {
+        title: "Payment entity disclosure added to Contact Us",
+        detail: "Contact Us now names Krushna Web Works as the entity that bills any paid plan and appears on the customer's card/bank statement — a disclosure payment gateways typically expect on a merchant's Contact page.",
+        test: "Open /contact and confirm the \"Who You're Paying\" block appears below the form.",
+      },
+      {
+        title: "New: email alert when a signup drops off at Create Account",
+        detail:
+          "The wizard's Create Account step now has an optional Mobile Number field. If someone hits an error creating their account, or types something in and leaves without finishing, Krushna Web Works gets an email at info@krushna53.com with whatever email/phone was captured — plus a one-tap WhatsApp link to follow up when a phone number was given.",
+        test:
+          "On /start, get to the Create Account step, type an email (and optionally a phone number), then close the tab or navigate away without submitting — confirm an email lands at info@krushna53.com shortly after.",
+      },
     ],
   },
   {

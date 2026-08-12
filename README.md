@@ -951,6 +951,24 @@ and a draft link has no account/role to key a normal quota off of.
 Abandoned drafts never auto-delete — review and remove them manually
 from `/admin/drafts` (owner-only).
 
+**Create Account drop-off leads.** When someone reaches the account
+step (`features/start/account-form.tsx`) but doesn't make it through
+cleanly — Supabase Auth's `signUp()` call itself errors, or they type
+in an email/phone and leave the page without ever submitting — Krushna
+Web Works gets an email at the fixed address in
+`WIZARD_LEAD_NOTIFICATION.email` (`lib/constants.ts`, currently
+`info@krushna53.com`), with a one-tap "Message them on WhatsApp" link
+when a phone number was captured (the form has an optional Mobile
+Number field for exactly this). The drop-off case is caught via
+`navigator.sendBeacon` on `pagehide`/tab-close, since a Server Action
+call isn't guaranteed to survive the page actually unloading — see
+`app/api/wizard/account-lead/route.ts` and `services/wizard-leads.ts`
+(which also writes a row to `wizard_account_leads` for a durable
+record). Best-effort only: nothing is captured if the visitor never
+typed an email or phone at all, and this can't automatically *send* a
+WhatsApp message — there's no WhatsApp Business API wired into this
+app, only the tap-to-open `wa.me` link.
+
 ### Custom Domains
 
 **What exists today:** a host can ask for a custom domain from the

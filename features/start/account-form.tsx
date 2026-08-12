@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Loader2, UserPlus } from "lucide-react";
 
@@ -10,6 +10,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { wizardStepHref } from "@/features/start/wizard-steps";
 import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
 import { TermsConsentCheckbox } from "@/components/legal/terms-consent-checkbox";
+import { reportAccountCreationErrorAction } from "@/features/start/actions/account-lead";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -27,6 +28,7 @@ const inputClasses =
 export function AccountForm({ token, eventId }: { token: string; eventId: string }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,65 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
     const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
     return () => clearTimeout(timer);
   }, [resendCooldown]);
+
+  // Best-effort "someone reached Create Account but didn't make it
+  // through" lead capture (task: notify Krushna Web Works by email when
+  // this happens) — see services/wizard-leads.ts for the shared logic.
+  // `latestRef` sidesteps stale-closure issues in the pagehide/unmount
+  // handlers below, which are registered once on mount but need to read
+  // whatever was last typed. `reportedRef` guarantees at most one report
+  // per visit, whichever path fires first (an explicit signUp() error,
+  // or leaving the page without ever submitting).
+  const latestRef = useRef({ name, email, phone, submitted });
+  const reportedRef = useRef(false);
+  useEffect(() => {
+    latestRef.current = { name, email, phone, submitted };
+  });
+
+  useEffect(() => {
+    function reportAbandonment() {
+      if (reportedRef.current) return;
+      const latest = latestRef.current;
+      if (latest.submitted) return;
+      if (!latest.email.trim() && !latest.phone.trim()) return;
+
+      reportedRef.current = true;
+      const payload = JSON.stringify({
+        eventId,
+        name: latest.name.trim() || null,
+        email: latest.email.trim() || null,
+        phone: latest.phone.trim() || null,
+      });
+
+      // navigator.sendBeacon is the one browser API designed to survive
+      // the page actually unloading (tab close/reload) — a fetch call,
+      // even with keepalive, isn't guaranteed to complete once the JS
+      // context starts tearing down. Falls back to fetch for the
+      // SPA-navigates-away case (component unmounts, but the page
+      // itself is still alive) or if sendBeacon isn't available.
+      if (typeof navigator.sendBeacon === "function") {
+        navigator.sendBeacon("/api/wizard/account-lead", new Blob([payload], { type: "application/json" }));
+      } else {
+        fetch("/api/wizard/account-lead", { method: "POST", body: payload, keepalive: true }).catch(() => {});
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "hidden") reportAbandonment();
+    }
+
+    window.addEventListener("pagehide", reportAbandonment);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pagehide", reportAbandonment);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      // Client-side navigation away from this step (e.g. clicking a wizard
+      // "back" link) unmounts this component without a real page unload —
+      // same report, same one-shot guard.
+      reportAbandonment();
+    };
+  }, [eventId]);
 
   // Shared with the "Resend confirmation email" action below — must be
   // byte-identical to the redirect used on the original signUp() call,
@@ -87,6 +148,20 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
           ? "An account with this email already exists — try signing in instead."
           : signUpError.message,
       );
+      // Reported regardless of which error this was — "already
+      // registered" is still someone Krushna Web Works may want to
+      // follow up with (maybe they forgot they had an account). Marks
+      // reportedRef so the pagehide/unmount abandonment check below
+      // doesn't also fire a second, redundant notification for the same
+      // visit.
+      reportedRef.current = true;
+      void reportAccountCreationErrorAction({
+        eventId,
+        name: name.trim() || null,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        errorMessage: signUpError.message,
+      });
       return;
     }
 
@@ -178,6 +253,19 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
             />
           </div>
         </div>
+        <div>
+          <label htmlFor="phone" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
+            Mobile Number <span className="normal-case text-navy-700/40">(optional)</span>
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="For support follow-up if something goes wrong"
+            className={cn(inputClasses, "mt-1.5")}
+          />
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
@@ -225,13 +313,23 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
       <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-navy-700/40">
         <span className="h-px flex-1 bg-navy-950/10" /> or <span className="h-px flex-1 bg-navy-950/10" />
       </div>
-      <GoogleAuthButton
-        label="Continue with Google"
-        disabled={!agreedToTerms}
-        redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(
-          `${wizardStepHref(token, "payment")}?verified=1`,
-        )}&link_event_id=${encodeURIComponent(eventId)}`}
-      />
+      {/*
+        Clicking through to Google navigates the browser away, which
+        would otherwise trip the pagehide listener above and misreport a
+        legitimate in-progress signup as an abandoned one. onClickCapture
+        runs synchronously before GoogleAuthButton's own onClick starts
+        the (async, then-redirecting) signInWithOAuth call, so the guard
+        is set before the page ever unloads.
+      */}
+      <div onClickCapture={() => { reportedRef.current = true; }}>
+        <GoogleAuthButton
+          label="Continue with Google"
+          disabled={!agreedToTerms}
+          redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(
+            `${wizardStepHref(token, "payment")}?verified=1`,
+          )}&link_event_id=${encodeURIComponent(eventId)}`}
+        />
+      </div>
 
       <p className="mt-6 text-center text-sm text-navy-700/60">
         Already have an account?{" "}
