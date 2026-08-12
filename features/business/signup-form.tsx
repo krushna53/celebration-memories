@@ -63,7 +63,19 @@ export function BusinessSignupForm() {
     const { data, error: signUpError } = await supabaseBrowser().auth.signUp({
       email,
       password,
-      options: { data: { name }, emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/login?verified=1` : undefined },
+      options: {
+        data: { name },
+        // See features/forms/account-form.tsx's doc comment on this same
+        // line — routes through /auth/callback so the confirmation
+        // link's code actually gets exchanged for a session, instead of
+        // landing on /login (a path not yet allow-listed in Supabase's
+        // Redirect URLs) with an unused ?code= and falling back to the
+        // Site URL.
+        emailRedirectTo:
+          typeof window !== "undefined"
+            ? `${window.location.origin}/auth/callback?next=${encodeURIComponent("/login?verified=1")}`
+            : undefined,
+      },
     });
 
     if (signUpError || !data.user) {

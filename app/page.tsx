@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { PlatformMarketingContent } from "@/features/platform/platform-marketing-content";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
@@ -20,11 +21,27 @@ export const metadata: Metadata = {
 };
 
 interface HomePageProps {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; code?: string }>;
 }
 
 export default async function Home({ searchParams }: HomePageProps) {
-  const { ref } = await searchParams;
+  const { ref, code } = await searchParams;
+
+  // Safety net: a Supabase email-confirmation/magic-link redirect
+  // should always land on /auth/callback (which exchanges this code
+  // for a real session — see that route's doc comment), never here.
+  // It only ends up on the bare homepage if Supabase's Redirect URL
+  // allow-list rejected the intended destination and fell back to the
+  // project's Site URL — which is exactly what happened before
+  // emailRedirectTo was pointed at /auth/callback (see
+  // features/forms/account-form.tsx's doc comment). Forwarding a
+  // stray ?code= here rather than leaving it inert means a
+  // confirmation link still works even if that allow-list is ever
+  // out of date again.
+  if (code) {
+    redirect(`/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent("/login?verified=1")}`);
+  }
+
   if (ref) {
     await logReferralVisit(ref);
   }

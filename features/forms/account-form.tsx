@@ -55,7 +55,18 @@ export function FormOwnerAccountForm({ token }: { token: string }) {
       password,
       options: {
         data: { name },
-        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/login?verified=1` : undefined,
+        // Routes through /auth/callback (not straight to /login) so the
+        // confirmation link's PKCE `code` actually gets exchanged for a
+        // session server-side — see that route's doc comment. Pointing
+        // emailRedirectTo directly at /login left the code unexchanged
+        // and unhandled, and since /login is a newer path not yet in
+        // Supabase's allow-listed Redirect URLs, it silently fell back
+        // to the Site URL instead (reported: landed on the bare
+        // homepage with an unused ?code=... and no "verified" message).
+        emailRedirectTo:
+          typeof window !== "undefined"
+            ? `${window.location.origin}/auth/callback?next=${encodeURIComponent("/login?verified=1")}`
+            : undefined,
       },
     });
 

@@ -358,6 +358,24 @@ it normally doesn't, and each form shows an honest "Check your email,
 then come back and sign in" card instead of a premature "You're in!"
 that would just bounce back to `/login` with no session.
 
+⚠️ Every confirmation email's `emailRedirectTo` points at
+**`/auth/callback?next=...`**, never straight at `/login` — clicking
+the link has to actually exchange Supabase's PKCE `code` for a real
+session (`/auth/callback`'s `exchangeCodeForSession`) before
+redirecting into `/login?verified=1`. Pointing it directly at `/login`
+left that `code` unexchanged and unhandled, and since `/login` is a
+newer path, it likely isn't (yet) in Supabase's **Authentication → URL
+Configuration → Redirect URLs** allow-list — an unlisted redirect
+target makes Supabase silently fall back to the project's Site URL
+instead of erroring, which showed up as confirmation links landing on
+the bare homepage with a dead `?code=...` and no "verified" message.
+The homepage (`app/page.tsx`) now has a safety-net redirect for a
+stray `?code=` as a second line of defense, but the real fix is using
+`/auth/callback` as the redirect target. If you add new
+`emailRedirectTo`/OAuth `redirectTo` destinations in the future, make
+sure `https://everymoment.in/auth/callback` (and your other domain(s))
+are in that Redirect URLs list in the Supabase dashboard.
+
 ### Admin access
 
 The dashboard lives at `/admin` and is protected by Supabase Auth plus

@@ -68,8 +68,16 @@ export function RegisterForm({ eventId, eventLabel, invalidEvent }: RegisterForm
       password,
       options: {
         data: { name, draft_event_id: eventId },
+        // See features/forms/account-form.tsx's doc comment on this same
+        // line — routes through /auth/callback so the confirmation
+        // link's code actually gets exchanged for a session, instead of
+        // landing on /login (a path not yet allow-listed in Supabase's
+        // Redirect URLs) with an unused ?code= and falling back to the
+        // Site URL.
         emailRedirectTo:
-          typeof window !== "undefined" ? `${window.location.origin}/login?verified=1` : undefined,
+          typeof window !== "undefined"
+            ? `${window.location.origin}/auth/callback?next=${encodeURIComponent("/login?verified=1")}`
+            : undefined,
       },
     });
     setLoading(false);

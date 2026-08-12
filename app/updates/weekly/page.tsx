@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Thursday, August 13",
     items: [
       {
+        title: "Fixed: confirmation email links landed on the bare homepage with no \"verified\" message",
+        detail:
+          "Clicking \"Confirm your email\" was landing on the homepage with a stray, unused ?code=... in the URL and no indication anything worked. The confirmation link pointed straight at /login instead of through /auth/callback, so the code that proves you clicked a real link never actually got exchanged for a session — and since /login is a new page, it likely wasn't yet allow-listed in Supabase, so it silently fell back to the homepage instead. Confirmation links for all three account types (host, vendor, form-owner) now route through /auth/callback first, which exchanges the code properly and signs you in automatically before landing on /login with the \"Email verified\" banner.",
+        test:
+          "Sign up a new account (any of host registration, /business/signup, or a form-owner account), click the confirmation link in the email, and confirm you land on /login already signed in (a brief \"Signing you in...\" spinner, then straight into your dashboard) rather than a bare homepage with a leftover ?code= in the URL.",
+      },
+      {
         title: "Fixed: vendor signup claimed \"you're in\" but bounced to sign-in, same as the earlier forms bug",
         detail:
           "Business/vendor signup (/business/signup) had the same issue already fixed for Build RSVP / Form accounts: it always said \"You're in — taking you to your dashboard\" and redirected after a second, even though email confirmation is required, so it landed back on the sign-in page with no session. It now checks whether sign-up actually returned a session — if not, it shows \"Check your email, then come back and sign in\" instead, and your listing draft is still there once you do.",
