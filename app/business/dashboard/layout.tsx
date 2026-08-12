@@ -8,7 +8,7 @@ import { businessSignOutAction } from "@/features/business/auth-actions";
 export default async function BusinessDashboardLayout({ children }: { children: React.ReactNode }) {
   const account = await getCurrentBusinessAccount();
   if (!account) {
-    redirect("/business/login");
+    redirect("/login");
   }
 
   return (

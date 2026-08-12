@@ -49,7 +49,7 @@ export function BusinessSignupForm() {
     const { data, error: signUpError } = await supabaseBrowser().auth.signUp({
       email,
       password,
-      options: { data: { name }, emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/business/login?verified=1` : undefined },
+      options: { data: { name }, emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/login?verified=1` : undefined },
     });
 
     if (signUpError || !data.user) {
@@ -153,7 +153,7 @@ export function BusinessSignupForm() {
 
       <p className="mt-6 text-sm text-ivory-100/60">
         Already listed?{" "}
-        <Link href="/business/login" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
+        <Link href="/login" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
           Sign in
         </Link>
       </p>

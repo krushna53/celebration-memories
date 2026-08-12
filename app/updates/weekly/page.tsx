@@ -36,6 +36,18 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Thursday, August 13",
+    items: [
+      {
+        title: "One shared sign-in page for Admin, Business, and Build RSVP / Form",
+        detail:
+          "Admin, Marketplace vendor, and Build RSVP / Form accounts now share a single sign-in page at /login instead of three separate look-alike login screens. The old URLs (/admin/login, /business/login, /forms/login) still work — they just redirect to /login now, so nothing breaks if it's bookmarked. If one email happens to have more than one type of account, signing in takes you straight to the highest one — admin first, then Marketplace, then Build RSVP / Form — with no extra \"which dashboard?\" screen to click through.",
+        test:
+          "Visit /admin/login, /business/login, and /forms/login and confirm each lands on the same /login page. Sign in with an admin account and confirm it goes to /admin; sign in with a forms-only account and confirm it goes to /forms/dashboard.",
+      },
+    ],
+  },
+  {
     date: "Wednesday, August 12",
     items: [
       {

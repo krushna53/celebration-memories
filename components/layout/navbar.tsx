@@ -22,7 +22,7 @@ interface NavbarProps {
   honoreeName?: string;
   /** Overrides the default in-page anchor links (#hero, #details, ...) — used by non-event pages like the platform homepage, whose sections don't match those anchor ids. */
   navLinks?: readonly NavLink[];
-  /** Shows a "Login" link pointing at /admin/login, e.g. on the platform homepage. Event pages leave this off since a guest has no reason to see it. */
+  /** Shows a "Login" link pointing at /login (the shared admin/business/forms sign-in page — see features/auth/unified-login-form.tsx), e.g. on the platform homepage. Event pages leave this off since a guest has no reason to see it. */
   showLogin?: boolean;
   /**
    * Start transparent (with light text) and only pick up the dark,
@@ -130,7 +130,7 @@ export function Navbar({
           {showLogin ? (
             <li>
               <Link
-                href="/admin/login"
+                href="/login"
                 className="rounded-full border border-gold-400/40 px-4 py-1.5 text-sm tracking-wide text-gold-300 transition-luxury duration-300 hover:border-gold-400 hover:bg-gold-400/10"
               >
                 Login
@@ -171,7 +171,7 @@ export function Navbar({
           {showLogin ? (
             <li>
               <Link
-                href="/admin/login"
+                href="/login"
                 onClick={() => setOpen(false)}
                 className="tap-target flex items-center text-sm text-gold-300"
               >

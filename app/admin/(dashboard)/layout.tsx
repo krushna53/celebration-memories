@@ -112,7 +112,7 @@ export default async function AdminDashboardLayout({
 }) {
   const admin = await getCurrentAdmin();
   if (!admin) {
-    redirect("/admin/login");
+    redirect("/login");
   }
 
   const visibleNav = NAV.filter((item) => isPathAllowedForRole(item.href, admin.role));

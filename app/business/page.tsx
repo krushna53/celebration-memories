@@ -76,7 +76,7 @@ export default async function BusinessHubPage() {
               <Link href="/business/signup">Create Free Vendor Account</Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="border-gold-400/60 text-gold-200 hover:bg-gold-400/10">
-              <Link href="/business/login">Sign In</Link>
+              <Link href="/login">Sign In</Link>
             </Button>
           </div>
         </div>

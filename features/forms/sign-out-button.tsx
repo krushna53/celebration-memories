@@ -10,7 +10,7 @@ export function SignOutButton() {
 
   async function handleSignOut() {
     await supabaseBrowser().auth.signOut();
-    router.replace("/forms/login");
+    router.replace("/login");
     router.refresh();
   }
 

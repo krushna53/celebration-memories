@@ -40,7 +40,7 @@ export default function StartPage() {
         </form>
         <p className="mt-4 text-xs text-ivory-100/40">
           Already have an account?{" "}
-          <Link href="/admin/login" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
+          <Link href="/login" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
             Sign in
           </Link>
         </p>

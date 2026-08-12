@@ -27,9 +27,10 @@ const inputClasses =
  * /forms/login since there was no session yet. Now matches the
  * already-correct pattern used for admin/host signup
  * (features/admin/register/register-form.tsx's "Check your email... then
- * come back and sign in" + /admin/login's `?verified=1` banner) instead
- * of promising something that can't happen yet. `emailRedirectTo` below
- * points the confirmation link at /forms/login?verified=1 for that banner.
+ * come back and sign in" + the shared /login page's `?verified=1`
+ * banner, see features/auth/unified-login-form.tsx) instead of
+ * promising something that can't happen yet. `emailRedirectTo` below
+ * points the confirmation link at /login?verified=1 for that banner.
  */
 export function FormOwnerAccountForm({ token }: { token: string }) {
   const [name, setName] = useState("");
@@ -54,7 +55,7 @@ export function FormOwnerAccountForm({ token }: { token: string }) {
       password,
       options: {
         data: { name },
-        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/forms/login?verified=1` : undefined,
+        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/login?verified=1` : undefined,
       },
     });
 
@@ -89,7 +90,7 @@ export function FormOwnerAccountForm({ token }: { token: string }) {
           activate your account, then come back and sign in.
         </p>
         <Link
-          href="/forms/login"
+          href="/login"
           className="mt-4 inline-block text-xs font-medium text-gold-700 underline underline-offset-4 hover:text-gold-800"
         >
           Back to sign in

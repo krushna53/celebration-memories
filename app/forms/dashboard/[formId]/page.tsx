@@ -18,7 +18,7 @@ interface FormDashboardPageProps {
 export default async function FormDashboardPage({ params }: FormDashboardPageProps) {
   const { formId } = await params;
   const owner = await getCurrentFormOwner();
-  if (!owner) redirect("/forms/login");
+  if (!owner) redirect("/login");
 
   const form = await getFormById(formId);
   if (!form || form.ownerId !== owner.id) notFound();

@@ -17,7 +17,8 @@ interface AdminOverviewPageProps {
 export default async function AdminOverviewPage({ searchParams }: AdminOverviewPageProps) {
   const admin = await getCurrentAdmin();
 
-  // Right after signing in (see app/admin/login/page.tsx's ?from=login),
+  // Right after signing in (see features/auth/actions.ts's
+  // resolveLoginDestinationAction, which sends admins to /admin?from=login),
   // a client-role admin lands on the simplified single-page view instead
   // of the full tab-heavy Overview — the owner's default is unchanged.
   // Deliberately gated on the query param rather than always redirecting

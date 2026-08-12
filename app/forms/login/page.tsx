@@ -1,17 +1,17 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { FormOwnerLoginForm } from "@/features/forms/login-form";
+export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { robots: { index: false, follow: true } };
+interface FormOwnerLoginPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-export default function FormOwnerLoginPage() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-navy-950 px-4">
-      {/* useSearchParams() (for ?verified=1) requires a Suspense boundary — same pattern as app/admin/login/page.tsx. */}
-      <Suspense fallback={null}>
-        <FormOwnerLoginForm />
-      </Suspense>
-    </div>
-  );
+/** See app/admin/login/page.tsx's doc comment — same shared-login redirect shim. */
+export default async function FormOwnerLoginPage({ searchParams }: FormOwnerLoginPageProps) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    if (typeof value === "string") params.set(key, value);
+  }
+  const qs = params.toString();
+  redirect(qs ? `/login?${qs}` : "/login");
 }

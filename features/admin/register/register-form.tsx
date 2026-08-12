@@ -69,7 +69,7 @@ export function RegisterForm({ eventId, eventLabel, invalidEvent }: RegisterForm
       options: {
         data: { name, draft_event_id: eventId },
         emailRedirectTo:
-          typeof window !== "undefined" ? `${window.location.origin}/admin/login?verified=1` : undefined,
+          typeof window !== "undefined" ? `${window.location.origin}/login?verified=1` : undefined,
       },
     });
     setLoading(false);
@@ -128,7 +128,7 @@ export function RegisterForm({ eventId, eventLabel, invalidEvent }: RegisterForm
             Click it to activate your account, then come back and sign in.
           </p>
           <Link
-            href="/admin/login"
+            href="/login"
             className="mt-6 inline-block text-sm text-gold-300 underline underline-offset-4 hover:text-gold-200"
           >
             Back to sign in
@@ -229,13 +229,13 @@ export function RegisterForm({ eventId, eventLabel, invalidEvent }: RegisterForm
           label="Continue with Google"
           disabled={!agreedToTerms}
           redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(
-            "/admin/login?verified=1",
+            "/login?verified=1",
           )}&link_event_id=${encodeURIComponent(eventId)}`}
         />
 
         <p className="mt-6 text-sm text-ivory-100/60">
           Already have an account?{" "}
-          <Link href="/admin/login" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
+          <Link href="/login" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
             Sign in
           </Link>
         </p>

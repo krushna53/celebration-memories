@@ -327,6 +327,30 @@ function, which matters on Netlify's payload limits). Every upload sits
 in a moderation queue (`approved = false`) until an admin approves it on
 `/admin/memories` — nothing a guest submits appears publicly on its own.
 
+### Shared sign-in (`/login`)
+
+There's one sign-in page for all three account types this app has —
+admin (event hosts + Krushna Web Works), business (marketplace
+vendors), and forms (Custom Form Builder owners): **`/login`**
+(`features/auth/unified-login-form.tsx`). The old per-product URLs
+(`/admin/login`, `/business/login`, `/forms/login`) still work — each
+is now a thin redirect to `/login`, forwarding along any query string
+— so existing bookmarks and links don't break.
+
+A single email can, in principle, have a row in more than one of
+`admins` / `business_accounts` / `form_owners`. Rather than showing a
+"which dashboard?" picker after sign-in, `/login` resolves the
+destination by a fixed priority — **admin first (broadest access),
+then business, then forms (narrowest)** — via
+`features/auth/actions.ts`'s `resolveLoginDestinationAction()`. This
+runs once right after a successful sign-in (password or Google), and
+again on page load if you land on `/login` already signed in (e.g. the
+Google OAuth round-trip, or just revisiting the page with an active
+session) — either way you're routed straight to your dashboard with no
+extra click. An account that isn't set up under any of the three
+tables sees an inline message pointing at the relevant signup flow
+instead of a dead end.
+
 ### Admin access
 
 The dashboard lives at `/admin` and is protected by Supabase Auth plus
@@ -340,7 +364,7 @@ the account must also have a row in `admins`. To create your first admin:
    insert into admins (id, email, name)
    select id, email, 'Your Name' from auth.users where email = 'you@example.com';
    ```
-3. Sign in at `/admin/login`.
+3. Sign in at `/login` (or the legacy `/admin/login`, which redirects there).
 
 From there: **Overview** (RSVP breakdown, upload counts, most active
 guests), **Event Settings**, **Invitees** (create/edit/delete, CSV
@@ -386,7 +410,7 @@ trigger) only creates their `admins` row — always with `role =
 reads the event id straight out of `raw_user_meta_data->>'draft_event_id'`,
 which the register page sets from the `?event=` param. An unverified
 signup has a Supabase Auth account but no `admins` row, so
-`/admin/login` just bounces them back with no dashboard access.
+`/login` just bounces them back with no dashboard access.
 
 ⚠️ **`/admin/register` with no `?event=` param refuses to show the
 signup form at all** — this used to be silently allowed, and it was a
@@ -1060,7 +1084,9 @@ creates a `form_owners` row and claims that one form
 deliberately separate, lightweight allowlist from the event-scoped
 `admins` table (mirrors `services/business-auth.ts`'s
 `business_accounts`) — one person can own many forms, with no event
-relationship at all. Sign back in anytime at `/forms/login`.
+relationship at all. Sign back in anytime at `/login` (see "Shared
+sign-in (`/login`)" above — `/forms/login` still works too, it just
+redirects there).
 
 **Response dashboard** (`/forms/dashboard`, login required): every
 form the account owns, and per-form at `/forms/dashboard/[formId]` —

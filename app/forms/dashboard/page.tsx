@@ -24,7 +24,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
  */
 export default async function FormsDashboardPage() {
   const owner = await getCurrentFormOwner();
-  if (!owner) redirect("/forms/login");
+  if (!owner) redirect("/login");
 
   const allForms = await listFormsForOwner(owner.id);
   const forms = owner.role === "rsvp" ? allForms.filter((form) => isRsvpCategory(form.category)) : allForms;

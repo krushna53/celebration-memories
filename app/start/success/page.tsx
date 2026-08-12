@@ -44,7 +44,7 @@ export default async function WizardSuccessPage({
             </a>
           ) : null}
           <Link
-            href="/admin/login"
+            href="/login"
             className="text-sm text-gold-300 underline underline-offset-4 hover:text-gold-200"
           >
             Go to your dashboard

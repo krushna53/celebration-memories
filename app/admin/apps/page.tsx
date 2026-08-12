@@ -126,7 +126,7 @@ function AppsHeader() {
 
 export default async function AdminAppsPage() {
   const admin = await getCurrentAdmin();
-  if (!admin) redirect("/admin/login");
+  if (!admin) redirect("/login");
   if (admin.role === "session_organizer") redirect("/admin/my-sessions");
 
   const event = await resolveAdminEvent(admin);

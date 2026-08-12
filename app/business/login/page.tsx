@@ -1,13 +1,17 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { BusinessLoginForm } from "@/features/business/login-form";
+export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { robots: { index: false, follow: true } };
+interface BusinessLoginPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-export default function BusinessLoginPage() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-navy-950 px-4">
-      <BusinessLoginForm />
-    </div>
-  );
+/** See app/admin/login/page.tsx's doc comment — same shared-login redirect shim. */
+export default async function BusinessLoginPage({ searchParams }: BusinessLoginPageProps) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    if (typeof value === "string") params.set(key, value);
+  }
+  const qs = params.toString();
+  redirect(qs ? `/login?${qs}` : "/login");
 }

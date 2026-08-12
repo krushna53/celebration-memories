@@ -333,7 +333,7 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
 
       <p className="mt-6 text-center text-sm text-navy-700/60">
         Already have an account?{" "}
-        <Link href="/admin/login" className="text-gold-600 underline underline-offset-4 hover:text-gold-500">
+        <Link href="/login" className="text-gold-600 underline underline-offset-4 hover:text-gold-500">
           Sign in
         </Link>
       </p>

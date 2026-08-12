@@ -88,7 +88,7 @@ function SimpleHeader() {
 export default async function AdminSimplePage() {
   const admin = await getCurrentAdmin();
   if (!admin) {
-    redirect("/admin/login");
+    redirect("/login");
   }
 
   const event = await resolveAdminEvent(admin);
