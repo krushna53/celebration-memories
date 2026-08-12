@@ -27,6 +27,7 @@ import {
   recordCustomFormAiGenerationRequest,
 } from "@/services/custom-form-ai-rate-limit";
 import { getClientIp, hashIp } from "@/lib/ip-hash";
+import { FORM_CATEGORY_STARTER_FIELDS, type FormCategory } from "@/lib/form-category";
 
 export type FormActionResult = { success: true } | { success: false; error: string };
 
@@ -43,11 +44,21 @@ async function requireFormByToken(token: string) {
   return form;
 }
 
-export async function createDraftFormAction(): Promise<
-  { success: true; id: string; token: string } | { success: false; error: string }
-> {
+/**
+ * Entry point for the /forms/new wizard (features/forms/new-form-wizard.tsx)
+ * — step 1 picks the "RSVP instance" (category), step 2 picks how to
+ * build it. `includeStarterFields` is true for the "build it myself"
+ * path (drops in that category's FORM_CATEGORY_STARTER_FIELDS, fully
+ * editable after) and false for the "generate with AI" path (nothing
+ * to pre-fill — the very next call replaces the field set anyway).
+ */
+export async function createDraftFormAction(
+  category: FormCategory,
+  includeStarterFields: boolean,
+): Promise<{ success: true; id: string; token: string } | { success: false; error: string }> {
   try {
-    const { id, token } = await createDraftForm();
+    const starterFields = includeStarterFields ? FORM_CATEGORY_STARTER_FIELDS[category] : undefined;
+    const { id, token } = await createDraftForm(category, starterFields);
     return { success: true, id, token };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to start a new form." };
@@ -222,11 +233,11 @@ async function checkAiGenerationRateLimit(): Promise<{ ok: true; ipHash: string 
 
 export async function generateFormFromPromptAction(token: string, prompt: string): Promise<GenerateFormActionResult> {
   try {
-    await requireFormByToken(token);
+    const form = await requireFormByToken(token);
     const rateLimit = await checkAiGenerationRateLimit();
     if (!rateLimit.ok) return { success: false, error: rateLimit.error };
 
-    const generated = await generateFormFromPrompt(prompt);
+    const generated = await generateFormFromPrompt(prompt, form.category);
     await recordCustomFormAiGenerationRequest(rateLimit.ipHash);
     return await applyGeneratedForm(token, generated);
   } catch (err) {
@@ -237,11 +248,11 @@ export async function generateFormFromPromptAction(token: string, prompt: string
 /** `imageDataUrl` is a full data URL built client-side from the picked file — never written to Storage, since it's only needed for this one-off analysis. */
 export async function generateFormFromImageAction(token: string, imageDataUrl: string): Promise<GenerateFormActionResult> {
   try {
-    await requireFormByToken(token);
+    const form = await requireFormByToken(token);
     const rateLimit = await checkAiGenerationRateLimit();
     if (!rateLimit.ok) return { success: false, error: rateLimit.error };
 
-    const generated = await generateFormFromImage(imageDataUrl);
+    const generated = await generateFormFromImage(imageDataUrl, form.category);
     await recordCustomFormAiGenerationRequest(rateLimit.ipHash);
     return await applyGeneratedForm(token, generated);
   } catch (err) {

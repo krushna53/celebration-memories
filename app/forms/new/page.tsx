@@ -1,18 +1,21 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
-import { createDraftForm } from "@/services/custom-forms";
+import { NewFormWizard } from "@/features/forms/new-form-wizard";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
- * Entry point for "Build a Form" (global nav link) — creates a brand-
- * new draft form with no login required, then redirects straight into
- * the builder at its private draft_token URL. Same shape as how the
- * event wizard's first step works (see features/start/), just without
- * any intermediate "choose an occasion" step since a form has nothing
- * to configure yet.
+ * Entry point for "Build a Form" (global nav link) — a short wizard
+ * (features/forms/new-form-wizard.tsx) that asks what kind of RSVP
+ * this is and how to build it, before creating the draft form and
+ * handing off to /forms/build/[token]. No login required at any step
+ * — same draft_token trust model as the builder itself.
  */
-export default async function NewFormPage() {
-  const { token } = await createDraftForm();
-  redirect(`/forms/build/${token}`);
+export default function NewFormPage() {
+  return (
+    <div className="min-h-screen bg-ivory-100">
+      <NewFormWizard />
+    </div>
+  );
 }

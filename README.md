@@ -1146,6 +1146,46 @@ hour and 100/day platform-wide, same fail-closed reasoning as the
 public AI Image tool, since this calls a paid API rather than the
 free response-submission endpoint above.
 
+**RSVP instance wizard** — `/forms/new` (`features/forms/new-form-wizard.tsx`)
+is now a short wizard instead of an instant redirect into the builder:
+
+1. **What kind of RSVP is this?** — an occasion picker
+   (`lib/form-category.ts`'s `FORM_CATEGORY_OPTIONS`: Wedding,
+   Birthday, Baby Shower, Anniversary, Retirement, Corporate Event,
+   Reunion, or General/Other for anything that isn't an RSVP). A
+   narrower list than the full event-category set
+   (`lib/event-category.ts`) — Obituary/Workshop/Education/Live
+   Stream are odd fits for "RSVP instance" and fall under General
+   instead.
+2. **Generate with AI, or build it yourself?** The draft form is
+   created at this point, tagged with the chosen category.
+3. Picking **AI** shows the same prompt/upload panel described above
+   (`features/forms/ai-form-generator.tsx`, reused rather than
+   duplicated); the chosen category is threaded into the model as
+   light context (`lib/ai-form-generator.ts`'s `categoryContext`), so
+   "a Wedding RSVP" nudges the AI toward attendance/guest-count/meal
+   fields even from a short prompt. Picking **yourself** drops the
+   builder straight into `/forms/build/[token]` pre-seeded with that
+   category's starter fields (`FORM_CATEGORY_STARTER_FIELDS`) — fully
+   editable/deletable, just a head start. The category itself stays
+   editable afterward from a select in the builder's title card.
+
+**"RSVP" dashboard role** — a self-service toggle at the top of
+`/forms/dashboard` ("All Forms" / "RSVP Forms Only"), backed by a new
+`form_owners.role` column (`owner` | `rsvp`,
+`services/custom-forms.ts`'s `updateFormOwnerRole`). Switching to
+`rsvp` filters that account's own dashboard down to forms whose
+category isn't General/uncategorized
+(`lib/form-category.ts`'s `isRsvpCategory`); switching back shows
+everything again. This is deliberately *not* an invite/permission
+system — the Custom Form Builder has no team or sharing concept (one
+form has exactly one `owner_id`), so there's no one to grant someone
+else the role; it's a persistent view filter on an account's own
+forms, not access control. A genuine invite-based "give a teammate
+RSVP-only access to forms I built" system would need a real
+sharing/ownership model and was explicitly scoped out as a bigger,
+separate build.
+
 ### Custom Domains
 
 **What exists today:** a host can ask for a custom domain from the

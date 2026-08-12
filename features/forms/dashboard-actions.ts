@@ -10,8 +10,10 @@ import {
   getResponseFormId,
   requireFormOwner,
   setFormStatus,
+  updateFormOwnerRole,
   updateResponse,
   type CustomFormStatus,
+  type FormOwnerRole,
 } from "@/services/custom-forms";
 import { toCsv } from "@/lib/csv";
 
@@ -92,6 +94,25 @@ export async function setFormStatusAction(formId: string, status: CustomFormStat
     await requireOwnedForm(formId);
     await setFormStatus(formId, status);
     revalidatePath(`/forms/dashboard/${formId}`);
+    revalidatePath("/forms/dashboard");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/**
+ * Self-service dashboard view toggle (features/forms/dashboard-role-toggle.tsx)
+ * — not an invite/permission grant from anyone else, since the Custom
+ * Form Builder has no team concept (see services/custom-forms.ts's
+ * updateFormOwnerRole doc comment). Switching to "rsvp" filters the
+ * signed-in owner's own /forms/dashboard down to RSVP-category forms
+ * only; switching back to "owner" shows everything again.
+ */
+export async function updateFormOwnerRoleAction(role: FormOwnerRole): Promise<DashboardActionResult> {
+  try {
+    const owner = await requireFormOwner();
+    await updateFormOwnerRole(owner.id, role);
     revalidatePath("/forms/dashboard");
     return { success: true };
   } catch (err) {

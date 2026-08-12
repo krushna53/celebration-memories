@@ -39,11 +39,18 @@ const CHANGES: ChangeGroup[] = [
     date: "Wednesday, August 12",
     items: [
       {
+        title: "New form-builder wizard — pick an RSVP type, then AI or build-it-yourself",
+        detail:
+          "\"Build a Form\" now opens a short wizard instead of dropping you straight into an empty form. Step 1: pick what kind of RSVP it is (Wedding, Birthday, Baby Shower, Anniversary, Retirement, Corporate, Reunion, or General/Other). Step 2: generate it with AI or build it yourself — building it yourself now starts with a few suggested fields for that occasion already added (fully editable). Picking AI carries the occasion into the prompt, so a short description leans toward the right fields automatically. There's also a new self-service dashboard toggle — flip your account to \"RSVP Forms Only\" to hide any general-purpose forms you've built and see just the RSVP ones.",
+        test:
+          "Go to /forms/new and step through: pick \"Wedding,\" then \"Create It Yourself,\" and confirm the builder opens with starter fields like Meal Preference already added. Then start over, pick a category, choose \"Generate with AI,\" describe a form, and confirm it generates. On /forms/dashboard, try the \"All Forms\" / \"RSVP Forms Only\" toggle and confirm the list filters.",
+      },
+      {
         title: "AI form generation — describe a form or upload a photo of one, and the builder writes it for you",
         detail:
           "The Custom Form Builder now has a \"Build with AI\" panel at the top of the page. Type a sentence describing the form you want and AI writes the title, description, and every field. Or upload a photo/screenshot of an existing paper or PDF form and AI rebuilds it as a live EveryMoment form — the image is only analyzed once and never stored. Generating replaces the current fields, so it asks first if the form already has any.",
         test:
-          "Go to /forms/new, then in the \"Build with AI\" panel try \"Describe it\" with something like \"a baby shower RSVP with meal choice and a gift note,\" and confirm the title and fields fill in. Then try \"Upload a form image\" with a photo of any form and confirm it's transcribed into fields.",
+          "Go to /forms/new, choose a category, then \"Generate with AI,\" and try \"Describe it\" with something like \"a baby shower RSVP with meal choice and a gift note,\" and confirm the title and fields fill in. Then try \"Upload a form image\" with a photo of any form and confirm it's transcribed into fields.",
       },
       {
         title: "New: standalone Custom Form Builder — no login to build, own dashboard for responses",

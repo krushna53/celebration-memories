@@ -2,6 +2,8 @@ import "server-only";
 import OpenAI from "openai";
 import { z } from "zod";
 
+import { FORM_CATEGORY_LABELS, isRsvpCategory, type FormCategory } from "@/lib/form-category";
+
 /**
  * Generates a whole form (title + description + fields) from either a
  * plain-text prompt or a photo/screenshot of an existing form, via
@@ -67,6 +69,12 @@ Rules:
 - Produce between 2 and 15 fields — enough to be useful, never redundant.
 - When given an image of an existing form, transcribe its actual questions/fields as faithfully as possible rather than inventing new ones; only add a field the image doesn't have if something essential is obviously missing.`;
 
+/** The occasion picked in the /forms/new wizard's step 1 (lib/form-category.ts), threaded into the model's input as light context — not a hard requirement, since a builder can still edit whatever comes back. "general"/null (not an RSVP) adds no hint at all, leaving the model to infer purely from the prompt/image as before this feature existed. */
+function categoryContext(category?: FormCategory | null): string {
+  if (!isRsvpCategory(category)) return "";
+  return `This form is an RSVP for a ${FORM_CATEGORY_LABELS[category as FormCategory]} — lean on fields typical for that occasion (e.g. attendance, guest count, meal preference) unless the description says otherwise.\n\n`;
+}
+
 function parseModelOutput(raw: string): GeneratedForm {
   const cleaned = raw
     .replace(/^```(?:json)?\s*/i, "")
@@ -87,7 +95,7 @@ function parseModelOutput(raw: string): GeneratedForm {
   return result.data;
 }
 
-export async function generateFormFromPrompt(prompt: string): Promise<GeneratedForm> {
+export async function generateFormFromPrompt(prompt: string, category?: FormCategory | null): Promise<GeneratedForm> {
   const client = getClient();
   if (!client) {
     throw new AiFormGeneratorError("AI form generation isn't configured — add OPENAI_API_KEY to enable it.");
@@ -103,7 +111,7 @@ export async function generateFormFromPrompt(prompt: string): Promise<GeneratedF
     response = await client.responses.create({
       model,
       instructions: SYSTEM_INSTRUCTIONS,
-      input: `Describe the form to build: ${prompt.trim()}`,
+      input: `${categoryContext(category)}Describe the form to build: ${prompt.trim()}`,
       max_output_tokens: 2000,
     });
   } catch (err) {
@@ -119,7 +127,7 @@ export async function generateFormFromPrompt(prompt: string): Promise<GeneratedF
 }
 
 /** `imageDataUrl` is a full data URL (e.g. "data:image/png;base64,...") — the caller (features/forms/builder-actions.ts) builds this client-side before the file ever leaves the browser as anything but base64 text, so no image is ever written to Storage just to be analyzed once. */
-export async function generateFormFromImage(imageDataUrl: string): Promise<GeneratedForm> {
+export async function generateFormFromImage(imageDataUrl: string, category?: FormCategory | null): Promise<GeneratedForm> {
   const client = getClient();
   if (!client) {
     throw new AiFormGeneratorError("AI form generation isn't configured — add OPENAI_API_KEY to enable it.");
@@ -136,7 +144,7 @@ export async function generateFormFromImage(imageDataUrl: string): Promise<Gener
         {
           role: "user",
           content: [
-            { type: "input_text", text: "Extract a form definition from this image of a form." },
+            { type: "input_text", text: `${categoryContext(category)}Extract a form definition from this image of a form.` },
             { type: "input_image", image_url: imageDataUrl, detail: "high" },
           ],
         },

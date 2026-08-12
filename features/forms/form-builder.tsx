@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { FORM_CATEGORY_OPTIONS, type FormCategory } from "@/lib/form-category";
 import type { CustomFieldType, CustomForm, CustomFormField } from "@/services/custom-forms";
 import {
   confirmFormCoverUploadAction,
@@ -59,6 +60,7 @@ export function FormBuilder({ token, publicUrl, initialForm, initialFields }: Fo
   const [fields, setFields] = useState(initialFields);
   const [title, setTitle] = useState(initialForm.title);
   const [description, setDescription] = useState(initialForm.description ?? "");
+  const [category, setCategory] = useState<FormCategory>(initialForm.category ?? "general");
   const [notifyEmail, setNotifyEmail] = useState(initialForm.notifyEmail ?? "");
   const [savingMeta, setSavingMeta] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -108,6 +110,16 @@ export function FormBuilder({ token, publicUrl, initialForm, initialFields }: Fo
     setPublishing(false);
     if (result.success) {
       setForm((prev) => ({ ...prev, status: "published" }));
+    } else {
+      alert(result.error);
+    }
+  }
+
+  async function handleCategoryChange(next: FormCategory) {
+    setCategory(next);
+    const result = await updateFormMetaAction(token, { category: next });
+    if (result.success) {
+      setForm((prev) => ({ ...prev, category: next }));
     } else {
       alert(result.error);
     }
@@ -165,6 +177,10 @@ export function FormBuilder({ token, publicUrl, initialForm, initialFields }: Fo
     setTitle(result.title);
     setDescription(result.description ?? "");
     setFields(result.fields);
+    // Category itself doesn't change from a regeneration (AiFormGenerator only
+    // ever runs against a form's already-chosen category, see builder-actions.ts's
+    // generateFormFromPromptAction/generateFormFromImageAction) — only title/
+    // description/fields need syncing here.
   }
 
   return (
@@ -188,6 +204,22 @@ export function FormBuilder({ token, publicUrl, initialForm, initialFields }: Fo
           onBlur={saveMeta}
           className={`${inputClasses} mt-1.5`}
         />
+
+        <label className={`${labelClasses} mt-4 block`} htmlFor="form-category">
+          RSVP type
+        </label>
+        <select
+          id="form-category"
+          value={category}
+          onChange={(e) => handleCategoryChange(e.target.value as FormCategory)}
+          className={`${inputClasses} mt-1.5`}
+        >
+          {FORM_CATEGORY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
 
         <div className="mt-4">
           <span className={labelClasses}>Cover photo (optional)</span>

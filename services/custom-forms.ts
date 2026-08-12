@@ -5,6 +5,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateDraftToken } from "@/lib/tokens";
 import { publicMediaUrl } from "@/services/uploads";
+import { resolveFormCategory, type FormCategory, type StarterField } from "@/lib/form-category";
 
 /**
  * Backing service for the standalone Custom Form Builder (#95-101) —
@@ -48,6 +49,7 @@ export interface CustomForm {
   slug: string;
   title: string;
   description: string | null;
+  category: FormCategory | null;
   coverImagePath: string | null;
   coverImageUrl: string | null;
   notifyEmail: string | null;
@@ -64,6 +66,7 @@ interface CustomFormRow {
   slug: string;
   title: string;
   description: string | null;
+  category: string | null;
   cover_image_path: string | null;
   notify_email: string | null;
   notify_on_submit: boolean;
@@ -80,6 +83,7 @@ function mapForm(row: CustomFormRow): CustomForm {
     slug: row.slug,
     title: row.title,
     description: row.description,
+    category: row.category ? resolveFormCategory(row.category) : null,
     coverImagePath: row.cover_image_path,
     coverImageUrl: row.cover_image_path ? publicMediaUrl("gallery", row.cover_image_path) : null,
     notifyEmail: row.notify_email,
@@ -94,18 +98,36 @@ function randomSlugSuffix(): string {
   return randomBytes(4).toString("hex");
 }
 
-/** Creates a brand-new draft form with no fields yet — the builder page fills in title/fields/cover after. */
-export async function createDraftForm(): Promise<{ id: string; token: string }> {
+/**
+ * Creates a brand-new draft form — the builder page fills in
+ * title/fields/cover after. `category` is the "RSVP instance" chosen
+ * in the /forms/new wizard's step 1 (features/forms/new-form-wizard.tsx);
+ * omitted/null leaves it uncategorized (treated as "general" by
+ * resolveFormCategory/isRsvpCategory). `starterFields`, when given,
+ * are inserted immediately (the wizard's "build it myself" path —
+ * lib/form-category.ts's FORM_CATEGORY_STARTER_FIELDS for that
+ * category); the AI-generation path passes none, since AI is about to
+ * populate fields itself via replaceFormFields.
+ */
+export async function createDraftForm(
+  category?: FormCategory | null,
+  starterFields?: StarterField[],
+): Promise<{ id: string; token: string }> {
   const token = generateDraftToken();
   const slug = `form-${randomSlugSuffix()}`;
 
   const { data, error } = await supabaseAdmin()
     .from("custom_forms")
-    .insert({ draft_token: token, slug, title: "Untitled Form" })
+    .insert({ draft_token: token, slug, title: "Untitled Form", category: category ?? null })
     .select("id")
     .single<{ id: string }>();
 
   if (error || !data) throw new Error(`Failed to create form: ${error?.message}`);
+
+  if (starterFields && starterFields.length > 0) {
+    await replaceFormFields(data.id, starterFields);
+  }
+
   return { id: data.id, token };
 }
 
@@ -156,6 +178,7 @@ export async function getFormById(id: string): Promise<CustomForm | null> {
 export interface UpdateFormInput {
   title?: string;
   description?: string | null;
+  category?: FormCategory | null;
   coverImagePath?: string | null;
   notifyEmail?: string | null;
   notifyOnSubmit?: boolean;
@@ -165,6 +188,7 @@ export async function updateForm(formId: string, input: UpdateFormInput): Promis
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (input.title !== undefined) patch.title = input.title;
   if (input.description !== undefined) patch.description = input.description;
+  if (input.category !== undefined) patch.category = input.category;
   if (input.coverImagePath !== undefined) patch.cover_image_path = input.coverImagePath;
   if (input.notifyEmail !== undefined) patch.notify_email = input.notifyEmail;
   if (input.notifyOnSubmit !== undefined) patch.notify_on_submit = input.notifyOnSubmit;
@@ -496,10 +520,13 @@ export async function getResponseExportRows(
 // Form owner accounts (auth) — separate allowlist from services/admin-auth.ts
 // ---------------------------------------------------------------------------
 
+export type FormOwnerRole = "owner" | "rsvp";
+
 export interface CurrentFormOwner {
   id: string;
   email: string;
   name: string | null;
+  role: FormOwnerRole;
 }
 
 /** Mirrors services/business-auth.ts's getCurrentBusinessAccount exactly, just a different backing table — same Supabase Auth session, a different allowlist. */
@@ -512,7 +539,7 @@ export async function getCurrentFormOwner(): Promise<CurrentFormOwner | null> {
 
   const { data, error } = await supabaseAdmin()
     .from("form_owners")
-    .select("id, email, name")
+    .select("id, email, name, role")
     .eq("id", user.id)
     .maybeSingle<CurrentFormOwner>();
 
@@ -521,6 +548,20 @@ export async function getCurrentFormOwner(): Promise<CurrentFormOwner | null> {
     return null;
   }
   return data;
+}
+
+/**
+ * Self-service dashboard view toggle, not an admin-assigned invite
+ * role — the Custom Form Builder has no team/invite concept (one form
+ * has exactly one owner_id), so "RSVP" isn't granted by anyone else;
+ * an owner flips their own account between seeing every form they've
+ * built ("owner") and only the RSVP-category ones ("rsvp"), see
+ * app/forms/dashboard/page.tsx's filtering and
+ * features/forms/dashboard-role-toggle.tsx.
+ */
+export async function updateFormOwnerRole(ownerId: string, role: FormOwnerRole): Promise<void> {
+  const { error } = await supabaseAdmin().from("form_owners").update({ role }).eq("id", ownerId);
+  if (error) throw new Error(`Failed to update role: ${error.message}`);
 }
 
 export async function requireFormOwner(): Promise<CurrentFormOwner> {
