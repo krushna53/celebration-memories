@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Wednesday, August 12",
     items: [
       {
+        title: "New \"Build a Form\" accounts now default to the RSVP dashboard view",
+        detail:
+          "Signing up for a form-owner account now starts you on the \"RSVP Forms Only\" view of your dashboard instead of \"All Forms\" — since most people using this tool are building RSVP forms, your dashboard opens already scoped to those. Switch to \"All Forms\" any time (top of /forms/dashboard) if you also build general-purpose forms and want to see everything. Existing accounts aren't affected.",
+        test:
+          "Build a form, publish it, and create a new account from the builder. Land on /forms/dashboard and confirm the toggle shows \"RSVP Forms Only\" selected by default.",
+      },
+      {
         title: "AI form generation now has a real cost report",
         detail:
           "Admin > Usage has a new \"Build a Form — AI Generation\" section: total estimated OpenAI cost, how many generations were \"Describe it\" vs \"Upload a form image,\" total tokens used, cost by RSVP type, and a 14-day trend. Token counts are real (pulled from OpenAI's own response on every call); the dollar figure is an estimate using a published per-token rate, same caveat as the AI Image/Shotstack numbers already on that page.",

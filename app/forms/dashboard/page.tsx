@@ -14,9 +14,10 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 /**
  * Every form this account owns — the landing page after signing in at
  * /forms/login or right after creating an account from the builder.
- * When the owner's role is "rsvp" (self-service toggle, see
- * features/forms/dashboard-role-toggle.tsx), the list is filtered
- * down to RSVP-category forms only; "owner" (the default) sees
+ * New accounts default to role "rsvp" (form_owners.role's DB default,
+ * migration 0051) — the list is filtered down to RSVP-category forms
+ * only until the account switches to "owner" (self-service toggle,
+ * see features/forms/dashboard-role-toggle.tsx), which sees
  * everything. Filtered in-memory rather than in the query — the
  * per-owner form count is small, and listFormsForOwner stays a single
  * reusable "everything this account owns" query for every caller.

@@ -1173,11 +1173,16 @@ is now a short wizard instead of an instant redirect into the builder:
 **"RSVP" dashboard role** — a self-service toggle at the top of
 `/forms/dashboard` ("All Forms" / "RSVP Forms Only"), backed by a new
 `form_owners.role` column (`owner` | `rsvp`,
-`services/custom-forms.ts`'s `updateFormOwnerRole`). Switching to
-`rsvp` filters that account's own dashboard down to forms whose
-category isn't General/uncategorized
-(`lib/form-category.ts`'s `isRsvpCategory`); switching back shows
-everything again. This is deliberately *not* an invite/permission
+`services/custom-forms.ts`'s `updateFormOwnerRole`). **New accounts
+default to `rsvp`** (the column's DB default as of migration
+`0051_form_owners_default_role_rsvp.sql`) — a first-time builder's
+dashboard starts scoped to RSVP-category forms only; switching to
+"All Forms" (`owner`) shows everything, including any General/Other
+forms. Existing accounts created before this default changed keep
+whatever role they already had. "RSVP" filters that account's own
+dashboard down to forms whose category isn't General/uncategorized
+(`lib/form-category.ts`'s `isRsvpCategory`). This is deliberately *not*
+an invite/permission
 system — the Custom Form Builder has no team or sharing concept (one
 form has exactly one `owner_id`), so there's no one to grant someone
 else the role; it's a persistent view filter on an account's own
