@@ -879,6 +879,35 @@ GODADDY_API_SECRET=...
 Leave both unset and `/admin/domain-search` shows a "not configured"
 message instead of erroring.
 
+### AI-tool SEO (structured data, /llms.txt, AI crawlers)
+
+Beyond classic search SEO, the site is set up to be readable by AI
+answer engines and assistants (ChatGPT, Perplexity, Google AI
+Overviews, Claude web search, and similar) rather than only human
+search crawlers:
+
+- **schema.org/Event JSON-LD** on every `/events/[slug]` page
+  (`lib/structured-data.ts`'s `buildEventJsonLd`, injected via a small
+  `<JsonLd>` component) — name, start/end date, venue, organizer, and
+  cover image as structured facts, so an assistant summarizing an
+  event doesn't have to parse rendered prose to get the date right.
+- **schema.org/Organization + WebSite JSON-LD** on the platform
+  homepage (`app/page.tsx`) — what EveryMoment is, as structured data.
+- **`/llms.txt`** (`app/llms.txt/route.ts`) — a plain-Markdown summary
+  of the platform and its key pages, following the emerging
+  [llmstxt.org](https://llmstxt.org) convention some AI crawlers look
+  for as a curated alternative to crawling raw HTML.
+- **`app/robots.ts`** explicitly names the major AI crawlers (GPTBot,
+  ChatGPT-User, ClaudeBot, PerplexityBot, Google-Extended, CCBot, and
+  others) alongside the existing wildcard rule, with the same
+  allow/disallow shape — private token-gated routes (`/invite`,
+  `/event-day`, `/games`, `/start`, `/plan`, `/pay`, `/admin`) stay
+  disallowed for AI crawlers exactly as they are for search crawlers.
+
+None of this changes what's actually reachable — private/token-gated
+pages are just as inaccessible to AI crawlers as to search engines.
+It only makes the already-public pages easier to summarize accurately.
+
 ### Content still needed before launch
 
 - **Event details** — fill in `/admin/event-settings` (currently shows

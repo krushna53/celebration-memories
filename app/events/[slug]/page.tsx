@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 
 import { EventLandingPage } from "@/features/event-landing/event-landing-page";
 import { getEventBySlug } from "@/services/events";
-import { buildEventMetadata } from "@/lib/event-metadata";
+import { buildEventMetadata, resolveEventCoverImage } from "@/lib/event-metadata";
+import { buildEventJsonLd, JsonLd } from "@/lib/structured-data";
 import type { EventRecord } from "@/types/event";
 
 /**
@@ -43,5 +44,12 @@ export default async function PublicEventPage({ params }: PublicEventPageProps) 
     notFound();
   }
 
-  return <EventLandingPage event={event} />;
+  const coverImage = await resolveEventCoverImage(event);
+
+  return (
+    <>
+      <JsonLd data={buildEventJsonLd(event, coverImage)} />
+      <EventLandingPage event={event} />
+    </>
+  );
 }

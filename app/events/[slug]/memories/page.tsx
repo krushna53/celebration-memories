@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { HeartHandshake } from "lucide-react";
+import { HeartHandshake, Images } from "lucide-react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -88,6 +88,25 @@ export default async function PublicMemoriesPage({ params }: PublicMemoriesPageP
           )}
         </div>
       </div>
+
+      {/*
+        Floating shortcut to the public Memory Wall (#memories on the
+        event's own homepage) — a guest landing straight on this upload
+        page via a shared link has no other way to browse what everyone
+        else has already shared. Fixed position, high-contrast gold pill
+        with a subtle pulse ring so it reads as tappable at a glance
+        rather than blending into the page.
+      */}
+      <a
+        href={`/events/${event.slug}#memories`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="tap-target fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-gold-500 px-4 py-3 text-sm font-medium text-navy-950 shadow-lg shadow-navy-950/20 transition-luxury duration-300 hover:brightness-110 sm:bottom-8 sm:right-8 sm:px-5"
+      >
+        <span className="absolute inset-0 -z-10 animate-ping rounded-full bg-gold-500/50" />
+        <Images size={18} />
+        <span>See memories shared by others</span>
+      </a>
     </SiteShell>
   );
 }

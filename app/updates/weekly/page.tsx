@@ -75,6 +75,20 @@ const CHANGES: ChangeGroup[] = [
         test:
           "On /start, get to the Create Account step, type an email (and optionally a phone number), then close the tab or navigate away without submitting — confirm an email lands at info@krushna53.com shortly after.",
       },
+      {
+        title: "Floating \"See memories shared by others\" button on the public upload page",
+        detail:
+          "A guest who lands directly on an event's public /memories upload link now sees a floating gold button that jumps straight to that event's Memory Wall (in a new tab), so they can browse what others have already shared without hunting for the link themselves.",
+        test:
+          "Open any event's /events/[slug]/memories page and confirm the floating \"See memories shared by others\" button appears bottom-right and opens the event homepage scrolled to Memory Wall.",
+      },
+      {
+        title: "AI-tool SEO pass — structured data, /llms.txt, explicit AI-crawler rules",
+        detail:
+          "Every event page now carries schema.org/Event structured data (name, date, venue, organizer), and the homepage carries Organization/WebSite data — so AI answer engines (ChatGPT, Perplexity, Google AI Overviews, Claude) can read accurate facts about an event instead of guessing from page text. Added a new /llms.txt summary page for AI assistants, and robots.ts now explicitly names the major AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, and others) alongside the existing rules.",
+        test:
+          "View source on any /events/[slug] page and confirm a <script type=\"application/ld+json\"> block with \"@type\":\"Event\" is present. Visit /llms.txt directly and confirm it loads as plain text.",
+      },
     ],
   },
   {

@@ -28,6 +28,27 @@ import type { EventRecord } from "@/types/event";
  * Settings "Link Preview Video" field for the honest framing shown to
  * organizers.
  */
+/**
+ * Resolves the single best "cover image" URL for an event — the same
+ * priority chain buildEventMetadata uses for its Open Graph image, but
+ * pulled out standalone so other consumers (lib/structured-data.ts's
+ * schema.org/Event JSON-LD) can reuse it without duplicating the
+ * fallback logic or re-implementing the try/catch-and-never-throw
+ * guarantee.
+ */
+export async function resolveEventCoverImage(event: EventRecord | null): Promise<string | null> {
+  if (!event) return null;
+  if (event.shareImagePath) {
+    return publicMediaUrl("gallery", event.shareImagePath);
+  }
+  try {
+    return await getCoverPhoto(event.id);
+  } catch (err) {
+    console.error("resolveEventCoverImage failed to load cover photo:", err);
+    return null;
+  }
+}
+
 export async function buildEventMetadata(event: EventRecord | null): Promise<Metadata> {
   const data = toEventDisplayData(event);
   const title = `${data.honoreeName} — ${data.eventTitle} | ${SITE_NAME}`;
@@ -35,17 +56,7 @@ export async function buildEventMetadata(event: EventRecord | null): Promise<Met
     ? `${data.occasion} · Hosted by ${data.hostedBy} · ${data.dayOfWeek}, ${data.date}`
     : `Hosted by ${data.hostedBy} · ${data.dayOfWeek}, ${data.date}`;
 
-  let coverImage: string | null = null;
-  if (event?.shareImagePath) {
-    coverImage = publicMediaUrl("gallery", event.shareImagePath);
-  } else if (event) {
-    try {
-      coverImage = await getCoverPhoto(event.id);
-    } catch (err) {
-      console.error("buildEventMetadata failed to load cover photo:", err);
-    }
-  }
-
+  const coverImage = await resolveEventCoverImage(event);
   const previewVideo = event?.shareVideoPath ? publicMediaUrl("gallery", event.shareVideoPath) : null;
 
   return {

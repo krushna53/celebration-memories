@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { PlatformMarketingContent } from "@/features/platform/platform-marketing-content";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import { logReferralVisit } from "@/services/referrals";
+import { buildOrganizationJsonLd, buildWebsiteJsonLd, JsonLd } from "@/lib/structured-data";
 
 /**
  * Site root — the platform's own marketing/info page, not any one
@@ -28,5 +29,11 @@ export default async function Home({ searchParams }: HomePageProps) {
     await logReferralVisit(ref);
   }
 
-  return <PlatformMarketingContent />;
+  return (
+    <>
+      <JsonLd data={buildOrganizationJsonLd()} />
+      <JsonLd data={buildWebsiteJsonLd()} />
+      <PlatformMarketingContent />
+    </>
+  );
 }

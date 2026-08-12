@@ -18,32 +18,70 @@ import { SITE_URL } from "@/lib/constants";
  * wall regardless). /pricing-legacy is superseded by /pricing and kept
  * around only for old links — excluded so it doesn't compete with the
  * canonical page for search ranking.
+ *
+ * AI-crawler bots (GPTBot, ClaudeBot, PerplexityBot, Google-Extended,
+ * CCBot, etc.) already inherit the wildcard "*" rule below — a bare
+ * `allow: "/"` covers them implicitly. They're also listed out by name
+ * here, with the exact same allow/disallow shape, purely to make the
+ * intent explicit: this site *wants* to be readable by AI answer
+ * engines and assistants (part of the "AI Tools based SEO" pass — see
+ * lib/structured-data.ts for the schema.org/Event + Organization/
+ * WebSite JSON-LD that gives those same crawlers structured facts
+ * instead of having to infer them from prose), and a future edit that
+ * narrows the wildcard rule won't silently narrow AI access too.
  */
+const PUBLIC_ALLOW = "/";
+const PUBLIC_DISALLOW = [
+  "/admin",
+  "/admin/*",
+  "/api/*",
+  "/invite",
+  "/invite/*",
+  "/event-day",
+  "/event-day/*",
+  "/games",
+  "/games/*",
+  "/start",
+  "/start/*",
+  "/plan",
+  "/plan/*",
+  "/pay",
+  "/pay/*",
+  "/business/dashboard",
+  "/pricing-legacy",
+];
+
+const AI_CRAWLER_USER_AGENTS = [
+  "GPTBot",
+  "ChatGPT-User",
+  "OAI-SearchBot",
+  "ClaudeBot",
+  "Claude-Web",
+  "anthropic-ai",
+  "PerplexityBot",
+  "Perplexity-User",
+  "Google-Extended",
+  "Applebot-Extended",
+  "Amazonbot",
+  "CCBot",
+  "Bytespider",
+  "meta-externalagent",
+];
+
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: [
-        "/admin",
-        "/admin/*",
-        "/api/*",
-        "/invite",
-        "/invite/*",
-        "/event-day",
-        "/event-day/*",
-        "/games",
-        "/games/*",
-        "/start",
-        "/start/*",
-        "/plan",
-        "/plan/*",
-        "/pay",
-        "/pay/*",
-        "/business/dashboard",
-        "/pricing-legacy",
-      ],
-    },
+    rules: [
+      {
+        userAgent: "*",
+        allow: PUBLIC_ALLOW,
+        disallow: PUBLIC_DISALLOW,
+      },
+      {
+        userAgent: AI_CRAWLER_USER_AGENTS,
+        allow: PUBLIC_ALLOW,
+        disallow: PUBLIC_DISALLOW,
+      },
+    ],
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
