@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { FileText, Plus } from "lucide-react";
+import { ArrowRight, FileText, Plus, Sparkles } from "lucide-react";
 
 import { getCurrentFormOwner, listFormsForOwner } from "@/services/custom-forms";
 import { FORM_CATEGORY_LABELS, isRsvpCategory } from "@/lib/form-category";
@@ -42,6 +42,29 @@ export default async function FormsDashboardPage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+        {/* Nudge for accounts still on the default "rsvp" role (migration
+            0051) toward the full event-site wizard — Build RSVP / Form is
+            a fine standalone tool, but most of what it's used for (a
+            wedding/birthday/etc. RSVP) is also just one piece of what
+            /start builds end-to-end (hero, gallery, timeline, guest
+            uploads, and RSVP together). Hidden once an account switches
+            to the "owner" role (DashboardRoleToggle) — at that point
+            they've already shown they want this as a standalone tool. */}
+        {owner.role === "rsvp" ? (
+          <Link
+            href="/start"
+            className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold-500/30 bg-gold-500/5 px-4 py-3 text-sm text-navy-950 transition-luxury duration-200 hover:border-gold-500/50 hover:bg-gold-500/10"
+          >
+            <span className="flex items-center gap-2">
+              <Sparkles size={16} className="shrink-0 text-gold-600" />
+              Not just for RSVP — want a full event website too?
+            </span>
+            <span className="flex items-center gap-1 font-medium text-gold-700">
+              Start building free <ArrowRight size={15} />
+            </span>
+          </Link>
+        ) : null}
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <DashboardRoleToggle role={owner.role} />
           <Link

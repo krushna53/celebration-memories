@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Thursday, August 13",
     items: [
       {
+        title: "Forms dashboard now points RSVP-only accounts toward the full event website",
+        detail:
+          "If your account is still on the default \"RSVP Forms Only\" view, /forms/dashboard now shows a banner up top — \"Not just for RSVP — want a full event website too? Start building free\" — linking to /start. It goes away once you switch to \"All Forms,\" since by then you've already shown Build RSVP / Form is what you actually wanted on its own.",
+        test:
+          "Create a new form-owner account (defaults to the RSVP role) and confirm the gold banner appears above the form list on /forms/dashboard and links to /start. Switch to \"All Forms\" and confirm the banner disappears.",
+      },
+      {
         title: "Fixed: confirmation email links landed on the bare homepage with no \"verified\" message",
         detail:
           "Clicking \"Confirm your email\" was landing on the homepage with a stray, unused ?code=... in the URL and no indication anything worked. The confirmation link pointed straight at /login instead of through /auth/callback, so the code that proves you clicked a real link never actually got exchanged for a session — and since /login is a new page, it likely wasn't yet allow-listed in Supabase, so it silently fell back to the homepage instead. Confirmation links for all three account types (host, vendor, form-owner) now route through /auth/callback first, which exchanges the code properly and signs you in automatically before landing on /login with the \"Email verified\" banner.",
