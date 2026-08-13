@@ -39,6 +39,20 @@ const CHANGES: ChangeGroup[] = [
     date: "Thursday, August 13",
     items: [
       {
+        title: "Navbar now shows \"Hi {email}\" and Logout when you're signed in",
+        detail:
+          "The site header used to always show a plain \"Login\" link, even if you were already signed in as an admin, vendor, or Build RSVP / Form account — clicking it just took you back to the login page for no reason. It now shows \"Hi {your email}\" (which takes you straight to your dashboard) and a Logout link instead, everywhere the header appears.",
+        test:
+          "Sign in as any account type, then visit a public page like the homepage or /discover and confirm the header shows \"Hi {email}\" + Logout instead of \"Login.\" Click \"Hi {email}\" and confirm it opens your dashboard.",
+      },
+      {
+        title: "Fixed: visiting /forms directly showed \"Category not found\"",
+        detail:
+          "everymoment.in/forms (no trailing page) was being caught by the Discover marketplace's category routing, which showed a confusing \"Category not found\" instead of anything related to Build RSVP / Form. It now redirects to /forms/new, same as the nav link.",
+        test:
+          "Visit everymoment.in/forms directly and confirm it lands on the \"Build RSVP / Form\" wizard instead of a \"Category not found\" page.",
+      },
+      {
         title: "Building a full event site now works from an existing vendor or Build RSVP / Form account",
         detail:
           "Clicking the \"Website\" pill on /forms/dashboard (or the \"Start building free\" banner) and going through /start no longer tries to create a brand-new account with the same email — since you're already signed in, it now offers \"Use Your Existing Account,\" which adds event-host access to the account you already have in one click. The \"Website\" pill itself shows a Lock icon and sends you to /start until your account actually manages an event; once it does, it's unlocked and goes straight to your Admin dashboard.",

@@ -376,6 +376,16 @@ stray `?code=` as a second line of defense, but the real fix is using
 sure `https://everymoment.in/auth/callback` (and your other domain(s))
 are in that Redirect URLs list in the Supabase dashboard.
 
+The public navbar (`components/layout/navbar.tsx`, wherever it's
+rendered with `showLogin`) reflects this same shared session — signed
+out shows the usual "Login" link, signed in shows "Hi {email}" (linking
+to whichever dashboard `resolveLoginDestinationAction()` resolves for
+that account) plus "Logout". This is client-side and session-driven
+(`features/auth/navbar-auth-status.tsx`, `supabase.auth.getUser()` +
+`onAuthStateChange`) rather than a prop threaded down from a Server
+Component, since the navbar renders on public marketing pages that
+have no per-request admin/business/form-owner lookup of their own.
+
 ### Admin access
 
 The dashboard lives at `/admin` and is protected by Supabase Auth plus

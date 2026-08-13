@@ -7,6 +7,7 @@ import { Menu, X } from "lucide-react";
 
 import { ACTIVE_EVENT, NAV_LINKS, SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { NavbarAuthStatus } from "@/features/auth/navbar-auth-status";
 
 /**
  * Sticky, translucent site navigation. Collapses into a slide-down sheet
@@ -22,7 +23,13 @@ interface NavbarProps {
   honoreeName?: string;
   /** Overrides the default in-page anchor links (#hero, #details, ...) — used by non-event pages like the platform homepage, whose sections don't match those anchor ids. */
   navLinks?: readonly NavLink[];
-  /** Shows a "Login" link pointing at /login (the shared admin/business/forms sign-in page — see features/auth/unified-login-form.tsx), e.g. on the platform homepage. Event pages leave this off since a guest has no reason to see it. */
+  /**
+   * Shows sign-in state, e.g. on the platform homepage — a "Login" link
+   * pointing at /login (the shared admin/business/forms sign-in page)
+   * when signed out, or "Hi {email}" + Logout when a session already
+   * exists (see features/auth/navbar-auth-status.tsx). Event pages
+   * leave this off since a guest has no reason to see it.
+   */
   showLogin?: boolean;
   /**
    * Start transparent (with light text) and only pick up the dark,
@@ -128,13 +135,8 @@ export function Navbar({
             </li>
           ))}
           {showLogin ? (
-            <li>
-              <Link
-                href="/login"
-                className="rounded-full border border-gold-400/40 px-4 py-1.5 text-sm tracking-wide text-gold-300 transition-luxury duration-300 hover:border-gold-400 hover:bg-gold-400/10"
-              >
-                Login
-              </Link>
+            <li className="flex items-center gap-4">
+              <NavbarAuthStatus variant="desktop" />
             </li>
           ) : null}
         </ul>
@@ -169,14 +171,8 @@ export function Navbar({
             </li>
           ))}
           {showLogin ? (
-            <li>
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="tap-target flex items-center text-sm text-gold-300"
-              >
-                Login
-              </Link>
+            <li className="flex flex-col items-start gap-1">
+              <NavbarAuthStatus variant="mobile" onNavigate={() => setOpen(false)} />
             </li>
           ) : null}
         </ul>
