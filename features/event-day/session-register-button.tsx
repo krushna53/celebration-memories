@@ -5,6 +5,7 @@ import { CheckCircle2, Loader2, QrCode } from "lucide-react";
 
 import { initiateSessionRegistrationAction, submitManualRsvpPaymentProofAction } from "@/features/rsvp-payment/actions";
 import type { InitiateSessionRegistrationResult } from "@/features/rsvp-payment/actions";
+import { CheckInCodeDisplay } from "@/features/event-day/check-in-code-display";
 import type { RsvpPrice } from "@/lib/rsvp-pricing";
 
 /**
@@ -22,6 +23,7 @@ export function SessionRegisterButton({
   returnPath,
   price,
   initiallyRegistered,
+  onRegistered,
 }: {
   eventId: string;
   scheduleItemId: string;
@@ -29,6 +31,8 @@ export function SessionRegisterButton({
   returnPath: string;
   price: RsvpPrice | null;
   initiallyRegistered: boolean;
+  /** Fires once registration completes synchronously in this session (free, or already-registered) — NOT for redirect-based/pending-review payments, which only finalize later. Used by session-share-gate.tsx (#106) to refresh the linked form's ?regId= attribution without a page reload. */
+  onRegistered?: () => void;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +55,7 @@ export function SessionRegisterButton({
     }
     if (outcome.alreadyRegistered || outcome.free) {
       setRegistered(true);
+      onRegistered?.();
       return;
     }
     if (outcome.provider === "stripe" || outcome.provider === "razorpay") {
@@ -74,9 +79,12 @@ export function SessionRegisterButton({
 
   if (registered) {
     return (
-      <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-emerald-300">
-        <CheckCircle2 size={13} /> You&rsquo;re registered for this session.
-      </p>
+      <div>
+        <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-emerald-300">
+          <CheckCircle2 size={13} /> You&rsquo;re registered for this session.
+        </p>
+        <CheckInCodeDisplay scheduleItemId={scheduleItemId} inviteeId={inviteeId} />
+      </div>
     );
   }
 

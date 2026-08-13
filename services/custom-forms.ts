@@ -384,6 +384,8 @@ export interface CustomFormResponse {
   formId: string;
   data: Record<string, string | string[]>;
   submittedAt: string;
+  /** Set when this response was submitted via a session's "extra questions" link (#106) — attributes the answers back to the guest's session_registrations row so the attendee table can show them inline. Null for every other form (the vast majority — Custom Form Builder forms have no event/session relationship by default). */
+  sessionRegistrationId: string | null;
 }
 
 interface CustomFormResponseRow {
@@ -391,16 +393,24 @@ interface CustomFormResponseRow {
   form_id: string;
   data: Record<string, string | string[]>;
   submitted_at: string;
+  session_registration_id: string | null;
 }
 
 function mapResponse(row: CustomFormResponseRow): CustomFormResponse {
-  return { id: row.id, formId: row.form_id, data: row.data ?? {}, submittedAt: row.submitted_at };
+  return {
+    id: row.id,
+    formId: row.form_id,
+    data: row.data ?? {},
+    submittedAt: row.submitted_at,
+    sessionRegistrationId: row.session_registration_id,
+  };
 }
 
-/** Public submission — only accepted while the form is published. Validates required fields server-side (never trust client-side validation alone). */
+/** Public submission — only accepted while the form is published. Validates required fields server-side (never trust client-side validation alone). sessionRegistrationId (#106) is optional context passed through the session share page's "extra questions" link — never trusted for anything beyond display attribution (it doesn't grant or require any access to submit). */
 export async function submitFormResponse(
   formId: string,
   data: Record<string, string | string[]>,
+  sessionRegistrationId?: string | null,
 ): Promise<{ id: string }> {
   const form = await getFormById(formId);
   if (!form || form.status !== "published") {
@@ -417,12 +427,29 @@ export async function submitFormResponse(
 
   const { data: inserted, error } = await supabaseAdmin()
     .from("custom_form_responses")
-    .insert({ form_id: formId, data })
+    .insert({ form_id: formId, data, session_registration_id: sessionRegistrationId ?? null })
     .select("id")
     .single<{ id: string }>();
 
   if (error || !inserted) throw new Error(`Failed to submit: ${error?.message}`);
   return { id: inserted.id };
+}
+
+/** One session's linked-form responses, keyed by session_registration_id — used by the attendee table (#106) to show each guest's answers inline. */
+export async function listResponsesBySessionRegistrationIds(registrationIds: string[]): Promise<Record<string, CustomFormResponse>> {
+  if (registrationIds.length === 0) return {};
+  const { data, error } = await supabaseAdmin()
+    .from("custom_form_responses")
+    .select("*")
+    .in("session_registration_id", registrationIds)
+    .returns<CustomFormResponseRow[]>();
+
+  if (error) throw new Error(`Failed to load linked responses: ${error.message}`);
+  const byRegistrationId: Record<string, CustomFormResponse> = {};
+  for (const row of data ?? []) {
+    if (row.session_registration_id) byRegistrationId[row.session_registration_id] = mapResponse(row);
+  }
+  return byRegistrationId;
 }
 
 export async function listResponses(formId: string): Promise<CustomFormResponse[]> {

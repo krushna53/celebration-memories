@@ -47,6 +47,7 @@ import {
   Video,
   Wand2,
   UserRoundPlus,
+  ClipboardCheck,
 } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -70,6 +71,7 @@ const NAV = [
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/admin/timeline", label: "Timeline", icon: Clock },
   { href: "/admin/event-day", label: "Event Day", icon: CalendarClock },
+  { href: "/admin/session-attendees", label: "Session Attendees", icon: ClipboardCheck },
   { href: "/admin/memories", label: "Memories", icon: ImageIcon },
   { href: "/admin/media-library", label: "Media Library", icon: LayoutPanelTop },
   { href: "/admin/planner", label: "Planner", icon: ListChecks },

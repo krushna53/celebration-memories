@@ -11,6 +11,7 @@ import { submitRsvpAction } from "@/features/rsvp/actions";
 import { logRsvpStartedAction } from "@/features/tracking/actions";
 import { NotificationPrompt } from "@/features/push/notification-prompt";
 import { RsvpPaymentPanel } from "@/features/rsvp-payment/rsvp-payment-panel";
+import { WorkshopSessionPicker } from "@/features/rsvp/workshop-session-picker";
 import type { RsvpPrice } from "@/lib/rsvp-pricing";
 import {
   ATTENDANCE_LABELS,
@@ -20,6 +21,7 @@ import {
   rsvpFormSchema,
   type RsvpFormValues,
 } from "@/types/rsvp";
+import type { ScheduleItemRecord } from "@/types/content";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 transition-luxury duration-200 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -29,13 +31,16 @@ const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-
 interface RsvpFormProps {
   token: string;
   eventId: string;
+  inviteeId: string;
   defaultValues: Partial<RsvpFormValues>;
   guestName: string;
   /** Non-null only when the event is a paid event with pricing configured (lib/rsvp-pricing.ts) — shows the payment step after a "coming" RSVP. */
   rsvpPrice?: RsvpPrice | null;
+  /** Schedule items that require registration (#106) — shown as an optional "join a session" step after a "coming" RSVP. Empty/omitted for events with no such sessions (the common case). */
+  workshopSessions?: ScheduleItemRecord[];
 }
 
-export function RsvpForm({ token, eventId, defaultValues, guestName, rsvpPrice }: RsvpFormProps) {
+export function RsvpForm({ token, eventId, inviteeId, defaultValues, guestName, rsvpPrice, workshopSessions }: RsvpFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submittedComing, setSubmittedComing] = useState<RsvpFormValues["coming"] | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -94,6 +99,11 @@ export function RsvpForm({ token, eventId, defaultValues, guestName, rsvpPrice }
         {submittedComing === "coming" && rsvpPrice ? (
           <div className="w-full text-left">
             <RsvpPaymentPanel source={{ mode: "token", token }} price={rsvpPrice} />
+          </div>
+        ) : null}
+        {submittedComing === "coming" && workshopSessions && workshopSessions.length > 0 ? (
+          <div className="w-full text-left">
+            <WorkshopSessionPicker eventId={eventId} inviteeId={inviteeId} sessions={workshopSessions} returnPath={`/invite/${token}`} />
           </div>
         ) : null}
         {submittedComing === "coming" || submittedComing === "maybe" ? (

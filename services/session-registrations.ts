@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { generateInviteToken } from "@/lib/tokens";
 
 export interface SessionRegistrationRecord {
   id: string;
@@ -9,6 +10,11 @@ export interface SessionRegistrationRecord {
   inviteeId: string;
   rsvpPaymentId: string | null;
   createdAt: string;
+  /** Short, easy-to-read/type check-in code (#106) — same alphabet as invite tokens, scanned as a QR or typed manually at the door. Set once at registration time; never regenerated (unlike share_token/draft_token), since re-issuing it would silently invalidate a QR a guest may have already saved/printed. */
+  qrToken: string;
+  /** Set when a host/organizer has checked this guest in for this session — null means not yet arrived. */
+  attendedAt: string | null;
+  checkedInBy: string | null;
 }
 
 interface SessionRegistrationRow {
@@ -18,6 +24,9 @@ interface SessionRegistrationRow {
   invitee_id: string;
   rsvp_payment_id: string | null;
   created_at: string;
+  qr_token: string;
+  attended_at: string | null;
+  checked_in_by: string | null;
 }
 
 function mapRow(row: SessionRegistrationRow): SessionRegistrationRecord {
@@ -28,6 +37,9 @@ function mapRow(row: SessionRegistrationRow): SessionRegistrationRecord {
     inviteeId: row.invitee_id,
     rsvpPaymentId: row.rsvp_payment_id,
     createdAt: row.created_at,
+    qrToken: row.qr_token,
+    attendedAt: row.attended_at,
+    checkedInBy: row.checked_in_by,
   };
 }
 
@@ -48,12 +60,60 @@ export async function createSessionRegistration(input: {
       schedule_item_id: input.scheduleItemId,
       invitee_id: input.inviteeId,
       rsvp_payment_id: input.rsvpPaymentId ?? null,
+      qr_token: generateInviteToken(),
     })
     .select("*")
     .single<SessionRegistrationRow>();
 
   if (error) throw new Error(`Failed to register: ${error.message}`);
   return mapRow(data);
+}
+
+/** Scan/lookup entry point for check-in (#106) — resolves a registration by its QR/check-in code, scoped to the session it's presented at so a code from a DIFFERENT session (or event) can't be used here. */
+export async function getRegistrationByQrToken(scheduleItemId: string, qrToken: string): Promise<SessionRegistrationRecord | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("session_registrations")
+    .select("*")
+    .eq("schedule_item_id", scheduleItemId)
+    .eq("qr_token", qrToken.trim().toUpperCase())
+    .maybeSingle<SessionRegistrationRow>();
+
+  if (error) throw new Error(`Failed to look up check-in code: ${error.message}`);
+  return data ? mapRow(data) : null;
+}
+
+export async function getRegistrationById(id: string): Promise<SessionRegistrationRecord | null> {
+  const { data, error } = await supabaseAdmin().from("session_registrations").select("*").eq("id", id).maybeSingle<SessionRegistrationRow>();
+  if (error) throw new Error(`Failed to look up registration: ${error.message}`);
+  return data ? mapRow(data) : null;
+}
+
+/** Marks a registration attended — idempotent (re-scanning an already-checked-in guest doesn't error or overwrite who originally checked them in). */
+export async function checkInRegistration(id: string, checkedInByAdminId: string): Promise<SessionRegistrationRecord> {
+  const { data, error } = await supabaseAdmin()
+    .from("session_registrations")
+    .update({ attended_at: new Date().toISOString(), checked_in_by: checkedInByAdminId })
+    .eq("id", id)
+    .is("attended_at", null)
+    .select("*")
+    .maybeSingle<SessionRegistrationRow>();
+
+  if (error) throw new Error(`Failed to check in: ${error.message}`);
+  if (data) return mapRow(data);
+
+  // Already checked in — return the existing row rather than erroring, so a double-scan is a harmless no-op.
+  const existing = await supabaseAdmin().from("session_registrations").select("*").eq("id", id).single<SessionRegistrationRow>();
+  if (existing.error) throw new Error(`Failed to check in: ${existing.error.message}`);
+  return mapRow(existing.data);
+}
+
+/** Reverses an accidental check-in. */
+export async function undoCheckIn(id: string): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .from("session_registrations")
+    .update({ attended_at: null, checked_in_by: null })
+    .eq("id", id);
+  if (error) throw new Error(`Failed to undo check-in: ${error.message}`);
 }
 
 export async function getSessionRegistration(scheduleItemId: string, inviteeId: string): Promise<SessionRegistrationRecord | null> {

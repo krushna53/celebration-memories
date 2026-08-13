@@ -3,7 +3,7 @@
 import { getScheduleItemByShareToken, findInviteeByPhoneForEventDay } from "@/services/event-day";
 import { getEventById } from "@/services/events";
 import { getFormById } from "@/services/custom-forms";
-import { listRegisteredScheduleItemIds } from "@/services/session-registrations";
+import { listRegisteredScheduleItemIds, getSessionRegistration } from "@/services/session-registrations";
 import type { ScheduleItemRecord } from "@/types/content";
 
 export type SessionShareVerifyResult =
@@ -18,6 +18,8 @@ export type SessionShareVerifyResult =
         alreadyRegistered: boolean;
         /** Public fill-page slug for the linked Custom Form Builder form (#106), if the host attached one — "extra questions" beyond name/phone. Null when none attached. */
         customFormSlug: string | null;
+        /** This guest's own session_registrations id, once registered — passed through to the linked form as ?regId= so the attendee table can attribute the answers. Null until registered. */
+        registrationId: string | null;
       };
     }
   | { success: false; error: string };
@@ -52,9 +54,10 @@ export async function verifySessionShareAccessAction(
       };
     }
 
-    const [registeredIds, customForm] = await Promise.all([
+    const [registeredIds, customForm, registration] = await Promise.all([
       listRegisteredScheduleItemIds(invitee.id),
       session.customFormId ? getFormById(session.customFormId) : Promise.resolve(null),
+      getSessionRegistration(session.id, invitee.id),
     ]);
 
     return {
@@ -67,6 +70,7 @@ export async function verifySessionShareAccessAction(
         session,
         alreadyRegistered: registeredIds.includes(session.id),
         customFormSlug: customForm?.slug ?? null,
+        registrationId: registration?.id ?? null,
       },
     };
   } catch (err) {

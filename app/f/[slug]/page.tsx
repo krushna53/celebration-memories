@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 interface PublicFormPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ regId?: string }>;
 }
 
 export async function generateMetadata({ params }: PublicFormPageProps): Promise<Metadata> {
@@ -27,8 +28,9 @@ export async function generateMetadata({ params }: PublicFormPageProps): Promise
  * message instead of the fields, so an old shared link doesn't just
  * silently break.
  */
-export default async function PublicFormPage({ params }: PublicFormPageProps) {
+export default async function PublicFormPage({ params, searchParams }: PublicFormPageProps) {
   const { slug } = await params;
+  const { regId } = await searchParams;
   const form = await getFormBySlug(slug);
 
   if (!form || form.status === "draft") {
@@ -58,7 +60,7 @@ export default async function PublicFormPage({ params }: PublicFormPageProps) {
         {form.description ? <p className="mt-2 text-sm text-navy-700/70">{form.description}</p> : null}
 
         <div className="mt-6">
-          <PublicFormFill formId={form.id} fields={fields} />
+          <PublicFormFill formId={form.id} fields={fields} sessionRegistrationId={regId ?? null} />
         </div>
       </div>
     </div>

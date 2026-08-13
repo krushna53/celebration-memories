@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { submitPublicRsvpAction } from "@/features/rsvp/public-rsvp-actions";
 import { logRsvpStartedAction } from "@/features/tracking/actions";
 import { RsvpPaymentPanel } from "@/features/rsvp-payment/rsvp-payment-panel";
+import { WorkshopSessionPicker } from "@/features/rsvp/workshop-session-picker";
 import type { RsvpPrice } from "@/lib/rsvp-pricing";
 import {
   ATTENDANCE_LABELS,
@@ -19,6 +20,7 @@ import {
   rsvpFormSchema,
   type RsvpFormValues,
 } from "@/types/rsvp";
+import type { ScheduleItemRecord } from "@/types/content";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 transition-luxury duration-200 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -31,6 +33,8 @@ interface PublicRsvpFormProps {
   honoreeName: string;
   /** Non-null only when the event is a paid event with pricing configured (lib/rsvp-pricing.ts) — shows the payment step after a "coming" RSVP. */
   rsvpPrice?: RsvpPrice | null;
+  /** Schedule items that require registration (#106) — shown as an optional "join a session" step after a "coming" RSVP. */
+  workshopSessions?: ScheduleItemRecord[];
 }
 
 /**
@@ -42,7 +46,7 @@ interface PublicRsvpFormProps {
  * honeypot field guards against bots since this page has no secret
  * token gating it.
  */
-export function PublicRsvpForm({ eventSlug, eventId, honoreeName, rsvpPrice }: PublicRsvpFormProps) {
+export function PublicRsvpForm({ eventSlug, eventId, honoreeName, rsvpPrice, workshopSessions }: PublicRsvpFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submittedName, setSubmittedName] = useState("");
   const [submittedInviteeId, setSubmittedInviteeId] = useState<string | null>(null);
@@ -109,6 +113,16 @@ export function PublicRsvpForm({ eventSlug, eventId, honoreeName, rsvpPrice }: P
         {submittedComing === "coming" && rsvpPrice && submittedInviteeId ? (
           <div className="w-full text-left">
             <RsvpPaymentPanel source={{ mode: "public", eventSlug, inviteeId: submittedInviteeId }} price={rsvpPrice} />
+          </div>
+        ) : null}
+        {submittedComing === "coming" && submittedInviteeId && workshopSessions && workshopSessions.length > 0 ? (
+          <div className="w-full text-left">
+            <WorkshopSessionPicker
+              eventId={eventId}
+              inviteeId={submittedInviteeId}
+              sessions={workshopSessions}
+              returnPath={`/events/${eventSlug}/rsvp`}
+            />
           </div>
         ) : null}
       </div>

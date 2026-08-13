@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getEventBySlug } from "@/services/events";
+import { listScheduleItems } from "@/services/event-day";
 import { formatEventDate, formatEventTime } from "@/lib/format";
 import { computeRsvpPrice } from "@/lib/rsvp-pricing";
 import { buildEventMetadata } from "@/lib/event-metadata";
@@ -53,6 +54,7 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
 
   const template = getTemplateBySlug(event.templateSlug);
   const rsvpPrice = computeRsvpPrice(event);
+  const workshopSessions = (await listScheduleItems(event.id)).filter((item) => item.requiresRegistration);
 
   // Only fetched/rendered for the event's own admin (owner, or the
   // client scoped to this event) — a real guest incurs no extra query
@@ -106,7 +108,13 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
         <div className="mx-auto mt-12 max-w-xl px-4 sm:px-6">
           {event.publicRsvpEnabled ? (
             <Reveal delay={0.1}>
-              <PublicRsvpForm eventSlug={slug} eventId={event.id} honoreeName={event.honoreeName} rsvpPrice={rsvpPrice} />
+              <PublicRsvpForm
+                eventSlug={slug}
+                eventId={event.id}
+                honoreeName={event.honoreeName}
+                rsvpPrice={rsvpPrice}
+                workshopSessions={workshopSessions}
+              />
             </Reveal>
           ) : (
             <Reveal delay={0.1}>

@@ -83,6 +83,43 @@ const SECTIONS: GuideSection[] = [
     ],
   },
   {
+    title: "Workshop Sessions",
+    items: [
+      {
+        label: "1. Turn on registration for a session",
+        body: "/admin/event-day → add a schedule item, then open its \"Registration & Pricing\" panel. Turn on \"Guests must register\" and, if it's paid, set a regular price (and an optional early-bird price + deadline). This is the same schedule the public Event Day page uses — nothing extra to set up for a session that's just informational.",
+      },
+      {
+        label: "2. Share just that session",
+        body: "In the same panel, under \"Share just this session,\" copy the session's own link. It's separate from your event's full Event Day link — good for sharing one paid workshop slot with just the guests you want, without exposing the rest of your schedule. Regenerating it invalidates the old link immediately.",
+      },
+      {
+        label: "3. Assign a Session Organizer (optional)",
+        body: "/admin/session-organizers → invite someone (by email invite, or set a password yourself) and pick which session(s) they can see. They get their own narrow dashboard at /admin/my-sessions — their session's share link, their own payment settings, check-in, and the attendee table — with no access to anything else about your event.",
+      },
+      {
+        label: "4. Payment method for the session",
+        body: "Either you (Event Settings → Payment Settings, with a session selected) or the Session Organizer themselves (My Sessions → My Payment Settings) can submit bank/UPI details or a Stripe/Razorpay/CCAvenue key. Either way, you (the owner) review and approve it before it goes live — same as the event's main payment method.",
+      },
+      {
+        label: "5. Extra questions (optional)",
+        body: "Build a form with the Custom Form Builder (/forms/new), then paste its link/slug into the session's \"Extra questions\" field. Guests see a link to it after registering for that session, and their answers show up as extra columns in the attendee table below.",
+      },
+      {
+        label: "6. Checking guests in",
+        body: "Once a guest registers, they get their own QR code + a plain check-in code. At the door, open the session on /admin/my-sessions (organizer) or /admin/session-attendees (host) and either scan their QR with your camera, type their code manually, or just tap \"Mark Attended\" next to their name in the table. Undo is one tap if you tap the wrong person.",
+      },
+      {
+        label: "7. The attendee table",
+        body: "/admin/session-attendees (host, every session) or /admin/my-sessions (organizer, their own session) shows who's registered, their payment status, whether they've checked in, and any linked form answers — with a one-click CSV export.",
+      },
+      {
+        label: "Session picker on the regular RSVP",
+        body: "If any session needs registration, guests who RSVP \"coming\" — on their personal invite link or the public RSVP page — automatically see an optional \"Join a Session\" step right after submitting, no separate link needed.",
+      },
+    ],
+  },
+  {
     title: "Templates",
     items: [
       {

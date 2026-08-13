@@ -8,6 +8,7 @@ import { logInviteOpened } from "@/services/tracking";
 import { formatEventDate, formatEventTime } from "@/lib/format";
 import { buildEventMetadata } from "@/lib/event-metadata";
 import { computeRsvpPrice } from "@/lib/rsvp-pricing";
+import { listScheduleItems } from "@/services/event-day";
 import { RsvpForm } from "@/features/rsvp/rsvp-form";
 import { MediaUploadsSection } from "@/features/uploads/media-uploads-section";
 import { EngagementOptInBanner } from "@/features/push/engagement-opt-in-banner";
@@ -46,6 +47,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   const { invitee, event, existingRsvp } = found;
   const rsvpPrice = computeRsvpPrice(event);
+  const workshopSessions = (await listScheduleItems(event.id)).filter((item) => item.requiresRegistration);
 
   const requestHeaders = await headers();
   await logInviteOpened(invitee.id, {
@@ -82,8 +84,10 @@ export default async function InvitePage({ params }: InvitePageProps) {
             <RsvpForm
               token={token}
               eventId={event.id}
+              inviteeId={invitee.id}
               guestName={invitee.name}
               rsvpPrice={rsvpPrice}
+              workshopSessions={workshopSessions}
               defaultValues={
                 existingRsvp
                   ? {

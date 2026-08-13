@@ -6,30 +6,22 @@ import { getAssignedSessionIds } from "@/services/session-organizers";
 import { getScheduleItemById } from "@/services/event-day";
 import { listAttendeesForSession } from "@/services/session-registrations";
 import { listRsvpPaymentsForScheduleItem } from "@/services/rsvp-payments";
+import { listFields, listResponsesBySessionRegistrationIds } from "@/services/custom-forms";
 import { CopySessionLinkButton } from "@/features/admin/my-sessions/copy-session-link-button";
+import { SessionAttendeeTable } from "@/features/admin/session-checkin/session-attendee-table";
 import type { ScheduleItemRecord } from "@/types/content";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Pending",
-  paid: "Paid",
-  failed: "Failed",
-  rejected: "Rejected",
-};
-
-const STATUS_CLASS: Record<string, string> = {
-  pending: "bg-gold-500/15 text-gold-700",
-  paid: "bg-emerald-500/15 text-emerald-700",
-  failed: "bg-red-500/15 text-red-700",
-  rejected: "bg-red-500/15 text-red-700",
-};
-
 /**
- * Read-only view for a session_organizer (#63) — their own assigned
- * Event Day session(s) only: who's registered, and (for paid sessions)
- * each guest's payment status. No approve/reject controls here — that
- * stays owner + client only (features/admin/rsvp-payments/actions.ts's
+ * View for a session_organizer (#63/#106) — their own assigned Event
+ * Day session(s) only: share their session's link, submit their own
+ * payment method, and now (#106) check guests in — by camera-scanned
+ * or manually-typed code, or a "Mark Attended" button — and see the
+ * full attendee table (registration + payment + attendance + any
+ * linked Custom Form Builder answers), with CSV export. Still no
+ * approve/reject control over payments themselves — that stays owner +
+ * client only (features/admin/rsvp-payments/actions.ts's
  * requireAdminForPayment explicitly blocks the session_organizer role).
  */
 export default async function MySessionsPage() {
@@ -53,11 +45,15 @@ export default async function MySessionsPage() {
   }
 
   const details = await Promise.all(
-    sessions.map(async (session) => ({
-      session,
-      attendees: await listAttendeesForSession(session.id),
-      payments: session.isPaidSession ? await listRsvpPaymentsForScheduleItem(session.id) : [],
-    })),
+    sessions.map(async (session) => {
+      const attendees = await listAttendeesForSession(session.id);
+      const [payments, customFormFields, responsesByRegistrationId] = await Promise.all([
+        session.isPaidSession ? listRsvpPaymentsForScheduleItem(session.id) : Promise.resolve([]),
+        session.customFormId ? listFields(session.customFormId) : Promise.resolve([]),
+        listResponsesBySessionRegistrationIds(attendees.map((a) => a.id)),
+      ]);
+      return { session, attendees, payments, customFormFields, responsesByRegistrationId };
+    }),
   );
 
   return (
@@ -66,7 +62,7 @@ export default async function MySessionsPage() {
       <p className="mt-1 text-sm text-navy-700/60">Attendees and payments for the session(s) you organize — view only.</p>
 
       <div className="mt-6 grid gap-8">
-        {details.map(({ session, attendees, payments }) => (
+        {details.map(({ session, attendees, payments, customFormFields, responsesByRegistrationId }) => (
           <div key={session.id} className="rounded-xl border border-navy-950/10 bg-white p-5">
             <p className="text-xs uppercase tracking-wide text-gold-600">
               {session.startLabel}
@@ -96,46 +92,17 @@ export default async function MySessionsPage() {
               </div>
             ) : null}
 
-            <div className="mt-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-navy-700/60">
-                Registered Attendees ({attendees.length})
-              </h3>
-              {attendees.length === 0 ? (
-                <p className="mt-2 text-sm text-navy-700/50">No one has registered yet.</p>
-              ) : (
-                <ul className="mt-2 divide-y divide-navy-950/5">
-                  {attendees.map((a) => (
-                    <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                      <span className="font-medium text-navy-950">{a.inviteeName}</span>
-                      <span className="text-navy-700/60">{a.inviteePhone || a.inviteeEmail || "—"}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <div className="mt-5 border-t border-navy-950/10 pt-4">
+              <SessionAttendeeTable
+                scheduleItemId={session.id}
+                sessionTitle={session.title}
+                isPaidSession={session.isPaidSession}
+                initialAttendees={attendees}
+                initialPayments={payments}
+                customFormFields={customFormFields}
+                responsesByRegistrationId={responsesByRegistrationId}
+              />
             </div>
-
-            {session.isPaidSession ? (
-              <div className="mt-5 border-t border-navy-950/10 pt-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-navy-700/60">Payments ({payments.length})</h3>
-                {payments.length === 0 ? (
-                  <p className="mt-2 text-sm text-navy-700/50">No payments yet.</p>
-                ) : (
-                  <ul className="mt-2 divide-y divide-navy-950/5">
-                    {payments.map((p) => (
-                      <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                        <span className="font-medium text-navy-950">{p.inviteeName}</span>
-                        <span className="text-navy-700/70">
-                          {p.currency} {p.amount}
-                        </span>
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASS[p.status] ?? ""}`}>
-                          {STATUS_LABEL[p.status] ?? p.status}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ) : null}
           </div>
         ))}
       </div>

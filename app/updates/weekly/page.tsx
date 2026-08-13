@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Thursday, August 13",
     items: [
       {
+        title: "New: QR/manual check-in, attendee table, and RSVP session picker for Workshop sessions",
+        detail:
+          "Phase 4–7 of the Workshop sessions build (following Phase 1–3 earlier today). Every session registration now gets its own short check-in code, shown to the guest as a QR image + plain code once they've registered. At the door, the host, client, or that session's own organizer can check guests in by camera-scanning the QR (Admin > My Sessions or the new Admin > Session Attendees), typing the code by hand, or tapping \"Mark Attended\" in a new attendee table — which also shows payment status and any linked Custom Form Builder answers, plus a one-click CSV export. And if an event has any session requiring registration, a guest who RSVPs \"coming\" (personal link or public RSVP page) now sees an optional \"Join A Session\" step right after submitting, no separate link needed.",
+        test:
+          "Admin > Event Day, turn on registration for a session, then open its share link in a private window and register as a guest — confirm a QR code + check-in code appear. As the host, go to Admin > Session Attendees, scan or type that code (or tap Mark Attended) and confirm the guest shows as Attended, then try Export CSV. Also RSVP as a fresh guest on /invite/[token] or the public RSVP page and confirm the \"Join A Session\" step appears after submitting.",
+      },
+      {
         title: "New: per-session share links, self-serve payment settings, and linked forms for Workshop sessions",
         detail:
           "Phase 1–3 of the Workshop sessions build. Each Event Day session that requires registration can now have its own guest-facing link (/session/[token]) separate from the event's full Event Day link — generate/copy it from Admin > Event Day or, self-serve, from a Session Organizer's own Admin > My Sessions. Session Organizers can now also submit their own session's payment method (bank/UPI, Stripe, Razorpay, CCAvenue) for the owner to approve, without needing the event host to do it for them. And a session can optionally be linked to a form built with the Custom Form Builder for extra registration questions beyond name/phone. Attendance/QR check-in and a dedicated attendee table are a later phase, not built yet.",

@@ -18,6 +18,7 @@ interface VerifiedData {
   session: ScheduleItemRecord;
   alreadyRegistered: boolean;
   customFormSlug: string | null;
+  registrationId: string | null;
 }
 
 /**
@@ -48,9 +49,18 @@ export function SessionShareGate({ token, honoreeName }: { token: string; honore
         session: result.data.session,
         alreadyRegistered: result.data.alreadyRegistered,
         customFormSlug: result.data.customFormSlug,
+        registrationId: result.data.registrationId,
       });
     } else {
       setError(result.error);
+    }
+  }
+
+  /** Re-runs verification after a synchronous (free/already-registered) registration completes, so the linked form's ?regId= attribution appears without a page reload — see SessionRegisterButton's onRegistered doc comment. */
+  async function refreshAfterRegistration() {
+    const result = await verifySessionShareAccessAction(token, name, phone);
+    if (result.success) {
+      setVerified((prev) => (prev ? { ...prev, alreadyRegistered: true, registrationId: result.data.registrationId } : prev));
     }
   }
 
@@ -80,6 +90,7 @@ export function SessionShareGate({ token, honoreeName }: { token: string; honore
                 returnPath={`/session/${token}`}
                 price={price}
                 initiallyRegistered={verified.alreadyRegistered}
+                onRegistered={refreshAfterRegistration}
               />
             ) : (
               <p className="mt-3 text-xs text-ivory-100/50">This session doesn&rsquo;t need registration — just come along.</p>
@@ -87,7 +98,7 @@ export function SessionShareGate({ token, honoreeName }: { token: string; honore
 
             {verified.customFormSlug ? (
               <a
-                href={`/f/${verified.customFormSlug}`}
+                href={verified.registrationId ? `/f/${verified.customFormSlug}?regId=${verified.registrationId}` : `/f/${verified.customFormSlug}`}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-4 flex items-center gap-1.5 text-xs font-medium text-gold-300 hover:text-gold-200"

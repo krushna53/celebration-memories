@@ -545,13 +545,11 @@ both get redirected away from every other admin page via
 nav-hiding alone doesn't stop someone from typing a restricted URL
 directly, so every sensitive page carries its own redirect guard too.
 
-### Workshop sessions: per-session share links, self-serve payments, and linked forms
+### Workshop sessions: per-session share links, self-serve payments, check-in, and the attendee table
 
 Extends the Event Day session system (#63) for events with multiple
-independently-run sessions (e.g. a multi-track workshop), added as
-Phase 1–3 of a larger planned build (#106 — attendance/QR check-in and
-a dedicated attendee table with custom-field columns are a later
-phase, not yet built):
+independently-run sessions (e.g. a multi-track workshop) — the full
+#106 build, Phase 1 through 7:
 
 - **Per-session share link.** Each schedule item that requires
   registration can have its own guest-facing link,
@@ -584,7 +582,47 @@ phase, not yet built):
   public link/slug into "Extra questions" on the session's pricing
   panel. Guests on the session's share page see a link to it after
   registering. This deliberately reuses the existing, more powerful
-  form system rather than a second, lighter field mechanism.
+  form system rather than a second, lighter field mechanism. Submitting
+  the linked form while already registered attaches the answers back to
+  that registration (`custom_form_responses.session_registration_id`,
+  passed through as `?regId=` on the form link) so they show up
+  attributed to the right guest in the attendee table below — the vast
+  majority of Custom Form Builder forms have no event relationship at
+  all, so this column stays null for everything except this one flow.
+- **QR / manual check-in.** Every registration gets its own short
+  check-in code (`session_registrations.qr_token`, an 8-character code
+  in the same easy-to-read alphabet as invite tokens) the moment it's
+  created — shown to the guest as a QR image plus the plain code,
+  right on the session's share page or Event Day page once they're
+  registered. At the door, whoever has check-in access for that
+  session (owner, the event's client, or that session's own
+  organizer — `requireCheckInAccessForSession()`) can scan it with
+  their camera (the browser's native `BarcodeDetector` API — Chrome/
+  Edge/Android; falls back gracefully where unsupported), type the
+  code in by hand, or just tap "Mark Attended" next to the guest's
+  name — all three call the same idempotent
+  `checkInRegistration()`, so a double-scan is a harmless no-op. QR
+  rendering is entirely client-side via `davidshimjs/qrcode.js` loaded
+  from cdnjs (the same `next/script` CDN pattern already used for
+  Microsoft Clarity) — no new npm dependency, no data sent anywhere
+  beyond the guest's own browser.
+- **Attendee table.** `/admin/session-attendees` (host, every session
+  in the event) and `/admin/my-sessions` (a session organizer, their
+  own assigned session) both render the same
+  `SessionAttendeeTable` — registration, payment status, attendance,
+  and any linked-form answers as extra columns, with one-click CSV
+  export (built entirely client-side from data already on the page,
+  nothing round-trips to a server for the export itself).
+- **Session picker on the standalone RSVP.** If an event has any
+  session requiring registration, a guest who RSVPs "coming" — on
+  their personal `/invite/[token]` link or the public
+  `/events/[slug]/rsvp` page — automatically sees an optional "Join A
+  Session" step right after submitting (`WorkshopSessionPicker`,
+  reusing `SessionRegisterButton` unchanged), no separate session link
+  needed.
+
+See `/admin/help`'s "Workshop Sessions" section for the full step-by-step
+walkthrough aimed at the person actually running an event through this.
 
 ### Managing every client's event as the owner
 

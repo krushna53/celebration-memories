@@ -214,6 +214,27 @@ export async function requireSessionOrganizerForSession(scheduleItemId: string):
 }
 
 /**
+ * Check-in gate for one session (#106) — deliberately wider than
+ * requireSessionOrganizerForSession above: owner, the event's own
+ * client, OR a session_organizer assigned to this specific session may
+ * all check guests in for it (running the door is exactly what a
+ * session organizer is for). scheduleItemId's event is resolved by the
+ * caller and passed in alongside the session's own id so this can
+ * reject a client from a DIFFERENT event without an extra lookup here.
+ */
+export async function requireCheckInAccessForSession(eventId: string, scheduleItemId: string): Promise<CurrentAdmin> {
+  const admin = await getCurrentAdmin();
+  if (!admin) throw new Error("Not authorized.");
+  if (admin.role === "owner") return admin;
+  if (admin.role === "client" && admin.eventId === eventId) return admin;
+  if (admin.role === "session_organizer") {
+    const assignedIds = await getAssignedSessionIds(admin.id);
+    if (assignedIds.includes(scheduleItemId)) return admin;
+  }
+  throw new Error("You don't have check-in access for this session.");
+}
+
+/**
  * Looks up the client-role admin scoped to a specific event, if one
  * exists — used by the wizard's payment step (features/start/actions/payment.ts)
  * to confirm the host actually finished account creation (i.e. clicked

@@ -373,6 +373,23 @@ export async function submitManualRsvpPaymentProofAction(
   return { success: true };
 }
 
+export type GetCheckInCodeResult = { success: true; qrToken: string } | { success: false; error: string };
+
+/**
+ * Fetches a guest's own check-in code (#106) once their registration is
+ * confirmed (SessionRegisterButton's "registered" state) — inviteeId is
+ * the guest's own id, already resolved server-side from their phone
+ * verification upstream (same trust model as initiateSessionRegistrationAction
+ * itself: an unauthenticated but hard-to-guess UUID, never accepted as
+ * proof of someone else's identity for anything beyond showing their
+ * own already-issued code).
+ */
+export async function getMyCheckInCodeAction(scheduleItemId: string, inviteeId: string): Promise<GetCheckInCodeResult> {
+  const registration = await getSessionRegistration(scheduleItemId, inviteeId);
+  if (!registration) return { success: false, error: "You aren't registered for this session yet." };
+  return { success: true, qrToken: registration.qrToken };
+}
+
 async function notifyPaymentSubmitted(paymentId: string) {
   const payment = await getRsvpPaymentById(paymentId);
   if (!payment) return;

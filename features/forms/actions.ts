@@ -33,6 +33,8 @@ export async function submitCustomFormResponseAction(
   formId: string,
   data: Record<string, string | string[]>,
   honeypot?: string,
+  /** Session share page context (#106) — see submitFormResponse's doc comment. */
+  sessionRegistrationId?: string | null,
 ): Promise<SubmitFormResult> {
   if (honeypot) {
     return { success: true };
@@ -46,7 +48,7 @@ export async function submitCustomFormResponseAction(
       return { success: false, error: rateLimit.reason ?? "Please try again later." };
     }
 
-    await submitFormResponse(formId, data);
+    await submitFormResponse(formId, data, sessionRegistrationId);
     await recordCustomFormSubmissionRequest(formId, ipHash);
 
     // Best-effort notification — never let an email failure block a

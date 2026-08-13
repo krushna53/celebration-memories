@@ -16,7 +16,16 @@ function isEmpty(value: FieldValue | undefined): boolean {
   return Array.isArray(value) ? value.length === 0 : value.trim() === "";
 }
 
-export function PublicFormFill({ formId, fields }: { formId: string; fields: CustomFormField[] }) {
+export function PublicFormFill({
+  formId,
+  fields,
+  sessionRegistrationId = null,
+}: {
+  formId: string;
+  fields: CustomFormField[];
+  /** Set when this form was reached via a session's "extra questions" link (#106) — attributes the response back to that registration. */
+  sessionRegistrationId?: string | null;
+}) {
   const [values, setValues] = useState<Record<string, FieldValue>>({});
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +56,7 @@ export function PublicFormFill({ formId, fields }: { formId: string; fields: Cus
     }
 
     setSubmitting(true);
-    const result = await submitCustomFormResponseAction(formId, values, honeypot);
+    const result = await submitCustomFormResponseAction(formId, values, honeypot, sessionRegistrationId);
     setSubmitting(false);
 
     if (!result.success) {
