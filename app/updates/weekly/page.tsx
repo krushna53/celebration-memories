@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Thursday, August 13",
     items: [
       {
+        title: "New: Platform Utilization dashboard — Supabase plan capacity + per-account cost",
+        detail:
+          "Admin > Platform Utilization (owner-only) shows how much of the Supabase plan is actually in use — database size, Storage, and Monthly Active Users, each against your plan's included quota — plus a plain-language \"capacity outlook\" estimate of how much more the platform can hold. Also flags that this project is still running Nano compute despite being on a paid plan, which costs the same as Micro but has much less headroom, and adds a per-account cost breakdown for both event hosts (extending the existing Usage page with a Storage-cost estimate) and Build RSVP / Form owners (new — AI generation cost attributed per account for the first time).",
+        test:
+          "Go to Admin > Platform Utilization as the owner and confirm the three capacity bars (Database, Storage, MAU) show real numbers with percentages, and the per-event and per-form-owner cost tables list real accounts.",
+      },
+      {
         title: "Navbar now shows \"Hi {email}\" and Logout when you're signed in",
         detail:
           "The site header used to always show a plain \"Login\" link, even if you were already signed in as an admin, vendor, or Build RSVP / Form account — clicking it just took you back to the login page for no reason. It now shows \"Hi {your email}\" (which takes you straight to your dashboard) and a Logout link instead, everywhere the header appears.",

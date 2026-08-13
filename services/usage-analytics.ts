@@ -9,6 +9,7 @@ import {
   SLIDESHOW_ASSUMED_MINUTES,
   VIDEO_EDITOR_ASSUMED_MINUTES,
 } from "@/lib/usage-pricing";
+import { PLATFORM_LIMITS } from "@/lib/platform-limits";
 
 /**
  * Cross-client usage + estimated spend, one row per live event, for the
@@ -42,6 +43,23 @@ export interface EventUsage {
   estimatedShotstackSlideshowCostUsd: number;
   estimatedShotstackVideoEditorCostUsd: number;
   estimatedShotstackCostUsd: number;
+  /**
+   * What this event's Storage bytes would cost *if* billed at
+   * Supabase's per-GB overage rate (lib/platform-limits.ts) — a proxy
+   * for "which client is the heaviest storage consumer," not a real
+   * charge (the platform's total Storage usage is almost always well
+   * under the plan's included allowance — see
+   * services/platform-capacity.ts for the actual-vs-included total).
+   * Deliberately NOT folded into estimatedTotalCostUsd below —
+   * /admin/usage's own copy already tells the owner "storage is shown
+   * separately below as bytes, not dollars" (a deliberate choice, since
+   * storage cost isn't a simple flat per-GB rate the way AI Image/
+   * Shotstack calls are), and changing that total's definition here
+   * would silently make that page's number wrong. Combined into a
+   * grand total only on /admin/platform-usage, which presents it
+   * explicitly as "if billed at the overage rate."
+   */
+  estimatedStorageCostUsd: number;
   estimatedTotalCostUsd: number;
 }
 
@@ -95,6 +113,8 @@ export async function getAllEventsUsage(): Promise<EventUsage[]> {
       const estimatedShotstackSlideshowCostUsd = slideshowCount * SLIDESHOW_ASSUMED_MINUTES * SHOTSTACK_COST_PER_MINUTE_USD;
       const estimatedShotstackVideoEditorCostUsd = videoEditorCount * VIDEO_EDITOR_ASSUMED_MINUTES * SHOTSTACK_COST_PER_MINUTE_USD;
       const estimatedShotstackCostUsd = estimatedShotstackSlideshowCostUsd + estimatedShotstackVideoEditorCostUsd;
+      const storageBytes = storageByEvent.get(event.id) ?? 0;
+      const estimatedStorageCostUsd = (storageBytes / (1024 * 1024 * 1024)) * PLATFORM_LIMITS.storageOverageUsdPerGb;
 
       return {
         eventId: event.id,
@@ -104,11 +124,12 @@ export async function getAllEventsUsage(): Promise<EventUsage[]> {
         aiImageCount,
         slideshowCount,
         videoEditorCount,
-        storageBytes: storageByEvent.get(event.id) ?? 0,
+        storageBytes,
         estimatedAiImageCostUsd,
         estimatedShotstackSlideshowCostUsd,
         estimatedShotstackVideoEditorCostUsd,
         estimatedShotstackCostUsd,
+        estimatedStorageCostUsd,
         estimatedTotalCostUsd: estimatedAiImageCostUsd + estimatedShotstackCostUsd,
       };
     })

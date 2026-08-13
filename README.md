@@ -1323,6 +1323,64 @@ number matters for accounting, and update the constant in
 `lib/usage-pricing.ts` if you override `OPENAI_TEXT_MODEL` to a
 different model or OpenAI's published rates change.
 
+### Platform Utilization
+
+`/admin/platform-usage` (owner-only) — "how much of the Supabase plan
+is in use, and which accounts are driving it." Two things that used to
+be separate concerns, combined:
+
+**Supabase plan capacity vs. actual usage** — database size, Storage,
+and Monthly Active Users, each shown as a progress bar against this
+project's Pro plan quotas (`lib/platform-limits.ts` — 8 GB DB, 100 GB
+Storage, 100,000 MAU, confirmed against supabase.com/pricing and the
+Compute and Disk docs on 2026-08-13). The real numbers come from three
+tiny SECURITY DEFINER Postgres functions
+(`supabase/migrations/0053_platform_capacity_stats.sql`, exposed only
+to `service_role` — `pg_database_size`, a `storage.objects` byte sum
+per bucket, and an `auth.users` count/28-day-active count) since none
+of that system-catalog data is reachable through the normal PostgREST
+table API this app otherwise uses. A "Capacity outlook" panel turns
+those into a plain-language estimate: at current per-event Storage
+averages, roughly how many total events this plan's included Storage
+allowance could hold before overage kicks in (cheap even then, at
+$0.0213/GB) — and a note that **compute** (CPU/connections), not any
+of these three quotas, is the real limiting factor for *simultaneous*
+traffic (many admins editing at once, or a surge of guests uploading
+during an event's live window).
+
+⚠️ **This project is running Nano compute despite being on a paid
+plan** — Supabase bills Nano at the same price as Micro for paid orgs
+but doesn't auto-upgrade it (a compute change causes brief downtime).
+The dashboard flags this directly: upgrading to Micro (Dashboard →
+Settings → Infrastructure) costs nothing extra and raises the
+recommended max database size from 0.5 GB to 10 GB. Compute tier isn't
+readable via any API this app can reach, so this flag is a hardcoded
+observation (`services/platform-capacity.ts`) — flip it to `false`
+once you've actually upgraded.
+
+**Per-account estimated cost**, split by product since each has
+genuinely different metered tools:
+- **Events/admins** — extends `/admin/usage`'s existing per-event AI
+  Image + Shotstack figures with a Storage-cost column: what that
+  event's Storage bytes would cost *if* billed at Supabase's per-GB
+  overage rate. This is a proxy for "who's the heaviest consumer," not
+  a real line item — deliberately kept out of `/admin/usage`'s own
+  `estimatedTotalCostUsd` (that page's copy already tells the owner
+  storage isn't included there) and only combined into a grand total
+  on this page.
+- **Build RSVP / Form owners** — new
+  (`services/form-ai-usage.ts`'s `getFormAiUsageByOwner`): the AI
+  form-generation spend `/admin/usage` already tracks platform-wide,
+  now attributed per form-owner account by joining
+  `custom_form_ai_generation_requests.form_id` → `custom_forms.owner_id`
+  → `form_owners`. Generations with no `form_id` (drafting a brand-new
+  form from a blank slate, before it exists yet) show as
+  "Unattributed" rather than being silently dropped, so the numbers
+  still sum to the platform-wide total.
+- **Marketplace vendors** — not shown; this product has no metered
+  paid-tool usage anywhere in the app today, so there's nothing to
+  attribute per account yet.
+
 ### Custom Domains
 
 **What exists today:** a host can ask for a custom domain from the
