@@ -139,18 +139,24 @@ export async function getFormAiGenerationUsage(): Promise<FormAiUsageSummary> {
 
 /**
  * Same generation rows as getFormAiGenerationUsage above, but grouped
- * by which form_owners account built the form generating them — for
- * the "per user account" cost breakdown on the owner-only Platform
- * Utilization dashboard (/admin/platform-usage). `mode: "prompt"`
- * generations happen before a form exists yet (they draft one from a
- * blank slate — see /forms/new's flow), so `form_id` is only ever
- * non-null for generations run *inside* an existing form's builder
- * (the "Build with AI" panel re-generating an already-created form).
- * Those with no `form_id` genuinely can't be attributed to an owner
- * (could be an anonymous visitor who never finished creating an
- * account) — counted separately as "unattributed" rather than silently
- * dropped, so the sum of every owner's cost plus this bucket always
- * equals getFormAiGenerationUsage's totalCostUsd.
+ * by which form_owners account built the form generating them — the
+ * "who actually spent this" breakdown, shown on both /admin/usage's
+ * Build RSVP / Form card and the Platform Utilization dashboard
+ * (/admin/platform-usage).
+ *
+ * Attribution chain: custom_form_ai_generation_requests.form_id ->
+ * custom_forms.owner_id -> form_owners. `form_id` is always set by
+ * both real call sites (features/forms/builder-actions.ts), since
+ * /forms/new creates the draft form row *before* offering AI
+ * generation — so a generation is only unattributable when the form
+ * it belongs to has no `owner_id` yet, i.e. whoever built it never
+ * finished creating an account (building a form deliberately needs no
+ * login — see services/custom-forms.ts's header comment). Those are
+ * reported per-form instead (`unattributedForms`), so even without an
+ * account name there's still something identifiable to point at,
+ * rather than an anonymous lump sum. Every owner's cost plus the
+ * unattributed bucket always equals getFormAiGenerationUsage's
+ * totalCostUsd.
  *
  * Two extra round-trips (custom_forms for the form_id -> owner_id
  * mapping, form_owners for display info) rather than a single joined
@@ -168,8 +174,18 @@ export interface FormOwnerAiUsage {
   costUsd: number;
 }
 
+/** A form whose builder never created an account — the closest thing to an identity available for those generations. */
+export interface UnattributedFormAiUsage {
+  formId: string;
+  title: string;
+  slug: string;
+  generationCount: number;
+  costUsd: number;
+}
+
 export interface FormAiUsageByOwnerResult {
   owners: FormOwnerAiUsage[];
+  unattributedForms: UnattributedFormAiUsage[];
   unattributedCount: number;
   unattributedCostUsd: number;
 }
@@ -181,7 +197,9 @@ export async function getFormAiUsageByOwner(): Promise<FormAiUsageByOwnerResult>
     admin.from("custom_form_ai_generation_requests").select("mode, model, input_tokens, output_tokens, form_id").returns<
       { mode: "prompt" | "image" | null; model: string | null; input_tokens: number; output_tokens: number; form_id: string | null }[]
     >(),
-    admin.from("custom_forms").select("id, owner_id").returns<{ id: string; owner_id: string | null }[]>(),
+    admin.from("custom_forms").select("id, owner_id, title, slug").returns<
+      { id: string; owner_id: string | null; title: string; slug: string }[]
+    >(),
     admin.from("form_owners").select("id, email, name").returns<{ id: string; email: string; name: string | null }[]>(),
   ]);
 
@@ -190,13 +208,14 @@ export async function getFormAiUsageByOwner(): Promise<FormAiUsageByOwnerResult>
       "getFormAiUsageByOwner failed:",
       requestsResult.error?.message ?? formsResult.error?.message ?? ownersResult.error?.message,
     );
-    return { owners: [], unattributedCount: 0, unattributedCostUsd: 0 };
+    return { owners: [], unattributedForms: [], unattributedCount: 0, unattributedCostUsd: 0 };
   }
 
-  const formOwnerMap = new Map((formsResult.data ?? []).map((f) => [f.id, f.owner_id]));
+  const formInfo = new Map((formsResult.data ?? []).map((f) => [f.id, f]));
   const ownerInfo = new Map((ownersResult.data ?? []).map((o) => [o.id, o]));
 
   const totalsByOwner = new Map<string, { count: number; tokens: number; costUsd: number }>();
+  const totalsByOrphanForm = new Map<string, { count: number; costUsd: number }>();
   let unattributedCount = 0;
   let unattributedCostUsd = 0;
 
@@ -204,11 +223,20 @@ export async function getFormAiUsageByOwner(): Promise<FormAiUsageByOwnerResult>
     const model = row.model ?? "gpt-5.6-luna";
     const costUsd = computeFormAiGenerationCostUsd(model, row.input_tokens, row.output_tokens);
     const tokens = row.input_tokens + row.output_tokens;
-    const ownerId = row.form_id ? (formOwnerMap.get(row.form_id) ?? null) : null;
+    const form = row.form_id ? formInfo.get(row.form_id) : undefined;
+    const ownerId = form?.owner_id ?? null;
 
     if (!ownerId) {
       unattributedCount += 1;
       unattributedCostUsd += costUsd;
+      // Group by the form itself where we still have one — an account-less
+      // builder is still identifiable by which form they were building.
+      if (row.form_id) {
+        const orphan = totalsByOrphanForm.get(row.form_id) ?? { count: 0, costUsd: 0 };
+        orphan.count += 1;
+        orphan.costUsd += costUsd;
+        totalsByOrphanForm.set(row.form_id, orphan);
+      }
       continue;
     }
 
@@ -233,5 +261,18 @@ export async function getFormAiUsageByOwner(): Promise<FormAiUsageByOwnerResult>
     })
     .sort((a, b) => b.costUsd - a.costUsd);
 
-  return { owners, unattributedCount, unattributedCostUsd };
+  const unattributedForms: UnattributedFormAiUsage[] = Array.from(totalsByOrphanForm.entries())
+    .map(([formId, totals]) => {
+      const form = formInfo.get(formId);
+      return {
+        formId,
+        title: form?.title ?? "Untitled Form",
+        slug: form?.slug ?? "",
+        generationCount: totals.count,
+        costUsd: totals.costUsd,
+      };
+    })
+    .sort((a, b) => b.costUsd - a.costUsd);
+
+  return { owners, unattributedForms, unattributedCount, unattributedCostUsd };
 }

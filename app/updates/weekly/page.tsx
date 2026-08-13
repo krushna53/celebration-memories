@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Thursday, August 13",
     items: [
       {
+        title: "Build RSVP / Form AI costs now show which account spent them",
+        detail:
+          "The \"Build RSVP / Form — AI Generation\" card on Admin > Usage showed totals, mode, and RSVP type but never said who actually ran the generations. It now has a \"By Account\" table listing each Build RSVP / Form account by name and email with their generation count, tokens, and estimated cost. Forms built by someone who hasn't signed up yet (building a form needs no login) can't name an account, so those rows are listed by form title with a \"No account yet\" tag instead of disappearing into an anonymous total.",
+        test:
+          "Admin > Usage > Build RSVP / Form — AI Generation, and confirm the new \"By Account\" table lists real account emails with per-account costs that add up to the Est. Cost figure at the top of the card.",
+      },
+      {
         title: "New: QR/manual check-in, attendee table, and RSVP session picker for Workshop sessions",
         detail:
           "Phase 4–7 of the Workshop sessions build (following Phase 1–3 earlier today). Every session registration now gets its own short check-in code, shown to the guest as a QR image + plain code once they've registered. At the door, the host, client, or that session's own organizer can check guests in by camera-scanning the QR (Admin > My Sessions or the new Admin > Session Attendees), typing the code by hand, or tapping \"Mark Attended\" in a new attendee table — which also shows payment status and any linked Custom Form Builder answers, plus a one-click CSV export. And if an event has any session requiring registration, a guest who RSVPs \"coming\" (personal link or public RSVP page) now sees an optional \"Join A Session\" step right after submitting, no separate link needed.",
