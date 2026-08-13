@@ -1075,6 +1075,22 @@ Picking Website leads to account creation
 picks which in `/admin/billing`) plus an optional promo code
 (`/admin/promo-codes`) that bypasses payment entirely.
 
+**Already signed in under a different product (Marketplace vendor,
+Build RSVP / Form) and decide to build a full event site?** The
+account step recognizes this (`getCurrentSupabaseUser()`,
+`features/auth/actions.ts` — distinguishes "no session" from "session,
+but no `admins` row yet") and shows "Use Your Existing Account" instead
+of `AccountForm`'s signup fields — one click
+(`claimDraftEventAsNewAdminAction`, `features/start/actions/event.ts`)
+adds a client role to the *same* account and links this draft event to
+it, no new password or duplicate identity. This is also how a
+client-role admin whose account has no event yet gets linked (existing
+`linkDraftEventToExistingAdminAction` — the new function is its
+sibling for someone who isn't an admin at all yet). Build RSVP / Form's
+dashboard (`/forms/dashboard`) has a "Website" pill in its header
+pointing here — shown locked (with a Lock icon) until the account has
+a client role, then unlocked and pointing straight at `/admin`.
+
 AI Image and Slideshow generation are capped per draft (5 images, 3
 renders — see `DRAFT_AI_IMAGE_LIMIT` / `DRAFT_SLIDESHOW_LIMIT` in
 `features/start/actions/`) since both call real, per-use-billed APIs

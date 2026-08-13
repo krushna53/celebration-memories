@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Thursday, August 13",
     items: [
       {
+        title: "Building a full event site now works from an existing vendor or Build RSVP / Form account",
+        detail:
+          "Clicking the \"Website\" pill on /forms/dashboard (or the \"Start building free\" banner) and going through /start no longer tries to create a brand-new account with the same email — since you're already signed in, it now offers \"Use Your Existing Account,\" which adds event-host access to the account you already have in one click. The \"Website\" pill itself shows a Lock icon and sends you to /start until your account actually manages an event; once it does, it's unlocked and goes straight to your Admin dashboard.",
+        test:
+          "Sign in as a Build RSVP / Form account, confirm the header shows a locked \"Website\" pill, click it, go through /start to Website goals, and on the account step confirm you see \"Use Your Existing Account\" rather than a signup form. Complete it and confirm the \"Website\" pill is now unlocked and opens /admin.",
+      },
+      {
         title: "Fixed: signing in as a vendor or Build RSVP / Form owner sometimes redirected to /start instead of the dashboard",
         detail:
           "A database trigger was creating a hidden, unintended \"host\" record for every confirmed sign-up on the platform — not just people actually registering as an event host — including Marketplace vendor and Build RSVP / Form accounts. That hidden record made the new shared sign-in page think those accounts were unfinished event registrations and send them to /start instead of their real dashboard. The trigger now only fires for genuine host registrations. Two accounts caught by this during testing were fixed directly.",

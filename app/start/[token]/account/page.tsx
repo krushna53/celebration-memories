@@ -4,8 +4,9 @@ import { CheckCircle2 } from "lucide-react";
 
 import { getDraftEventByToken } from "@/services/event-drafts";
 import { getCurrentAdmin } from "@/services/admin-auth";
+import { getCurrentSupabaseUser } from "@/features/auth/actions";
 import { AccountForm } from "@/features/start/account-form";
-import { linkDraftEventFormAction } from "@/features/start/actions/event";
+import { claimDraftEventFormAction, linkDraftEventFormAction } from "@/features/start/actions/event";
 import { signOutAction } from "@/features/admin/auth-actions";
 
 export const dynamic = "force-dynamic";
@@ -85,6 +86,51 @@ export default async function WizardAccountPage({ params, searchParams }: Wizard
           <form action={signOutAction} className="mt-3">
             <button type="submit" className="text-sm text-navy-700/60 underline underline-offset-4 hover:text-navy-950">
               Sign out and create a new account
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Signed in under the shared Supabase Auth project, but with no
+  // `admins` row at all yet — most commonly a Marketplace vendor or
+  // Build RSVP / Form account clicking through from their own
+  // dashboard's "want a full event website too?" prompt. AccountForm's
+  // signUp() below has no idea this session exists and would fail as
+  // "already registered" for this same email — offer to add a client
+  // role to the account they're already signed into instead. See
+  // features/start/actions/event.ts's claimDraftEventAsNewAdminAction.
+  const existingUser = await getCurrentSupabaseUser();
+  if (existingUser) {
+    return (
+      <div className="mx-auto max-w-sm px-4 py-16">
+        <div className="rounded-2xl border border-navy-950/10 bg-white p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold-500/15 text-gold-600">
+            <CheckCircle2 size={22} />
+          </div>
+          <h1 className="mt-4 font-display text-2xl text-navy-950">Use Your Existing Account</h1>
+          <p className="mt-2 text-sm text-navy-700/60">
+            You&rsquo;re signed in as{" "}
+            <strong className="text-navy-950">{existingUser.email ?? "your account"}</strong>. We&rsquo;ll add
+            event-host access to it — no new account or password needed.
+          </p>
+          {linkError ? (
+            <p className="mt-4 text-sm font-medium text-red-600" role="alert">
+              {linkError}
+            </p>
+          ) : null}
+          <form action={claimDraftEventFormAction.bind(null, token)} className="mt-6">
+            <button
+              type="submit"
+              className="tap-target w-full rounded-lg bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:brightness-110"
+            >
+              Continue as {existingUser.email ?? "this account"}
+            </button>
+          </form>
+          <form action={signOutAction} className="mt-3">
+            <button type="submit" className="text-sm text-navy-700/60 underline underline-offset-4 hover:text-navy-950">
+              Not you? Sign out and create a new account
             </button>
           </form>
         </div>

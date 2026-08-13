@@ -7,6 +7,7 @@ import { updateEvent, type EventUpdateInput } from "@/services/events";
 import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseServer } from "@/lib/supabase/server";
 import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
 import type { AdminActionResult, DetectTimezoneResult } from "@/features/admin/event-settings/actions";
 
@@ -197,6 +198,89 @@ export async function linkDraftEventToExistingAdminAction(token: string): Promis
  */
 export async function linkDraftEventFormAction(token: string): Promise<void> {
   const result = await linkDraftEventToExistingAdminAction(token);
+  if (!result.success) {
+    redirect(`${wizardStepHref(token, "account")}?linkError=${encodeURIComponent(result.error)}`);
+  }
+}
+
+/**
+ * Sibling of linkDraftEventToExistingAdminAction for the case that
+ * function can't handle: someone already signed in under this shared
+ * Supabase Auth project, but with no `admins` row at all yet — a
+ * Marketplace vendor or Build RSVP / Form account (see
+ * features/auth/actions.ts's getCurrentSupabaseUser(), which is what
+ * distinguishes this from "no session"), or a bare Google sign-in with
+ * no product row anywhere. AccountForm's signUp() has no idea a
+ * session already exists and fails as "already registered" for the
+ * same email — this instead gives the *existing* account a client
+ * role scoped to this draft event, i.e. "when they decide to create an
+ * event, assign them a client role" for someone who already has an
+ * identity on the platform.
+ *
+ * Re-resolves both the draft event (from `token`) and the signed-in
+ * user (from the actual server session), never trusting anything the
+ * client passed in. If an admins row was created for this id in the
+ * meantime (e.g. a race between two tabs), falls back to the same
+ * update-only, never-overwrite-an-existing-link path
+ * linkDraftEventToExistingAdminAction uses, rather than a conflicting
+ * insert.
+ */
+export async function claimDraftEventAsNewAdminAction(token: string): Promise<AdminActionResult> {
+  const event = await requireDraftEvent(token);
+
+  const supabase = await supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: "You've been signed out — please sign in again." };
+  }
+
+  const { data: existingAdmin, error: lookupError } = await supabaseAdmin()
+    .from("admins")
+    .select("id, event_id")
+    .eq("id", user.id)
+    .maybeSingle<{ id: string; event_id: string | null }>();
+
+  if (lookupError) {
+    return { success: false, error: "Something went wrong checking your account." };
+  }
+
+  if (existingAdmin) {
+    if (existingAdmin.event_id) {
+      return {
+        success: false,
+        error: "This account is already linked to a different event. Sign out first if you meant to start a new one.",
+      };
+    }
+    const { error: linkError } = await supabaseAdmin()
+      .from("admins")
+      .update({ event_id: event.id })
+      .eq("id", user.id)
+      .is("event_id", null);
+    if (linkError) {
+      return { success: false, error: "Something went wrong linking this event to your account." };
+    }
+  } else {
+    const meta = user.user_metadata as { full_name?: string; name?: string } | null;
+    const { error: insertError } = await supabaseAdmin().from("admins").insert({
+      id: user.id,
+      email: user.email ?? "",
+      name: meta?.full_name ?? meta?.name ?? user.email ?? "Host",
+      role: "client",
+      event_id: event.id,
+    });
+    if (insertError) {
+      return { success: false, error: "Something went wrong setting up your account for this event." };
+    }
+  }
+
+  redirect(wizardStepHref(token, "payment"));
+}
+
+/** Thin `<form action={...}>`-compatible wrapper around claimDraftEventAsNewAdminAction — see linkDraftEventFormAction's doc comment, same reasoning. */
+export async function claimDraftEventFormAction(token: string): Promise<void> {
+  const result = await claimDraftEventAsNewAdminAction(token);
   if (!result.success) {
     redirect(`${wizardStepHref(token, "account")}?linkError=${encodeURIComponent(result.error)}`);
   }

@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, FileText, Plus, Sparkles } from "lucide-react";
+import { ArrowRight, FileText, Globe, Lock, Plus, Sparkles } from "lucide-react";
 
 import { getCurrentFormOwner, listFormsForOwner } from "@/services/custom-forms";
+import { getCurrentAdmin } from "@/services/admin-auth";
 import { FORM_CATEGORY_LABELS, isRsvpCategory } from "@/lib/form-category";
 import { SignOutButton } from "@/features/forms/sign-out-button";
 import { DashboardRoleToggle } from "@/features/forms/dashboard-role-toggle";
@@ -26,18 +27,45 @@ export default async function FormsDashboardPage() {
   const owner = await getCurrentFormOwner();
   if (!owner) redirect("/login");
 
+  // Same Supabase Auth user id as `owner.id` — checks whether this
+  // account also has a client role (an `admins` row), i.e. an actual
+  // event site to manage. Most form-owner accounts don't, which is the
+  // whole point of the locked "Website" pill below: Build RSVP / Form
+  // has no event of its own, so there's nothing real to link to until
+  // they go through /start — see claimDraftEventAsNewAdminAction
+  // (features/start/actions/event.ts) for what happens when they do.
+  const admin = await getCurrentAdmin();
+
   const allForms = await listFormsForOwner(owner.id);
   const forms = owner.role === "rsvp" ? allForms.filter((form) => isRsvpCategory(form.category)) : allForms;
 
   return (
     <div className="min-h-screen bg-ivory-100">
       <header className="border-b border-navy-950/10 bg-navy-950 px-4 py-4 sm:px-6">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <div>
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
+          <div className="min-w-0">
             <p className="font-display text-lg text-gold-300">Your Forms</p>
-            <p className="text-xs text-ivory-100/50">{owner.email}</p>
+            <p className="truncate text-xs text-ivory-100/50">{owner.email}</p>
           </div>
-          <SignOutButton />
+          <div className="flex shrink-0 items-center gap-2">
+            {admin ? (
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 rounded-full border border-gold-400/30 px-3 py-1.5 text-xs font-medium text-gold-300 transition-luxury duration-200 hover:border-gold-400 hover:bg-gold-400/10"
+              >
+                <Globe size={13} /> Website
+              </Link>
+            ) : (
+              <Link
+                href="/start"
+                title="You don't have an event website yet — start building one free"
+                className="flex items-center gap-1.5 rounded-full border border-ivory-100/15 px-3 py-1.5 text-xs font-medium text-ivory-100/50 transition-luxury duration-200 hover:border-ivory-100/30 hover:text-ivory-100/80"
+              >
+                <Lock size={12} /> Website
+              </Link>
+            )}
+            <SignOutButton />
+          </div>
         </div>
       </header>
 
@@ -49,8 +77,11 @@ export default async function FormsDashboardPage() {
             /start builds end-to-end (hero, gallery, timeline, guest
             uploads, and RSVP together). Hidden once an account switches
             to the "owner" role (DashboardRoleToggle) — at that point
-            they've already shown they want this as a standalone tool. */}
-        {owner.role === "rsvp" ? (
+            they've already shown they want this as a standalone tool —
+            or once they already have a client role (`admin` truthy),
+            since the header's "Website" pill above covers that case
+            without repeating the same pitch. */}
+        {owner.role === "rsvp" && !admin ? (
           <Link
             href="/start"
             className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold-500/30 bg-gold-500/5 px-4 py-3 text-sm text-navy-950 transition-luxury duration-200 hover:border-gold-500/50 hover:bg-gold-500/10"
