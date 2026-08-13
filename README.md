@@ -437,6 +437,26 @@ which the register page sets from the `?event=` param. An unverified
 signup has a Supabase Auth account but no `admins` row, so
 `/login` just bounces them back with no dashboard access.
 
+⚠️ **`handle_new_confirmed_admin` only fires when `draft_event_id` is
+present** in the confirming user's metadata (migration
+`0052_admin_trigger_host_signups_only.sql`) — it used to fire for
+*every* confirmed signup on this project, including Marketplace vendor
+and Build RSVP / Form signups, which never set `draft_event_id` since
+they aren't creating a host account at all. That left them with a
+stray `admins` row (`role: 'client'`, `event_id: null`) that went
+unnoticed for a long time because each product had its own login page
+checking only its own table — but once `/login`'s
+`resolveLoginDestinationAction()` started checking `admins` first (see
+"Shared sign-in" above), that stray row won the priority check every
+time, sending vendors/form-owners to `/admin`, which then bounced them
+to `/start` (a client-role admin with no event). Only the two
+password-based host-signup flows (`/admin/register`, the `/start`
+wizard's account step) ever set `draft_event_id`, so they're
+unaffected. Google-OAuth host signups can't set custom `signUp()`
+metadata either — `app/auth/callback/route.ts`'s `link_event_id`
+branch now creates the `admins` row itself instead of relying on this
+trigger having already done it.
+
 ⚠️ **`/admin/register` with no `?event=` param refuses to show the
 signup form at all** — this used to be silently allowed, and it was a
 real security bug: a client-role admin with no event assigned fell

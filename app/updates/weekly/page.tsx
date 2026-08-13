@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Thursday, August 13",
     items: [
       {
+        title: "Fixed: signing in as a vendor or Build RSVP / Form owner sometimes redirected to /start instead of the dashboard",
+        detail:
+          "A database trigger was creating a hidden, unintended \"host\" record for every confirmed sign-up on the platform — not just people actually registering as an event host — including Marketplace vendor and Build RSVP / Form accounts. That hidden record made the new shared sign-in page think those accounts were unfinished event registrations and send them to /start instead of their real dashboard. The trigger now only fires for genuine host registrations. Two accounts caught by this during testing were fixed directly.",
+        test:
+          "Sign in with a vendor or Build RSVP / Form account and confirm it lands on /business/dashboard or /forms/dashboard, not /start.",
+      },
+      {
         title: "Forms dashboard now points RSVP-only accounts toward the full event website",
         detail:
           "If your account is still on the default \"RSVP Forms Only\" view, /forms/dashboard now shows a banner up top — \"Not just for RSVP — want a full event website too? Start building free\" — linking to /start. It goes away once you switch to \"All Forms,\" since by then you've already shown Build RSVP / Form is what you actually wanted on its own.",
