@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { AlertCircle, Building2, CheckCircle2, Clock, CreditCard, Landmark, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { submitEventPaymentSettingsAction } from "@/features/admin/event-payment-settings/actions";
+import { submitEventPaymentSettingsAction, submitSessionOrganizerPaymentSettingsAction } from "@/features/admin/event-payment-settings/actions";
 import type { EventPaymentProvider, EventPaymentSettingsInput, EventPaymentSettingsRecord } from "@/types/event-payment-settings";
 
 const PROVIDERS: { value: EventPaymentProvider; label: string; icon: typeof Landmark }[] = [
@@ -37,12 +37,15 @@ export function PaymentSettingsForm({
   existing,
   scheduleItemId = null,
   sessionTitle = null,
+  asSessionOrganizer = false,
 }: {
   eventId: string;
   existing: EventPaymentSettingsRecord | null;
   /** Set only when this form is the per-session override (#63) — otherwise this edits the event's own default. */
   scheduleItemId?: string | null;
   sessionTitle?: string | null;
+  /** #106: a session_organizer submitting their own assigned session's payment settings — routes through submitSessionOrganizerPaymentSettingsAction (assignment-checked) instead of submitEventPaymentSettingsAction (which rejects that role outright). Always paired with a non-null scheduleItemId. */
+  asSessionOrganizer?: boolean;
 }) {
   const [provider, setProvider] = useState<EventPaymentProvider>(existing?.provider ?? "manual");
   const [bankDetails, setBankDetails] = useState(existing?.bankDetails ?? "");
@@ -79,7 +82,10 @@ export function PaymentSettingsForm({
     }
 
     startTransition(async () => {
-      const result = await submitEventPaymentSettingsAction(eventId, input, scheduleItemId);
+      const result =
+        asSessionOrganizer && scheduleItemId
+          ? await submitSessionOrganizerPaymentSettingsAction(scheduleItemId, input)
+          : await submitEventPaymentSettingsAction(eventId, input, scheduleItemId);
       if (result.success) {
         setSuccess(true);
         setStripeSecretKey("");

@@ -33,6 +33,8 @@ interface ScheduleItemRow {
   early_bird_deadline: string | null;
   currency: string;
   created_at: string;
+  share_token: string | null;
+  custom_form_id: string | null;
 }
 
 interface MenuItemRow {
@@ -62,6 +64,8 @@ function mapScheduleItem(row: ScheduleItemRow): ScheduleItemRecord {
     earlyBirdDeadline: row.early_bird_deadline,
     currency: row.currency || "INR",
     createdAt: row.created_at,
+    shareToken: row.share_token,
+    customFormId: row.custom_form_id,
   };
 }
 
@@ -291,6 +295,72 @@ export async function getEventByEventDayToken(
     eventTitle: data.event_title,
     menuStyle: data.menu_style,
   };
+}
+
+// ---------------------------------------------------------------------
+// Per-session share link + custom form linkage (#106)
+// ---------------------------------------------------------------------
+
+/**
+ * Returns this ONE session's own guest-facing share link token,
+ * generating and saving one on first use — the #106 counterpart to
+ * ensureEventDayShareToken above, scoped to a single schedule item
+ * instead of the whole event's schedule/menu. Lets a session organizer
+ * share just their session (e.g. one paid workshop slot) without
+ * exposing the rest of the event's Event Day link.
+ */
+export async function ensureSessionShareToken(scheduleItemId: string): Promise<string> {
+  const { data, error } = await supabaseAdmin()
+    .from("event_schedule_items")
+    .select("share_token")
+    .eq("id", scheduleItemId)
+    .maybeSingle<{ share_token: string | null }>();
+
+  if (error) throw new Error(`Failed to load session link: ${error.message}`);
+  if (data?.share_token) return data.share_token;
+
+  const token = generateDraftToken();
+  const { error: updateError } = await supabaseAdmin()
+    .from("event_schedule_items")
+    .update({ share_token: token })
+    .eq("id", scheduleItemId);
+  if (updateError) throw new Error(`Failed to create session link: ${updateError.message}`);
+  return token;
+}
+
+/** Issues a fresh token for one session, invalidating the old link. */
+export async function regenerateSessionShareToken(scheduleItemId: string): Promise<string> {
+  const token = generateDraftToken();
+  const { error } = await supabaseAdmin()
+    .from("event_schedule_items")
+    .update({ share_token: token })
+    .eq("id", scheduleItemId);
+  if (error) throw new Error(`Failed to regenerate session link: ${error.message}`);
+  return token;
+}
+
+/** Resolves a schedule item by its own per-session share link token (#106) — the guest-facing /session/[token] page's entry point. */
+export async function getScheduleItemByShareToken(token: string): Promise<ScheduleItemRecord | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("event_schedule_items")
+    .select("*")
+    .eq("share_token", token)
+    .maybeSingle<ScheduleItemRow>();
+
+  if (error) {
+    console.error("getScheduleItemByShareToken failed:", error.message);
+    return null;
+  }
+  return data ? mapScheduleItem(data) : null;
+}
+
+/** Attaches (or clears, with customFormId null) a Custom Form Builder form to a session for extra registration questions — see the doc comment on ScheduleItemRecord.customFormId. */
+export async function setScheduleItemCustomForm(scheduleItemId: string, customFormId: string | null): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .from("event_schedule_items")
+    .update({ custom_form_id: customFormId })
+    .eq("id", scheduleItemId);
+  if (error) throw new Error(`Failed to update linked form: ${error.message}`);
 }
 
 /** Strips everything but digits, so "+91 98765 43210" and "9876543210" match — same normalization as services/public-rsvp.ts. */

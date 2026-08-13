@@ -2,9 +2,10 @@ import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
-import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
+import { shouldRedirectOrganizerAway } from "@/lib/admin-roles";
 import { getEventPaymentSettingsSummary } from "@/services/event-payment-settings";
 import { getScheduleItemById } from "@/services/event-day";
+import { getAssignedSessionIds } from "@/services/session-organizers";
 import { PaymentSettingsForm } from "@/features/admin/event-payment-settings/payment-settings-form";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +17,41 @@ interface PageProps {
 export default async function EventPaymentSettingsRequestPage({ searchParams }: PageProps) {
   const { scheduleItemId } = await searchParams;
   const admin = await getCurrentAdmin();
-  if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
+
+  // #106: a session_organizer may reach this page ONLY for their own
+  // assigned session, via a scheduleItemId that's re-verified against
+  // session_organizer_assignments — never the general owner/client flow
+  // below (resolveAdminEvent doesn't apply to this role at all).
+  if (admin?.role === "session_organizer") {
+    if (!scheduleItemId) redirect("/admin/my-sessions");
+    const assignedIds = await getAssignedSessionIds(admin.id);
+    if (!assignedIds.includes(scheduleItemId)) redirect("/admin/my-sessions");
+
+    const session = await getScheduleItemById(scheduleItemId);
+    if (!session) redirect("/admin/my-sessions");
+
+    const existing = await getEventPaymentSettingsSummary(session.eventId, scheduleItemId);
+
+    return (
+      <div>
+        <h1 className="font-display text-2xl text-navy-950">Payment Settings — {session.title}</h1>
+        <p className="mt-1 text-sm text-navy-700/60">
+          Set how guests pay to register for your session. The site owner reviews every submission before it goes live.
+        </p>
+        <div className="mt-6">
+          <PaymentSettingsForm
+            eventId={session.eventId}
+            existing={existing}
+            scheduleItemId={session.id}
+            sessionTitle={session.title}
+            asSessionOrganizer
+          />
+        </div>
+      </div>
+    );
+  }
+
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
     return <p className="text-navy-700">No event is assigned to this account yet.</p>;

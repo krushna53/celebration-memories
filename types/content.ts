@@ -59,6 +59,10 @@ export interface ScheduleItemRecord {
   earlyBirdDeadline: string | null;
   currency: string;
   createdAt: string;
+  /** Guest-facing link for JUST this session (#106) — /session/[shareToken] — distinct from the event's own /event-day/[token] link. Null until first generated (ensureSessionShareToken). */
+  shareToken: string | null;
+  /** Optional link to a Custom Form Builder form (#106) for extra registration questions beyond name/phone — reuses the standalone form system rather than a dedicated field mechanism. Null = no extra questions. */
+  customFormId: string | null;
 }
 
 export type MenuDietaryTag = "veg" | "non_veg" | "vegan" | "jain";

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdminForEvent } from "@/services/admin-auth";
+import { requireAdminForEvent, requireSessionOrganizerForSession } from "@/services/admin-auth";
 import { updateEvent } from "@/services/events";
 import {
   createMenuItem,
@@ -10,12 +10,16 @@ import {
   deleteMenuItem,
   deleteScheduleItem,
   ensureEventDayShareToken,
+  ensureSessionShareToken,
   getMenuItemById,
   getScheduleItemById,
   regenerateEventDayShareToken,
+  regenerateSessionShareToken,
+  setScheduleItemCustomForm,
   updateMenuItem,
   updateScheduleItem,
 } from "@/services/event-day";
+import { getFormBySlug } from "@/services/custom-forms";
 import type { MenuDietaryTag } from "@/types/content";
 
 function revalidateEventDayPaths() {
@@ -133,6 +137,62 @@ export async function deleteScheduleItemAction(id: string) {
     return { success: true as const };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+// ---------------------------------------------------------------------
+// Per-session share link + linked custom form (#106)
+// ---------------------------------------------------------------------
+
+export async function getSessionShareLinkAction(scheduleItemId: string) {
+  try {
+    await requireAdminForScheduleItem(scheduleItemId);
+    const token = await ensureSessionShareToken(scheduleItemId);
+    return { success: true as const, data: token };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed to load session link." };
+  }
+}
+
+export async function regenerateSessionShareLinkAction(scheduleItemId: string) {
+  try {
+    await requireAdminForScheduleItem(scheduleItemId);
+    const token = await regenerateSessionShareToken(scheduleItemId);
+    revalidateEventDayPaths();
+    return { success: true as const, data: token };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed to regenerate session link." };
+  }
+}
+
+/** Self-serve counterpart to getSessionShareLinkAction for a session_organizer (#106) fetching/generating THEIR OWN assigned session's link from /admin/my-sessions — requireSessionOrganizerForSession re-verifies the assignment instead of requireAdminForEvent (which rejects the role outright). */
+export async function getMySessionShareLinkAction(scheduleItemId: string) {
+  try {
+    await requireSessionOrganizerForSession(scheduleItemId);
+    const token = await ensureSessionShareToken(scheduleItemId);
+    return { success: true as const, data: token };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed to load session link." };
+  }
+}
+
+/** Links a session to an existing Custom Form Builder form by its public slug (e.g. "form-a1b2c3d4") — an empty slug clears the link. Only ever resolves the slug to an id server-side, never trusts a raw id from the client. */
+export async function setScheduleItemCustomFormAction(scheduleItemId: string, slug: string) {
+  try {
+    await requireAdminForScheduleItem(scheduleItemId);
+    const trimmed = slug.trim();
+    if (!trimmed) {
+      await setScheduleItemCustomForm(scheduleItemId, null);
+      revalidateEventDayPaths();
+      return { success: true as const };
+    }
+    const form = await getFormBySlug(trimmed);
+    if (!form) return { success: false as const, error: "No form found with that link/slug." };
+    await setScheduleItemCustomForm(scheduleItemId, form.id);
+    revalidateEventDayPaths();
+    return { success: true as const };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed to link form." };
   }
 }
 

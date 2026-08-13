@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Copy, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Copy, Link2, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { MenuDietaryTag, MenuItemRecord, ScheduleItemRecord } from "@/types/content";
@@ -12,7 +12,10 @@ import {
   deleteMenuItemAction,
   deleteScheduleItemAction,
   getEventDayShareLinkAction,
+  getSessionShareLinkAction,
   regenerateEventDayShareLinkAction,
+  regenerateSessionShareLinkAction,
+  setScheduleItemCustomFormAction,
   updateEventDaySettingsAction,
   updateMenuItemAction,
   updateScheduleItemAction,
@@ -86,6 +89,58 @@ export function EventDayManager({
     >
   >({});
   const [pricingBusyId, setPricingBusyId] = useState<string | null>(null);
+
+  // Per-session share link + linked custom form (#106) — same shared-link pattern as the event-wide one above, scoped to one schedule item.
+  const [sessionShareTokens, setSessionShareTokens] = useState<Record<string, string | null>>(
+    Object.fromEntries(initialScheduleItems.map((item) => [item.id, item.shareToken])),
+  );
+  const [sessionLinkBusyId, setSessionLinkBusyId] = useState<string | null>(null);
+  const [customFormSlugDrafts, setCustomFormSlugDrafts] = useState<Record<string, string>>({});
+  const [customFormBusyId, setCustomFormBusyId] = useState<string | null>(null);
+  const [linkedFormIds, setLinkedFormIds] = useState<Record<string, string | null>>(
+    Object.fromEntries(initialScheduleItems.map((item) => [item.id, item.customFormId])),
+  );
+
+  async function handleCopySessionLink(item: ScheduleItemRecord) {
+    let token = sessionShareTokens[item.id];
+    if (!token) {
+      setSessionLinkBusyId(item.id);
+      const result = await getSessionShareLinkAction(item.id);
+      setSessionLinkBusyId(null);
+      if (!result.success) {
+        alert(result.error);
+        return;
+      }
+      token = result.data;
+      setSessionShareTokens((prev) => ({ ...prev, [item.id]: token as string }));
+    }
+    if (origin) navigator.clipboard.writeText(`${origin}/session/${token}`);
+  }
+
+  async function handleRegenerateSessionLink(item: ScheduleItemRecord) {
+    if (!confirm("Regenerate this session's link? The old link will stop working immediately.")) return;
+    setSessionLinkBusyId(item.id);
+    const result = await regenerateSessionShareLinkAction(item.id);
+    setSessionLinkBusyId(null);
+    if (result.success) {
+      setSessionShareTokens((prev) => ({ ...prev, [item.id]: result.data }));
+    } else {
+      alert(result.error);
+    }
+  }
+
+  async function handleSaveCustomForm(item: ScheduleItemRecord) {
+    const slug = customFormSlugDrafts[item.id] ?? "";
+    setCustomFormBusyId(item.id);
+    const result = await setScheduleItemCustomFormAction(item.id, slug);
+    setCustomFormBusyId(null);
+    if (result.success) {
+      setLinkedFormIds((prev) => ({ ...prev, [item.id]: slug.trim() ? "linked" : null }));
+      setCustomFormSlugDrafts((prev) => ({ ...prev, [item.id]: "" }));
+    } else {
+      alert(result.error);
+    }
+  }
 
   function pricingDraftFor(item: ScheduleItemRecord) {
     return (
@@ -546,6 +601,50 @@ export function EventDayManager({
                         </Link>
                       ) : null}
                     </div>
+
+                    {draft.requiresRegistration ? (
+                      <div className="mt-4 space-y-3 border-t border-navy-950/10 pt-4">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-navy-700/60">Share just this session</p>
+                          <p className="mt-0.5 text-xs text-navy-700/50">
+                            A dedicated link for this session only — share it with just the guests you want, instead of your whole
+                            Event Day link. Also assign it to a Session Organizer under Session Organizers so they can share it and
+                            manage their own payment method.
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => handleCopySessionLink(item)} disabled={sessionLinkBusyId === item.id}>
+                              {sessionLinkBusyId === item.id ? <Loader2 className="animate-spin" size={13} /> : <Copy size={13} />} Copy Link
+                            </Button>
+                            {sessionShareTokens[item.id] ? (
+                              <Button type="button" variant="ghost" size="sm" onClick={() => handleRegenerateSessionLink(item)} disabled={sessionLinkBusyId === item.id}>
+                                <RefreshCw size={13} /> Regenerate
+                              </Button>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-navy-700/60">
+                            Extra questions (optional) {linkedFormIds[item.id] ? <span className="text-emerald-600">· Linked</span> : null}
+                          </p>
+                          <p className="mt-0.5 text-xs text-navy-700/50">
+                            Paste the link/slug of a form you built with the Custom Form Builder (/forms/new) to collect extra
+                            details from guests registering for this session. Leave blank and save to unlink.
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <input
+                              placeholder="e.g. form-a1b2c3d4"
+                              value={customFormSlugDrafts[item.id] ?? ""}
+                              onChange={(e) => setCustomFormSlugDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                              className={`${inputClasses} max-w-xs`}
+                            />
+                            <Button type="button" variant="outline" size="sm" onClick={() => handleSaveCustomForm(item)} disabled={customFormBusyId === item.id}>
+                              {customFormBusyId === item.id ? <Loader2 className="animate-spin" size={13} /> : <Link2 size={13} />} Save
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

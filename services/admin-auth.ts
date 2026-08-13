@@ -2,6 +2,7 @@ import "server-only";
 
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getAssignedSessionIds } from "@/services/session-organizers";
 
 /**
  * "session_organizer" (added for #63) is a much narrower role than
@@ -183,6 +184,33 @@ export async function requireAdminForOrganizerArea(eventId: string, area: Organi
   if (admin.role === "organizer") return admin;
   if (admin.role === "client" && area !== "checkin") return admin;
   throw new Error("You don't have access to this feature.");
+}
+
+/**
+ * Narrow, additive gate for #106: a session_organizer may submit their
+ * OWN session's payment settings (self-serve, still owner-approved
+ * before it goes live — see submitEventPaymentSettings's doc comment),
+ * even though requireAdminForEvent above rejects the role outright for
+ * every other event-scoped action. Deliberately a separate function
+ * rather than widening requireAdminForEvent itself, so that choke
+ * point's guarantee ("session_organizer can never reach a client-level
+ * mutation") stays true for every action except this one, explicitly
+ * opted-in action. Re-verifies the assignment server-side via
+ * session_organizer_assignments — never trusts that a scheduleItemId
+ * from a client belongs to the caller.
+ */
+export async function requireSessionOrganizerForSession(scheduleItemId: string): Promise<CurrentAdmin> {
+  const admin = await getCurrentAdmin();
+  if (!admin) throw new Error("Not authorized.");
+  if (admin.role !== "session_organizer") {
+    throw new Error("This action is only available to session organizer accounts.");
+  }
+
+  const assignedIds = await getAssignedSessionIds(admin.id);
+  if (!assignedIds.includes(scheduleItemId)) {
+    throw new Error("You aren't assigned to this session.");
+  }
+  return admin;
 }
 
 /**

@@ -534,7 +534,9 @@ without handing out full `client` access:
   payments (`/admin/my-sessions`), managed from
   `/admin/session-organizers`. Predates `organizer` and solves a
   different problem (per-session volunteers on event day, not ongoing
-  event management).
+  event management). One exception to "read-only" (#106, see "Workshop
+  sessions" below): a session_organizer can submit — but not
+  approve — their own assigned session's payment settings.
 
 Both roles' allow-lists live in `lib/admin-roles.ts`
 (`ORGANIZER_ALLOWED_PATHS` / `SESSION_ORGANIZER_ALLOWED_PATHS`), and
@@ -542,6 +544,47 @@ both get redirected away from every other admin page via
 `shouldRedirectOrganizerAway` / `shouldRedirectSessionOrganizerAway` —
 nav-hiding alone doesn't stop someone from typing a restricted URL
 directly, so every sensitive page carries its own redirect guard too.
+
+### Workshop sessions: per-session share links, self-serve payments, and linked forms
+
+Extends the Event Day session system (#63) for events with multiple
+independently-run sessions (e.g. a multi-track workshop), added as
+Phase 1–3 of a larger planned build (#106 — attendance/QR check-in and
+a dedicated attendee table with custom-field columns are a later
+phase, not yet built):
+
+- **Per-session share link.** Each schedule item that requires
+  registration can have its own guest-facing link,
+  `/session/[shareToken]`, independent of the event's full
+  `/event-day/[token]` link — generate/copy it from the "Registration
+  & Pricing" panel on `/admin/event-day` (host), or from
+  `/admin/my-sessions` (the session organizer themselves, self-serve).
+  A guest opening it enters name + phone (checked against the same
+  invitee list as everywhere else — this never creates a new invitee),
+  then sees just that one session's details and a Register/Pay button
+  — the exact same registration + payment flow Event Day already used
+  (`initiateSessionRegistrationAction`), just reached through a
+  narrower link. Regenerating a link (invalidating the old one) stays
+  host-only, to avoid an organizer silently breaking a link they've
+  already shared.
+- **Session organizer self-serve payment settings.** A
+  session_organizer can now submit their own assigned session's
+  payment method (bank/UPI, Stripe, Razorpay, or CCAvenue) from
+  `/admin/my-sessions` → "My Payment Settings" — the same form and
+  owner-approval workflow clients already use
+  (`/admin/payment-settings-request`), just re-scoped: a new
+  `requireSessionOrganizerForSession()` check
+  (`services/admin-auth.ts`) re-verifies the assignment against
+  `session_organizer_assignments` server-side before allowing the
+  submission, rather than widening the general `requireAdminForEvent`
+  gate that rejects this role everywhere else.
+- **Linked custom form.** A session can optionally be linked to a form
+  built with the standalone Custom Form Builder (`/forms/new`) for
+  extra registration questions beyond name/phone — paste the form's
+  public link/slug into "Extra questions" on the session's pricing
+  panel. Guests on the session's share page see a link to it after
+  registering. This deliberately reuses the existing, more powerful
+  form system rather than a second, lighter field mechanism.
 
 ### Managing every client's event as the owner
 

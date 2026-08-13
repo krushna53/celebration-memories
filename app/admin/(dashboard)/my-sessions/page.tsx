@@ -1,8 +1,12 @@
+import Link from "next/link";
+import { Landmark } from "lucide-react";
+
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { getAssignedSessionIds } from "@/services/session-organizers";
 import { getScheduleItemById } from "@/services/event-day";
 import { listAttendeesForSession } from "@/services/session-registrations";
 import { listRsvpPaymentsForScheduleItem } from "@/services/rsvp-payments";
+import { CopySessionLinkButton } from "@/features/admin/my-sessions/copy-session-link-button";
 import type { ScheduleItemRecord } from "@/types/content";
 
 export const dynamic = "force-dynamic";
@@ -76,6 +80,20 @@ export default async function MySessionsPage() {
               </p>
             ) : session.requiresRegistration ? (
               <p className="mt-1 text-xs text-navy-700/50">Free — registration required</p>
+            ) : null}
+
+            {session.requiresRegistration ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <CopySessionLinkButton scheduleItemId={session.id} initialToken={session.shareToken} />
+                {session.isPaidSession ? (
+                  <Link
+                    href={`/admin/payment-settings-request?scheduleItemId=${session.id}`}
+                    className="flex items-center gap-1.5 rounded-full border border-navy-950/10 px-3 py-1.5 text-xs font-medium text-navy-700 hover:border-gold-500/40 hover:text-gold-700"
+                  >
+                    <Landmark size={13} /> My Payment Settings
+                  </Link>
+                ) : null}
+              </div>
             ) : null}
 
             <div className="mt-4">

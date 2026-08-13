@@ -39,6 +39,13 @@ const CHANGES: ChangeGroup[] = [
     date: "Thursday, August 13",
     items: [
       {
+        title: "New: per-session share links, self-serve payment settings, and linked forms for Workshop sessions",
+        detail:
+          "Phase 1–3 of the Workshop sessions build. Each Event Day session that requires registration can now have its own guest-facing link (/session/[token]) separate from the event's full Event Day link — generate/copy it from Admin > Event Day or, self-serve, from a Session Organizer's own Admin > My Sessions. Session Organizers can now also submit their own session's payment method (bank/UPI, Stripe, Razorpay, CCAvenue) for the owner to approve, without needing the event host to do it for them. And a session can optionally be linked to a form built with the Custom Form Builder for extra registration questions beyond name/phone. Attendance/QR check-in and a dedicated attendee table are a later phase, not built yet.",
+        test:
+          "As the host: Admin > Event Day > expand a session's Registration & Pricing, turn on registration, copy its session link, and open it in a private window — confirm it shows just that session (not the whole schedule) and lets you register. As a Session Organizer: Admin > My Sessions > Copy My Session Link (should work even before the host generates one), and My Payment Settings > submit a payment method, then confirm it shows up pending review on Admin > Payment Approvals for the owner.",
+      },
+      {
         title: "New: Platform Utilization dashboard — Supabase plan capacity + per-account cost",
         detail:
           "Admin > Platform Utilization (owner-only) shows how much of the Supabase plan is actually in use — database size, Storage, and Monthly Active Users, each against your plan's included quota — plus a plain-language \"capacity outlook\" estimate of how much more the platform can hold. Also flags that this project is still running Nano compute despite being on a paid plan, which costs the same as Micro but has much less headroom, and adds a per-account cost breakdown for both event hosts (extending the existing Usage page with a Storage-cost estimate) and Build RSVP / Form owners (new — AI generation cost attributed per account for the first time).",

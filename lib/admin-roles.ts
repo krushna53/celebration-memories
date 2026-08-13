@@ -40,10 +40,19 @@ export const CLIENT_ALLOWED_PATHS: readonly string[] = [
 
 /**
  * A session_organizer (#63) is scoped even narrower than "client" —
- * just their own assigned session(s)' attendee list + payments, read-
- * only. No Overview, no Event Settings, no anything else — this is a
- * genuinely separate, much shorter allow-list, not a subset check
+ * just their own assigned session(s)' attendee list + payments, mostly
+ * read-only. No Overview, no Event Settings, no anything else — this is
+ * a genuinely separate, much shorter allow-list, not a subset check
  * against CLIENT_ALLOWED_PATHS.
+ *
+ * "/admin/payment-settings-request" is deliberately NOT in this list —
+ * it stays out of the top nav (that generic tab, shared with
+ * owner/client, has no session context to link to) even though a
+ * session_organizer CAN reach it directly with a ?scheduleItemId= for
+ * their own assigned session (#106) — that page does its own
+ * assignment check (getAssignedSessionIds) regardless of nav
+ * visibility, and features/admin/my-sessions links there per-session
+ * with the id already filled in.
  */
 export const SESSION_ORGANIZER_ALLOWED_PATHS: readonly string[] = ["/admin/my-sessions", "/admin/help"];
 
