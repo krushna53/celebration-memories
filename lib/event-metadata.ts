@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { getCoverPhoto } from "@/services/gallery-photos";
 import { publicMediaUrl } from "@/services/uploads";
 import { toEventDisplayData } from "@/lib/event-display";
-import { SITE_NAME } from "@/lib/constants";
+import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import type { EventRecord } from "@/types/event";
 
 /**
@@ -57,6 +57,10 @@ export async function buildEventMetadata(event: EventRecord | null): Promise<Met
     : `Hosted by ${data.hostedBy} · ${data.dayOfWeek}, ${data.date}`;
 
   const coverImage = await resolveEventCoverImage(event);
+  // Event-specific imagery is ideal, but a shared link must never be
+  // unbranded. This route generates the EveryMoment logo/name card used by
+  // the root layout, and works as a raster image in social crawlers.
+  const shareImage = coverImage ?? new URL("/opengraph-image", SITE_URL).toString();
   const previewVideo = event?.shareVideoPath ? publicMediaUrl("gallery", event.shareVideoPath) : null;
 
   return {
@@ -66,14 +70,18 @@ export async function buildEventMetadata(event: EventRecord | null): Promise<Met
       title,
       description,
       type: "website",
-      images: coverImage ? [{ url: coverImage, width: 1200, height: 900 }] : undefined,
+      images: [
+        coverImage
+          ? { url: coverImage, width: 1200, height: 900 }
+          : { url: shareImage, width: 1200, height: 630, alt: `${SITE_NAME} logo` },
+      ],
       videos: previewVideo ? [{ url: previewVideo, secureUrl: previewVideo, type: "video/mp4" }] : undefined,
     },
     twitter: {
-      card: coverImage ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title,
       description,
-      images: coverImage ? [coverImage] : undefined,
+      images: [shareImage],
     },
   };
 }

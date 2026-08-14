@@ -21,10 +21,10 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * since server.url below takes over entirely.
  *
  * Set NEXT_PUBLIC_SITE_URL / update the fallback in lib/constants.ts if
- * the production domain ever changes; this reads the same constant so
- * the two never drift apart.
+ * the production domain ever changes. The fallback matches the deployed
+ * EveryMoment domain so release builds do not open an old site.
  */
-const PRODUCTION_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://everymoment.me";
+const PRODUCTION_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://everymoment.in";
 
 const config: CapacitorConfig = {
   appId: "me.everymoment.app",
@@ -32,11 +32,11 @@ const config: CapacitorConfig = {
   webDir: "public",
   server: {
     url: PRODUCTION_URL,
-    // Allows the WebView to navigate to everymoment.me itself, plus
+    // Allows the WebView to navigate to everymoment.in itself, plus
     // Supabase (auth/storage/API) and any Shotstack-served render URLs
     // the Video Editor and Slideshow features load. androidScheme
     // stays "https" (the default) — no cleartext traffic anywhere.
-    allowNavigation: ["everymoment.me", "*.everymoment.me", "*.supabase.co", "*.shotstack.io", "cdn.shotstack.io"],
+    allowNavigation: ["everymoment.in", "*.everymoment.in", "*.supabase.co", "*.shotstack.io", "cdn.shotstack.io"],
   },
   ios: {
     contentInset: "automatic",

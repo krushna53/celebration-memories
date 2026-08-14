@@ -14,10 +14,11 @@ export const SITE_NAME = "EveryMoment";
  * (app/sitemap.ts, app/robots.ts). Set NEXT_PUBLIC_SITE_URL once you
  * have a real production domain — falls back to a placeholder so local
  * dev and preview builds don't need it configured. See
- * /EVERYMOMENT-BRAND.md for the domain strategy (everymoment.me is the
- * planned flagship domain).
+ * Deployment currently uses everymoment.in. Keep this fallback aligned with
+ * the live domain so absolute metadata URLs and native app configuration do
+ * not accidentally point people to a stale or unrelated deployment.
  */
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://everymoment.me";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://everymoment.in";
 
 /** Matches the `slug` seeded in supabase/seed.sql for the active event. */
 export const EVENT_SLUG = "mahesh-75th-birthday";
