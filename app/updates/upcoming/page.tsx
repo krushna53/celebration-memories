@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -197,9 +198,9 @@ export default function UpcomingFeaturesPage() {
           <p>
             <span className="font-semibold text-navy-950">Weekly updates: </span>
             See what shipped this week at{" "}
-            <a href="/updates/weekly" className="text-gold-600 underline underline-offset-2">
+            <Link href="/updates/weekly" className="text-gold-600 underline underline-offset-2">
               /updates/weekly
-            </a>
+            </Link>
             .
           </p>
         </div>
