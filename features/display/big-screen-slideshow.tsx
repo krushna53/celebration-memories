@@ -36,7 +36,19 @@ const MEDIA_FALLBACK_MS: Record<string, number> = {
 };
 
 function noteDurationMs(message: string): number {
-  return Math.min(Math.max(6000, message.length * 60), 16_000);
+  // ~200 wpm reading pace — give enough time to read the whole message,
+  // clamped to 8 s minimum and 40 s maximum so long notes don't stall the loop.
+  const words = message.trim().split(/\s+/).length;
+  const readingMs = Math.round((words / 200) * 60_000);
+  return Math.min(Math.max(8_000, readingMs), 40_000);
+}
+
+/** Picks a Tailwind text-size class that fits the message comfortably on screen. */
+function noteTextSizeClass(message: string): string {
+  if (message.length <= 200) return "text-3xl sm:text-4xl";
+  if (message.length <= 500) return "text-2xl sm:text-3xl";
+  if (message.length <= 1200) return "text-xl sm:text-2xl";
+  return "text-lg sm:text-xl";
 }
 
 /**
@@ -352,17 +364,21 @@ function Slide({
 
   // memory-note
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-6 bg-gradient-to-b from-navy-950 via-navy-900 to-navy-950 px-10 text-center">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-6 bg-gradient-to-b from-navy-950 via-navy-900 to-navy-950 px-10 py-16 text-center">
       {slide.thumbnailUrl ? (
-        <div className="relative mb-2 h-40 w-40 overflow-hidden rounded-2xl border border-gold-500/20 sm:h-56 sm:w-56">
+        <div className="relative mb-2 h-32 w-32 shrink-0 overflow-hidden rounded-2xl border border-gold-500/20 sm:h-48 sm:w-48">
           <Image src={slide.thumbnailUrl} alt="" fill className="object-cover" />
         </div>
       ) : (
-        <Quote className="text-gold-500/50" size={40} />
+        <Quote className="shrink-0 text-gold-500/50" size={36} />
       )}
-      <p className="max-w-3xl font-display text-3xl italic leading-snug text-ivory-50 sm:text-4xl">
-        &ldquo;{slide.message}&rdquo;
-      </p>
+      {/* Scrollable container so very long messages never clip — the slide
+          duration scales with word count so there's time to read it all. */}
+      <div className="max-h-[55vh] w-full max-w-4xl overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <p className={`font-display italic leading-relaxed text-ivory-50 ${noteTextSizeClass(slide.message)}`}>
+          &ldquo;{slide.message}&rdquo;
+        </p>
+      </div>
       <AuthorTag name={slide.authorName} country={slide.country} />
     </div>
   );
