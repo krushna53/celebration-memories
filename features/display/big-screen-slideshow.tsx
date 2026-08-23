@@ -116,9 +116,9 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
   const [paused, setPaused] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [hoveredDot, setHoveredDot] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const filmstripRef = useRef<HTMLDivElement>(null);
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const totalEstimatedMs = slides.reduce((sum, s) => sum + estimateSlideDurationMs(s), 0);
@@ -129,6 +129,18 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
     const interval = setInterval(() => setElapsedMs((ms) => ms + 1000), 1000);
     return () => clearInterval(interval);
   }, [started, paused]);
+
+  // Auto-scroll filmstrip to keep the active thumbnail centred.
+  useEffect(() => {
+    const strip = filmstripRef.current;
+    if (!strip) return;
+    const thumb = strip.children[index] as HTMLElement | undefined;
+    if (!thumb) return;
+    strip.scrollTo({
+      left: thumb.offsetLeft - strip.clientWidth / 2 + thumb.offsetWidth / 2,
+      behavior: "smooth",
+    });
+  }, [index]);
 
   const slide = slides[index];
 
@@ -239,7 +251,7 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
           transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
           className="absolute inset-0"
         >
-          <Slide slide={slide} active={started} onMediaEnded={goNext} />
+          <Slide slide={slide} active={started} paused={paused} onMediaEnded={goNext} />
         </motion.div>
       </AnimatePresence>
 
@@ -275,34 +287,35 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
 
       {started ? (
         <div
-          className={`absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-3 px-6 pb-6 transition-opacity duration-500 ${
+          className={`absolute inset-x-0 bottom-0 z-10 flex flex-col items-end gap-2 pb-3 transition-opacity duration-500 ${
             controlsVisible ? "opacity-100" : "opacity-0"
           }`}
         >
-          <div className="relative flex max-w-[80vw] flex-wrap items-center justify-center gap-1.5">
-            {/* Floating tooltip above the hovered dot */}
-            {hoveredDot !== null && slides[hoveredDot] ? (
-              <div className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-navy-950/90 px-3 py-1.5 text-xs text-ivory-100 shadow-lg backdrop-blur-sm">
-                {slideLabel(slides[hoveredDot]!)}
-              </div>
-            ) : null}
+          {/* Thumbnail filmstrip */}
+          <div
+            ref={filmstripRef}
+            className="flex w-full gap-2 overflow-x-auto scroll-smooth px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {slides.map((s, i) => (
               <button
                 key={s.id}
                 type="button"
                 aria-label={`Go to slide ${i + 1}: ${slideLabel(s)}`}
                 onClick={() => { setIndex(i); setPaused(false); }}
-                onMouseEnter={() => setHoveredDot(i)}
-                onMouseLeave={() => setHoveredDot(null)}
-                className={`rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 ${
+                className={`relative shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-300 focus:outline-none ${
                   i === index
-                    ? "h-2 w-7 bg-gold-400"
-                    : "h-1.5 w-1.5 bg-ivory-100/25 hover:bg-ivory-100/60 hover:scale-125"
+                    ? "border-gold-400 shadow-[0_0_0_2px_rgba(234,179,8,0.35)] scale-105"
+                    : "border-transparent opacity-50 hover:opacity-80"
                 }`}
-              />
+                style={{ width: 72, height: 48 }}
+              >
+                <SlideThumbnail slide={s} />
+              </button>
             ))}
           </div>
-          <div className="flex items-center gap-3">
+
+          {/* Controls row */}
+          <div className="flex items-center gap-3 px-4">
             <button
               type="button"
               onClick={() => setPaused((p) => !p)}
@@ -340,13 +353,87 @@ function SlideEyebrow({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Small thumbnail shown in the filmstrip strip for each slide.
+ * Uses the slide's image URL when available; falls back to an icon.
+ */
+function SlideThumbnail({ slide }: { slide: DisplaySlide }) {
+  const iconCls = "absolute inset-0 flex items-center justify-center text-ivory-100/60";
+
+  if (slide.kind === "gallery-photo" || slide.kind === "memory-photo") {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={slide.url} alt="" className="h-full w-full object-cover" />
+    );
+  }
+  if (slide.kind === "memory-video") {
+    return (
+      <div className="h-full w-full bg-navy-900">
+        <div className={iconCls}><Play size={18} /></div>
+      </div>
+    );
+  }
+  if (slide.kind === "highlight-reel") {
+    return (
+      <div className="h-full w-full bg-navy-900">
+        <div className={iconCls}><Sparkles size={16} /></div>
+      </div>
+    );
+  }
+  if (slide.kind === "memory-audio") {
+    return (
+      <div className="h-full w-full bg-navy-900">
+        <div className={iconCls}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5 text-ivory-100/60">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
+  if (slide.kind === "memory-note") {
+    if (slide.thumbnailUrl) {
+      // eslint-disable-next-line @next/next/no-img-element
+      return <img src={slide.thumbnailUrl} alt="" className="h-full w-full object-cover" />;
+    }
+    return (
+      <div className="h-full w-full bg-navy-900">
+        <div className={iconCls}><Quote size={16} /></div>
+      </div>
+    );
+  }
+  if (slide.kind === "timeline") {
+    if (slide.imageUrl) {
+      // eslint-disable-next-line @next/next/no-img-element
+      return <img src={slide.imageUrl} alt="" className="h-full w-full object-cover" />;
+    }
+    return (
+      <div className="h-full w-full bg-navy-900">
+        <div className={iconCls}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5 text-ivory-100/60">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
+  // title slide
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-navy-900 to-navy-950">
+      <Heart size={16} className="fill-gold-400 text-gold-400" />
+    </div>
+  );
+}
+
 function Slide({
   slide,
   active,
+  paused,
   onMediaEnded,
 }: {
   slide: DisplaySlide;
   active: boolean;
+  paused: boolean;
   onMediaEnded: () => void;
 }) {
   if (slide.kind === "title") {
@@ -367,19 +454,17 @@ function Slide({
 
   if (slide.kind === "highlight-reel") {
     return (
-      <div className="relative h-full w-full bg-navy-950">
-        <video
-          key={slide.url}
-          src={slide.url}
-          autoPlay={active}
-          playsInline
-          onEnded={onMediaEnded}
-          className="h-full w-full object-contain"
-        />
+      <ControlledVideo
+        url={slide.url}
+        active={active}
+        paused={paused}
+        onMediaEnded={onMediaEnded}
+        className="h-full w-full object-contain"
+      >
         <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-navy-950/80 to-transparent px-10 pb-16 pt-8">
           <SlideEyebrow>Highlight Reel</SlideEyebrow>
         </div>
-      </div>
+      </ControlledVideo>
     );
   }
 
@@ -425,33 +510,35 @@ function Slide({
 
   if (slide.kind === "memory-video") {
     return (
-      <div className="relative h-full w-full bg-navy-950">
-        <video
-          key={slide.url}
-          src={slide.url}
-          autoPlay={active}
-          playsInline
-          onEnded={onMediaEnded}
-          className="h-full w-full object-contain"
-        />
+      <ControlledVideo
+        url={slide.url}
+        active={active}
+        paused={paused}
+        onMediaEnded={onMediaEnded}
+        className="h-full w-full object-contain"
+      >
         <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-12 pt-24">
           {slide.caption ? <SlideCaption>{slide.caption}</SlideCaption> : null}
           <AuthorTag name={slide.authorName} />
         </div>
-      </div>
+      </ControlledVideo>
     );
   }
 
   if (slide.kind === "memory-audio") {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-8 bg-gradient-to-b from-navy-900 to-navy-950 px-10 text-center">
+      <ControlledAudio
+        url={slide.url}
+        active={active}
+        paused={paused}
+        onMediaEnded={onMediaEnded}
+      >
         <SlideEyebrow>A voice message</SlideEyebrow>
         <p className="font-display text-5xl text-ivory-50 sm:text-7xl">{slide.authorName}</p>
         {slide.caption ? (
           <p className="max-w-xl text-base italic leading-relaxed text-ivory-100/75">&ldquo;{slide.caption}&rdquo;</p>
         ) : null}
-        <audio key={slide.url} src={slide.url} autoPlay={active} onEnded={onMediaEnded} className="w-full max-w-md" controls />
-      </div>
+      </ControlledAudio>
     );
   }
 
@@ -473,6 +560,98 @@ function Slide({
         </p>
       </div>
       <AuthorTag name={slide.authorName} country={slide.country} />
+    </div>
+  );
+}
+
+/**
+ * Video wrapper that correctly responds to play/pause state changes.
+ * `autoPlay` only fires on mount; we need to call `.pause()` / `.play()`
+ * imperatively when the `paused` prop changes mid-playback.
+ */
+function ControlledVideo({
+  url,
+  active,
+  paused,
+  onMediaEnded,
+  className,
+  children,
+}: {
+  url: string;
+  active: boolean;
+  paused: boolean;
+  onMediaEnded: () => void;
+  className?: string;
+  children?: ReactNode;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !active) return;
+    if (paused) {
+      el.pause();
+    } else {
+      el.play().catch(() => { /* autoplay blocked — leave paused */ });
+    }
+  }, [active, paused]);
+
+  return (
+    <div className="relative h-full w-full bg-navy-950">
+      <video
+        ref={ref}
+        key={url}
+        src={url}
+        autoPlay={active && !paused}
+        playsInline
+        onEnded={onMediaEnded}
+        className={className}
+      />
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Audio wrapper with the same imperative play/pause control as ControlledVideo.
+ */
+function ControlledAudio({
+  url,
+  active,
+  paused,
+  onMediaEnded,
+  children,
+}: {
+  url: string;
+  active: boolean;
+  paused: boolean;
+  onMediaEnded: () => void;
+  children?: ReactNode;
+}) {
+  const ref = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !active) return;
+    if (paused) {
+      el.pause();
+    } else {
+      el.play().catch(() => { /* autoplay blocked */ });
+    }
+  }, [active, paused]);
+
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-8 bg-gradient-to-b from-navy-900 to-navy-950 px-10 text-center">
+      {children}
+      <audio
+        ref={ref}
+        key={url}
+        src={url}
+        autoPlay={active && !paused}
+        onEnded={onMediaEnded}
+        className="w-full max-w-md"
+        controls
+      />
     </div>
   );
 }
