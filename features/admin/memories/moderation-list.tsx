@@ -130,7 +130,12 @@ function MemoryCard({
   onDragEnd: () => void;
 }) {
   return (
+    /* Whole card is the DROP TARGET — onDragOver/onDrop/onDragLeave here
+       so you can drop anywhere on the destination card. */
     <div
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
       className={cn(
         "flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-150",
         item.approved ? "border-green-200" : "border-amber-200",
@@ -138,14 +143,11 @@ function MemoryCard({
         dragOverThis && "border-gold-500 ring-2 ring-gold-400/30 scale-[1.02]",
       )}
     >
-      {/* Drag handle — only THIS element is draggable so <video>/<audio>
-          inside the card can't intercept the drag event. */}
+      {/* Grip handle is the DRAG SOURCE — draggable only here so the
+          <video>/<audio> elements below can't steal the dragstart event. */}
       <div
         draggable
         onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
         onDragEnd={onDragEnd}
         className="flex items-center gap-1.5 border-b border-navy-950/5 px-2 py-1.5 text-navy-700/40 cursor-grab active:cursor-grabbing select-none hover:bg-navy-950/5"
       >
