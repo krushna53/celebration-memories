@@ -21,6 +21,7 @@ async function fetchApproved(table: string, eventId: string, limit: number) {
     .eq("event_id", eventId)
     .eq("approved", true)
     .is("deleted_at", null)
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -50,6 +51,7 @@ export async function getMemoryWallItems(
       .select("*, invitees(name, relationship)")
       .eq("event_id", eventId)
       .eq("approved", true)
+      .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(limit)
       .then((res) => res.data ?? []),
@@ -126,6 +128,7 @@ export async function getMemoryWallItems(
     })),
   ];
 
-  items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // Items already come back in admin-defined sort_order from each table.
+  // Do NOT re-sort by createdAt here — that would undo the reorder.
   return items.slice(0, limit);
 }

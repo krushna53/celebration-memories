@@ -42,6 +42,10 @@ export async function listMemoriesForModeration(
         .from(TABLE[kind])
         .select("*, invitees(name)")
         .eq("event_id", eventId)
+        // Primary sort: admin-defined sort_order (set via drag-and-drop reorder,
+        // migration 0059). Tie-break by newest first so items that haven't been
+        // reordered yet (sort_order = 0) still surface in a predictable order.
+        .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
 
       // guestbook has no deleted_at column (text, not media — see
