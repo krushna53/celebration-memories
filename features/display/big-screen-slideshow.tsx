@@ -57,6 +57,20 @@ function noteTextSizeClass(message: string): string {
   return "text-lg sm:text-xl";
 }
 
+/** Returns a short human-readable label for a slide — shown in the dot tooltip on hover. */
+function slideLabel(s: DisplaySlide): string {
+  switch (s.kind) {
+    case "title":          return s.honoreeName;
+    case "highlight-reel": return "Highlight Reel";
+    case "gallery-photo":  return s.caption || "Gallery Photo";
+    case "timeline":       return s.title;
+    case "memory-photo":   return `📷 ${s.authorName}${s.caption ? ` — ${s.caption}` : ""}`;
+    case "memory-video":   return `🎬 ${s.authorName}${s.caption ? ` — ${s.caption}` : ""}`;
+    case "memory-audio":   return `🎙️ ${s.authorName}${s.caption ? ` — ${s.caption}` : ""}`;
+    case "memory-note":    return `💬 ${s.authorName}`;
+  }
+}
+
 /**
  * Chrome-free, full-viewport slideshow for the "Big Screen Display" —
  * meant to be opened on a TV/projector at the venue (see
@@ -74,6 +88,7 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
   const [paused, setPaused] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hoveredDot, setHoveredDot] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -226,12 +241,25 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
             controlsVisible ? "opacity-100" : "opacity-0"
           }`}
         >
-          <div className="flex max-w-[80vw] flex-wrap items-center justify-center gap-1.5">
+          <div className="relative flex max-w-[80vw] flex-wrap items-center justify-center gap-1.5">
+            {/* Floating tooltip above the hovered dot */}
+            {hoveredDot !== null && slides[hoveredDot] ? (
+              <div className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-navy-950/90 px-3 py-1.5 text-xs text-ivory-100 shadow-lg backdrop-blur-sm">
+                {slideLabel(slides[hoveredDot]!)}
+              </div>
+            ) : null}
             {slides.map((s, i) => (
-              <span
+              <button
                 key={s.id}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === index ? "w-6 bg-gold-400" : "w-1.5 bg-ivory-100/25"
+                type="button"
+                aria-label={`Go to slide ${i + 1}: ${slideLabel(s)}`}
+                onClick={() => { setIndex(i); setPaused(false); }}
+                onMouseEnter={() => setHoveredDot(i)}
+                onMouseLeave={() => setHoveredDot(null)}
+                className={`rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 ${
+                  i === index
+                    ? "h-2 w-7 bg-gold-400"
+                    : "h-1.5 w-1.5 bg-ivory-100/25 hover:bg-ivory-100/60 hover:scale-125"
                 }`}
               />
             ))}
