@@ -6,6 +6,7 @@ import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listMemoriesForModeration } from "@/services/admin-memories";
 import { ModerationList } from "@/features/admin/memories/moderation-list";
+import { AdminMemoryUploader } from "@/features/admin/memories/admin-memory-uploader";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,8 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
             Approve, feature, or remove guest photos, videos, audio, and guest book messages.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <AdminMemoryUploader />
           <Link
             href="/admin/memories"
             className={`rounded-full px-3 py-1.5 ${!showAll ? "bg-gold-500 text-navy-950" : "border border-navy-950/15 text-navy-700/70"}`}

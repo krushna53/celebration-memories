@@ -747,4 +747,96 @@ export async function createSignedCustomFormCoverUpload(params: {
   return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
 }
 
+/**
+ * Admin-side equivalents of createSignedMediaUpload / confirmMediaUpload.
+ * Unlike the guest flow these are not invitee-scoped — the upload is
+ * attributed to the admin account that made it (uploaded_by_admin_id).
+ * The resulting DB row is inserted with approved = true immediately,
+ * since the admin is the one moderating content, not subject to it.
+ * No per-user upload count cap applies (admins can upload freely).
+ */
+export async function createSignedAdminMediaUpload(params: {
+  adminId: string;
+  eventId: string;
+  kind: "photo" | "video" | "audio";
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { adminId, eventId, kind, fileName, fileSize } = params;
+  const contentType = (params.contentType.split(";")[0] ?? params.contentType).trim();
+
+  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES[kind];
+  if (!acceptedTypes.includes(contentType)) {
+    throw new UploadValidationError(`Unsupported file type for ${kind}: ${contentType}`);
+  }
+
+  const limit = UPLOAD_LIMITS[kind];
+  if (fileSize > limit.maxBytes) {
+    throw new UploadValidationError(`File is too large — ${kind} uploads are limited to ${limit.label}.`);
+  }
+
+  const bucket = BUCKET_BY_KIND[kind];
+  const path = `${eventId}/admin-${adminId}/${randomUUID()}-${sanitizeFileName(fileName)}`;
+
+  const { data, error } = await supabaseAdmin().storage.from(bucket).createSignedUploadUrl(path);
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
+
+  return { bucket, path, token: data.token, signedUrl: data.signedUrl };
+}
+
+export async function confirmAdminMediaUpload(params: {
+  adminId: string;
+  eventId: string;
+  kind: "photo" | "video" | "audio";
+  path: string;
+  caption?: string;
+}): Promise<{ id: string }> {
+  const { adminId, eventId, kind, path, caption } = params;
+  const table = TABLE_BY_KIND[kind];
+
+  const { data, error } = await supabaseAdmin()
+    .from(table)
+    .insert({
+      uploaded_by_admin_id: adminId,
+      event_id: eventId,
+      storage_path: path,
+      caption: caption || null,
+      approved: true, // admin uploads skip the moderation queue
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Failed to save ${kind} upload: ${error?.message}`);
+  }
+  return { id: data.id as string };
+}
+
+export async function submitAdminGuestbookNote(params: {
+  adminId: string;
+  eventId: string;
+  guestName: string;
+  message: string;
+  country?: string;
+}): Promise<void> {
+  const { adminId, eventId, guestName, message, country } = params;
+
+  const { error } = await supabaseAdmin().from("guestbook").insert({
+    uploaded_by_admin_id: adminId,
+    event_id: eventId,
+    guest_name: guestName,
+    message,
+    country: country || null,
+    consent_at: new Date().toISOString(),
+    approved: true,
+  });
+
+  if (error) {
+    throw new Error(`Failed to save note: ${error.message}`);
+  }
+}
+
 export type { MemoryKind };
