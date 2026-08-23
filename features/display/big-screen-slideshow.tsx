@@ -272,15 +272,32 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
         </div>
       ) : null}
 
-      {/* Persistent branding watermark — tucked into bottom-right corner,
-          below all slide content (AuthorTag sits at pb-10 ~40px, this is
-          at bottom-1.5 ~6px so it never overlaps names or captions). */}
+      {/* Bottom-left: QR code promo card — scan to open WhatsApp and enquire */}
+      <div className="absolute bottom-24 left-4 z-20 flex flex-col items-center gap-1.5 rounded-xl border border-ivory-100/10 bg-navy-950/70 p-2.5 backdrop-blur-sm">
+        {/* QR encodes the WhatsApp wa.me link with a pre-filled message */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`https://api.qrserver.com/v1/create-qr-code/?size=72x72&color=F5F0E8&bgcolor=0A0F1E&data=${encodeURIComponent("https://wa.me/919987982969?text=Hi%20Harshal%2C%20I%20saw%20everymoment.in%20at%20an%20event%20and%20would%20love%20to%20create%20something%20similar%20for%20my%20occasion!")}`}
+          alt="Scan to enquire on WhatsApp"
+          width={72}
+          height={72}
+          className="rounded"
+        />
+        <p className="text-center text-[9px] leading-tight tracking-wide text-ivory-100/60">
+          Create yours
+        </p>
+        <p className="text-center text-[9px] font-semibold tracking-[0.1em] text-gold-400">
+          everymoment.in
+        </p>
+      </div>
+
+      {/* Bottom-right: subtle domain watermark always visible */}
       <a
         href="https://everymoment.in"
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute bottom-1.5 right-4 z-20 text-[9px] tracking-[0.12em] text-ivory-100/20 hover:text-ivory-100/50 transition-colors duration-300 pointer-events-auto"
-        style={{ textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}
+        className="absolute bottom-2 right-4 z-20 text-[10px] tracking-[0.15em] text-ivory-100/40 transition-colors duration-300 hover:text-ivory-100/70 pointer-events-auto"
+        style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95)" }}
       >
         everymoment.in
       </a>
