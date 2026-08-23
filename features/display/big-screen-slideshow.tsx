@@ -201,6 +201,17 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
         </div>
       ) : null}
 
+      {/* Persistent branding watermark — always visible, subtle */}
+      <a
+        href="https://everymoment.in"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute bottom-4 left-5 z-20 text-[10px] tracking-[0.15em] text-ivory-100/30 hover:text-ivory-100/60 transition-colors duration-300"
+        style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
+      >
+        Celebrate digitally · everymoment.in
+      </a>
+
       {started ? (
         <div
           className={`absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-3 px-6 pb-6 transition-opacity duration-500 ${
