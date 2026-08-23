@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdminForEvent } from "@/services/admin-auth";
 import {
+  updateMemoryMeta,
   deleteMemory,
   getMemoryEventId,
   setMemoryApproval,
@@ -47,6 +48,16 @@ export async function rejectMemoryAction(kind: ModerationKind, id: string) {
 export async function toggleFeaturedAction(kind: ModerationKind, id: string, featured: boolean) {
   await requireAdminForMemory(kind, id);
   await setMemoryFeatured(kind, id, featured);
+  revalidateMemoryPaths();
+}
+
+export async function updateMemoryMetaAction(
+  kind: ModerationKind,
+  id: string,
+  fields: { caption?: string; guestName?: string; message?: string },
+) {
+  await requireAdminForMemory(kind, id);
+  await updateMemoryMeta(kind, id, fields);
   revalidateMemoryPaths();
 }
 

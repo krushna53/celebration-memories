@@ -123,6 +123,26 @@ export async function setMemoryApproval(
   if (error) throw new Error(`Failed to update approval: ${error.message}`);
 }
 
+/**
+ * Updates the editable text fields on a memory item:
+ * - photos/videos/audio: caption only
+ * - guestbook: guest_name and/or message
+ * Silently ignores fields that don't apply to the given kind.
+ */
+export async function updateMemoryMeta(
+  kind: ModerationKind,
+  id: string,
+  fields: { caption?: string; guestName?: string; message?: string },
+): Promise<void> {
+  const patch: Record<string, string> = {};
+  if (kind !== "guestbook" && fields.caption !== undefined) patch.caption = fields.caption;
+  if (kind === "guestbook" && fields.guestName !== undefined) patch.guest_name = fields.guestName;
+  if (kind === "guestbook" && fields.message !== undefined) patch.message = fields.message;
+  if (Object.keys(patch).length === 0) return;
+  const { error } = await supabaseAdmin().from(TABLE[kind]).update(patch).eq("id", id);
+  if (error) throw new Error(`Failed to update memory: ${error.message}`);
+}
+
 export async function setMemoryFeatured(
   kind: ModerationKind,
   id: string,
