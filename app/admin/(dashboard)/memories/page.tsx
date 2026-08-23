@@ -69,7 +69,9 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <ModerationList items={items} />
+      {/* key forces a full remount when the filter changes so useState
+          inside ModerationList re-initialises with the new item list. */}
+      <ModerationList key={showAll ? "all" : "pending"} items={items} />
     </div>
   );
 }
