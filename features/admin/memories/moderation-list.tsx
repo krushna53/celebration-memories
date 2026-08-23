@@ -125,18 +125,12 @@ function MemoryCard({
   onDelete: () => void;
   onDragStart: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
-  onDragLeave: () => void;
+  onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   onDragEnd: () => void;
 }) {
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
       className={cn(
         "flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-150",
         item.approved ? "border-green-200" : "border-amber-200",
@@ -144,19 +138,29 @@ function MemoryCard({
         dragOverThis && "border-gold-500 ring-2 ring-gold-400/30 scale-[1.02]",
       )}
     >
-      {/* Drag handle */}
-      <div className="flex items-center gap-1.5 border-b border-navy-950/5 px-2 py-1 text-navy-700/30 cursor-grab active:cursor-grabbing select-none">
+      {/* Drag handle — only THIS element is draggable so <video>/<audio>
+          inside the card can't intercept the drag event. */}
+      <div
+        draggable
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        onDragEnd={onDragEnd}
+        className="flex items-center gap-1.5 border-b border-navy-950/5 px-2 py-1.5 text-navy-700/40 cursor-grab active:cursor-grabbing select-none hover:bg-navy-950/5"
+      >
         <GripVertical size={14} />
         <span className="text-[10px] uppercase tracking-widest">Drag to reorder</span>
       </div>
 
       {item.kind === "photo" && item.url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.url} alt="" className="aspect-[4/3] w-full object-cover" />
+        <img src={item.url} alt="" draggable={false} className="aspect-[4/3] w-full object-cover" />
       ) : null}
       {item.kind === "video" && item.url ? (
         <>
-          <video src={item.url} controls className="aspect-video w-full bg-navy-950" />
+          {/* draggable={false} prevents the video element from stealing the drag */}
+          <video src={item.url} controls draggable={false} className="aspect-video w-full bg-navy-950" />
           <div className="border-t-2 border-gold-400 bg-gold-500/10 px-3 py-1.5">
             <p className="truncate text-xs font-medium text-navy-950">
               <span className="text-navy-700/60">From</span> {item.guestName}
@@ -166,7 +170,7 @@ function MemoryCard({
       ) : null}
       {item.kind === "audio" && item.url ? (
         <div className="bg-navy-950 px-4 py-4">
-          <audio src={item.url} controls className="w-full" />
+          <audio src={item.url} controls draggable={false} className="w-full" />
         </div>
       ) : null}
 
@@ -292,7 +296,11 @@ function KindGroup({
     e.dataTransfer.dropEffect = "move";
     setDragOverIdx(idx);
   }
-  function handleDragLeave() {
+  function handleDragLeave(e: React.DragEvent) {
+    // Only clear the highlight when the mouse leaves the card entirely —
+    // not when it moves between child elements inside the same card.
+    const related = e.relatedTarget as Node | null;
+    if (related && (e.currentTarget as HTMLElement).contains(related)) return;
     setDragOverIdx(null);
   }
   async function handleDrop(e: React.DragEvent, dropIdx: number) {
@@ -403,7 +411,7 @@ function KindGroup({
             onDelete={() => run(item.id, () => deleteMemoryAction(item.kind, item.id), true)}
             onDragStart={(e) => handleDragStart(e, idx)}
             onDragOver={(e) => handleDragOver(e, idx)}
-            onDragLeave={handleDragLeave}
+            onDragLeave={(e) => handleDragLeave(e)}
             onDrop={(e) => handleDrop(e, idx)}
             onDragEnd={handleDragEnd}
           />
