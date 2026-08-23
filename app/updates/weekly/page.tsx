@@ -36,6 +36,60 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Sunday, August 23",
+    items: [
+      {
+        title: "Big Screen Display: guest memories now appear first",
+        detail:
+          "The big screen slideshow at /events/[slug]/display used to show the full gallery and timeline first, then guest-shared memories at the end. The order is now reversed — guest memories (photos, videos, audio, notes) appear immediately after the title card, so guests at the venue see their own uploads right away. Gallery and timeline follow after.",
+        test:
+          "Open /events/[slug]/display on a TV or second screen. If any memories have been uploaded and approved, confirm they appear in the first few slides — before the gallery photos.",
+      },
+      {
+        title: "Big Screen: long guestbook notes now fit the screen",
+        detail:
+          "After raising the guestbook message limit to 3,000 characters, a long note at large font size would overflow the screen. Notes now scale font size down automatically based on message length (4xl → lg), sit in a scrollable container so text never clips, and the slide duration is now word-count based (~200wpm reading pace, 8–40 seconds) so there's always enough time to read the full message.",
+        test:
+          "Add a long guestbook note (500+ words) via the guest book form, approve it in Admin > Memories, then open the Big Screen display and confirm it fits on screen and the slide stays long enough to read.",
+      },
+      {
+        title: "Guestbook message limit raised to 3,000 characters",
+        detail:
+          "Previously capped at 1,000 characters, which was too short for guests wanting to write a heartfelt message. The limit is now 3,000 characters. The textarea is also taller (5 rows instead of 3) and resizable, so guests aren't cramped when writing longer messages.",
+        test:
+          "Open any event's guest book form and write a message longer than 1,000 characters — confirm it accepts the full text and submits successfully.",
+      },
+      {
+        title: "Admins can now upload memories directly from the dashboard",
+        detail:
+          "Previously, the only way to add a photo, video, audio clip, or guestbook note to the Memory Wall was through a guest invite link. Admin > Memories now has an \"Add Memory\" button that opens a panel with four tabs — Photo, Video, Audio, and Note. Admin uploads skip the moderation queue and go live on the Memory Wall immediately. This required a database migration (0056) making invitee_id nullable on memory tables and adding an uploaded_by_admin_id column.",
+        test:
+          "Admin > Memories > Add Memory. Upload a photo on the Photo tab and add a caption. Switch to Note tab and add a guestbook note with a name and message. Confirm both appear immediately on the public Memory Wall without needing approval.",
+      },
+      {
+        title: "Memory moderation: inline name and caption editing",
+        detail:
+          "Each memory card in Admin > Memories now has a pencil icon. For photos, videos, and audio it opens an inline caption editor. For guestbook entries it lets you edit both the guest name and the message. Changes save instantly without a page reload.",
+        test:
+          "Admin > Memories > click the pencil icon on any photo. Change the caption and save — confirm the card updates immediately. Do the same on a guestbook entry and confirm both the name and message can be edited.",
+      },
+      {
+        title: "Gallery captions: add text to photos, shown on Big Screen",
+        detail:
+          "Gallery photos already had a caption column in the database but there was no way to set one from the UI. The gallery upload bar now has an optional Caption field — whatever you type is saved with every photo in that upload batch. Each photo card in the grid shows a pencil icon on hover to edit the caption inline. Captions appear as an overlay on the thumbnail so you can see at a glance which photos have one. They already showed on the Big Screen display — this just makes them accessible to set.",
+        test:
+          "Admin > Gallery > type a caption in the Caption field > upload a photo. Confirm the caption overlay appears on the thumbnail. Click the pencil icon on an existing photo and edit its caption. Open the Big Screen display and confirm the caption appears on that photo's slide.",
+      },
+      {
+        title: "OG social share image fallback — Every Moment branding",
+        detail:
+          "When sharing an event link (e.g. on WhatsApp) that has no gallery photos and no custom share image set, the preview card previously showed nothing. It now falls back to the Every Moment branded OG image so shared links always look professional.",
+        test:
+          "Copy the URL of an event with no gallery photos and paste it into WhatsApp or use a tool like opengraph.xyz to preview it. Confirm the Every Moment logo/brand card appears instead of a blank preview.",
+      },
+    ],
+  },
+  {
     date: "Thursday, August 13",
     items: [
       {
@@ -604,7 +658,7 @@ export default function WeeklyUpdatePage() {
       <div className="mx-auto max-w-2xl">
         <p className="text-xs font-medium uppercase tracking-[0.15em] text-gold-700">Internal — not linked anywhere on the site</p>
         <h1 className="mt-2 font-display text-3xl text-navy-950 sm:text-4xl">Weekly Update</h1>
-        <p className="mt-1 text-sm text-navy-700/60">Sunday, August 9, 2026</p>
+        <p className="mt-1 text-sm text-navy-700/60">Sunday, August 23, 2026</p>
 
         <div className="mt-10 grid gap-10">
           {CHANGES.map((group) => (
