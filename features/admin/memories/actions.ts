@@ -9,6 +9,7 @@ import {
   getMemoryEventId,
   setMemoryApproval,
   setMemoryFeatured,
+  reorderMemories,
   type ModerationKind,
 } from "@/services/admin-memories";
 import { moveToTrash, type RecycleBinKind } from "@/services/recycle-bin";
@@ -59,6 +60,29 @@ export async function updateMemoryMetaAction(
   await requireAdminForMemory(kind, id);
   await updateMemoryMeta(kind, id, fields);
   revalidateMemoryPaths();
+}
+
+/**
+ * Saves a new display order for approved memories of a single kind.
+ * Requires migration 0059 (sort_order columns) to be applied first.
+ */
+export async function reorderMemoriesAction(
+  kind: ModerationKind,
+  orderedIds: string[],
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    // Verify the caller has admin access by checking the first item's event.
+    if (orderedIds.length > 0) {
+      const eventId = await getMemoryEventId(kind, orderedIds[0]!);
+      if (!eventId) return { success: false, error: "Memory not found." };
+      await requireAdminForEvent(eventId);
+    }
+    await reorderMemories(kind, orderedIds);
+    revalidateMemoryPaths();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Reorder failed." };
+  }
 }
 
 /** Photos/videos/audio move to the Recycle Bin (soft delete, 30-day undo window — see services/recycle-bin.ts); guestbook messages are text, not media, and are still removed immediately. */

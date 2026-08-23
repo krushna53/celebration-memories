@@ -272,12 +272,12 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
         </div>
       ) : null}
 
-      {/* Bottom-left: QR code promo card — scan to open WhatsApp and enquire */}
-      <div className="absolute bottom-24 left-4 z-20 flex flex-col items-center gap-1.5 rounded-xl border border-ivory-100/10 bg-navy-950/70 p-2.5 backdrop-blur-sm">
+      {/* Top-left: QR code promo card — scan to open WhatsApp and enquire */}
+      <div className="absolute top-4 left-4 z-20 flex flex-col items-center gap-1.5 rounded-xl border border-ivory-100/10 bg-navy-950/70 p-2.5 backdrop-blur-sm">
         {/* QR encodes the WhatsApp wa.me link with a pre-filled message */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`https://api.qrserver.com/v1/create-qr-code/?size=72x72&color=F5F0E8&bgcolor=0A0F1E&data=${encodeURIComponent("https://wa.me/919987982969?text=Hi%20Harshal%2C%20I%20saw%20everymoment.in%20at%20an%20event%20and%20would%20love%20to%20create%20something%20similar%20for%20my%20occasion!")}`}
+          src={`https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=${encodeURIComponent("https://wa.me/919987982969?text=Hi Harshal, I saw everymoment.in at an event and would love to create something similar!")}`}
           alt="Scan to enquire on WhatsApp"
           width={72}
           height={72}
@@ -324,7 +324,7 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
                     ? "border-gold-400 shadow-[0_0_0_2px_rgba(234,179,8,0.35)] scale-105"
                     : "border-transparent opacity-50 hover:opacity-80"
                 }`}
-                style={{ width: 96, height: 64 }}
+                style={{ width: 108, height: 72 }}
               >
                 <SlideThumbnail slide={s} />
               </button>
@@ -389,20 +389,32 @@ function VideoFrameThumbnail({ url }: { url: string }) {
     function capture() {
       if (cancelled) return;
       try {
+        const CW = 192, CH = 128;
         const canvas = document.createElement("canvas");
-        canvas.width = 144;
-        canvas.height = 96;
+        canvas.width = CW;
+        canvas.height = CH;
         const ctx = canvas.getContext("2d");
-        ctx?.drawImage(video, 0, 0, 144, 96);
-        const thumb = canvas.toDataURL("image/jpeg", 0.7);
-        // A blank (all-black) frame returns a very short dataUrl — retry a bit further in
-        if (thumb.length > 5000) {
+        if (!ctx) return;
+        // Letterbox: scale to fit while preserving aspect ratio
+        const vw = video.videoWidth || CW;
+        const vh = video.videoHeight || CH;
+        const scale = Math.min(CW / vw, CH / vh);
+        const dw = vw * scale;
+        const dh = vh * scale;
+        const dx = (CW - dw) / 2;
+        const dy = (CH - dh) / 2;
+        ctx.fillStyle = "#0A0F1E"; // navy-950
+        ctx.fillRect(0, 0, CW, CH);
+        ctx.drawImage(video, dx, dy, dw, dh);
+        const thumb = canvas.toDataURL("image/jpeg", 0.75);
+        // Very short dataUrl = blank/black frame — seek further ahead and retry
+        if (thumb.length > 4000) {
           setDataUrl(thumb);
-        } else if (video.duration && video.currentTime < video.duration * 0.3) {
-          video.currentTime = Math.min(video.currentTime + 2, video.duration * 0.3);
+        } else if (video.duration && video.currentTime < video.duration * 0.4) {
+          video.currentTime = Math.min(video.currentTime + 3, video.duration * 0.4);
         }
       } catch {
-        // CORS / codec issue — leave null (fallback icon shows)
+        // CORS / codec issue — leave null (fallback play icon shows)
       }
     }
 

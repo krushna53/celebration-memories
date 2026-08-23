@@ -152,6 +152,28 @@ export async function setMemoryFeatured(
   if (error) throw new Error(`Failed to update featured flag: ${error.message}`);
 }
 
+/**
+ * Persists a new display order for a list of memory items of a single kind.
+ * Each id gets sort_order = its position in the array.
+ * Requires migration 0059 (sort_order columns) to be applied.
+ */
+export async function reorderMemories(
+  kind: ModerationKind,
+  orderedIds: string[],
+): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, idx) =>
+      supabaseAdmin()
+        .from(TABLE[kind])
+        .update({ sort_order: idx })
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) throw new Error(`reorderMemories(${kind}) failed: ${error.message}`);
+        }),
+    ),
+  );
+}
+
 export async function deleteMemory(kind: ModerationKind, id: string): Promise<void> {
   const client = supabaseAdmin();
   const bucket = BUCKET[kind];
