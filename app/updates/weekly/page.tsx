@@ -90,6 +90,18 @@ const CHANGES: ChangeGroup[] = [
     ],
   },
   {
+    date: "Friday, August 14",
+    items: [
+      {
+        title: "PWA / installed app: safe area padding and domain update",
+        detail:
+          "When the app is installed to the home screen (PWA on iOS/Android or via the Capacitor wrapper), the status bar and home indicator at the top/bottom of the screen were overlapping the page content. The app now applies safe-area padding automatically in standalone/installed mode only — regular browser tabs are unaffected. Also updated the Capacitor production URL from everymoment.me to everymoment.in so release builds open the correct live domain, and enabled viewport-fit=cover so the full screen edge-to-edge look works properly on notched/island phones.",
+        test:
+          "Install the app to your home screen (or use the Capacitor build). Open it and confirm the header doesn't sit under the status bar on iOS, and the bottom of the screen doesn't overlap the home indicator. On a notched Android device, confirm content extends edge to edge without anything being clipped.",
+      },
+    ],
+  },
+  {
     date: "Thursday, August 13",
     items: [
       {
