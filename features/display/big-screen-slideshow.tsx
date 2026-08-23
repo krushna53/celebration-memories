@@ -201,15 +201,17 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
         </div>
       ) : null}
 
-      {/* Persistent branding watermark — always visible, subtle */}
+      {/* Persistent branding watermark — tucked into bottom-right corner,
+          below all slide content (AuthorTag sits at pb-10 ~40px, this is
+          at bottom-1.5 ~6px so it never overlaps names or captions). */}
       <a
         href="https://everymoment.in"
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute bottom-4 left-5 z-20 text-[10px] tracking-[0.15em] text-ivory-100/30 hover:text-ivory-100/60 transition-colors duration-300"
-        style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
+        className="absolute bottom-1.5 right-4 z-20 text-[9px] tracking-[0.12em] text-ivory-100/20 hover:text-ivory-100/50 transition-colors duration-300 pointer-events-auto"
+        style={{ textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}
       >
-        Celebrate digitally · everymoment.in
+        everymoment.in
       </a>
 
       {started ? (
@@ -271,7 +273,7 @@ function Slide({
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-6 bg-gradient-to-b from-navy-950 via-navy-900 to-navy-950 px-10 text-center">
         <SlideEyebrow>{slide.hostedBy} warmly invites you to celebrate</SlideEyebrow>
-        <h1 className="font-display text-6xl text-ivory-50 sm:text-8xl">{slide.honoreeName}</h1>
+        <h1 className="font-display text-7xl text-ivory-50 sm:text-9xl">{slide.honoreeName}</h1>
         <div className="h-px w-24 bg-gold-500/60" />
         <p className="font-display text-2xl text-gold-300 sm:text-3xl">{slide.eventTitle}</p>
         {slide.occasionDate ? (
@@ -364,7 +366,7 @@ function Slide({
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-8 bg-gradient-to-b from-navy-900 to-navy-950 px-10 text-center">
         <SlideEyebrow>A voice message</SlideEyebrow>
-        <p className="font-display text-4xl text-ivory-50 sm:text-5xl">{slide.authorName}</p>
+        <p className="font-display text-5xl text-ivory-50 sm:text-7xl">{slide.authorName}</p>
         {slide.caption ? (
           <p className="max-w-xl text-base italic leading-relaxed text-ivory-100/75">&ldquo;{slide.caption}&rdquo;</p>
         ) : null}
@@ -421,13 +423,13 @@ function MediaBackdrop({
 }
 
 function SlideCaption({ children }: { children: ReactNode }) {
-  return <p className="mb-2 max-w-xl text-lg text-ivory-50 sm:text-xl">{children}</p>;
+  return <p className="mb-2 max-w-xl text-xl text-ivory-50 sm:text-2xl">{children}</p>;
 }
 
 function AuthorTag({ name, country }: { name: string; country?: string | null }) {
   return (
-    <p className="flex items-center gap-2 text-sm tracking-wide text-gold-300">
-      <Heart size={14} className="fill-gold-400 text-gold-400" />
+    <p className="flex items-center gap-2 text-base tracking-wide text-gold-300 sm:text-lg">
+      <Heart size={16} className="fill-gold-400 text-gold-400" />
       Shared by {name}
       {country ? ` · ${country}` : ""}
     </p>
