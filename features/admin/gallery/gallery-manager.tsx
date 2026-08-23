@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, Loader2, Pencil, Trash2, Upload, X } from "lucide-react";
+import { Check, GripVertical, Loader2, Pencil, Trash2, Upload, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -11,6 +11,7 @@ import type { GalleryPhotoRecord } from "@/types/content";
 import {
   confirmGalleryUploadAction,
   deleteGalleryPhotoAction,
+  reorderGalleryPhotosAction,
   requestGalleryUploadUrlAction,
   updateGalleryPhotoAction,
 } from "@/features/admin/gallery/actions";
@@ -60,9 +61,7 @@ function CaptionEditor({
     setSaving(true);
     const result = await updateGalleryPhotoAction(photoId, { caption: value.trim() || null });
     setSaving(false);
-    if (result.success) {
-      onSaved(value.trim());
-    }
+    if (result.success) onSaved(value.trim());
   }
 
   return (
@@ -88,12 +87,181 @@ function CaptionEditor({
           {saving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
           Save
         </button>
-        <button
-          onClick={onCancel}
-          className="rounded px-2 py-0.5 text-[11px] text-navy-700/60 hover:text-navy-950"
-        >
+        <button onClick={onCancel} className="rounded px-2 py-0.5 text-[11px] text-navy-700/60 hover:text-navy-950">
           Cancel
         </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Draggable photo grid for one category.
+ * Uses native HTML5 drag-and-drop — no extra library.
+ * Drag the grip handle (⠿) to reorder. Order is saved to the DB on drop
+ * and is the same order used by the Big Screen display.
+ */
+function CategoryGrid({
+  category,
+  label,
+  initialPhotos,
+  busyId,
+  onDelete,
+}: {
+  category: GalleryCategory;
+  label: string;
+  initialPhotos: GalleryPhotoRecord[];
+  busyId: string | null;
+  onDelete: (id: string) => void;
+}) {
+  const [photos, setPhotos] = useState(initialPhotos);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // DnD state
+  const dragIdx = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
+  function handleDragStart(e: React.DragEvent, idx: number) {
+    dragIdx.current = idx;
+    e.dataTransfer.effectAllowed = "move";
+    // Transparent drag image so the card doesn't ghost weirdly
+    const el = e.currentTarget as HTMLElement;
+    e.dataTransfer.setDragImage(el, el.offsetWidth / 2, el.offsetHeight / 2);
+  }
+
+  function handleDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIdx(idx);
+  }
+
+  function handleDragLeave() {
+    setDragOverIdx(null);
+  }
+
+  async function handleDrop(e: React.DragEvent, dropIdx: number) {
+    e.preventDefault();
+    setDragOverIdx(null);
+    const from = dragIdx.current;
+    dragIdx.current = null;
+    if (from === null || from === dropIdx) return;
+
+    // Optimistic reorder
+    const next = [...photos];
+    const [moved] = next.splice(from, 1);
+    next.splice(dropIdx, 0, moved!);
+    setPhotos(next);
+
+    // Persist
+    setSaving(true);
+    setSaveError(null);
+    const result = await reorderGalleryPhotosAction(next.map((p) => p.id));
+    setSaving(false);
+    if (!result.success) {
+      setSaveError("Order not saved — please try again.");
+      setPhotos(photos); // revert
+    }
+  }
+
+  function handleDragEnd() {
+    dragIdx.current = null;
+    setDragOverIdx(null);
+  }
+
+  if (photos.length === 0) return null;
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center gap-3">
+        <h2 className="font-display text-lg text-navy-950">{label}</h2>
+        {saving && (
+          <span className="flex items-center gap-1 text-xs text-navy-700/50">
+            <Loader2 size={11} className="animate-spin" /> Saving order…
+          </span>
+        )}
+        {saveError && <span className="text-xs text-red-600">{saveError}</span>}
+        {!saving && !saveError && photos.length > 1 && (
+          <span className="text-[10px] text-navy-700/30">Drag ⠿ to reorder</span>
+        )}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {photos.map((photo, idx) => (
+          <div
+            key={photo.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, idx)}
+            onDragOver={(e) => handleDragOver(e, idx)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, idx)}
+            onDragEnd={handleDragEnd}
+            className={cn(
+              "group relative overflow-hidden rounded-lg border bg-white transition-all duration-150",
+              busyId === photo.id && "opacity-50",
+              dragOverIdx === idx
+                ? "border-gold-500 ring-2 ring-gold-400/40 scale-[1.02]"
+                : "border-navy-950/10",
+              dragIdx.current === idx && "opacity-40",
+            )}
+          >
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo.url} alt={photo.caption ?? ""} className="aspect-square w-full object-cover" />
+
+              {/* Drag handle — always visible on touch/mobile, hover on desktop */}
+              <div
+                className="absolute left-1 top-1 cursor-grab touch-none rounded bg-navy-950/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+                title="Drag to reorder"
+                aria-label="Drag to reorder"
+              >
+                <GripVertical size={14} />
+              </div>
+
+              {/* Edit / Delete buttons */}
+              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingId(editingId === photo.id ? null : photo.id)}
+                  title="Edit caption"
+                  className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 text-white"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(photo.id)}
+                  disabled={busyId === photo.id}
+                  title="Delete"
+                  className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 text-white"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+
+              {/* Caption badge */}
+              {photo.caption && editingId !== photo.id ? (
+                <div className="absolute bottom-0 left-0 right-0 bg-navy-950/60 px-2 py-1">
+                  <p className="truncate text-[11px] text-ivory-100">{photo.caption}</p>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Inline caption editor */}
+            {editingId === photo.id ? (
+              <CaptionEditor
+                photoId={photo.id}
+                initial={photo.caption ?? ""}
+                onSaved={(caption) => {
+                  setPhotos((prev) => prev.map((p) => (p.id === photo.id ? { ...p, caption } : p)));
+                  setEditingId(null);
+                }}
+                onCancel={() => setEditingId(null)}
+              />
+            ) : null}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -106,7 +274,6 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleFiles(files: FileList) {
@@ -199,76 +366,22 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </div>
 
-      {/* Photo grid by category */}
-      {CATEGORY_OPTIONS.map((cat) => {
-        const items = photos.filter((p) => p.category === cat.value);
-        if (items.length === 0) return null;
+      <p className="mt-3 text-xs text-navy-700/40">
+        Drag the <GripVertical size={11} className="inline" /> handle on any photo to reorder within its category.
+        The same order appears on the Big Screen display.
+      </p>
 
-        return (
-          <div key={cat.value} className="mt-8">
-            <h2 className="font-display text-lg text-navy-950">{cat.label}</h2>
-            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {items.map((photo) => (
-                <div
-                  key={photo.id}
-                  className={cn(
-                    "group overflow-hidden rounded-lg border border-navy-950/10 bg-white",
-                    busyId === photo.id && "opacity-50",
-                  )}
-                >
-                  <div className="relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photo.url} alt={photo.caption ?? ""} className="aspect-square w-full object-cover" />
-
-                    {/* Hover actions */}
-                    <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button
-                        type="button"
-                        onClick={() => setEditingId(editingId === photo.id ? null : photo.id)}
-                        title="Edit caption"
-                        className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 text-white"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(photo.id)}
-                        disabled={busyId === photo.id}
-                        title="Delete"
-                        className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 text-white"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-
-                    {/* Caption badge on image if set */}
-                    {photo.caption && editingId !== photo.id ? (
-                      <div className="absolute bottom-0 left-0 right-0 bg-navy-950/60 px-2 py-1">
-                        <p className="truncate text-[11px] text-ivory-100">{photo.caption}</p>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {/* Inline caption editor */}
-                  {editingId === photo.id ? (
-                    <CaptionEditor
-                      photoId={photo.id}
-                      initial={photo.caption ?? ""}
-                      onSaved={(caption) => {
-                        setPhotos((prev) =>
-                          prev.map((p) => (p.id === photo.id ? { ...p, caption } : p)),
-                        );
-                        setEditingId(null);
-                      }}
-                      onCancel={() => setEditingId(null)}
-                    />
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
+      {/* Per-category draggable grids */}
+      {CATEGORY_OPTIONS.map((cat) => (
+        <CategoryGrid
+          key={cat.value}
+          category={cat.value}
+          label={cat.label}
+          initialPhotos={photos.filter((p) => p.category === cat.value)}
+          busyId={busyId}
+          onDelete={handleDelete}
+        />
+      ))}
 
       {photos.length === 0 ? (
         <p className="mt-8 rounded-xl border border-dashed border-navy-950/15 py-16 text-center text-sm text-navy-700/50">

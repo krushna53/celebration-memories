@@ -7,6 +7,7 @@ import { createSignedGalleryUpload } from "@/services/uploads";
 import {
   createGalleryPhoto,
   getGalleryPhotoById,
+  reorderGalleryPhotos,
   updateGalleryPhoto,
 } from "@/services/gallery-photos";
 import { moveToTrash } from "@/services/recycle-bin";
@@ -69,6 +70,26 @@ export async function updateGalleryPhotoAction(
     const { admin, photo } = await requireAdminForPhoto(id);
     await snapshotGallery(photo.eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
     await updateGalleryPhoto(id, input);
+    revalidateGalleryPaths();
+    return { success: true as const };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/**
+ * Persist a new sort order for a list of gallery photo ids (all belonging
+ * to the same category, in the desired display order). The caller is
+ * verified against the first photo's event — if they can manage gallery
+ * for that event they can reorder all photos within it.
+ */
+export async function reorderGalleryPhotosAction(orderedIds: string[]) {
+  try {
+    if (orderedIds.length === 0) return { success: true as const };
+    const first = await getGalleryPhotoById(orderedIds[0]!);
+    if (!first) throw new Error("Photo not found.");
+    await requireAdminForOrganizerArea(first.eventId, "gallery");
+    await reorderGalleryPhotos(orderedIds);
     revalidateGalleryPaths();
     return { success: true as const };
   } catch (err) {

@@ -96,6 +96,21 @@ export async function updateGalleryPhoto(
   if (error) throw new Error(`Failed to update gallery photo: ${error.message}`);
 }
 
+/**
+ * Persist a new sort order for a set of gallery photos (within one
+ * category). Caller passes the ids in the desired display order; each
+ * gets sort_order = its index in that array. Uses individual updates
+ * rather than a bulk upsert so partial failures are visible per-row.
+ */
+export async function reorderGalleryPhotos(orderedIds: string[]): Promise<void> {
+  const client = supabaseAdmin();
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      client.from("gallery_photos").update({ sort_order: index }).eq("id", id),
+    ),
+  );
+}
+
 export async function deleteGalleryPhoto(id: string): Promise<void> {
   const client = supabaseAdmin();
   const { data } = await client
