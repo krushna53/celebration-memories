@@ -107,6 +107,7 @@ const NAV = [
   { href: "/admin/platform-video", label: "Feature Video", icon: Video },
   { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareHeart },
   { href: "/admin/promo-codes", label: "Promo Codes", icon: Ticket },
+  { href: "/admin/concierge-inquiries", label: "Concierge Leads", icon: Inbox },
   { href: "/admin/help", label: "Help", icon: HelpCircle },
 ] as const;
 
