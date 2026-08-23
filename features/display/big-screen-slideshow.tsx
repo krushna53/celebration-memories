@@ -277,7 +277,7 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
         {/* QR encodes the WhatsApp wa.me link with a pre-filled message */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=${encodeURIComponent("https://wa.me/919987982969?text=Hi Harshal, I saw everymoment.in at an event and would love to create something similar!")}`}
+          src={`https://api.qrserver.com/v1/create-qr-code/?size=96x96&data=${encodeURIComponent("https://wa.me/919987982969?text=Hi, I saw everymoment.in at an event and would love to create something similar!")}`}
           alt="Scan to enquire on WhatsApp"
           width={72}
           height={72}
