@@ -64,6 +64,7 @@ export interface EventRow {
   rsvp_currency: string;
   live_stream_enabled: boolean;
   live_stream_url: string | null;
+  page_status: "published" | "unpublished";
   created_at: string;
   updated_at: string;
 }
@@ -126,6 +127,7 @@ export function mapEvent(row: EventRow): EventRecord {
     rsvpCurrency: row.rsvp_currency || "INR",
     liveStreamEnabled: row.live_stream_enabled ?? false,
     liveStreamUrl: row.live_stream_url,
+    pageStatus: row.page_status ?? "published",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -333,6 +335,7 @@ export interface EventUpdateInput {
   rsvpCurrency?: string;
   liveStreamEnabled?: boolean;
   liveStreamUrl?: string | null;
+  pageStatus?: "published" | "unpublished";
 }
 
 /** Admin-facing update for the event settings form. */
@@ -445,6 +448,7 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.rsvpCurrency !== undefined) patch.rsvp_currency = input.rsvpCurrency;
   if (input.liveStreamEnabled !== undefined) patch.live_stream_enabled = input.liveStreamEnabled;
   if (input.liveStreamUrl !== undefined) patch.live_stream_url = input.liveStreamUrl;
+  if (input.pageStatus !== undefined) patch.page_status = input.pageStatus;
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);

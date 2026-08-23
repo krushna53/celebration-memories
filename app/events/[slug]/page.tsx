@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { EventLandingPage } from "@/features/event-landing/event-landing-page";
+import { EventUnpublishedScreen } from "@/features/event-landing/event-unpublished-screen";
 import { getEventBySlug } from "@/services/events";
 import { buildEventMetadata, resolveEventCoverImage } from "@/lib/event-metadata";
 import { buildEventJsonLd, JsonLd } from "@/lib/structured-data";
@@ -42,6 +43,10 @@ export default async function PublicEventPage({ params }: PublicEventPageProps) 
 
   if (!event) {
     notFound();
+  }
+
+  if (event.pageStatus === "unpublished") {
+    return <EventUnpublishedScreen eventTitle={event.eventTitle} />;
   }
 
   const coverImage = await resolveEventCoverImage(event);

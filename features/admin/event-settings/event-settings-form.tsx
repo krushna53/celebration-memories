@@ -122,6 +122,7 @@ export function EventSettingsForm({
     additionalNotes: event.additionalNotes ?? "",
     wishMessage: event.wishMessage ?? "",
     customCss: event.customCss ?? "",
+    pageStatus: event.pageStatus ?? "published",
   });
   // Mirrors SectionOrderManager's own state (see its onChange prop) so
   // the live preview panel can reflect a reorder/show-hide the instant
@@ -485,6 +486,7 @@ export function EventSettingsForm({
       additionalNotes: form.additionalNotes || null,
       wishMessage: form.wishMessage || null,
       customCss: form.customCss || null,
+      pageStatus: form.pageStatus,
     });
 
     setSaving(false);
@@ -886,6 +888,51 @@ export function EventSettingsForm({
             maxLength={160}
           />
         </div>
+      </section>
+
+      {/* ── Page Status ── */}
+      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+        <div>
+          <h2 className="font-display text-lg text-navy-950">Page Status</h2>
+          <p className="mt-1 text-xs text-navy-700/60">
+            Choose what happens to your event page after the celebration is over.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => { setForm((f) => ({ ...f, pageStatus: "published" })); setSaved(false); }}
+            className={`flex-1 rounded-lg border px-4 py-3 text-left text-sm transition-luxury duration-300 ${
+              form.pageStatus === "published"
+                ? "border-green-500 bg-green-500/8 text-green-800"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            <span className="block font-semibold">✓ Keep page live</span>
+            <span className="mt-0.5 block text-xs opacity-70">
+              Guests can still visit, browse photos, and relive the memories.
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setForm((f) => ({ ...f, pageStatus: "unpublished" })); setSaved(false); }}
+            className={`flex-1 rounded-lg border px-4 py-3 text-left text-sm transition-luxury duration-300 ${
+              form.pageStatus === "unpublished"
+                ? "border-amber-500 bg-amber-500/8 text-amber-800"
+                : "border-navy-950/15 text-navy-700/70 hover:border-navy-950/30"
+            }`}
+          >
+            <span className="block font-semibold">✕ Take page offline</span>
+            <span className="mt-0.5 block text-xs opacity-70">
+              Visitors see an &ldquo;Event has ended&rdquo; message. You can restore it any time.
+            </span>
+          </button>
+        </div>
+        {form.pageStatus === "unpublished" && (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <strong>Page is currently offline.</strong> Direct links and shared invitations will show an &ldquo;Event has ended&rdquo; screen instead of the full site. Switch back to &ldquo;Keep page live&rdquo; and save to restore it.
+          </p>
+        )}
       </section>
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">

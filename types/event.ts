@@ -218,6 +218,15 @@ export interface EventRecord {
    */
   liveStreamEnabled: boolean;
   liveStreamUrl: string | null;
+  /**
+   * Whether the public event page is currently reachable.
+   * - "published" (default): the full site renders as normal.
+   * - "unpublished": every public-facing route for this event shows an
+   *   "Event has ended" screen instead. Useful for hosts who want to take
+   *   their page down after the celebration is over. Distinct from
+   *   `visibility` (which only controls /events directory listing).
+   */
+  pageStatus: "published" | "unpublished";
   createdAt: string;
   updatedAt: string;
 }
