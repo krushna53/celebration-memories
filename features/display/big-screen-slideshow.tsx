@@ -28,11 +28,17 @@ const DURATIONS_MS: Record<string, number> = {
   "memory-photo": 7000,
 };
 
-/** Safety ceiling for video/audio slides in case `onEnded` never fires (bad file, stalled load, etc.) — advances anyway so the loop can't get stuck. */
+/**
+ * Safety ceiling for video/audio slides in case `onEnded` never fires
+ * (bad file, stalled network, etc.) — advances anyway so the loop can't
+ * get stuck. Set generously: guest videos can be several minutes long
+ * (a 3:14 video was being cut off at the old 60 s limit). The normal
+ * path is always onEnded firing first — this is just the fallback.
+ */
 const MEDIA_FALLBACK_MS: Record<string, number> = {
-  "memory-video": 60_000,
-  "memory-audio": 45_000,
-  "highlight-reel": 300_000,
+  "memory-video": 600_000,  // 10 min — covers even long family videos
+  "memory-audio": 300_000,  // 5 min
+  "highlight-reel": 600_000,
 };
 
 function noteDurationMs(message: string): number {
