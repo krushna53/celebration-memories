@@ -82,6 +82,7 @@ const NAV = [
   { href: "/admin/platform-usage", label: "Platform Utilization", icon: Server },
   { href: "/admin/share-image", label: "Share Image", icon: ImagePlus },
   { href: "/admin/ai-image", label: "AI Image", icon: Sparkles },
+  { href: "/admin/ai-video", label: "AI Video", icon: Wand2 },
   { href: "/admin/slideshow", label: "Slideshow Video", icon: Film },
   { href: "/admin/timeline-movie", label: "AI Timeline Movie", icon: Wand2 },
   { href: "/admin/video-editor", label: "Video Editor", icon: Clapperboard },

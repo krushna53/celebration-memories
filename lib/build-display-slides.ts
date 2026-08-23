@@ -39,26 +39,9 @@ export function buildDisplaySlides(params: {
     slides.push({ id: "highlight-reel", kind: "highlight-reel", url: highlightReelUrl });
   }
 
-  for (const photo of galleryPhotos) {
-    slides.push({
-      id: `gallery-${photo.id}`,
-      kind: "gallery-photo",
-      url: photo.url,
-      caption: photo.caption,
-    });
-  }
-
-  for (const milestone of milestones) {
-    slides.push({
-      id: `timeline-${milestone.id}`,
-      kind: "timeline",
-      imageUrl: milestone.imageUrl,
-      period: milestone.period,
-      title: milestone.title,
-      description: milestone.description,
-    });
-  }
-
+  // Guest-shared memories first so they appear immediately after the title
+  // card — guests at the venue see their own uploads right away instead of
+  // waiting through the full gallery/timeline. Gallery and Timeline follow.
   for (const memory of memories) {
     const authorName = memory.author.name;
     if (memory.kind === "photo") {
@@ -95,6 +78,26 @@ export function buildDisplaySlides(params: {
         thumbnailUrl: memory.thumbnailUrl,
       });
     }
+  }
+
+  for (const photo of galleryPhotos) {
+    slides.push({
+      id: `gallery-${photo.id}`,
+      kind: "gallery-photo",
+      url: photo.url,
+      caption: photo.caption,
+    });
+  }
+
+  for (const milestone of milestones) {
+    slides.push({
+      id: `timeline-${milestone.id}`,
+      kind: "timeline",
+      imageUrl: milestone.imageUrl,
+      period: milestone.period,
+      title: milestone.title,
+      description: milestone.description,
+    });
   }
 
   return slides;

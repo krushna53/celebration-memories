@@ -107,6 +107,8 @@ export interface EventRecord {
   sectionConfig: SectionConfigItem[] | null;
   /** Max AI Image generations a client-role admin may make for this event. Owner is exempt. See services/ai-image-generations.ts. */
   aiImageGenerationLimit: number;
+  /** Max prompt-to-video generations a client-role admin may make for this event. Owner is exempt. */
+  aiVideoGenerationLimit: number;
   /** Max AI Custom CSS generations a client-role admin may make for this event. Owner is exempt. See services/ai-css-generations.ts. */
   aiCssGenerationLimit: number;
   /** Max Slideshow Video renders a client-role admin may make for this event. Owner is exempt. See services/slideshow-video-generations.ts. */

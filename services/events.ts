@@ -37,6 +37,7 @@ export interface EventRow {
   highlight_reel_path: string | null;
   section_config: SectionConfigItem[] | null;
   ai_image_generation_limit: number;
+  ai_video_generation_limit: number;
   ai_css_generation_limit: number;
   slideshow_video_generation_limit: number;
   video_editor_generation_limit: number;
@@ -98,6 +99,7 @@ export function mapEvent(row: EventRow): EventRecord {
     highlightReelPath: row.highlight_reel_path,
     sectionConfig: row.section_config,
     aiImageGenerationLimit: row.ai_image_generation_limit ?? 5,
+    aiVideoGenerationLimit: row.ai_video_generation_limit ?? 2,
     aiCssGenerationLimit: row.ai_css_generation_limit ?? 20,
     slideshowVideoGenerationLimit: row.slideshow_video_generation_limit ?? 3,
     videoEditorGenerationLimit: row.video_editor_generation_limit ?? 3,
@@ -308,6 +310,7 @@ export interface EventUpdateInput {
    * the limit is actually checked against usage.
    */
   aiImageGenerationLimit?: number;
+  aiVideoGenerationLimit?: number;
   aiCssGenerationLimit?: number;
   slideshowVideoGenerationLimit?: number;
   videoEditorGenerationLimit?: number;
@@ -412,6 +415,7 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.customCss !== undefined) patch.custom_css = input.customCss;
   if (input.wizardGoals !== undefined) patch.wizard_goals = input.wizardGoals;
   if (input.aiImageGenerationLimit !== undefined) patch.ai_image_generation_limit = input.aiImageGenerationLimit;
+  if (input.aiVideoGenerationLimit !== undefined) patch.ai_video_generation_limit = input.aiVideoGenerationLimit;
   if (input.aiCssGenerationLimit !== undefined) patch.ai_css_generation_limit = input.aiCssGenerationLimit;
   if (input.slideshowVideoGenerationLimit !== undefined)
     patch.slideshow_video_generation_limit = input.slideshowVideoGenerationLimit;
