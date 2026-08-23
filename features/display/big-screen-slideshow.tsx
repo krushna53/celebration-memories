@@ -57,6 +57,34 @@ function noteTextSizeClass(message: string): string {
   return "text-lg sm:text-xl";
 }
 
+/**
+ * Estimated duration for a single slide used to calculate the total
+ * show length. For photo/note/timeline slides this matches the auto-
+ * advance timer exactly. For media slides we don't know the real duration
+ * until the browser loads the file, so we use sensible averages — the
+ * total shown is always labelled "~" to make the estimate clear.
+ */
+function estimateSlideDurationMs(s: DisplaySlide): number {
+  switch (s.kind) {
+    case "title":          return DURATIONS_MS["title"]!;
+    case "gallery-photo":  return DURATIONS_MS["gallery-photo"]!;
+    case "timeline":       return DURATIONS_MS["timeline"]!;
+    case "memory-photo":   return DURATIONS_MS["memory-photo"]!;
+    case "memory-note":    return noteDurationMs(s.message);
+    case "memory-video":   return 90_000;   // ~1.5 min average guest video
+    case "memory-audio":   return 60_000;   // ~1 min average voice message
+    case "highlight-reel": return 180_000;  // ~3 min average highlight reel
+  }
+}
+
+function formatHMS(ms: number): string {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 /** Returns a short human-readable label for a slide — shown in the dot tooltip on hover. */
 function slideLabel(s: DisplaySlide): string {
   switch (s.kind) {
@@ -89,8 +117,18 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hoveredDot, setHoveredDot] = useState<number | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const totalEstimatedMs = slides.reduce((sum, s) => sum + estimateSlideDurationMs(s), 0);
+
+  // Live elapsed-time clock — ticks every second while the show is running.
+  useEffect(() => {
+    if (!started || paused) return;
+    const interval = setInterval(() => setElapsedMs((ms) => ms + 1000), 1000);
+    return () => clearInterval(interval);
+  }, [started, paused]);
 
   const slide = slides[index];
 
@@ -273,6 +311,14 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
             >
               {paused ? <Play size={16} /> : <Pause size={16} />}
             </button>
+
+            {/* Elapsed / estimated total timer */}
+            <div className="rounded-full border border-ivory-100/15 bg-navy-950/60 px-3 py-1.5 font-mono text-xs tabular-nums text-ivory-100/70">
+              <span className="text-ivory-100">{formatHMS(elapsedMs)}</span>
+              <span className="mx-1 text-ivory-100/40">/</span>
+              <span>~{formatHMS(totalEstimatedMs)}</span>
+            </div>
+
             <button
               type="button"
               onClick={toggleFullscreen}
