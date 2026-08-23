@@ -127,12 +127,12 @@ export function GuestbookForm({ token }: GuestbookFormProps) {
         </label>
         <textarea
           id="message"
-          rows={3}
+          rows={5}
           aria-required="true"
           aria-invalid={errors.message ? "true" : "false"}
           className={cn(
             inputClasses,
-            "mt-1.5 resize-none",
+            "mt-1.5 resize-y",
             errors.message && "border-red-500 focus:border-red-500 focus:ring-red-500/30",
           )}
           placeholder="Share a wish, a memory, anything from the heart..."
