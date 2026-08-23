@@ -324,7 +324,7 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
                     ? "border-gold-400 shadow-[0_0_0_2px_rgba(234,179,8,0.35)] scale-105"
                     : "border-transparent opacity-50 hover:opacity-80"
                 }`}
-                style={{ width: 72, height: 48 }}
+                style={{ width: 96, height: 64 }}
               >
                 <SlideThumbnail slide={s} />
               </button>
@@ -420,7 +420,7 @@ function VideoFrameThumbnail({ url }: { url: string }) {
 
   if (dataUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={dataUrl} alt="" className="h-full w-full object-cover" />;
+    return <img src={dataUrl} alt="" className="h-full w-full object-contain" />;
   }
   return (
     <div className="relative h-full w-full bg-navy-900">
@@ -441,7 +441,7 @@ function SlideThumbnail({ slide }: { slide: DisplaySlide }) {
   if (slide.kind === "gallery-photo" || slide.kind === "memory-photo") {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={slide.url} alt="" className="h-full w-full object-cover" />
+      <img src={slide.url} alt="" className="h-full w-full object-contain" />
     );
   }
   if (slide.kind === "memory-video") {
@@ -468,7 +468,7 @@ function SlideThumbnail({ slide }: { slide: DisplaySlide }) {
   if (slide.kind === "memory-note") {
     if (slide.thumbnailUrl) {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={slide.thumbnailUrl} alt="" className="h-full w-full object-cover" />;
+      return <img src={slide.thumbnailUrl} alt="" className="h-full w-full object-contain" />;
     }
     return (
       <div className="h-full w-full bg-navy-900">
@@ -479,7 +479,7 @@ function SlideThumbnail({ slide }: { slide: DisplaySlide }) {
   if (slide.kind === "timeline") {
     if (slide.imageUrl) {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img src={slide.imageUrl} alt="" className="h-full w-full object-cover" />;
+      return <img src={slide.imageUrl} alt="" className="h-full w-full object-contain" />;
     }
     return (
       <div className="h-full w-full bg-navy-900">
@@ -591,7 +591,7 @@ function Slide({
         onMediaEnded={onMediaEnded}
         className="h-full w-full object-contain"
       >
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-32 pt-24">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-40 pt-24">
           {slide.caption ? <SlideCaption>{slide.caption}</SlideCaption> : null}
           <AuthorTag name={slide.authorName} />
         </div>
@@ -749,8 +749,8 @@ function MediaBackdrop({
       >
         <Image src={url} alt={alt} fill sizes="100vw" className="object-cover" priority={false} />
       </motion.div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-32 pt-32" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 px-10 pb-32">{children}</div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-40 pt-32" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 px-10 pb-40">{children}</div>
     </div>
   );
 }
