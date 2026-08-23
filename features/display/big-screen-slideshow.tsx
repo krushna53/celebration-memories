@@ -371,6 +371,67 @@ function SlideEyebrow({ children }: { children: ReactNode }) {
 }
 
 /**
+ * Captures the first readable video frame via a hidden <video>+<canvas> pair
+ * and shows it as the thumbnail. Falls back to a play-icon while loading.
+ */
+function VideoFrameThumbnail({ url }: { url: string }) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    video.src = url;
+
+    function capture() {
+      if (cancelled) return;
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 144;
+        canvas.height = 96;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(video, 0, 0, 144, 96);
+        const thumb = canvas.toDataURL("image/jpeg", 0.7);
+        // A blank (all-black) frame returns a very short dataUrl — retry a bit further in
+        if (thumb.length > 5000) {
+          setDataUrl(thumb);
+        } else if (video.duration && video.currentTime < video.duration * 0.3) {
+          video.currentTime = Math.min(video.currentTime + 2, video.duration * 0.3);
+        }
+      } catch {
+        // CORS / codec issue — leave null (fallback icon shows)
+      }
+    }
+
+    video.addEventListener("loadedmetadata", () => {
+      video.currentTime = Math.min(2, video.duration * 0.05 || 2);
+    });
+    video.addEventListener("seeked", capture);
+    video.load();
+
+    return () => {
+      cancelled = true;
+      video.src = "";
+    };
+  }, [url]);
+
+  if (dataUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={dataUrl} alt="" className="h-full w-full object-cover" />;
+  }
+  return (
+    <div className="relative h-full w-full bg-navy-900">
+      <div className="absolute inset-0 flex items-center justify-center text-ivory-100/50">
+        <Play size={18} />
+      </div>
+    </div>
+  );
+}
+
+/**
  * Small thumbnail shown in the filmstrip strip for each slide.
  * Uses the slide's image URL when available; falls back to an icon.
  */
@@ -384,11 +445,7 @@ function SlideThumbnail({ slide }: { slide: DisplaySlide }) {
     );
   }
   if (slide.kind === "memory-video") {
-    return (
-      <div className="h-full w-full bg-navy-900">
-        <div className={iconCls}><Play size={18} /></div>
-      </div>
-    );
+    return <VideoFrameThumbnail url={slide.url} />;
   }
   if (slide.kind === "highlight-reel") {
     return (
@@ -534,7 +591,7 @@ function Slide({
         onMediaEnded={onMediaEnded}
         className="h-full w-full object-contain"
       >
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-12 pt-24">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-32 pt-24">
           {slide.caption ? <SlideCaption>{slide.caption}</SlideCaption> : null}
           <AuthorTag name={slide.authorName} />
         </div>
@@ -692,8 +749,8 @@ function MediaBackdrop({
       >
         <Image src={url} alt={alt} fill sizes="100vw" className="object-cover" priority={false} />
       </motion.div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-12 pt-32" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 px-10 pb-10">{children}</div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-32 pt-32" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 px-10 pb-32">{children}</div>
     </div>
   );
 }
