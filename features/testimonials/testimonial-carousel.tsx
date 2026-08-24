@@ -74,6 +74,9 @@ export function TestimonialCarousel({ testimonials }: { testimonials: Testimonia
                 {current.name}
                 {current.role ? <span className="font-normal text-navy-700/60"> · {current.role}</span> : null}
               </p>
+              {current.country ? (
+                <p className="mt-0.5 text-xs text-navy-700/50">{current.country}</p>
+              ) : null}
             </div>
           </div>
         </div>

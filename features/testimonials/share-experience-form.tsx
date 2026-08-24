@@ -18,18 +18,14 @@ const inputClasses =
 const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70";
 
 /**
- * Public "Share Your Experience" form (/testimonials/share) — anyone
- * can submit, same open-to-all shape as the Contact page. Photo upload
- * follows the same direct-to-Storage signed-URL pattern as
- * features/guestbook/guestbook-form.tsx, just against the
- * platform-level requestTestimonialPhotoUploadAction instead of an
- * invitee-scoped one. Every submission lands unapproved and only
- * appears on the homepage carousel once the owner approves it at
- * /admin/testimonials — stated here so submitters aren't confused when
- * it doesn't show up immediately.
+ * Public "Share Your Experience" form (/testimonials/share).
+ * Photo, name, and country are all mandatory.
+ * Every submission lands unapproved and only appears on the homepage
+ * carousel once the owner approves it at /admin/testimonials.
  */
 export function ShareExperienceForm() {
   const [photo, setPhoto] = useState<File | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [rating, setRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,27 +46,27 @@ export function ShareExperienceForm() {
   }
 
   async function onSubmit(values: TestimonialFormValues) {
+    // Photo is mandatory
+    if (!photo) {
+      setPhotoError("Please add a photo.");
+      return;
+    }
+    setPhotoError(null);
     setServerError(null);
     setIsSubmitting(true);
 
     try {
-      let photoPath: string | null = null;
+      const compressed = await compressImage(photo);
+      const signed = await requestTestimonialPhotoUploadAction(compressed.name, compressed.type, compressed.size);
+      if (!signed.success) throw new Error(signed.error);
 
-      if (photo) {
-        const compressed = await compressImage(photo);
-        const signed = await requestTestimonialPhotoUploadAction(compressed.name, compressed.type, compressed.size);
-        if (!signed.success) throw new Error(signed.error);
+      const { bucket, path, token: uploadToken } = signed.data;
+      const { error: uploadError } = await supabaseBrowser()
+        .storage.from(bucket)
+        .uploadToSignedUrl(path, uploadToken, compressed);
+      if (uploadError) throw new Error(uploadError.message);
 
-        const { bucket, path, token: uploadToken } = signed.data;
-        const { error: uploadError } = await supabaseBrowser()
-          .storage.from(bucket)
-          .uploadToSignedUrl(path, uploadToken, compressed);
-        if (uploadError) throw new Error(uploadError.message);
-
-        photoPath = path;
-      }
-
-      const result = await submitTestimonialAction(values, photoPath);
+      const result = await submitTestimonialAction(values, path);
       if (!result.success) throw new Error(result.error);
 
       setSubmitted(true);
@@ -105,60 +101,30 @@ export function ShareExperienceForm() {
       noValidate
       className="grid gap-6 rounded-2xl border border-gold-500/15 bg-white px-6 py-8 text-left shadow-sm sm:px-10 sm:py-10"
     >
-      <div>
-        <label className={labelClasses} htmlFor="name">
-          Your Name
-        </label>
-        <input id="name" className={cn(inputClasses, "mt-1.5")} {...register("name")} />
-        {errors.name ? <p className="mt-1 text-xs text-red-600">{errors.name.message}</p> : null}
-      </div>
-
-      <div>
-        <label className={labelClasses} htmlFor="role">
-          Event / Role{" "}
-          <span className="normal-case text-navy-700/40">
-            (optional, e.g. &ldquo;Mother of the Bride, Mumbai&rdquo;)
-          </span>
-        </label>
-        <input id="role" className={cn(inputClasses, "mt-1.5")} {...register("role")} />
-      </div>
-
-      <div>
-        <span className={labelClasses}>Your Rating</span>
-        <div className="mt-1.5">
-          <StarRatingInput value={rating} onChange={chooseRating} />
-        </div>
-        {errors.rating ? <p className="mt-1 text-xs text-red-600">{errors.rating.message}</p> : null}
-      </div>
-
-      <div>
-        <label className={labelClasses} htmlFor="message">
-          Your Experience
-        </label>
-        <textarea
-          id="message"
-          rows={4}
-          className={cn(inputClasses, "mt-1.5 resize-none")}
-          placeholder="Tell us how it went — what you built, what your guests loved, anything at all."
-          {...register("message")}
-        />
-        {errors.message ? <p className="mt-1 text-xs text-red-600">{errors.message.message}</p> : null}
-      </div>
-
+      {/* Photo — mandatory, shown first so it's prominent */}
       <div>
         <span className={labelClasses}>
-          Photo <span className="normal-case text-navy-700/40">(optional)</span>
+          Your Photo <span className="text-red-500">*</span>
         </span>
         <input
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
           className="hidden"
-          onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            setPhoto(e.target.files?.[0] ?? null);
+            setPhotoError(null);
+          }}
         />
         {photo ? (
-          <div className="mt-2 flex items-center justify-between rounded-lg border border-navy-950/10 px-3 py-2 text-sm text-navy-950">
-            <span className="truncate">{photo.name}</span>
+          <div className="mt-2 flex items-center gap-3 rounded-lg border border-navy-950/10 px-3 py-2 text-sm text-navy-950">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={URL.createObjectURL(photo)}
+              alt="Preview"
+              className="h-10 w-10 rounded-full object-cover"
+            />
+            <span className="flex-1 truncate">{photo.name}</span>
             <button
               type="button"
               aria-label="Remove photo"
@@ -174,9 +140,60 @@ export function ShareExperienceForm() {
             onClick={() => fileInputRef.current?.click()}
             className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gold-500/40 px-4 py-3 text-sm text-navy-700/70 hover:border-gold-500"
           >
-            <ImagePlus size={16} /> Add a photo
+            <ImagePlus size={16} /> Add your photo
           </button>
         )}
+        {photoError ? <p className="mt-1 text-xs text-red-600">{photoError}</p> : null}
+      </div>
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div>
+          <label className={labelClasses} htmlFor="name">
+            Your Name <span className="text-red-500">*</span>
+          </label>
+          <input id="name" className={cn(inputClasses, "mt-1.5")} placeholder="e.g. Priya Sharma" {...register("name")} />
+          {errors.name ? <p className="mt-1 text-xs text-red-600">{errors.name.message}</p> : null}
+        </div>
+
+        <div>
+          <label className={labelClasses} htmlFor="country">
+            Country <span className="text-red-500">*</span>
+          </label>
+          <input id="country" className={cn(inputClasses, "mt-1.5")} placeholder="e.g. India" {...register("country")} />
+          {errors.country ? <p className="mt-1 text-xs text-red-600">{errors.country.message}</p> : null}
+        </div>
+      </div>
+
+      <div>
+        <label className={labelClasses} htmlFor="role">
+          Event / Role{" "}
+          <span className="normal-case text-navy-700/40">
+            (optional, e.g. &ldquo;Mother of the Bride&rdquo;)
+          </span>
+        </label>
+        <input id="role" className={cn(inputClasses, "mt-1.5")} {...register("role")} />
+      </div>
+
+      <div>
+        <span className={labelClasses}>Your Rating <span className="text-red-500">*</span></span>
+        <div className="mt-1.5">
+          <StarRatingInput value={rating} onChange={chooseRating} />
+        </div>
+        {errors.rating ? <p className="mt-1 text-xs text-red-600">{errors.rating.message}</p> : null}
+      </div>
+
+      <div>
+        <label className={labelClasses} htmlFor="message">
+          Your Experience <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          id="message"
+          rows={4}
+          className={cn(inputClasses, "mt-1.5 resize-none")}
+          placeholder="Tell us how it went — what you built, what your guests loved, anything at all."
+          {...register("message")}
+        />
+        {errors.message ? <p className="mt-1 text-xs text-red-600">{errors.message.message}</p> : null}
       </div>
 
       <div>
@@ -187,8 +204,7 @@ export function ShareExperienceForm() {
             {...register("consent")}
           />
           <span>
-            I agree that this story (and photo, if added) may be reviewed and shown publicly on the homepage. See
-            the{" "}
+            I agree that this story, photo, and name may be reviewed and shown publicly on the homepage. See the{" "}
             <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-gold-600 underline underline-offset-2">
               Privacy Notice
             </a>

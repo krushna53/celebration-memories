@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { BUILDER, SUPPORT } from "@/lib/constants";
 import { getPlatformVideoSettings } from "@/services/platform-video-settings";
 import { FeatureVideoSection } from "@/features/platform/feature-video-section";
+import { TestimonialsSection } from "@/features/testimonials/testimonials-section";
 
 const LIVE_FEATURES = [
   {
@@ -218,6 +219,8 @@ export async function PlatformMarketingContent() {
           </div>
         </div>
       </div>
+
+      <TestimonialsSection />
 
       <div className="bg-navy-950 py-20 text-center text-ivory-50 sm:py-24">
         <div className="mx-auto max-w-xl px-4 sm:px-6">

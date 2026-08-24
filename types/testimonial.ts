@@ -4,6 +4,7 @@ import { z } from "zod";
 export interface Testimonial {
   id: string;
   name: string;
+  country: string;
   role: string | null;
   rating: number;
   message: string;
@@ -15,6 +16,7 @@ export interface Testimonial {
 
 export const testimonialFormSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name.").max(80),
+  country: z.string().trim().min(2, "Please enter your country.").max(80),
   role: z.string().trim().max(120).optional().or(z.literal("")),
   rating: z.coerce.number().int().min(1, "Please choose a star rating.").max(5),
   message: z
@@ -22,6 +24,7 @@ export const testimonialFormSchema = z.object({
     .trim()
     .min(10, "Please share a few words about your experience.")
     .max(1000, "Please keep it under 1000 characters."),
+  photo: z.any().optional(),
   consent: z.boolean().refine((v) => v === true, "Please agree before submitting."),
 });
 

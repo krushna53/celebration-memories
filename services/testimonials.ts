@@ -7,6 +7,7 @@ import type { Testimonial, TestimonialFormValues } from "@/types/testimonial";
 interface TestimonialRow {
   id: string;
   name: string;
+  country: string;
   role: string | null;
   rating: number;
   message: string;
@@ -20,6 +21,7 @@ function mapRow(row: TestimonialRow): Testimonial {
   return {
     id: row.id,
     name: row.name,
+    country: row.country,
     role: row.role,
     rating: row.rating,
     message: row.message,
@@ -76,6 +78,7 @@ export async function createTestimonial(
 ): Promise<void> {
   const { error } = await supabaseAdmin().from("testimonials").insert({
     name: values.name,
+    country: values.country,
     role: values.role || null,
     rating: values.rating,
     message: values.message,
