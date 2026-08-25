@@ -759,7 +759,7 @@ function MediaBackdrop({
         transition={{ duration: 9, ease: "linear" }}
         className="absolute inset-0"
       >
-        <Image src={url} alt={alt} fill sizes="100vw" className="object-cover" priority={false} />
+        <Image src={url} alt={alt} fill sizes="100vw" className="object-contain" priority={false} />
       </motion.div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/90 to-transparent px-10 pb-40 pt-32" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 px-10 pb-40">{children}</div>
