@@ -50,34 +50,35 @@ export function TestimonialCarousel({ testimonials }: { testimonials: Testimonia
   return (
     <div className="mx-auto max-w-4xl">
       <div className="relative overflow-hidden rounded-2xl border border-gold-500/15 bg-white shadow-sm">
-        <div className="grid gap-0 sm:grid-cols-[220px_1fr]">
-          <div className="relative flex aspect-square items-center justify-center bg-navy-950 sm:aspect-auto">
-            {current.photoUrl ? (
-              <Image
-                src={current.photoUrl}
-                alt={current.name}
-                fill
-                className="object-cover"
-                sizes="220px"
-              />
-            ) : (
-              <span className="font-display text-4xl text-gold-300">{initials(current.name)}</span>
-            )}
+        {/* Photo — full width on top so landscape/group shots show without cropping */}
+        {current.photoUrl ? (
+          <div className="relative h-56 w-full bg-navy-950 sm:h-72">
+            <Image
+              src={current.photoUrl}
+              alt={current.name}
+              fill
+              className="object-contain"
+              sizes="(max-width: 768px) 100vw, 800px"
+            />
           </div>
+        ) : (
+          <div className="flex h-24 w-full items-center justify-center bg-navy-950">
+            <span className="font-display text-4xl text-gold-300">{initials(current.name)}</span>
+          </div>
+        )}
 
-          <div className="flex flex-col justify-center gap-4 p-6 sm:p-9">
-            <Quote className="text-gold-500/30" size={28} />
-            <p className="text-base leading-relaxed text-navy-950 sm:text-lg">&ldquo;{current.message}&rdquo;</p>
-            <div>
-              <StarRatingDisplay rating={current.rating} />
-              <p className="mt-2 text-sm font-medium text-navy-950">
-                {current.name}
-                {current.role ? <span className="font-normal text-navy-700/60"> · {current.role}</span> : null}
-              </p>
-              {current.country ? (
-                <p className="mt-0.5 text-xs text-navy-700/50">{current.country}</p>
-              ) : null}
-            </div>
+        <div className="flex flex-col gap-4 p-6 sm:p-9">
+          <Quote className="text-gold-500/30" size={28} />
+          <p className="text-base leading-relaxed text-navy-950 sm:text-lg">&ldquo;{current.message}&rdquo;</p>
+          <div>
+            <StarRatingDisplay rating={current.rating} />
+            <p className="mt-2 text-sm font-medium text-navy-950">
+              {current.name}
+              {current.role ? <span className="font-normal text-navy-700/60"> · {current.role}</span> : null}
+            </p>
+            {current.country ? (
+              <p className="mt-0.5 text-xs text-navy-700/50">{current.country}</p>
+            ) : null}
           </div>
         </div>
 
