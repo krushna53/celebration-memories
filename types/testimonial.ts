@@ -23,7 +23,7 @@ export const testimonialFormSchema = z.object({
     .string()
     .trim()
     .min(10, "Please share a few words about your experience.")
-    .max(1000, "Please keep it under 1000 characters."),
+    .max(3000, "Please keep it under 3000 characters."),
   photo: z.any().optional(),
   consent: z.boolean().refine((v) => v === true, "Please agree before submitting."),
 });

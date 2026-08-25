@@ -190,7 +190,7 @@ export function ShareExperienceForm() {
           id="message"
           rows={4}
           className={cn(inputClasses, "mt-1.5 resize-none")}
-          placeholder="Tell us how it went — what you built, what your guests loved, anything at all."
+          placeholder="Tell us how it went — what you built, what your guests loved, anything at all. (Up to 3000 characters)"
           {...register("message")}
         />
         {errors.message ? <p className="mt-1 text-xs text-red-600">{errors.message.message}</p> : null}
