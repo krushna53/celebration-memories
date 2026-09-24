@@ -36,6 +36,81 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Friday, September 25",
+    items: [
+      {
+        title: "Free AI Image tool fixed — it had never actually generated an image",
+        detail:
+          "The public tool at /ai-invitation-image always ended with \"Something went wrong. Please check your connection and try again.\" Production data confirmed it had never produced a single image: generating one takes 20–60 seconds, longer than the website's server is allowed to run a single request, so every attempt was cut off. The slow OpenAI step now runs in a Supabase Edge Function (the same approach the admin AI Image tool already used successfully), while the website still checks the prompt and the 1-free-image-per-hour limit first. A failed attempt no longer uses up the visitor's hourly allowance, and error messages are clearer (including when OpenAI's safety filter rejects a description).",
+        test:
+          "Open /ai-invitation-image (hard-refresh first), pick one of the example prompts, and tap Generate Free Image. Wait up to a minute — confirm the image appears and the Download button works. Try again straight away and confirm the friendly \"1 free image per hour\" message appears.",
+      },
+      {
+        title: "Mobile menu: bigger, easier-to-tap links",
+        detail:
+          "Menu links on phones were only about 20px tall and hard to hit. A shared \"touch target\" style used by around 50 buttons and links across the site had never actually been defined; it's now a 44px minimum everywhere. The mobile menu itself now has full-width rows with dividers and larger text, and scrolls instead of cutting off the bottom items.",
+        test:
+          "On a phone (or the installed app), open the ☰ menu on the homepage and tap each link — confirm every one is easy to hit and Login/Logout at the bottom is always visible.",
+      },
+      {
+        title: "Login always visible in the app, plus a clear Go to Dashboard button",
+        detail:
+          "If the sign-in check failed (e.g. a weak connection in the installed app), the menu showed no Login option at all — it now falls back to showing Login. When signed in, the mobile menu shows \"Signed in as …\", a clear Go to Dashboard button, and Logout, instead of only a plain \"Hi email\" line with no obvious way into the admin.",
+        test:
+          "Signed out: open the mobile menu and confirm Login appears. Sign in, reopen the menu, and confirm Go to Dashboard takes you straight to your dashboard.",
+      },
+      {
+        title: "Continue with Google is now the main way to sign in or sign up",
+        detail:
+          "Every sign-in and sign-up screen — Login, the Create Your Event wizard, host registration, Become a Partner, and the Build RSVP / Form \"Create an account to view responses\" card — now leads with a large Continue with Google button. Email and password still work (so accounts on non-Google email addresses aren't locked out) but sit behind a smaller \"Use email instead\" link. The Build RSVP / Form card gained Google sign-in for the first time: signing in with Google creates the account, attaches the form, and lands on the responses dashboard with no confirmation email needed.",
+        test:
+          "Visit /login and confirm Google is the main button with \"Use email instead\" underneath. Build a new form at /forms/new, publish it, and use Continue with Google on the account card — confirm you land on /forms/dashboard with that form listed. Note: Google blocks sign-in inside the native Play Store / App Store app wrapper; it works on the website and the home-screen install from Chrome.",
+      },
+      {
+        title: "Video recorder: correct shape on laptops (no more extreme close-up)",
+        detail:
+          "Recording a video on a MacBook or laptop defaulted to a tall 9:16 phone shape, which cropped a thin strip out of the landscape webcam and blew it up into a blurry close-up of the face. The recorder now opens in 16:9 on laptops and desktops (and phones held sideways) and 9:16 on phones held upright. It also asks the camera for proper HD resolution, and the preview now shows exactly what's being recorded. A new 16:9 option joins 9:16, 1:1 and 4:3, each labelled (Landscape, Portrait, Square, Classic).",
+        test:
+          "On a laptop, open an invite link > Record a Video — confirm the preview shows your whole face and background in a wide frame with 16:9 selected. On a phone held upright, confirm it opens in 9:16 and fills the screen. Record a short clip and check the uploaded video matches the preview.",
+      },
+      {
+        title: "Admin on phones: new bottom tab bar instead of a 49-link scrolling strip",
+        detail:
+          "On a phone (and in the installed app), the admin menu was one sideways-scrolling row of up to 49 links with only about 3 visible at a time, and nothing showed which page you were on. Phones now get a native-app-style bottom tab bar — Overview, Invitees, Memories, Check-In and More — and More opens a full-screen list of every other page grouped into Your Event, Guests & Memories, Create & Share, Payments, Account & Help, and Platform (owner only), plus a shortcut to the Simple View. On larger screens the original strip stays, now with the current page highlighted. The header also fits on one line on phones (Take the Tour and Sign Out become icons), and the Help & FAQ panel no longer pops open by itself on phones.",
+        test:
+          "Open /admin on a phone. Confirm the bottom bar shows, the current tab is highlighted, and More lists every page in groups. On a laptop, confirm the top strip highlights the page you're on. Take the Tour should still work on both.",
+      },
+      {
+        title: "Admin tables readable on phones — Manage and Delete buttons no longer cut off",
+        detail:
+          "All Events, Members, Team, Drafts, Promo Codes, Organizers, Session Organizers, Billing and Invitees showed desktop tables on phones. Most sat inside boxes that clipped anything too wide, so the right-hand columns — including Manage, View as Client, Remove and Delete — were impossible to reach on a phone. On phones each row is now a card: the name as the title, each detail on its own labelled line, and the action buttons underneath with bigger tap targets. Invitees' four top buttons (Import, Export, Bulk Send, Add Invitee) now wrap into a 2×2 grid instead of running off the screen, and invitee cards skip the less-used columns (full detail is still on desktop). The Games page link card also no longer runs off the side of the screen.",
+        test:
+          "On a phone: Admin > All Events — confirm each event is a card and Manage works. Admin > Invitees — confirm all four buttons are visible and each guest shows as a card with Copy/WhatsApp/Edit actions.",
+      },
+      {
+        title: "Event Settings: Save button always visible on phones",
+        detail:
+          "Event Settings is about 14 screens long on a phone and Save Changes only existed at the very bottom. It's now pinned to the bottom of the screen (just above the tab bar) on phones, so you can save right after changing anything. Desktop is unchanged.",
+        test:
+          "On a phone, open Admin > Event Settings, change the tagline near the top, and tap the pinned Save Changes without scrolling.",
+      },
+      {
+        title: "Website header no longer crowded on laptops",
+        detail:
+          "On laptop-sized windows the top menu squeezed \"EveryMoment\" into \"EveryMome…\", wrapped labels onto two lines, and pushed \"Hi {email}\" off the edge. The full menu now only appears once there's room (about 1280px wide); below that it uses the ☰ menu. When signed in, the long email greeting is replaced by a compact Dashboard button with your initial, with the email shown on hover.",
+        test:
+          "On a 13-inch laptop, open everymoment.in — confirm the header fits on one line (or shows the ☰ menu) and, when signed in, a Dashboard button that goes to your dashboard.",
+      },
+      {
+        title: "Admin dashboard: no more dead end after login",
+        detail:
+          "After signing in, the owner could land on a page that only said \"No event is assigned to this account yet… check your Supabase seed data\" with no way forward. The owner now automatically falls back to the newest active event if the default event is missing. When there's genuinely no event, every admin page shows a proper screen with buttons instead: Go to All Events / Create a New Event for the owner, and Create Your Event / Contact Us for a client account not yet linked to an event.",
+        test:
+          "Sign in as the owner and confirm you land on an event's Overview rather than the error message. Sign in with a client account that has no event and confirm the \"Let's set up your event\" screen with Create Your Event and Contact Us buttons.",
+      },
+    ],
+  },
+  {
     date: "Sunday, August 23",
     items: [
       {
