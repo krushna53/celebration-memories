@@ -210,3 +210,79 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 44px;
   min-width: 44px;
 }
+
+/*
+ * Admin tables on phones: `stack-table` turns each row into a card —
+ * first cell as the card title, every labelled cell as a
+ * "LABEL ....... value" line (label from the cell's data-label), and
+ * the unlabelled last cell (row actions) as a wrapping button row.
+ * These tables sat inside overflow-hidden wrappers, so on a phone their
+ * right-hand columns — including Manage / Remove / Delete — were cut
+ * off entirely, not just scrollable. Desktop layout is untouched.
+ * Unlayered on purpose so it beats the cells' Tailwind padding utilities.
+ */
+@media (max-width: 767px) {
+  .stack-table thead {
+    display: none;
+  }
+  .stack-table,
+  .stack-table tbody,
+  .stack-table tr {
+    display: block;
+    width: 100%;
+  }
+  .stack-table tr {
+    padding: 0.875rem 1rem;
+  }
+  .stack-table td {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    max-width: none;
+    padding: 0.25rem 0;
+    text-align: right;
+  }
+  .stack-table td:first-child {
+    display: block;
+    padding: 0 0 0.5rem;
+    text-align: left;
+  }
+  .stack-table td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    margin-right: auto;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: left;
+    color: color-mix(in srgb, var(--color-navy-700) 60%, transparent);
+  }
+  .stack-table td:last-child:not([data-label]):not(:first-child) {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    padding-top: 0.625rem;
+    text-align: left;
+  }
+  .stack-table td:last-child:not([data-label]):not(:first-child) :is(a, button) {
+    min-height: 40px;
+  }
+  .stack-table td :is(a, button):has(> svg:only-child) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .stack-table td[colspan] {
+    display: block;
+    text-align: center;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Secondary columns a phone card can skip (full detail stays on desktop). */
+  .stack-table td[data-mobile-hidden] {
+    display: none;
+  }
+}

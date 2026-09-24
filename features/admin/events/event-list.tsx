@@ -31,7 +31,7 @@ export function EventList({ events, membersByEvent }: EventListProps) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white">
-      <table className="w-full text-left text-sm">
+      <table className="stack-table w-full text-left text-sm">
         <thead className="bg-navy-950/5 text-xs uppercase tracking-wide text-navy-700/60">
           <tr>
             <th className="px-4 py-3">Event</th>
@@ -52,11 +52,11 @@ export function EventList({ events, membersByEvent }: EventListProps) {
                 <div className="font-medium text-navy-950">{event.honoreeName}</div>
                 <div className="text-xs text-navy-700/50">{event.eventTitle}</div>
               </td>
-              <td className="px-4 py-3 text-navy-700/70">{EVENT_CATEGORY_LABELS[event.category]}</td>
-              <td className="px-4 py-3">
+              <td data-label="Occasion" className="px-4 py-3 text-navy-700/70">{EVENT_CATEGORY_LABELS[event.category]}</td>
+              <td data-label="Visibility" className="px-4 py-3">
                 <VisibilityToggle eventId={event.id} visibility={event.visibility} />
               </td>
-              <td className="px-4 py-3">
+              <td data-label="Links" className="px-4 py-3">
                 <div className="flex items-center gap-2.5 text-navy-700/50">
                   <Link
                     href={`/events/${event.slug}`}
@@ -87,7 +87,7 @@ export function EventList({ events, membersByEvent }: EventListProps) {
                   </Link>
                 </div>
               </td>
-              <td className="px-4 py-3 text-navy-700/70">
+              <td data-label="Client" className="px-4 py-3 text-navy-700/70">
                 {members.length > 0 ? (
                   <div className="flex flex-col gap-0.5">
                     {members.map((email) => (
@@ -106,7 +106,7 @@ export function EventList({ events, membersByEvent }: EventListProps) {
                   </Link>
                 )}
               </td>
-              <td className="px-4 py-3 text-navy-700/70">
+              <td data-label="Created" className="px-4 py-3 text-navy-700/70">
                 {new Date(event.createdAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",

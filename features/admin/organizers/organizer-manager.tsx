@@ -56,7 +56,7 @@ export function OrganizerManager({ eventId, initialOrganizers }: OrganizerManage
   return (
     <div>
       <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white">
-        <table className="w-full text-left text-sm">
+        <table className="stack-table w-full text-left text-sm">
           <thead className="bg-navy-950/5 text-xs uppercase tracking-wide text-navy-700/60">
             <tr>
               <th className="px-4 py-3">Organizer</th>

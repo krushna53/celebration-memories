@@ -318,12 +318,12 @@ function GameCard({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-[auto_1fr]">
+      <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
         {link ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={qrImageUrl(link)} alt="QR code to play" className="h-32 w-32 rounded-lg border border-navy-950/10" />
         ) : null}
-        <div>
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-lg border border-navy-950/10 bg-navy-950/[0.02] px-3 py-2 text-xs text-navy-700">
               {link || "Loading..."}

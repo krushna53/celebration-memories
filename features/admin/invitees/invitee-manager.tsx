@@ -338,7 +338,7 @@ export function InviteeManager({
             className={cn(inputClasses, "pl-9")}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <input
             ref={fileInputRef}
             type="file"
@@ -438,7 +438,7 @@ export function InviteeManager({
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-navy-950/10 bg-white">
-        <table className="w-full min-w-[1280px] text-left text-sm">
+        <table className="stack-table w-full text-left text-sm md:min-w-[1280px]">
           <thead className="border-b border-navy-950/10 text-xs uppercase tracking-wide text-navy-700/50">
             <tr>
               <SortableTh label="Name" sortKey="name" sort={sort} onSort={toggleSort} />
@@ -513,7 +513,7 @@ export function InviteeManager({
                 ) : (
                   <>
                     <td className="px-4 py-3 font-medium text-navy-950">{inv.name}</td>
-                    <td className="px-4 py-3 text-navy-700/70">
+                    <td data-label="Phone" className="px-4 py-3 text-navy-700/70">
                       {inv.phone || "—"}
                       {inv.inviteChannel ? (
                         <span className="ml-1.5 rounded-full bg-navy-950/5 px-1.5 py-0.5 text-[10px] text-navy-700/60">
@@ -521,11 +521,11 @@ export function InviteeManager({
                         </span>
                       ) : null}
                     </td>
-                    <td className="max-w-[180px] truncate px-4 py-3 text-navy-700/70" title={inv.email ?? undefined}>
+                    <td data-label="Email" className="max-w-[180px] truncate px-4 py-3 text-navy-700/70" title={inv.email ?? undefined}>
                       {inv.email || "—"}
                     </td>
-                    <td className="px-4 py-3 text-navy-700/70">{inv.relationship || "—"}</td>
-                    <td className="px-4 py-3">
+                    <td data-label="Relationship" data-mobile-hidden className="px-4 py-3 text-navy-700/70">{inv.relationship || "—"}</td>
+                    <td data-label="RSVP" className="px-4 py-3">
                       <span
                         className={cn(
                           "rounded-full px-2.5 py-1 text-xs font-medium",
@@ -535,7 +535,7 @@ export function InviteeManager({
                         {RSVP_LABEL[inv.rsvpStatus]}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-navy-700/70">
+                    <td data-label="Party" className="px-4 py-3 text-navy-700/70">
                       {inv.rsvpDetail ? (
                         <span title={`${inv.rsvpDetail.adults} adult(s), ${inv.rsvpDetail.children} child(ren)`}>
                           {inv.rsvpDetail.adults + inv.rsvpDetail.children}
@@ -548,19 +548,19 @@ export function InviteeManager({
                         "—"
                       )}
                     </td>
-                    <td className="px-4 py-3 capitalize text-navy-700/70">
+                    <td data-label="Meal" data-mobile-hidden className="px-4 py-3 capitalize text-navy-700/70">
                       {inv.rsvpDetail?.mealPreference?.replace(/_/g, " ") || "—"}
                     </td>
-                    <td
+                    <td data-label="Comments" data-mobile-hidden
                       className="max-w-[200px] truncate px-4 py-3 text-navy-700/70"
                       title={inv.rsvpDetail?.comments ?? undefined}
                     >
                       {inv.rsvpDetail?.comments || "—"}
                     </td>
-                    <td className="px-4 py-3 text-navy-700/70">
+                    <td data-label="RSVP Date" data-mobile-hidden className="px-4 py-3 text-navy-700/70">
                       {inv.rsvpDetail ? new Date(inv.rsvpDetail.submittedAt).toLocaleDateString() : "—"}
                     </td>
-                    <td className="px-4 py-3 text-navy-700/70">
+                    <td data-label="Invite Sent" className="px-4 py-3 text-navy-700/70">
                       {inv.inviteSentAt ? (
                         <span className="inline-flex items-center gap-1 text-green-700">
                           <CheckCheck size={14} />
@@ -570,8 +570,8 @@ export function InviteeManager({
                         <span className="text-navy-700/30">Not sent</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-navy-700/70">{inv.visitCount}</td>
-                    <td className="px-4 py-3">{inv.checkedIn ? "Yes" : "No"}</td>
+                    <td data-label="Visits" data-mobile-hidden className="px-4 py-3 text-navy-700/70">{inv.visitCount}</td>
+                    <td data-label="Checked In" className="px-4 py-3">{inv.checkedIn ? "Yes" : "No"}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button

@@ -90,7 +90,7 @@ export function PromoCodeList({ initialCodes }: { initialCodes: PromoCodeRecord[
       ) : null}
 
       <div className="mt-4 overflow-hidden rounded-xl border border-navy-950/10 bg-white">
-        <table className="w-full text-left text-sm">
+        <table className="stack-table w-full text-left text-sm">
           <thead className="bg-navy-950/5 text-xs uppercase tracking-wide text-navy-700/60">
             <tr>
               <th className="px-4 py-3">Code</th>
@@ -104,12 +104,12 @@ export function PromoCodeList({ initialCodes }: { initialCodes: PromoCodeRecord[
             {codes.map((c) => (
               <tr key={c.id}>
                 <td className="px-4 py-3 font-mono font-medium text-navy-950">{c.code}</td>
-                <td className="px-4 py-3 text-navy-700/60">{c.description || "—"}</td>
-                <td className="px-4 py-3 text-navy-700/60">
+                <td data-label="Note" className="px-4 py-3 text-navy-700/60">{c.description || "—"}</td>
+                <td data-label="Used" className="px-4 py-3 text-navy-700/60">
                   {c.redemptionCount}
                   {c.maxRedemptions ? ` / ${c.maxRedemptions}` : ""}
                 </td>
-                <td className="px-4 py-3">
+                <td data-label="Status" className="px-4 py-3">
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs ${
                       c.active ? "bg-green-100 text-green-700" : "bg-navy-950/5 text-navy-700/50"

@@ -77,7 +77,7 @@ export function SessionOrganizerManager({ eventId, scheduleItems, initialOrganiz
   return (
     <div>
       <div className="overflow-hidden rounded-xl border border-navy-950/10 bg-white">
-        <table className="w-full text-left text-sm">
+        <table className="stack-table w-full text-left text-sm">
           <thead className="bg-navy-950/5 text-xs uppercase tracking-wide text-navy-700/60">
             <tr>
               <th className="px-4 py-3">Organizer</th>
@@ -92,7 +92,7 @@ export function SessionOrganizerManager({ eventId, scheduleItems, initialOrganiz
                   <div className="font-medium text-navy-950">{organizer.name || "—"}</div>
                   <div className="text-xs text-navy-700/50">{organizer.email}</div>
                 </td>
-                <td className="px-4 py-3 text-navy-700/70">{sessionTitlesFor(organizer)}</td>
+                <td data-label="Assigned Sessions" className="px-4 py-3 text-navy-700/70">{sessionTitlesFor(organizer)}</td>
                 <td className="px-4 py-3 text-right">
                   <button
                     type="button"

@@ -83,7 +83,7 @@ export default async function AdminBillingPage() {
           <p className="mt-2 text-sm text-navy-700/60">No paid or promo activations yet.</p>
         ) : (
           <div className="mt-3 overflow-hidden rounded-xl border border-navy-950/10 bg-white">
-            <table className="w-full text-left text-sm">
+            <table className="stack-table w-full text-left text-sm">
               <thead className="bg-navy-950/5 text-xs uppercase tracking-wide text-navy-700/60">
                 <tr>
                   <th className="px-4 py-3">Event</th>
@@ -100,13 +100,13 @@ export default async function AdminBillingPage() {
                       <div className="font-medium text-navy-950">{p.honoreeName || "—"}</div>
                       <div className="text-xs text-navy-700/50">{p.eventSlug}</div>
                     </td>
-                    <td className="px-4 py-3 text-navy-700/70">
+                    <td data-label="Provider" className="px-4 py-3 text-navy-700/70">
                       {PROVIDER_LABEL[p.provider] ?? p.provider}
                       {p.promoCode ? <span className="ml-1 text-xs text-navy-700/40">({p.promoCode})</span> : null}
                     </td>
-                    <td className="px-4 py-3 text-navy-700/70">{p.plan === "one_time" ? "One-Time" : "Subscription"}</td>
-                    <td className="px-4 py-3 text-navy-700/70">{formatAmount(p.amount, p.currency)}</td>
-                    <td className="px-4 py-3 text-navy-700/70">
+                    <td data-label="Plan" className="px-4 py-3 text-navy-700/70">{p.plan === "one_time" ? "One-Time" : "Subscription"}</td>
+                    <td data-label="Amount" className="px-4 py-3 text-navy-700/70">{formatAmount(p.amount, p.currency)}</td>
+                    <td data-label="Date" className="px-4 py-3 text-navy-700/70">
                       {new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </td>
                   </tr>
