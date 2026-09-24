@@ -105,12 +105,6 @@ export function NavbarAuthStatus({ variant, onNavigate }: NavbarAuthStatusProps)
     );
   }
 
-  const greeting = (
-    <span className={cn(LINK_CLASSES[variant], "truncate", variant === "desktop" ? "max-w-[180px]" : "max-w-full")} title={email}>
-      Hi {email}
-    </span>
-  );
-
   if (variant === "mobile") {
     // Explicit, full-width rows on mobile — the bare "Hi {email}" text
     // alone gave no visible way into the dashboard from the app.
@@ -135,17 +129,44 @@ export function NavbarAuthStatus({ variant, onNavigate }: NavbarAuthStatusProps)
     );
   }
 
+  // Desktop: a compact Dashboard pill + icon-only Logout. The full
+  // "Hi {email}" greeting was the widest item in the header and pushed
+  // it off the edge on laptop screens; the email is still one hover
+  // away (title) and announced to screen readers.
+  const initial = email.charAt(0).toUpperCase();
+
   return (
     <>
       {dashboardPath ? (
-        <Link href={dashboardPath} onClick={onNavigate} className="min-w-0">
-          {greeting}
+        <Link
+          href={dashboardPath}
+          onClick={onNavigate}
+          title={`Signed in as ${email}`}
+          aria-label={`Dashboard (signed in as ${email})`}
+          className={cn(LOGIN_PILL_CLASSES.desktop, "flex items-center gap-2 whitespace-nowrap pl-1.5")}
+        >
+          <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-500 text-xs font-semibold text-navy-950">
+            {initial}
+          </span>
+          Dashboard
         </Link>
       ) : (
-        greeting
+        <span
+          title={`Signed in as ${email}`}
+          aria-label={`Signed in as ${email}`}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-500 text-sm font-semibold text-navy-950"
+        >
+          {initial}
+        </span>
       )}
-      <button type="button" onClick={handleSignOut} className={cn(LINK_CLASSES[variant], "flex shrink-0 items-center gap-1.5")}>
-        <LogOut size={14} /> Logout
+      <button
+        type="button"
+        onClick={handleSignOut}
+        title="Logout"
+        aria-label="Logout"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ivory-100/70 transition-luxury duration-300 hover:bg-white/10 hover:text-gold-300"
+      >
+        <LogOut size={16} />
       </button>
     </>
   );

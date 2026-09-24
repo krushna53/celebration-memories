@@ -93,6 +93,17 @@ export function Navbar({
 
   const showSolidBackground = !transparentUntilScroll || scrolled;
 
+  // Where the inline desktop links take over from the ☰ sheet. A long
+  // link list (the platform pages' 7 links + sign-in state, or an
+  // event's 7 section anchors) doesn't fit beside the brand until ~1280px
+  // — switching at md (768px) squeezed the brand ("EveryMome…"), wrapped
+  // labels onto two lines, and pushed "Hi {email}" off the edge. Short
+  // lists (share pages' single link) keep the md switch. Static class
+  // strings on purpose so Tailwind's scanner picks them up.
+  const wideNav = navLinks.length + (showLogin ? 1 : 0) > 3;
+  const desktopOnly = wideNav ? "hidden xl:flex" : "hidden md:flex";
+  const mobileOnly = wideNav ? "xl:hidden" : "md:hidden";
+
   return (
     <header
       className={cn(
@@ -106,7 +117,7 @@ export function Navbar({
         <Link
           href={homeHref}
           onClick={handleBrandClick}
-          className="flex items-center gap-2 truncate font-display text-base tracking-wide text-gold-300 sm:text-lg"
+          className="flex min-w-0 items-center gap-2 font-display text-base tracking-wide text-gold-300 sm:text-lg"
         >
           {/*
             The brand mark only ever shows on platform-level pages
@@ -120,22 +131,22 @@ export function Navbar({
             // eslint-disable-next-line @next/next/no-img-element
             <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-7 w-7 shrink-0" />
           ) : null}
-          {honoreeName}
+          <span className="truncate">{honoreeName}</span>
         </Link>
 
-        <ul className="hidden items-center gap-8 md:flex">
+        <ul className={cn("shrink-0 items-center gap-6", desktopOnly)}>
           {navLinks.map((link) => (
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="text-sm tracking-wide text-ivory-100/85 transition-luxury duration-300 hover:text-gold-300"
+                className="whitespace-nowrap text-sm tracking-wide text-ivory-100/85 transition-luxury duration-300 hover:text-gold-300"
               >
                 {link.label}
               </Link>
             </li>
           ))}
           {showLogin ? (
-            <li className="flex items-center gap-4">
+            <li className="flex items-center gap-2 border-l border-ivory-100/15 pl-6">
               <NavbarAuthStatus variant="desktop" />
             </li>
           ) : null}
@@ -145,7 +156,7 @@ export function Navbar({
           type="button"
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
-          className="tap-target -mr-2 flex shrink-0 items-center justify-center text-ivory-50 md:hidden"
+          className={cn("tap-target -mr-2 flex shrink-0 items-center justify-center text-ivory-50", mobileOnly)}
           onClick={() => setOpen((v) => !v)}
         >
           {open ? <X size={22} /> : <Menu size={22} />}
@@ -154,7 +165,8 @@ export function Navbar({
 
       <div
         className={cn(
-          "transition-luxury duration-500 md:hidden",
+          "transition-luxury duration-500",
+          mobileOnly,
           // Scrolls instead of clipping — a fixed max-h used to cut the
           // Login/Logout rows off the bottom once enough links were added.
           open ? "max-h-[calc(100dvh-4rem)] overflow-y-auto" : "max-h-0 overflow-hidden",
