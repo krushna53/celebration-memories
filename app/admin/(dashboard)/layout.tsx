@@ -10,7 +10,8 @@ import { AdminTourController, type TourStep } from "@/features/admin/tour/admin-
 import { FaqChatbot } from "@/features/admin/support/faq-chatbot";
 import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
 import { NotificationBell } from "@/features/admin/notifications/notification-bell";
-import { ADMIN_NAV, AdminNav } from "@/features/admin/components/admin-nav";
+import { AdminNav } from "@/features/admin/components/admin-nav";
+import { ADMIN_NAV } from "@/lib/admin-nav";
 
 
 export default async function AdminDashboardLayout({
