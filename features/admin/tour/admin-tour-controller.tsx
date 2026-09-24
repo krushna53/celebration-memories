@@ -38,6 +38,22 @@ const PADDING = 8;
  * features/admin/tour/actions.ts) and can be replayed anytime via the
  * "Take the Tour" button this component also renders.
  */
+/**
+ * The nav renders each destination twice (desktop strip + phone bottom
+ * bar, features/admin/components/admin-nav.tsx) and hides one with CSS,
+ * so pick whichever copy is actually on screen. Items that only live in
+ * the phone's "More" sheet have no visible target — the tour then shows
+ * its card without a spotlight, same as any missing target.
+ */
+function findTourTarget(href: string): HTMLElement | null {
+  const matches = document.querySelectorAll<HTMLElement>(`[data-tour-id="${href}"]`);
+  for (const el of matches) {
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) return el;
+  }
+  return null;
+}
+
 export function AdminTourController({ steps, autoStart }: AdminTourControllerProps) {
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -48,7 +64,7 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
   const measure = useCallback(() => {
     const step = steps[stepIndex];
     if (!step) return;
-    const el = document.querySelector<HTMLElement>(`[data-tour-id="${step.href}"]`);
+    const el = findTourTarget(step.href);
     if (!el) {
       setRect(null);
       return;
@@ -75,7 +91,7 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
     if (!open) return;
 
     const step = steps[stepIndex];
-    const el = step ? document.querySelector<HTMLElement>(`[data-tour-id="${step.href}"]`) : null;
+    const el = step ? findTourTarget(step.href) : null;
     el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
 
     measure();
@@ -138,9 +154,11 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
       <button
         type="button"
         onClick={startTour}
-        className="tap-target flex items-center gap-1.5 text-sm text-ivory-100/70 hover:text-gold-300"
+        aria-label="Take the Tour"
+        title="Take the Tour"
+        className="tap-target flex items-center justify-center gap-1.5 whitespace-nowrap text-sm text-ivory-100/70 hover:text-gold-300"
       >
-        <Compass size={16} /> Take the Tour
+        <Compass size={16} /> <span className="hidden sm:inline">Take the Tour</span>
       </button>
 
       {open && step && rect ? (

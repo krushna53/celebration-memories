@@ -28,6 +28,10 @@ export function FaqChatbot() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Never auto-open on phones: the panel covers almost the whole
+    // screen there, and an installed PWA starts a fresh session (so a
+    // fresh auto-open) nearly every launch.
+    if (window.matchMedia("(max-width: 767px)").matches) return;
     if (!sessionStorage.getItem(SESSION_KEY)) {
       sessionStorage.setItem(SESSION_KEY, "1");
       setOpen(true);
@@ -61,7 +65,7 @@ export function FaqChatbot() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open help"
-        className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gold-500 text-navy-950 shadow-lg transition-luxury duration-300 hover:brightness-110"
+        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 md:bottom-5 md:right-5 flex h-12 w-12 items-center justify-center rounded-full bg-gold-500 text-navy-950 shadow-lg transition-luxury duration-300 hover:brightness-110"
       >
         <MessageCircleQuestion size={20} />
       </button>
@@ -69,7 +73,7 @@ export function FaqChatbot() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 w-[calc(100vw-2.5rem)] max-w-sm overflow-hidden rounded-2xl border border-navy-950/10 bg-white shadow-2xl">
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 md:bottom-5 md:right-5 w-[calc(100vw-2.5rem)] max-w-sm overflow-hidden rounded-2xl border border-navy-950/10 bg-white shadow-2xl">
       <div className="flex items-center justify-between bg-navy-950 px-4 py-3">
         <div className="flex items-center gap-2 text-ivory-50">
           {selected ? (
