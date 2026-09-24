@@ -8,6 +8,7 @@ import { AI_CSS_CONFIGURED } from "@/lib/ai-css";
 import { countAiCssGenerations } from "@/services/ai-css-generations";
 import { getEventStorageUsage } from "@/services/storage-usage";
 import { EventSettingsForm } from "@/features/admin/event-settings/event-settings-form";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function AdminEventSettingsPage() {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
+    return <NoEventState />;
   }
 
   const shareImageUrl = event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null;

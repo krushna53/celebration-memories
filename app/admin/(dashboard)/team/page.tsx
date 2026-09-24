@@ -5,6 +5,7 @@ import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { getTeamMembers, TEAM_MEMBER_CAP } from "@/services/admin-team";
 import { TeamManager } from "@/features/admin/team/team-manager";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +15,7 @@ export default async function AdminTeamPage() {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!admin || !event) {
-    return (
-      <p className="text-navy-700">
-        No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner:
-        check your Supabase seed data.
-      </p>
-    );
+    return <NoEventState />;
   }
 
   const members = await getTeamMembers(event.id);

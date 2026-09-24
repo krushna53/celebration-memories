@@ -5,6 +5,7 @@ import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listSnapshots, getSnapshotCreatorNames, type SnapshotArea } from "@/services/event-snapshots";
 import { BackupsManager } from "@/features/admin/backups/backups-manager";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export default async function BackupsPage() {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet.</p>;
+    return <NoEventState />;
   }
 
   const lists = await Promise.all(AREAS.map((area) => listSnapshots(event.id, area)));

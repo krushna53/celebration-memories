@@ -5,6 +5,7 @@ import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectSessionOrganizerAway, shouldRedirectOrganizerAway } from "@/lib/admin-roles";
 import { listOrganizers } from "@/services/organizers";
 import { OrganizerManager } from "@/features/admin/organizers/organizer-manager";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,7 @@ export default async function OrganizersPage() {
 
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!admin || !event) {
-    return (
-      <p className="text-navy-700">
-        No event is assigned to this account yet. Clients: contact the site owner to get linked to your event.
-      </p>
-    );
+    return <NoEventState />;
   }
 
   const organizers = await listOrganizers(event.id);

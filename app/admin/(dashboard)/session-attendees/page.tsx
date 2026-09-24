@@ -8,6 +8,7 @@ import { listAttendeesForSession } from "@/services/session-registrations";
 import { listRsvpPaymentsForScheduleItem } from "@/services/rsvp-payments";
 import { listFields, listResponsesBySessionRegistrationIds } from "@/services/custom-forms";
 import { SessionAttendeeTable } from "@/features/admin/session-checkin/session-attendee-table";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function SessionAttendeesPage() {
 
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet.</p>;
+    return <NoEventState />;
   }
 
   const allItems = await listScheduleItems(event.id);

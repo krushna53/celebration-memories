@@ -41,6 +41,7 @@ import { signOutAction } from "@/features/admin/auth-actions";
 import { NotificationBell } from "@/features/admin/notifications/notification-bell";
 import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
 import { ViewSwitcher } from "@/features/admin/components/view-switcher";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -136,9 +137,7 @@ export default async function AdminAppsPage() {
       <div className="min-h-screen bg-ivory-100">
         <AppsHeader />
         <div className="flex min-h-[60vh] items-center justify-center px-4 text-center">
-          <p className="max-w-sm text-navy-700">
-            No event is assigned to this account yet. Contact the site owner to get linked to your event.
-          </p>
+          <NoEventState />
         </div>
       </div>
     );

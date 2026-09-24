@@ -8,6 +8,7 @@ import { listApprovedTemplateSubmissions } from "@/services/template-submissions
 import { communitySubmissionToTemplateSummary } from "@/lib/community-theme";
 import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
 import { TemplatePicker, type PickerTemplate } from "@/features/admin/templates/template-picker";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function AdminTemplatesPage() {
     listApprovedTemplateSubmissions(),
   ]);
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
+    return <NoEventState />;
   }
 
   // Built-in templates first, then approved community submissions — see

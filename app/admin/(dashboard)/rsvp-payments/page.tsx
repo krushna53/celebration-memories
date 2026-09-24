@@ -5,6 +5,7 @@ import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listRsvpPaymentsForEvent } from "@/services/rsvp-payments";
 import { RsvpPaymentList } from "@/features/admin/rsvp-payments/rsvp-payment-list";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function RsvpPaymentsPage() {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet.</p>;
+    return <NoEventState />;
   }
 
   const items = await listRsvpPaymentsForEvent(event.id);

@@ -4,6 +4,7 @@ import { listInvitees } from "@/services/admin-invitees";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { CheckinManager } from "@/features/admin/checkin/checkin-manager";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function AdminCheckinPage() {
 
   const event = await resolveAdminEvent(admin);
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
+    return <NoEventState />;
   }
 
   const invitees = await listInvitees(event.id);

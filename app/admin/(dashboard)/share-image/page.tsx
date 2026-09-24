@@ -6,6 +6,7 @@ import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from 
 import { toEventDisplayData } from "@/lib/event-display";
 import { getTemplateBySlug } from "@/lib/templates";
 import { ShareImageGenerator } from "@/features/admin/share-image/share-image-generator";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 // Available to both owner and client roles (see lib/admin-roles.ts) — an
 // event host should be able to make their own shareable invitation image
@@ -19,7 +20,7 @@ export default async function AdminShareImagePage() {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
+    return <NoEventState />;
   }
 
   const data = toEventDisplayData(event);

@@ -5,6 +5,7 @@ import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { GalleryManager } from "@/features/admin/gallery/gallery-manager";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default async function AdminGalleryPage() {
   if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
+    return <NoEventState />;
   }
 
   const photos = await listGalleryPhotos(event.id);

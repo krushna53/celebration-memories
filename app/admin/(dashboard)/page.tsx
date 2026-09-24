@@ -7,6 +7,7 @@ import { resolveAdminEvent } from "@/lib/admin-event";
 import { getDashboardStats, getVisitorFunnel } from "@/services/admin-stats";
 import { StatCard } from "@/features/admin/components/stat-card";
 import { BarChart } from "@/features/admin/components/bar-chart";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,7 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
     if (admin?.role === "client") {
       redirect("/start");
     }
-    return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
+    return <NoEventState />;
   }
 
   const stats = await getDashboardStats(event.id);

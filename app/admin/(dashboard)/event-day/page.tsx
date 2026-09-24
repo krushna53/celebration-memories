@@ -2,6 +2,7 @@ import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { ensureEventDayShareToken, listMenuItems, listScheduleItems } from "@/services/event-day";
 import { EventDayManager } from "@/features/admin/event-day/event-day-manager";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -9,11 +10,7 @@ export default async function AdminEventDayPage() {
   const admin = await getCurrentAdmin();
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return (
-      <p className="text-navy-700">
-        No event is assigned to this account yet. Clients: contact the site owner to get linked to your event.
-      </p>
-    );
+    return <NoEventState />;
   }
 
   const [scheduleItems, menuItems, shareToken] = await Promise.all([

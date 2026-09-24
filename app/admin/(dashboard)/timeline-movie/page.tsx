@@ -10,6 +10,7 @@ import { countTimelineMovieGenerations } from "@/services/timeline-movie-generat
 import { getLatestCompletedTimelineMovieJob } from "@/services/timeline-movie-jobs";
 import { publicMediaUrl } from "@/services/uploads";
 import { TimelineMovieComposer } from "@/features/admin/timeline-movie/timeline-movie-composer";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +25,7 @@ export default async function AdminTimelineMoviePage() {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return (
-      <p className="text-navy-700">
-        No event is assigned to this account yet. Clients: contact the site owner to get linked to your event.
-        Owner: check your Supabase seed data.
-      </p>
-    );
+    return <NoEventState />;
   }
 
   const configured = isHeygenConfigured();

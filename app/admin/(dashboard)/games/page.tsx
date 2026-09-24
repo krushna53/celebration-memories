@@ -6,6 +6,7 @@ import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from 
 import { listEventGames, listGameAttempts, listClaimsForGame, listTicketsForGame } from "@/services/games";
 import { GamesManager } from "@/features/admin/games/games-manager";
 import type { GameAttemptRecord, GameClaimRecord } from "@/types/games";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +16,7 @@ export default async function AdminGamesPage() {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return (
-      <p className="text-navy-700">
-        No event is assigned to this account yet. Clients: contact the site owner to get linked to your event.
-      </p>
-    );
+    return <NoEventState />;
   }
 
   const games = await listEventGames(event.id);

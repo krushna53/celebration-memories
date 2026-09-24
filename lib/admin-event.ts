@@ -1,7 +1,7 @@
 import "server-only";
 
 import { EVENT_SLUG } from "@/lib/constants";
-import { getEventById, getEventBySlug } from "@/services/events";
+import { getEventById, getEventBySlug, listAllActiveEvents } from "@/services/events";
 import { getActiveEventOverrideId } from "@/lib/admin-active-event";
 import type { CurrentAdmin } from "@/services/admin-auth";
 import type { EventRecord } from "@/types/event";
@@ -34,6 +34,11 @@ import type { EventRecord } from "@/types/event";
  *   selection, the owner falls back to the single EVENT_SLUG event —
  *   this part is intentional and unchanged: the owner account is
  *   trusted with every event by definition, so there's no leak here.
+ *   If that flagship event no longer exists (renamed/archived), the
+ *   owner falls back to the newest active event instead of landing on
+ *   an empty dashboard right after signing in. Only with no active
+ *   events at all does the owner get null (features/admin/components/
+ *   no-event-state.tsx then points them at All Events / New Event).
  */
 export async function resolveAdminEvent(admin: CurrentAdmin): Promise<EventRecord | null> {
   if (admin.eventId) {
@@ -50,7 +55,11 @@ export async function resolveAdminEvent(admin: CurrentAdmin): Promise<EventRecor
     if (overridden) return overridden;
   }
 
-  return getEventBySlug(EVENT_SLUG);
+  const flagship = await getEventBySlug(EVENT_SLUG);
+  if (flagship) return flagship;
+
+  const [newest] = await listAllActiveEvents();
+  return newest ? getEventById(newest.id) : null;
 }
 
 /**

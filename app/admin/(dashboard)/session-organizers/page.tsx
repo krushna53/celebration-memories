@@ -6,6 +6,7 @@ import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from 
 import { listSessionOrganizers } from "@/services/session-organizers";
 import { listScheduleItems } from "@/services/event-day";
 import { SessionOrganizerManager } from "@/features/admin/session-organizers/session-organizer-manager";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +16,7 @@ export default async function SessionOrganizersPage() {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!admin || !event) {
-    return (
-      <p className="text-navy-700">
-        No event is assigned to this account yet. Clients: contact the site owner to get linked to your event.
-      </p>
-    );
+    return <NoEventState />;
   }
 
   const [organizers, scheduleItems] = await Promise.all([

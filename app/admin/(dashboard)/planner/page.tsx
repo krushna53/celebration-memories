@@ -6,6 +6,7 @@ import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from 
 import { ensurePlannerShareToken, listPlannerTasks, listPlannerNotes } from "@/services/event-planner";
 import { PlannerShareLinkPanel } from "@/features/admin/planner/share-link-panel";
 import { PlannerAdminClient } from "@/features/admin/planner/planner-admin-client";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +16,7 @@ export default async function AdminPlannerPage() {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return (
-      <p className="text-navy-700">
-        No event is assigned to this account yet. Clients: contact the site owner to get linked to your event.
-      </p>
-    );
+    return <NoEventState />;
   }
 
   const [token, tasks, notes] = await Promise.all([

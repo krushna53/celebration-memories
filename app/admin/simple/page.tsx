@@ -31,6 +31,7 @@ import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
 import { VisibilityToggle } from "@/features/admin/events/visibility-toggle";
 import { NotificationBell } from "@/features/admin/notifications/notification-bell";
 import { MobileAccessCard } from "@/features/admin/mobile-access/mobile-access-card";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -108,9 +109,7 @@ export default async function AdminSimplePage() {
       <div className="min-h-screen bg-ivory-100">
         <SimpleHeader />
         <div className="flex min-h-[60vh] items-center justify-center px-4 text-center">
-          <p className="max-w-sm text-navy-700">
-            No event is assigned to this account yet. Contact the site owner to get linked to your event.
-          </p>
+          <NoEventState />
         </div>
       </div>
     );

@@ -10,6 +10,7 @@ import { countAiImageGenerations } from "@/services/ai-image-generations";
 import { getLatestCompletedAiImageJob, getLatestUploadedAiImageJob } from "@/services/ai-image-jobs";
 import { publicMediaUrl } from "@/services/uploads";
 import { AiImageGenerator } from "@/features/admin/ai-image/ai-image-generator";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function AdminAiImagePage() {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
+    return <NoEventState />;
   }
 
   const template = getTemplateBySlug(event.templateSlug);

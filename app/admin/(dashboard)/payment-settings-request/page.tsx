@@ -7,6 +7,7 @@ import { getEventPaymentSettingsSummary } from "@/services/event-payment-setting
 import { getScheduleItemById } from "@/services/event-day";
 import { getAssignedSessionIds } from "@/services/session-organizers";
 import { PaymentSettingsForm } from "@/features/admin/event-payment-settings/payment-settings-form";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,7 @@ export default async function EventPaymentSettingsRequestPage({ searchParams }: 
 
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet.</p>;
+    return <NoEventState />;
   }
 
   // A session id in the URL only counts if it actually belongs to this event — otherwise silently fall back to the event default, same defense-in-depth as every other id-from-a-URL lookup in this app.

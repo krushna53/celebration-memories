@@ -7,6 +7,7 @@ import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from 
 import { listMemoriesForModeration } from "@/services/admin-memories";
 import { ModerationList } from "@/features/admin/memories/moderation-list";
 import { AdminMemoryUploader } from "@/features/admin/memories/admin-memory-uploader";
+import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
   const event = admin ? await resolveAdminEvent(admin) : null;
   if (!event) {
-    return <p className="text-navy-700">No event is assigned to this account yet. Clients: contact the site owner to get linked to your event. Owner: check your Supabase seed data.</p>;
+    return <NoEventState />;
   }
 
   const items = await listMemoriesForModeration(event.id, showAll ? "all" : "pending");
