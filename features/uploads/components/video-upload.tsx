@@ -5,8 +5,20 @@ import { CheckCircle2, ChevronUp, Pause, Play, RotateCcw, Square, SwitchCamera, 
 
 import { cn } from "@/lib/utils";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
-import { useMediaRecorder, ASPECT_RATIO_PRESETS, type ZoomRange } from "@/hooks/use-media-recorder";
+import {
+  useMediaRecorder,
+  ASPECT_RATIO_PRESETS,
+  type AspectRatioPreset,
+  type ZoomRange,
+} from "@/hooks/use-media-recorder";
 import { UploadQueue } from "@/features/uploads/components/upload-queue";
+
+const ASPECT_RATIO_LABELS: Record<AspectRatioPreset, string> = {
+  "16:9": "Landscape",
+  "9:16": "Portrait",
+  "1:1": "Square",
+  "4:3": "Classic",
+};
 
 interface VideoUploadProps {
   /** Owned by the parent (MediaUploadsSection) — see PhotoUpload's doc comment for why. */
@@ -225,7 +237,14 @@ export function VideoUpload({
               // recorded by MediaRecorder is untouched, so the saved
               // video comes out the same way everyone else sees the
               // guest, same as Instagram/Snapchat/iOS Camera.
-              className={cn("h-full w-full object-cover", facingMode === "user" && "-scale-x-100")}
+              //
+              // object-contain, not object-cover: the preview must show
+              // exactly the frame being recorded. With cover, a 9:16
+              // stream in a wide laptop window was cropped and blown up
+              // into an extreme close-up that didn't match the saved
+              // video. On an upright phone a 9:16 stream fills the
+              // screen either way.
+              className={cn("h-full w-full object-contain", facingMode === "user" && "-scale-x-100")}
             />
           ) : error ? (
             <div className="flex h-full w-full items-center justify-center text-ivory-100/40">
@@ -282,6 +301,9 @@ export function VideoUpload({
                       key={preset}
                       type="button"
                       onClick={() => setAspectRatio(preset)}
+                      title={ASPECT_RATIO_LABELS[preset]}
+                      aria-label={`${preset} ${ASPECT_RATIO_LABELS[preset]}`}
+                      aria-pressed={aspectRatioPreset === preset}
                       className={cn(
                         "tap-target rounded-full px-2.5 py-1 text-xs font-medium tabular-nums transition-luxury duration-150",
                         aspectRatioPreset === preset

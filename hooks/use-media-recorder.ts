@@ -45,19 +45,44 @@ export interface ZoomRange {
  *
  * Also exposes facingMode/flipCamera to switch between front and back
  * camera, and aspectRatioPreset/setAspectRatio to switch frame shape
- * (9:16/1:1/4:3) — both standard across every browser (unlike zoom),
+ * (16:9/9:16/1:1/4:3) — both standard across every browser (unlike zoom),
  * but only allowed while not actively recording; see flipCamera's own
  * doc comment for why.
  */
-/** Presets offered in the record view — "9:16" (default, matches the fullscreen portrait camera view) mirrors a phone screen; "1:1" and "4:3" are the other common shapes native camera apps offer. */
-export const ASPECT_RATIO_PRESETS = ["9:16", "1:1", "4:3"] as const;
+/** Presets offered in the record view — "16:9" is a laptop/desktop webcam's native landscape shape, "9:16" a phone held upright; "1:1" and "4:3" are the other common shapes native camera apps offer. */
+export const ASPECT_RATIO_PRESETS = ["16:9", "9:16", "1:1", "4:3"] as const;
 export type AspectRatioPreset = (typeof ASPECT_RATIO_PRESETS)[number];
 
-const ASPECT_RATIO_VALUES: Record<AspectRatioPreset, number> = {
-  "9:16": 9 / 16,
-  "1:1": 1,
-  "4:3": 4 / 3,
+/**
+ * Target frame per preset (720p-class). Requesting a real resolution
+ * matters as much as the ratio: with only `aspectRatio` set, Chrome
+ * starts from its 640×480 default and crops down from there, so a 9:16
+ * request on a laptop webcam came out as a ~270×480 sliver — upscaled
+ * to fill the screen, that was the blurry, extreme close-up guests saw.
+ */
+const ASPECT_RATIO_DIMENSIONS: Record<AspectRatioPreset, { width: number; height: number }> = {
+  "16:9": { width: 1280, height: 720 },
+  "9:16": { width: 720, height: 1280 },
+  "1:1": { width: 720, height: 720 },
+  "4:3": { width: 960, height: 720 },
 };
+
+function videoShapeConstraints(preset: AspectRatioPreset): MediaTrackConstraints {
+  const { width, height } = ASPECT_RATIO_DIMENSIONS[preset];
+  return { width: { ideal: width }, height: { ideal: height }, aspectRatio: { ideal: width / height } };
+}
+
+/**
+ * Picks the frame shape that matches how the device is being held:
+ * landscape screens (every laptop/desktop, a phone turned sideways) get
+ * 16:9, which is what their camera sensor natively produces — forcing
+ * 9:16 there crops away most of the image. Upright phones keep 9:16.
+ * SSR-safe: falls back to 9:16 when there's no window yet.
+ */
+export function defaultAspectRatioPreset(): AspectRatioPreset {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "9:16";
+  return window.matchMedia("(orientation: landscape)").matches ? "16:9" : "9:16";
+}
 
 /**
  * getUserMedia's video constraint. `facingMode` and `aspectRatio` are
@@ -72,7 +97,7 @@ function buildConstraints(
   aspectRatioPreset: AspectRatioPreset,
 ): MediaStreamConstraints {
   return kind === "video"
-    ? { video: { facingMode, aspectRatio: { ideal: ASPECT_RATIO_VALUES[aspectRatioPreset] } }, audio: true }
+    ? { video: { facingMode, ...videoShapeConstraints(aspectRatioPreset) }, audio: true }
     : { audio: true };
 }
 
@@ -91,10 +116,9 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
   // message" feature — most guests are talking to the camera, not
   // filming something else. Only meaningful for kind: "video".
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
-  // "9:16" matches the fullscreen portrait camera view guests already
-  // see, so it's the sensible default rather than whatever the camera's
-  // native/landscape shape happens to be. Only meaningful for "video".
-  const [aspectRatioPreset, setAspectRatioPresetState] = useState<AspectRatioPreset>("9:16");
+  // Device-dependent default — 9:16 on an upright phone, 16:9 on a
+  // laptop/desktop (see defaultAspectRatioPreset). Only meaningful for "video".
+  const [aspectRatioPreset, setAspectRatioPresetState] = useState<AspectRatioPreset>(defaultAspectRatioPreset);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -149,7 +173,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     setZoomRange(null);
     setZoomLevel(1);
     setFacingMode("user");
-    setAspectRatioPresetState("9:16");
+    setAspectRatioPresetState(defaultAspectRatioPreset());
   }, []);
 
   /** Opens the camera/mic and shows a live preview without recording yet. Safe to call more than once — a no-op if a stream is already open. */
@@ -185,7 +209,7 @@ export function useMediaRecorder({ kind, onCapture }: UseMediaRecorderOptions) {
     const track = streamRef.current?.getVideoTracks()[0];
     if (!track) return;
     try {
-      await track.applyConstraints({ aspectRatio: { ideal: ASPECT_RATIO_VALUES[preset] } });
+      await track.applyConstraints(videoShapeConstraints(preset));
     } catch (err) {
       console.error("Failed to apply aspect ratio constraint:", err);
     }
