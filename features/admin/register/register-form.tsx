@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
+import { EmailAuthDisclosure } from "@/features/auth/email-auth-disclosure";
 import { TermsConsentCheckbox } from "@/components/legal/terms-consent-checkbox";
 
 const inputClasses =
@@ -100,8 +101,8 @@ export function RegisterForm({ eventId, eventLabel, invalidEvent }: RegisterForm
         <div className="w-full max-w-sm rounded-2xl border border-red-500/20 bg-navy-900 p-8 text-center shadow-xl">
           <h1 className="font-display text-xl text-ivory-50">Link no longer valid</h1>
           <p className="mt-2 text-sm text-ivory-100/70">
-            This registration link doesn&rsquo;t match a live event. Ask the site owner for a
-            fresh link from their All Events page.
+            This registration link doesn&rsquo;t match a live event. Ask the site owner for a fresh link from their All
+            Events page.
           </p>
         </div>
       </div>
@@ -114,9 +115,8 @@ export function RegisterForm({ eventId, eventLabel, invalidEvent }: RegisterForm
         <div className="w-full max-w-sm rounded-2xl border border-gold-500/20 bg-navy-900 p-8 text-center shadow-xl">
           <h1 className="font-display text-xl text-ivory-50">A link is required</h1>
           <p className="mt-2 text-sm text-ivory-100/70">
-            Host accounts are created from a specific invitation link. Ask the site owner to
-            generate one for your event from their All Events page (each row has a
-            &ldquo;Create Login&rdquo; link).
+            Host accounts are created from a specific invitation link. Ask the site owner to generate one for your event
+            from their All Events page (each row has a &ldquo;Create Login&rdquo; link).
           </p>
         </div>
       </div>
@@ -132,8 +132,8 @@ export function RegisterForm({ eventId, eventLabel, invalidEvent }: RegisterForm
           </div>
           <h1 className="mt-4 font-display text-2xl text-ivory-50">Check your email</h1>
           <p className="mt-2 text-sm text-ivory-100/70">
-            We&rsquo;ve sent a verification link to <strong className="text-ivory-50">{email}</strong>.
-            Click it to activate your account, then come back and sign in.
+            We&rsquo;ve sent a verification link to <strong className="text-ivory-50">{email}</strong>. Click it to
+            activate your account, then come back and sign in.
           </p>
           <Link
             href="/login"
@@ -159,87 +159,85 @@ export function RegisterForm({ eventId, eventLabel, invalidEvent }: RegisterForm
             : "Create your account to manage Event Settings, Templates, Gallery, Timeline, and Memories."}
         </p>
 
-        <form onSubmit={onSubmit} className="mt-6 grid gap-4 text-left">
-          <div>
-            <label htmlFor="name" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
-              Full Name
-            </label>
-            <input
-              id="name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={cn(inputClasses, "mt-1.5")}
-            />
-          </div>
-          <div>
-            <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={cn(inputClasses, "mt-1.5")}
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={cn(inputClasses, "mt-1.5")}
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="text-xs uppercase tracking-[0.15em] text-ivory-100/60"
-            >
-              Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className={cn(inputClasses, "mt-1.5")}
-            />
-          </div>
-
+        <div className="mt-6 text-left">
           <TermsConsentCheckbox checked={agreedToTerms} onChange={setAgreedToTerms} variant="dark" />
-
-          {error ? (
-            <p className="text-sm text-red-400" role="alert">
-              {error}
-            </p>
-          ) : null}
-
-          <Button type="submit" size="lg" disabled={loading || !agreedToTerms} className="mt-2 w-full">
-            {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Account"}
-          </Button>
-        </form>
-
-        <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-ivory-100/40">
-          <span className="h-px flex-1 bg-white/10" /> or <span className="h-px flex-1 bg-white/10" />
         </div>
-        <GoogleAuthButton
-          label="Continue with Google"
-          disabled={!agreedToTerms}
-          redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(
-            "/login?verified=1",
-          )}&link_event_id=${encodeURIComponent(eventId)}`}
-        />
+        <div className="mt-4">
+          <GoogleAuthButton
+            label="Continue with Google"
+            disabled={!agreedToTerms}
+            redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(
+              "/login?verified=1",
+            )}&link_event_id=${encodeURIComponent(eventId)}`}
+          />
+        </div>
+        <EmailAuthDisclosure variant="dark">
+          <form onSubmit={onSubmit} className="grid gap-4 text-left">
+            <div>
+              <label htmlFor="name" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
+                Full Name
+              </label>
+              <input
+                id="name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={cn(inputClasses, "mt-1.5")}
+              />
+            </div>
+            <div>
+              <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={cn(inputClasses, "mt-1.5")}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={cn(inputClasses, "mt-1.5")}
+              />
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                required
+                minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={cn(inputClasses, "mt-1.5")}
+              />
+            </div>
+
+            {error ? (
+              <p className="text-sm text-red-400" role="alert">
+                {error}
+              </p>
+            ) : null}
+
+            <Button type="submit" size="lg" disabled={loading || !agreedToTerms} className="mt-2 w-full">
+              {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Account"}
+            </Button>
+          </form>
+        </EmailAuthDisclosure>
 
         <p className="mt-6 text-sm text-ivory-100/60">
           Already have an account?{" "}

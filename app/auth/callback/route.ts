@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createFormOwnerAccount, getFormByDraftToken } from "@/services/custom-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,15 @@ function safeNextPath(raw: string | null): string {
  * flag, not just first-time signup, since sign-in and sign-up share
  * one button/one OAuth call — the "does a row already exist" check
  * makes repeat sign-ins a no-op.
+ *
+ * `form_token`, when present, means this came from the Build RSVP /
+ * Form "Create an account to view responses" card
+ * (features/forms/account-form.tsx). Same job as the password path's
+ * createFormOwnerAccountAction: upsert the form_owners row and claim
+ * that one form. The form is re-resolved from its draft_token here
+ * (never a client-supplied id), and createFormOwnerAccount only claims
+ * a form whose owner_id is still null, so a replayed or guessed token
+ * can't take over someone else's form.
  */
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -71,6 +81,7 @@ export async function GET(request: Request): Promise<Response> {
   const next = safeNextPath(url.searchParams.get("next"));
   const linkEventId = url.searchParams.get("link_event_id");
   const isBusinessFlow = url.searchParams.get("business") === "1";
+  const formToken = url.searchParams.get("form_token");
 
   if (code) {
     const supabase = await supabaseServer();
@@ -121,6 +132,19 @@ export async function GET(request: Request): Promise<Response> {
           phone: null,
         });
         if (createError) console.error("auth callback: failed to create business account for Google sign-in:", createError.message);
+      }
+    } else if (!error && data.user && formToken) {
+      const form = await getFormByDraftToken(formToken);
+      if (!form) {
+        console.error("auth callback: form_token did not match any form");
+      } else {
+        const meta = data.user.user_metadata as { full_name?: string; name?: string } | null;
+        const email = data.user.email ?? "";
+        try {
+          await createFormOwnerAccount(data.user.id, email, meta?.full_name ?? meta?.name ?? email, form.id);
+        } catch (err) {
+          console.error("auth callback: failed to create form owner for Google sign-in:", err instanceof Error ? err.message : err);
+        }
       }
     } else if (error) {
       console.error("auth callback: exchangeCodeForSession failed:", error.message);

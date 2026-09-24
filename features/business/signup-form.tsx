@@ -9,6 +9,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { completeBusinessSignupAction } from "@/features/business/actions";
 import { TermsConsentCheckbox } from "@/components/legal/terms-consent-checkbox";
 import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
+import { EmailAuthDisclosure } from "@/features/auth/email-auth-disclosure";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -88,7 +89,11 @@ export function BusinessSignupForm() {
       return;
     }
 
-    const result = await completeBusinessSignupAction(data.user.id, { name, email, phone });
+    const result = await completeBusinessSignupAction(data.user.id, {
+      name,
+      email,
+      phone,
+    });
     setLoading(false);
 
     if (!result.success) {
@@ -147,60 +152,72 @@ export function BusinessSignupForm() {
         Create your vendor account to list your business on EveryMoment Discover.
       </p>
 
-      <form onSubmit={onSubmit} className="mt-6 grid gap-4 text-left">
-        <div>
-          <label className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">Your Name / Business Name</label>
-          <input required value={name} onChange={(e) => setName(e.target.value)} className={`${inputClasses} mt-1.5`} />
-        </div>
-        <div>
-          <label className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">Email</label>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={`${inputClasses} mt-1.5`} />
-        </div>
-        <div>
-          <label className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">Phone (optional)</label>
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} className={`${inputClasses} mt-1.5`} />
-        </div>
-        <div>
-          <label className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">Password</label>
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`${inputClasses} mt-1.5`}
-          />
-        </div>
-
+      <div className="mt-6 text-left">
         <TermsConsentCheckbox checked={agreedToTerms} onChange={setAgreedToTerms} variant="dark" />
-
-        {error ? (
-          <p className="text-sm text-red-400" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={loading || !agreedToTerms}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 hover:brightness-110 disabled:opacity-60"
-        >
-          {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Vendor Account"}
-        </button>
-      </form>
-
-      <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-ivory-100/40">
-        <span className="h-px flex-1 bg-white/10" /> or <span className="h-px flex-1 bg-white/10" />
       </div>
-      {/* business=1 tells /auth/callback to provision a business_accounts
+      <div className="mt-4">
+        {/* business=1 tells /auth/callback to provision a business_accounts
           row from the Google profile if one doesn't exist yet — see that
           route's doc comment. Gated on the same Terms checkbox as the
           password path above, per GoogleAuthButton's disabled prop doc. */}
-      <GoogleAuthButton
-        label="Continue with Google"
-        disabled={!agreedToTerms}
-        redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent("/business/dashboard")}&business=1`}
-      />
+        <GoogleAuthButton
+          label="Continue with Google"
+          disabled={!agreedToTerms}
+          redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent("/business/dashboard")}&business=1`}
+        />
+      </div>
+      <EmailAuthDisclosure variant="dark">
+        <form onSubmit={onSubmit} className="grid gap-4 text-left">
+          <div>
+            <label className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">Your Name / Business Name</label>
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={`${inputClasses} mt-1.5`}
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={`${inputClasses} mt-1.5`}
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">Phone (optional)</label>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} className={`${inputClasses} mt-1.5`} />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">Password</label>
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`${inputClasses} mt-1.5`}
+            />
+          </div>
+
+          {error ? (
+            <p className="text-sm text-red-400" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={loading || !agreedToTerms}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 hover:brightness-110 disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Vendor Account"}
+          </button>
+        </form>
+      </EmailAuthDisclosure>
 
       <p className="mt-6 text-sm text-ivory-100/60">
         Already listed?{" "}

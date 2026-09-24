@@ -6,6 +6,8 @@ import { CheckCircle2, Loader2, UserPlus } from "lucide-react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { createFormOwnerAccountAction } from "@/features/forms/builder-actions";
+import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
+import { EmailAuthDisclosure } from "@/features/auth/email-auth-disclosure";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -111,43 +113,64 @@ export function FormOwnerAccountForm({ token }: { token: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-3 rounded-xl border border-navy-950/10 bg-white p-5">
+    <div className="grid gap-3 rounded-xl border border-navy-950/10 bg-white p-5">
       <div className="flex items-center gap-2 text-sm font-medium text-navy-950">
         <UserPlus size={16} className="text-gold-600" /> Create an account to view responses
       </div>
       <p className="text-xs text-navy-700/60">
         Your form works either way — this just gives you a dashboard to search, export, and manage responses later.
       </p>
-      <input required placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} className={inputClasses} />
-      <input
-        required
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className={inputClasses}
+      {/*
+        Google skips email confirmation entirely — /auth/callback's
+        form_token branch creates the form_owners row, claims this form,
+        and lands them straight on their responses dashboard.
+      */}
+      <GoogleAuthButton
+        label="Continue with Google"
+        redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(
+          "/forms/dashboard",
+        )}&form_token=${encodeURIComponent(token)}`}
       />
-      <input
-        required
-        type="password"
-        minLength={8}
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className={inputClasses}
-      />
-      {error ? (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      ) : null}
-      <button
-        type="submit"
-        disabled={loading}
-        className="flex items-center justify-center gap-2 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:brightness-110 disabled:opacity-60"
-      >
-        {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Account"}
-      </button>
-    </form>
+      <EmailAuthDisclosure variant="light">
+        <form onSubmit={onSubmit} className="grid gap-3">
+          <input
+            required
+            placeholder="Your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={inputClasses}
+          />
+          <input
+            required
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputClasses}
+          />
+          <input
+            required
+            type="password"
+            minLength={8}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={inputClasses}
+          />
+          {error ? (
+            <p className="text-sm text-red-600" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex items-center justify-center gap-2 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:brightness-110 disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Account"}
+          </button>
+        </form>
+      </EmailAuthDisclosure>
+    </div>
   );
 }

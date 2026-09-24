@@ -7,6 +7,7 @@ import { CheckCircle2, Loader2, LogIn } from "lucide-react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
+import { EmailAuthDisclosure } from "@/features/auth/email-auth-disclosure";
 import { resolveLoginDestinationAction } from "@/features/auth/actions";
 
 const inputClasses =
@@ -112,56 +113,56 @@ export function UnifiedLoginForm() {
         </p>
       ) : null}
 
-      <form onSubmit={onSubmit} className="mt-6 grid gap-4 text-left">
-        <div>
-          <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={`${inputClasses} mt-1.5`}
-          />
-        </div>
-        <div>
-          <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`${inputClasses} mt-1.5`}
-          />
-        </div>
-
-        {error ? (
-          <p className="text-sm text-red-400" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 hover:brightness-110 disabled:opacity-60"
-        >
-          {loading ? <Loader2 className="animate-spin" size={16} /> : "Sign In"}
-        </button>
-      </form>
-
-      <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-ivory-100/40">
-        <span className="h-px flex-1 bg-white/10" /> or <span className="h-px flex-1 bg-white/10" />
+      <div className="mt-6">
+        <GoogleAuthButton
+          label="Sign in with Google"
+          redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent("/login")}`}
+        />
       </div>
-      <GoogleAuthButton
-        label="Sign in with Google"
-        redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent("/login")}`}
-      />
+      <EmailAuthDisclosure variant="dark" defaultOpen={justVerified}>
+        <form onSubmit={onSubmit} className="grid gap-4 text-left">
+          <div>
+            <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={`${inputClasses} mt-1.5`}
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-ivory-100/60">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`${inputClasses} mt-1.5`}
+            />
+          </div>
+
+          {error ? (
+            <p className="text-sm text-red-400" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 hover:brightness-110 disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="animate-spin" size={16} /> : "Sign In"}
+          </button>
+        </form>
+      </EmailAuthDisclosure>
 
       <p className="mt-6 text-sm text-ivory-100/60">
         New here?{" "}
@@ -175,8 +176,8 @@ export function UnifiedLoginForm() {
         {", or "}
         <Link href="/business/signup" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
           become a partner
-        </Link>
-        {" "}— no account needed to start.
+        </Link>{" "}
+        — no account needed to start.
       </p>
     </div>
   );

@@ -22,7 +22,10 @@ interface GoogleAuthButtonProps {
  * "Continue with Google" — used on the wizard's account-creation step
  * (features/start/account-form.tsx), the owner-invited client
  * registration page (features/admin/register/register-form.tsx), and
- * the returning-user login page (app/admin/login/page.tsx). Requires
+ * the returning-user login page (features/auth/unified-login-form.tsx),
+ * vendor signup, and the Build RSVP / Form account card — always the
+ * primary option, with email/password tucked behind
+ * features/auth/email-auth-disclosure.tsx. Requires
  * the Google provider to be enabled in the Supabase project's
  * Authentication > Providers settings with a real Google Cloud OAuth
  * Client ID/Secret — that one-time setup has to be done by a human in
@@ -55,7 +58,7 @@ export function GoogleAuthButton({ label = "Continue with Google", redirectTo, d
         onClick={handleClick}
         disabled={loading || disabled}
         className={cn(
-          "flex w-full items-center justify-center gap-2.5 rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm font-medium text-navy-950 shadow-sm transition-luxury duration-200 hover:bg-ivory-100 disabled:opacity-60",
+          "flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full border border-navy-950/15 bg-white px-5 py-3 text-base font-medium text-navy-950 shadow-sm transition-luxury duration-200 hover:bg-ivory-100 disabled:opacity-60",
           loading ? "disabled:cursor-wait" : "disabled:cursor-not-allowed",
         )}
       >
@@ -73,7 +76,7 @@ export function GoogleAuthButton({ label = "Continue with Google", redirectTo, d
 
 function GoogleIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
       <path
         fill="#FFC107"
         d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"

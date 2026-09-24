@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { wizardStepHref } from "@/features/start/wizard-steps";
 import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
+import { EmailAuthDisclosure } from "@/features/auth/email-auth-disclosure";
 import { TermsConsentCheckbox } from "@/components/legal/terms-consent-checkbox";
 import { reportAccountCreationErrorAction } from "@/features/start/actions/account-lead";
 
@@ -83,7 +84,11 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
       if (typeof navigator.sendBeacon === "function") {
         navigator.sendBeacon("/api/wizard/account-lead", new Blob([payload], { type: "application/json" }));
       } else {
-        fetch("/api/wizard/account-lead", { method: "POST", body: payload, keepalive: true }).catch(() => {});
+        fetch("/api/wizard/account-lead", {
+          method: "POST",
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
       }
     }
 
@@ -179,9 +184,7 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
     });
     setResending(false);
     setResendCooldown(30);
-    setResendMessage(
-      resendError ? resendError.message : "Sent again — check your inbox (and spam folder).",
-    );
+    setResendMessage(resendError ? resendError.message : "Sent again — check your inbox (and spam folder).");
   }
 
   if (submitted) {
@@ -192,8 +195,8 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
         </div>
         <h1 className="mt-4 font-display text-2xl text-navy-950">Check your email</h1>
         <p className="mt-2 text-sm text-navy-700/70">
-          We&rsquo;ve sent a verification link to <strong className="text-navy-950">{email}</strong>.
-          Click it, then come back here to finish setting up billing.
+          We&rsquo;ve sent a verification link to <strong className="text-navy-950">{email}</strong>. Click it, then
+          come back here to finish setting up billing.
         </p>
         <p className="mt-4 text-xs text-navy-700/50">
           Didn&rsquo;t get it?{" "}
@@ -225,95 +228,11 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
         This keeps what you&rsquo;ve built and unlocks your full dashboard.
       </p>
 
-      <form onSubmit={onSubmit} className="mt-6 grid gap-4 text-left">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="name" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
-              Full Name
-            </label>
-            <input
-              id="name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className={cn(inputClasses, "mt-1.5")}
-            />
-          </div>
-          <div>
-            <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={cn(inputClasses, "mt-1.5")}
-            />
-          </div>
-        </div>
-        <div>
-          <label htmlFor="phone" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
-            Mobile Number <span className="normal-case text-navy-700/40">(optional)</span>
-          </label>
-          <input
-            id="phone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="For support follow-up if something goes wrong"
-            className={cn(inputClasses, "mt-1.5")}
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={cn(inputClasses, "mt-1.5")}
-            />
-          </div>
-          <div>
-            <label htmlFor="confirmPassword" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
-              Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className={cn(inputClasses, "mt-1.5")}
-            />
-          </div>
-        </div>
-
+      <div className="mt-6 text-left">
         <TermsConsentCheckbox checked={agreedToTerms} onChange={setAgreedToTerms} variant="light" />
-
-        {error ? (
-          <p className="text-sm text-red-600" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        <Button type="submit" size="lg" disabled={loading || !agreedToTerms} className="mt-2 w-full">
-          {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Account"}
-        </Button>
-      </form>
-
-      <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.15em] text-navy-700/40">
-        <span className="h-px flex-1 bg-navy-950/10" /> or <span className="h-px flex-1 bg-navy-950/10" />
       </div>
-      {/*
+      <div className="mt-4">
+        {/*
         Clicking through to Google navigates the browser away, which
         would otherwise trip the pagehide listener above and misreport a
         legitimate in-progress signup as an abandoned one. onClickCapture
@@ -321,15 +240,104 @@ export function AccountForm({ token, eventId }: { token: string; eventId: string
         the (async, then-redirecting) signInWithOAuth call, so the guard
         is set before the page ever unloads.
       */}
-      <div onClickCapture={() => { reportedRef.current = true; }}>
-        <GoogleAuthButton
-          label="Continue with Google"
-          disabled={!agreedToTerms}
-          redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(
-            `${wizardStepHref(token, "payment")}?verified=1`,
-          )}&link_event_id=${encodeURIComponent(eventId)}`}
-        />
+        <div
+          onClickCapture={() => {
+            reportedRef.current = true;
+          }}
+        >
+          <GoogleAuthButton
+            label="Continue with Google"
+            disabled={!agreedToTerms}
+            redirectTo={`${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(
+              `${wizardStepHref(token, "payment")}?verified=1`,
+            )}&link_event_id=${encodeURIComponent(eventId)}`}
+          />
+        </div>
       </div>
+      <EmailAuthDisclosure variant="light">
+        <form onSubmit={onSubmit} className="grid gap-4 text-left">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="name" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
+                Full Name
+              </label>
+              <input
+                id="name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={cn(inputClasses, "mt-1.5")}
+              />
+            </div>
+            <div>
+              <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={cn(inputClasses, "mt-1.5")}
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="phone" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
+              Mobile Number <span className="normal-case text-navy-700/40">(optional)</span>
+            </label>
+            <input
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="For support follow-up if something goes wrong"
+              className={cn(inputClasses, "mt-1.5")}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={cn(inputClasses, "mt-1.5")}
+              />
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="text-xs uppercase tracking-[0.15em] text-navy-700/60">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                required
+                minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={cn(inputClasses, "mt-1.5")}
+              />
+            </div>
+          </div>
+
+          {error ? (
+            <p className="text-sm text-red-600" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <Button type="submit" size="lg" disabled={loading || !agreedToTerms} className="mt-2 w-full">
+            {loading ? <Loader2 className="animate-spin" size={16} /> : "Create Account"}
+          </Button>
+        </form>
+      </EmailAuthDisclosure>
 
       <p className="mt-6 text-center text-sm text-navy-700/60">
         Already have an account?{" "}
