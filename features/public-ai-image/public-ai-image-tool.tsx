@@ -16,14 +16,29 @@ interface Result {
   dataUrl: string;
 }
 
+/** Generation usually takes 20-60s; the Edge Function itself is cut off at 150s. */
+const GENERATION_TIMEOUT_MS = 150_000;
+
+/** Parses a JSON body without throwing on a non-JSON error page (e.g. a gateway timeout), so the real status still reaches the user. */
+async function readJson(res: Response): Promise<{ error?: string; ticketId?: unknown; dataUrl?: unknown }> {
+  try {
+    return await res.json();
+  } catch {
+    return { error: res.ok ? undefined : `The server returned an unexpected response (${res.status}). Please try again.` };
+  }
+}
+
 /**
  * Client half of the public, no-login "AI Invitation Image" tool
  * (#81) — a marketing/lead-gen page (app/ai-invitation-image/page.tsx)
  * that lets a visitor try the AI Image feature before committing to
- * /start. Calls app/api/public-ai-image/route.ts directly, which is
- * itself the real enforcement point for rate limiting — this component
- * just surfaces whatever it returns (including a 429's friendly
- * message) rather than re-implementing any limit checks client-side.
+ * /start. Two steps: app/api/public-ai-image/route.ts (the real
+ * rate-limit enforcement point) issues a single-use ticket, then the
+ * generate-public-ai-image Supabase Edge Function turns that ticket
+ * into an image — generation takes longer than a Netlify function is
+ * allowed to run. This component just surfaces whatever either step
+ * returns (including a 429's friendly message) rather than
+ * re-implementing any limit checks client-side.
  */
 export function PublicAiImageTool() {
   const [prompt, setPrompt] = useState("");
@@ -39,22 +54,42 @@ export function PublicAiImageTool() {
     setLoading(true);
     setError(null);
     setResult(null);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GENERATION_TIMEOUT_MS);
     try {
-      const res = await fetch("/api/public-ai-image", {
+      const ticketRes = await fetch("/api/public-ai-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: prompt.trim() }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Something went wrong. Please try again.");
+      const ticket = await readJson(ticketRes);
+      if (!ticketRes.ok || typeof ticket.ticketId !== "string") {
+        setError(ticket.error || "Something went wrong. Please try again.");
         return;
       }
-      setResult({ dataUrl: data.dataUrl });
+
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+      const imageRes = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-public-ai-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${anonKey}`, apikey: anonKey },
+        body: JSON.stringify({ ticketId: ticket.ticketId }),
+        signal: controller.signal,
+      });
+      const image = await readJson(imageRes);
+      if (!imageRes.ok || typeof image.dataUrl !== "string") {
+        setError(image.error || "The image couldn't be generated. Please try again.");
+        return;
+      }
+      setResult({ dataUrl: image.dataUrl });
     } catch (err) {
       console.error("Public AI image generation failed:", err);
-      setError("Something went wrong. Please check your connection and try again.");
+      setError(
+        err instanceof DOMException && err.name === "AbortError"
+          ? "This is taking much longer than expected. Please try again in a bit."
+          : "Something went wrong. Please check your connection and try again.",
+      );
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   }

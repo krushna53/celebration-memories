@@ -26,7 +26,7 @@ export interface RateLimitCheck {
   reason?: string;
 }
 
-/** Checked BEFORE calling OpenAI. Recording the attempt (recordPublicAiImageRequest below) happens separately, after this passes, so a request that fails validation or OpenAI itself doesn't unfairly count against the caller's quota. */
+/** Checked BEFORE issuing a ticket (createPublicAiImageTicket below). Pending and completed tickets both count; a ticket whose generation fails is deleted by the Edge Function, so a failed attempt never counts against the caller's quota. */
 export async function checkPublicAiImageRateLimit(ipHash: string): Promise<RateLimitCheck> {
   const sinceHour = new Date(Date.now() - ONE_HOUR_MS).toISOString();
   const sinceDay = new Date(Date.now() - ONE_DAY_MS).toISOString();
@@ -60,7 +60,24 @@ export async function checkPublicAiImageRateLimit(ipHash: string): Promise<RateL
   return { allowed: true };
 }
 
-export async function recordPublicAiImageRequest(ipHash: string): Promise<void> {
-  const { error } = await supabaseAdmin().from("public_ai_image_requests").insert({ ip_hash: ipHash });
-  if (error) console.error("recordPublicAiImageRequest failed:", error.message);
+/**
+ * Reserves one generation against the caller's allowance as a single-
+ * use 'pending' ticket holding the validated prompt — the Edge Function
+ * (supabase/functions/generate-public-ai-image) claims it, generates,
+ * and marks it 'done', or deletes it on failure so the attempt is
+ * refunded. Pending tickets count toward the limit above, so parallel
+ * requests can't exceed it. See migration 0061 for why generation moved
+ * out of the Netlify function.
+ */
+export async function createPublicAiImageTicket(ipHash: string, prompt: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("public_ai_image_requests")
+    .insert({ ip_hash: ipHash, prompt, status: "pending" })
+    .select("id")
+    .single<{ id: string }>();
+  if (error) {
+    console.error("createPublicAiImageTicket failed:", error.message);
+    return null;
+  }
+  return data.id;
 }

@@ -1,9 +1,9 @@
 import "server-only";
 import { NextResponse } from "next/server";
 
-import { AI_IMAGE_CONFIGURED, AiImageError, generateAiImage } from "@/lib/ai-image";
+import { AI_IMAGE_CONFIGURED } from "@/lib/ai-image";
 import { getClientIp, hashIp } from "@/lib/ip-hash";
-import { checkPublicAiImageRateLimit, recordPublicAiImageRequest } from "@/services/public-ai-image-rate-limit";
+import { checkPublicAiImageRateLimit, createPublicAiImageTicket } from "@/services/public-ai-image-rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -21,15 +21,14 @@ const MAX_PROMPT_LENGTH = 500;
  * limit.ts) and the OpenAI call, since a determined caller could hit
  * this URL directly regardless of what the page's UI does.
  *
- * Uses the previously-unused lib/ai-image.ts helper (generateAiImage)
- * directly rather than the admin flow's Edge-Function detour — that
- * detour exists so the admin tool can use "high" quality (which
- * routinely exceeds Netlify's function time limit); this tool
- * deliberately stays at "medium" quality specifically so it fits
- * comfortably inside that limit with no Edge Function needed. No
- * Storage write either — the PNG is returned to the browser as a
- * base64 data URL and shown/downloaded client-side only, so there's
- * nothing to persist, moderate, or purge later.
+ * This route only validates, rate-limits, and issues a single-use
+ * ticket — the OpenAI call itself runs in the
+ * generate-public-ai-image Supabase Edge Function, which the browser
+ * calls next with that ticket. Generating here directly (the original
+ * design) never worked in production: image generation takes 20-60s,
+ * past Netlify's synchronous function limit, so every request was cut
+ * off and the browser got a non-JSON timeout page. See migration
+ * 0061_public_ai_image_tickets.sql.
  */
 export async function POST(request: Request) {
   if (!AI_IMAGE_CONFIGURED) {
@@ -57,16 +56,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: rateLimit.reason }, { status: 429 });
   }
 
-  try {
-    const image = await generateAiImage({ prompt, size: "1024x1024", quality: "medium" });
-    // Recorded only after a successful generation — a failed/errored
-    // attempt shouldn't burn part of the caller's daily allowance.
-    await recordPublicAiImageRequest(ipHash);
-
-    const dataUrl = `data:${image.contentType};base64,${image.buffer.toString("base64")}`;
-    return NextResponse.json({ dataUrl });
-  } catch (err) {
-    const message = err instanceof AiImageError ? err.message : "Something went wrong generating the image. Please try again.";
-    return NextResponse.json({ error: message }, { status: 502 });
+  const ticketId = await createPublicAiImageTicket(ipHash, prompt);
+  if (!ticketId) {
+    return NextResponse.json({ error: "Something went wrong. Please try again in a moment." }, { status: 500 });
   }
+  return NextResponse.json({ ticketId });
 }
