@@ -154,24 +154,26 @@ export function Navbar({
 
       <div
         className={cn(
-          "overflow-hidden transition-luxury duration-500 md:hidden",
-          open ? "max-h-96" : "max-h-0",
+          "transition-luxury duration-500 md:hidden",
+          // Scrolls instead of clipping — a fixed max-h used to cut the
+          // Login/Logout rows off the bottom once enough links were added.
+          open ? "max-h-[calc(100dvh-4rem)] overflow-y-auto" : "max-h-0 overflow-hidden",
         )}
       >
-        <ul className="flex flex-col gap-1 bg-navy-950/95 px-4 pb-4 sm:px-6 sm:pb-6">
+        <ul className="flex flex-col divide-y divide-ivory-100/10 bg-navy-950/95 px-4 pb-4 sm:px-6 sm:pb-6">
           {navLinks.map((link) => (
             <li key={link.href}>
               <Link
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="tap-target flex items-center text-sm text-ivory-100/85 hover:text-gold-300"
+                className="flex min-h-12 w-full items-center py-3 text-base text-ivory-100/90 hover:text-gold-300 active:text-gold-300"
               >
                 {link.label}
               </Link>
             </li>
           ))}
           {showLogin ? (
-            <li className="flex flex-col items-start gap-1">
+            <li className="flex flex-col items-stretch pt-2">
               <NavbarAuthStatus variant="mobile" onNavigate={() => setOpen(false)} />
             </li>
           ) : null}

@@ -18,13 +18,14 @@ interface NavbarAuthStatusProps {
 
 const LINK_CLASSES: Record<"desktop" | "mobile", string> = {
   desktop: "text-sm tracking-wide text-ivory-100/85 transition-luxury duration-300 hover:text-gold-300",
-  mobile: "tap-target flex items-center text-sm text-ivory-100/85 hover:text-gold-300",
+  mobile: "flex min-h-12 w-full items-center py-3 text-base text-ivory-100/90 hover:text-gold-300 active:text-gold-300",
 };
 
 const LOGIN_PILL_CLASSES: Record<"desktop" | "mobile", string> = {
   desktop:
     "rounded-full border border-gold-400/40 px-4 py-1.5 text-sm tracking-wide text-gold-300 transition-luxury duration-300 hover:border-gold-400 hover:bg-gold-400/10",
-  mobile: "tap-target flex items-center text-sm text-gold-300",
+  mobile:
+    "flex min-h-12 w-full items-center justify-center rounded-full border border-gold-400/50 px-5 text-base font-medium text-gold-300 active:bg-gold-400/10",
 };
 
 /**
@@ -53,18 +54,28 @@ export function NavbarAuthStatus({ variant, onNavigate }: NavbarAuthStatusProps)
     let cancelled = false;
 
     async function load() {
-      const {
-        data: { user },
-      } = await supabaseBrowser().auth.getUser();
-      if (cancelled) return;
-      setEmail(user?.email ?? null);
+      // Any failure here (flaky network in the installed app's WebView,
+      // a stale session) must fall back to "signed out" — leaving email
+      // as undefined would render nothing at all, i.e. no Login option.
+      try {
+        const {
+          data: { user },
+        } = await supabaseBrowser().auth.getUser();
+        if (cancelled) return;
+        setEmail(user?.email ?? null);
 
-      if (!user) {
-        setDashboardPath(null);
-        return;
+        if (!user) {
+          setDashboardPath(null);
+          return;
+        }
+        const destination = await resolveLoginDestinationAction();
+        if (!cancelled) setDashboardPath(destination.kind === "none" ? null : destination.path);
+      } catch {
+        if (!cancelled) {
+          setEmail((current) => current ?? null);
+          setDashboardPath(null);
+        }
       }
-      const destination = await resolveLoginDestinationAction();
-      if (!cancelled) setDashboardPath(destination.kind === "none" ? null : destination.path);
     }
 
     load();
@@ -99,6 +110,30 @@ export function NavbarAuthStatus({ variant, onNavigate }: NavbarAuthStatusProps)
       Hi {email}
     </span>
   );
+
+  if (variant === "mobile") {
+    // Explicit, full-width rows on mobile — the bare "Hi {email}" text
+    // alone gave no visible way into the dashboard from the app.
+    return (
+      <>
+        <span className="truncate py-2 text-sm text-ivory-100/60" title={email}>
+          Signed in as {email}
+        </span>
+        {dashboardPath ? (
+          <Link href={dashboardPath} onClick={onNavigate} className={LOGIN_PILL_CLASSES.mobile}>
+            Go to Dashboard
+          </Link>
+        ) : (
+          <Link href="/login" onClick={onNavigate} className={LOGIN_PILL_CLASSES.mobile}>
+            Login
+          </Link>
+        )}
+        <button type="button" onClick={handleSignOut} className={cn(LINK_CLASSES.mobile, "gap-2")}>
+          <LogOut size={16} /> Logout
+        </button>
+      </>
+    );
+  }
 
   return (
     <>

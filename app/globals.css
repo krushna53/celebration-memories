@@ -198,3 +198,15 @@ h1, h2, h3, h4, h5, h6 {
     transparent
   );
 }
+
+/*
+ * Minimum touch-target size (44×44px, per WCAG 2.5.5 / Apple HIG).
+ * Used across ~50 components (nav links, icon buttons, menu items) but
+ * was never actually defined, so every "tap-target" element rendered
+ * at its bare text height — mobile menu links ended up ~20px tall and
+ * hard to hit on a phone.
+ */
+@utility tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
