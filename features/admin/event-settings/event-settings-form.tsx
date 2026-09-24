@@ -1866,7 +1866,12 @@ export function EventSettingsForm({
         </p>
       ) : null}
 
-      <div className="flex items-center gap-3">
+      {/*
+        Pinned above the admin bottom tab bar on phones — this form is
+        ~14 screens tall there, and Save used to exist only at the very
+        end of it. Back to a normal inline row from md up.
+      */}
+      <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 -mx-4 flex items-center gap-3 border-t border-navy-950/10 bg-ivory-100/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
         <Button type="submit" size="lg" disabled={saving} className="w-full sm:w-auto">
           {saving ? (
             <>
