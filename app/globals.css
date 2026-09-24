@@ -266,6 +266,11 @@ h1, h2, h3, h4, h5, h6 {
   }
   .stack-table td:last-child:not([data-label]):not(:first-child) :is(a, button) {
     min-height: 40px;
+    white-space: nowrap;
+  }
+  .stack-table td:last-child:not([data-label]):not(:first-child) > div {
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
   .stack-table td :is(a, button):has(> svg:only-child) {
     display: inline-flex;
