@@ -11,6 +11,7 @@ import {
   Heart,
   Home,
   Images,
+  LayoutDashboard,
   Menu,
   Sparkles,
   X,
@@ -39,7 +40,6 @@ const TAB_PRIORITY: { match: RegExp; icon: LucideIcon; short?: string }[] = [
   { match: /#details/, icon: CalendarDays, short: "Details" },
   { match: /#timeline/, icon: Clock, short: "Timeline" },
   { match: /^\/discover/, icon: Compass, short: "Discover" },
-  { match: /^\/events$/, icon: CalendarDays, short: "Events" },
   { match: /^\/ai-invitation-image/, icon: Sparkles, short: "AI Image" },
 ];
 
@@ -59,11 +59,22 @@ export function useIsInstalledApp(): boolean {
   return isApp;
 }
 
+/**
+ * Platform pages (the ones showing sign-in state) end the bar with a
+ * Dashboard tab. It points at /login, which sends an already-signed-in
+ * visitor straight to their own dashboard (admin, vendor or forms — see
+ * features/auth/unified-login-form.tsx) and asks everyone else to sign
+ * in first. Event pages skip it: a guest has no dashboard.
+ */
+const DASHBOARD_TAB = { href: "/login", label: "Dashboard", icon: LayoutDashboard };
+
 interface AppTabBarProps {
   /** From useIsInstalledApp(), owned by the Navbar (which also hides its own ☰ when this bar shows). */
   isApp: boolean;
   homeHref: string;
   navLinks: readonly TabLink[];
+  /** Platform pages — adds the Dashboard tab (see DASHBOARD_TAB). */
+  showDashboard: boolean;
   menuOpen: boolean;
   onToggleMenu: () => void;
 }
@@ -80,7 +91,7 @@ interface AppTabBarProps {
  * pad the page bottom and lift floating widgets (support chat, AI
  * avatar, opt-in banners — marked `data-floating`) above the bar.
  */
-export function AppTabBar({ isApp, homeHref, navLinks, menuOpen, onToggleMenu }: AppTabBarProps) {
+export function AppTabBar({ isApp, homeHref, navLinks, showDashboard, menuOpen, onToggleMenu }: AppTabBarProps) {
   const pathname = usePathname();
 
   useEffect(() => {
@@ -92,13 +103,15 @@ export function AppTabBar({ isApp, homeHref, navLinks, menuOpen, onToggleMenu }:
   if (!isApp) return null;
 
   const tabs: { href: string; label: string; icon: LucideIcon }[] = [];
+  const linkSlots = showDashboard ? 2 : 3;
   for (const rule of TAB_PRIORITY) {
-    if (tabs.length === 3) break;
+    if (tabs.length === linkSlots) break;
     const link = navLinks.find((l) => rule.match.test(l.href));
     if (link && !tabs.some((t) => t.href === link.href)) {
       tabs.push({ href: link.href, label: rule.short ?? link.label, icon: rule.icon });
     }
   }
+  if (showDashboard) tabs.push(DASHBOARD_TAB);
 
   // Event homepages link their own top as "#hero"; everywhere else Home
   // is the page's homeHref (the platform root, or an event's own URL).

@@ -83,9 +83,9 @@ const CHANGES: ChangeGroup[] = [
       {
         title: "Installed app: bottom menu bar on the website too",
         detail:
-          "When EveryMoment is opened as an installed app (added to the home screen, or the Android/iOS app), phones now get a bottom tab bar on the public site, like the one in the admin. Platform pages show Home, Discover, Events, AI Image and Menu; event pages show what guests actually need — Home, RSVP, Memories, Gallery and Menu. Menu opens the full menu (including Login / Dashboard) and replaces the ☰ in the top corner, which is hard to reach one-handed. The chat button and other floating widgets move up so they don't sit on the bar. Regular browser tabs are unchanged.",
+          "When EveryMoment is opened as an installed app (added to the home screen, or the Android/iOS app), phones now get a bottom tab bar on the public site, like the one in the admin. Platform pages show Home, Discover, AI Image, Dashboard and Menu (Dashboard takes a signed-in user straight to their dashboard, or asks them to sign in first); event pages show what guests actually need — Home, RSVP, Memories, Gallery and Menu. Menu opens the full menu (including Login / Dashboard) and replaces the ☰ in the top corner, which is hard to reach one-handed. The chat button and other floating widgets move up so they don't sit on the bar. Regular browser tabs are unchanged.",
         test:
-          "Install the site to your home screen (or open the Android app), open any event page, and confirm the bottom bar shows Home · RSVP · Memories · Gallery · Menu and each tab jumps to the right section. Open everymoment.in in the app and confirm Home · Discover · Events · AI Image · Menu, and that Menu shows Login or Go to Dashboard.",
+          "Install the site to your home screen (or open the Android app), open any event page, and confirm the bottom bar shows Home · RSVP · Memories · Gallery · Menu and each tab jumps to the right section. Open everymoment.in in the app and confirm Home · Discover · AI Image · Dashboard · Menu, and that Dashboard opens your dashboard (or the sign-in page when signed out). The homepage no longer has a Browse Public Events button.",
       },
       {
         title: "Admin tables readable on phones — Manage and Delete buttons no longer cut off",

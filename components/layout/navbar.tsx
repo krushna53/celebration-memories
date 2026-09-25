@@ -212,6 +212,7 @@ export function Navbar({
         isApp={isApp}
         homeHref={homeHref}
         navLinks={navLinks}
+        showDashboard={showLogin}
         menuOpen={open}
         onToggleMenu={() => setOpen((v) => !v)}
       />

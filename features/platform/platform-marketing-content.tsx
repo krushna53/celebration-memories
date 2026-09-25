@@ -169,9 +169,6 @@ export async function PlatformMarketingContent() {
               <Button size="lg" asChild>
                 <Link href="/start">Build Your Event Site — Free to Try</Link>
               </Button>
-              <Button size="lg" variant="outline" asChild className="border-gold-400/60 text-gold-200 hover:bg-gold-400/10">
-                <Link href="/events">Browse Public Events</Link>
-              </Button>
             </div>
             <p className="mt-6 text-xs text-ivory-100/60">
               Curious what a guest, host, or admin can each do?{" "}
