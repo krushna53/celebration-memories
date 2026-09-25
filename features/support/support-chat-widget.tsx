@@ -70,7 +70,7 @@ export function SupportChatWidget() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Chat with us"
-        className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-navy-950 text-gold-400 shadow-lg transition-luxury duration-300 hover:brightness-110"
+        data-floating className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-navy-950 text-gold-400 shadow-lg transition-luxury duration-300 hover:brightness-110"
       >
         <span className="absolute right-1 top-1 flex h-3 w-3">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -82,7 +82,7 @@ export function SupportChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 w-[calc(100vw-2.5rem)] max-w-sm overflow-hidden rounded-2xl border border-navy-950/10 bg-white shadow-2xl">
+    <div data-floating className="fixed bottom-5 right-5 z-40 w-[calc(100vw-2.5rem)] max-w-sm overflow-hidden rounded-2xl border border-navy-950/10 bg-white shadow-2xl">
       <div className="flex items-center justify-between bg-navy-950 px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-500/20 text-sm font-medium text-gold-300">

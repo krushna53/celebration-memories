@@ -182,7 +182,7 @@ export function AvatarWidget({ eventId, honoreeName, games }: AvatarWidgetProps)
 
   if (!open) {
     return (
-      <div className="fixed bottom-5 left-5 z-40 flex flex-col items-start gap-2">
+      <div data-floating className="fixed bottom-5 left-5 z-40 flex flex-col items-start gap-2">
         {showGreeting ? (
           <button
             type="button"
@@ -205,7 +205,7 @@ export function AvatarWidget({ eventId, honoreeName, games }: AvatarWidgetProps)
   }
 
   return (
-    <div className="fixed bottom-5 left-5 z-40 flex w-[calc(100vw-2.5rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-gold-500/20 bg-navy-950 shadow-2xl">
+    <div data-floating className="fixed bottom-5 left-5 z-40 flex w-[calc(100vw-2.5rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-gold-500/20 bg-navy-950 shadow-2xl">
       <div className="flex items-center justify-between bg-navy-900 px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-500/20 text-gold-300">

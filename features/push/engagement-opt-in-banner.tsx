@@ -58,7 +58,7 @@ export function EngagementOptInBanner({ token, honoreeName }: EngagementOptInBan
     <div
       role="dialog"
       aria-label="Enable event notifications"
-      className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4 sm:bottom-5 sm:px-0"
+      data-floating className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4 sm:bottom-5 sm:px-0"
     >
       <div className="flex w-full max-w-md items-start gap-3 rounded-2xl border border-gold-500/25 bg-navy-950 px-4 py-3 text-ivory-50 shadow-xl">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold-500/15 text-gold-400">

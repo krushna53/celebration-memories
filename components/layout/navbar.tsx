@@ -8,6 +8,7 @@ import { Menu, X } from "lucide-react";
 import { ACTIVE_EVENT, NAV_LINKS, SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { NavbarAuthStatus } from "@/features/auth/navbar-auth-status";
+import { AppTabBar, useIsInstalledApp } from "@/components/layout/app-tab-bar";
 
 /**
  * Sticky, translucent site navigation. Collapses into a slide-down sheet
@@ -72,6 +73,12 @@ export function Navbar({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isOnHomeHref = pathname === homeHref;
+  // Installed app (PWA / Capacitor): phones get a bottom tab bar whose
+  // Menu button replaces the top ☰ (see AppTabBar).
+  const isApp = useIsInstalledApp();
+
+  // Close the menu after any navigation (bottom-tab taps included).
+  useEffect(() => setOpen(false), [pathname]);
 
   function handleBrandClick(e: React.MouseEvent<HTMLAnchorElement>) {
     // Already on the page the brand mark points to (e.g. the event's
@@ -105,21 +112,22 @@ export function Navbar({
   const mobileOnly = wideNav ? "xl:hidden" : "md:hidden";
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-luxury duration-500",
-        showSolidBackground
-          ? "bg-navy-950/80 backdrop-blur-md shadow-[0_1px_0_0_rgba(201,162,39,0.25)]"
-          : "bg-transparent",
-      )}
-    >
-      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 text-ivory-50 sm:px-6 sm:py-4 lg:px-8">
-        <Link
-          href={homeHref}
-          onClick={handleBrandClick}
-          className="flex min-w-0 items-center gap-2 font-display text-base tracking-wide text-gold-300 sm:text-lg"
-        >
-          {/*
+    <>
+      <header
+        className={cn(
+          "fixed inset-x-0 top-0 z-50 transition-luxury duration-500",
+          showSolidBackground
+            ? "bg-navy-950/80 backdrop-blur-md shadow-[0_1px_0_0_rgba(201,162,39,0.25)]"
+            : "bg-transparent",
+        )}
+      >
+        <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 text-ivory-50 sm:px-6 sm:py-4 lg:px-8">
+          <Link
+            href={homeHref}
+            onClick={handleBrandClick}
+            className="flex min-w-0 items-center gap-2 font-display text-base tracking-wide text-gold-300 sm:text-lg"
+          >
+            {/*
             The brand mark only ever shows on platform-level pages
             (marketing site, pricing, roles, discover...), which all
             pass honoreeName={SITE_NAME} — never on a guest's personal
@@ -127,70 +135,86 @@ export function Navbar({
             and showing the EveryMoment logo there would wrongly brand
             someone else's event as the platform itself.
           */}
-          {honoreeName === SITE_NAME ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-7 w-7 shrink-0" />
-          ) : null}
-          <span className="truncate">{honoreeName}</span>
-        </Link>
+            {honoreeName === SITE_NAME ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-7 w-7 shrink-0" />
+            ) : null}
+            <span className="truncate">{honoreeName}</span>
+          </Link>
 
-        <ul className={cn("shrink-0 items-center gap-6", desktopOnly)}>
-          {navLinks.map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                className="whitespace-nowrap text-sm tracking-wide text-ivory-100/85 transition-luxury duration-300 hover:text-gold-300"
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
-          {showLogin ? (
-            <li className="flex items-center gap-2 border-l border-ivory-100/15 pl-6">
-              <NavbarAuthStatus variant="desktop" />
-            </li>
-          ) : null}
-        </ul>
+          <ul className={cn("shrink-0 items-center gap-6", desktopOnly)}>
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="whitespace-nowrap text-sm tracking-wide text-ivory-100/85 transition-luxury duration-300 hover:text-gold-300"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+            {showLogin ? (
+              <li className="flex items-center gap-2 border-l border-ivory-100/15 pl-6">
+                <NavbarAuthStatus variant="desktop" />
+              </li>
+            ) : null}
+          </ul>
 
-        <button
-          type="button"
-          aria-label={open ? "Close menu" : "Open menu"}
-          aria-expanded={open}
-          className={cn("tap-target -mr-2 flex shrink-0 items-center justify-center text-ivory-50", mobileOnly)}
-          onClick={() => setOpen((v) => !v)}
+          <button
+            type="button"
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            className={cn(
+              "tap-target -mr-2 flex shrink-0 items-center justify-center text-ivory-50",
+              mobileOnly,
+              isApp && "max-md:hidden",
+            )}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </nav>
+
+        <div
+          className={cn(
+            "transition-luxury duration-500",
+            mobileOnly,
+            // Scrolls instead of clipping — a fixed max-h used to cut the
+            // Login/Logout rows off the bottom once enough links were added.
+            open
+              ? isApp
+                ? "max-h-[calc(100dvh-8rem-env(safe-area-inset-bottom))] overflow-y-auto md:max-h-[calc(100dvh-4rem)]"
+                : "max-h-[calc(100dvh-4rem)] overflow-y-auto"
+              : "max-h-0 overflow-hidden",
+          )}
         >
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
-      </nav>
-
-      <div
-        className={cn(
-          "transition-luxury duration-500",
-          mobileOnly,
-          // Scrolls instead of clipping — a fixed max-h used to cut the
-          // Login/Logout rows off the bottom once enough links were added.
-          open ? "max-h-[calc(100dvh-4rem)] overflow-y-auto" : "max-h-0 overflow-hidden",
-        )}
-      >
-        <ul className="flex flex-col divide-y divide-ivory-100/10 bg-navy-950/95 px-4 pb-4 sm:px-6 sm:pb-6">
-          {navLinks.map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className="flex min-h-12 w-full items-center py-3 text-base text-ivory-100/90 hover:text-gold-300 active:text-gold-300"
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
-          {showLogin ? (
-            <li className="flex flex-col items-stretch pt-2">
-              <NavbarAuthStatus variant="mobile" onNavigate={() => setOpen(false)} />
-            </li>
-          ) : null}
-        </ul>
-      </div>
-    </header>
+          <ul className="flex flex-col divide-y divide-ivory-100/10 bg-navy-950/95 px-4 pb-4 sm:px-6 sm:pb-6">
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className="flex min-h-12 w-full items-center py-3 text-base text-ivory-100/90 hover:text-gold-300 active:text-gold-300"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+            {showLogin ? (
+              <li className="flex flex-col items-stretch pt-2">
+                <NavbarAuthStatus variant="mobile" onNavigate={() => setOpen(false)} />
+              </li>
+            ) : null}
+          </ul>
+        </div>
+      </header>
+      <AppTabBar
+        isApp={isApp}
+        homeHref={homeHref}
+        navLinks={navLinks}
+        menuOpen={open}
+        onToggleMenu={() => setOpen((v) => !v)}
+      />
+    </>
   );
 }

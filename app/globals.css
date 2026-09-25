@@ -291,3 +291,19 @@ h1, h2, h3, h4, h5, h6 {
     display: none;
   }
 }
+
+/*
+ * Installed-app bottom tab bar on the public site
+ * (components/layout/app-tab-bar.tsx adds `has-app-tabbar` to <body>
+ * only inside the PWA / Capacitor app). Pads the page so the footer
+ * isn't hidden behind the bar, and lifts floating widgets marked
+ * `data-floating` (support chat, AI avatar, push opt-in banner) above it.
+ */
+@media (max-width: 767px) {
+  body.has-app-tabbar {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+  body.has-app-tabbar [data-floating] {
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+}
