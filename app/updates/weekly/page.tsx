@@ -81,6 +81,13 @@ const CHANGES: ChangeGroup[] = [
           "Open /admin on a phone. Confirm the bottom bar shows, the current tab is highlighted, and More lists every page in groups. On a laptop, confirm the top strip highlights the page you're on. Take the Tour should still work on both.",
       },
       {
+        title: "Installed app: bottom menu bar on the website too",
+        detail:
+          "When EveryMoment is opened as an installed app (added to the home screen, or the Android/iOS app), phones now get a bottom tab bar on the public site, like the one in the admin. Platform pages show Home, Discover, Events, AI Image and Menu; event pages show what guests actually need — Home, RSVP, Memories, Gallery and Menu. Menu opens the full menu (including Login / Dashboard) and replaces the ☰ in the top corner, which is hard to reach one-handed. The chat button and other floating widgets move up so they don't sit on the bar. Regular browser tabs are unchanged.",
+        test:
+          "Install the site to your home screen (or open the Android app), open any event page, and confirm the bottom bar shows Home · RSVP · Memories · Gallery · Menu and each tab jumps to the right section. Open everymoment.in in the app and confirm Home · Discover · Events · AI Image · Menu, and that Menu shows Login or Go to Dashboard.",
+      },
+      {
         title: "Admin tables readable on phones — Manage and Delete buttons no longer cut off",
         detail:
           "All Events, Members, Team, Drafts, Promo Codes, Organizers, Session Organizers, Billing and Invitees showed desktop tables on phones. Most sat inside boxes that clipped anything too wide, so the right-hand columns — including Manage, View as Client, Remove and Delete — were impossible to reach on a phone. On phones each row is now a card: the name as the title, each detail on its own labelled line, and the action buttons underneath with bigger tap targets. Invitees' four top buttons (Import, Export, Bulk Send, Add Invitee) now wrap into a 2×2 grid instead of running off the screen, and invitee cards skip the less-used columns (full detail is still on desktop). The Games page link card also no longer runs off the side of the screen.",
