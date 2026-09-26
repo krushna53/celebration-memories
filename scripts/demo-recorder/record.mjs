@@ -26,6 +26,8 @@
  *   node record.mjs --no-ai         # wizard, but only type the AI prompt (don't generate)
  *   node record.mjs --invite <token> --game <token> --admin
  *   node record.mjs --login         # sign in once by hand, saves session for --admin
+ *   node record.mjs --backend --admin-event <demo event id> --admin-slug <its slug>
+ *                                   # host dashboard walkthrough on a DEMO event (owner login)
  *
  * Output: ./output/everymoment-demo-<desktop|mobile>-<timestamp>.mp4
  */
@@ -62,6 +64,9 @@ const config = {
   wizard: !arg("no-wizard"),
   generateAi: !arg("no-ai"),
   renderSlideshow: Boolean(arg("render-slideshow")),
+  backend: Boolean(arg("backend")),
+  adminEventId: typeof arg("admin-event") === "string" ? arg("admin-event") : null,
+  adminSlug: typeof arg("admin-slug") === "string" ? arg("admin-slug") : null,
   contactLine: process.env.DEMO_CONTACT_LINE || "WhatsApp +91 99879 82969",
 };
 
@@ -478,8 +483,161 @@ async function wizardScenes(page) {
   return slug;
 }
 
+/** Opens an admin page with a caption, pans down it, and clears the caption — for pages that are shown, not operated. */
+async function showAdminPage(page, urlPath, text, pans = 1) {
+  await goto(page, urlPath);
+  await caption(page, text, 2800);
+  for (let i = 1; i <= pans; i++) {
+    await scrollTo(page, i * VIEWPORT.height * 0.8, 1800);
+    await sleep(1400);
+  }
+  await caption(page, "");
+}
+
+/**
+ * The host dashboard, operated for real on the demo event: add + import
+ * guests, send queue, a guest RSVPing and uploading from their own link,
+ * check-in, moderation — then a tour of the other event tools.
+ *
+ * Guarded: refuses to record unless Event Settings shows the demo event's
+ * slug, so a real client's guest list can never end up in the video.
+ */
+async function backendScenes(page) {
+  let onDemoEvent = false;
+  await scene("Confirm demo event", async () => {
+    await goto(page, "/admin/event-settings");
+    if (page.url().includes("/login")) throw new Error("admin session expired — run with --login again");
+    const slug = await page.locator('input[value="' + config.adminSlug + '"]').count();
+    if (!slug) throw new Error(`admin isn't pointed at ${config.adminSlug} — not recording the dashboard`);
+    onDemoEvent = true;
+  });
+  if (!onDemoEvent) return;
+
+  let inviteUrl = null;
+  await scene("Invitees", async () => {
+    await goto(page, "/admin/invitees");
+    await caption(page, "Add guests one by one…");
+    await glideClick(page, page.getByRole("button", { name: /Add Invitee/ }));
+    await sleep(500);
+    await typeInto(page, page.getByPlaceholder("Full name"), "Suresh Patel");
+    await typeInto(page, page.getByPlaceholder("Phone (with country code)"), "+12025550106");
+    await typeInto(page, page.getByPlaceholder("Relationship (optional)"), "Old friend");
+    await glideClick(page, page.getByRole("button", { name: "Create Invitee" }));
+    await page.getByText("Suresh Patel").first().waitFor({ timeout: 20_000 });
+    await sleep(1000);
+
+    await caption(page, "…or import the whole list from a spreadsheet (CSV)");
+    await uploadVia(page, page.getByRole("button", { name: /Import CSV/ }), path.join(__dirname, "demo-guests.csv"));
+    await page.getByText("Meera Kapoor").first().waitFor({ timeout: 30_000 });
+    await sleep(1500);
+    await caption(page, "Every guest gets their own <b>private invite link</b>", 2600);
+
+    await caption(page, "<b>Bulk Send</b> — tap through the list, each WhatsApp message pre-written");
+    await glideClick(page, page.getByRole("button", { name: /Bulk Send/ }));
+    await sleep(3500);
+    await glideClick(page, page.getByRole("button", { name: /Bulk Send/ }));
+    await sleep(600);
+
+    // Grab one guest's personal link (copied to the clipboard) for the guest-side scene.
+    await glideClick(page, page.locator('button[title="Copy invite link"]').first());
+    await sleep(400);
+    inviteUrl = await page.evaluate(() => navigator.clipboard.readText()).catch(() => null);
+    await caption(page, "");
+  });
+
+  if (inviteUrl?.includes("/invite/")) {
+    await scene("Guest RSVPs and uploads", async () => {
+      await page.goto(inviteUrl, { waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+      await caption(page, "Meanwhile, on a guest's phone — their link already knows who they are", 3200);
+      await scrollToId(page, "rsvp");
+      await caption(page, "They RSVP in seconds");
+      // Re-runs land on a guest who already replied — reopen their form.
+      const edit = page.getByRole("button", { name: /Edit my RSVP/ });
+      if (await edit.isVisible().catch(() => false)) await glideClick(page, edit);
+      await glideClick(page, page.getByText("Joyfully Accepts", { exact: true }));
+      const adults = page.locator("#adults");
+      if (await adults.isVisible().catch(() => false)) await typeInto(page, adults, "2");
+      await glideClick(page, page.locator('input[type="checkbox"]').last());
+      await glideClick(page, page.getByRole("button", { name: /Submit RSVP/ }));
+      await sleep(2500);
+
+      await caption(page, "…and share photos straight from their phone");
+      await glideClick(page, page.getByRole("button", { name: /Upload Image/ }).first());
+      await sleep(800);
+      await uploadVia(page, page.getByRole("button", { name: /Choose from Gallery/ }), asset("guest-upload.jpg"));
+      await sleep(800);
+      // "Upload" for one file, "Upload All" for several.
+      await glideClick(page, page.getByRole("button", { name: /^Upload( All)?$/ }).first());
+      await page.getByText(/uploaded|awaiting approval|Thank you/i).first().waitFor({ timeout: 45_000 }).catch(() => {});
+      await sleep(2000);
+      await caption(page, "");
+    });
+  }
+
+  await scene("Moderation", async () => {
+    await goto(page, "/admin/memories");
+    await caption(page, "Every upload waits for <b>your approval</b> before it goes on the memory wall", 2600);
+    const approve = page.locator('button[title="Approve"]').first();
+    if (await approve.isVisible().catch(() => false)) {
+      await glideClick(page, approve);
+      await sleep(1500);
+    }
+    const feature = page.locator('button[title="Feature"]').first();
+    if (await feature.isVisible().catch(() => false)) {
+      await caption(page, "Feature the best ones");
+      await glideClick(page, feature);
+      await sleep(1500);
+    }
+    await caption(page, "");
+  });
+
+  await scene("Check-in", async () => {
+    await goto(page, "/admin/checkin");
+    await caption(page, "On the day — <b>check guests in</b> at the door");
+    await typeInto(page, page.getByPlaceholder(/Search guest name/), "Suresh");
+    await sleep(800);
+    await glideClick(page, page.getByRole("button", { name: "Check In", exact: true }).first());
+    await sleep(1500);
+    await caption(page, "Live attendance, updated as people arrive", 2500);
+    await caption(page, "");
+  });
+
+  await scene("Dashboard", async () => {
+    await goto(page, "/admin");
+    await caption(page, "Back on the <b>host dashboard</b> — it all adds up, live", 3200);
+    await scrollTo(page, VIEWPORT.height * 0.8, 2000);
+    await caption(page, "Invitations opened, RSVPs, uploads, attendance, most active guests", 2800);
+    await scrollTo(page, VIEWPORT.height * 1.6, 2000);
+    await sleep(1500);
+    await caption(page, "");
+  });
+
+  await scene("Event settings", async () => {
+    await showAdminPage(page, "/admin/event-settings", "Edit every detail — date, venue, timezone, WhatsApp message, section order", 3);
+  });
+  await scene("Event Day", async () => {
+    await showAdminPage(page, "/admin/event-day", "Event Day — the schedule and menu guests see on the day", 1);
+  });
+  await scene("Games", async () => {
+    await showAdminPage(page, "/admin/games", "Party games — Tambola and <b>Word Search</b> on guests' phones", 1);
+  });
+  await scene("Planner", async () => {
+    await showAdminPage(page, "/admin/planner", "A planner board for the family's to-dos", 1);
+  });
+  await scene("Templates", async () => {
+    await showAdminPage(page, "/admin/templates", "Switch templates any time — the whole site restyles instantly", 1);
+  });
+}
+
 async function runScenes(page) {
   await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height / 2);
+
+  if (config.backend) {
+    await backendScenes(page);
+    await outro(page);
+    return;
+  }
 
   await scene("Homepage", async () => {
     await goto(page, "/");
@@ -539,6 +697,10 @@ async function runScenes(page) {
     });
   }
 
+  await outro(page);
+}
+
+async function outro(page) {
   await scene("Outro", async () => {
     await page.evaluate(
       ([contact]) =>
@@ -578,18 +740,31 @@ function buildTimelineFilter(ranges, speed = 8) {
 
 async function saveLogin() {
   mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
-  const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-  const page = await context.newPage();
+  // Real Google Chrome with its own throwaway profile, minus the automation
+  // flag — Google's OAuth rejects Playwright's bundled Chromium as "not
+  // secure", which blocks "Continue with Google".
+  const context = await chromium.launchPersistentContext(path.join(__dirname, ".auth", "chrome-profile"), {
+    channel: "chrome",
+    headless: false,
+    viewport: { width: 1280, height: 800 },
+    ignoreDefaultArgs: ["--enable-automation"],
+    args: ["--disable-blink-features=AutomationControlled"],
+  });
+  const page = context.pages()[0] ?? (await context.newPage());
   await page.goto(`${config.baseUrl}/login`);
-  console.log("Sign in in the browser window (use a DEMO event's admin account). Waiting for /admin…");
-  await page.waitForURL(/\/admin(\/|\?|$)/, { timeout: 5 * 60_000 });
+  console.log("Sign in in the Chrome window that just opened. Waiting for /admin…");
+  await page.waitForURL(/\/admin(\/|\?|$)/, { timeout: 20 * 60_000 });
   await context.storageState({ path: AUTH_FILE });
   console.log(`Saved session to ${path.relative(process.cwd(), AUTH_FILE)} — now run with --admin.`);
-  await browser.close();
+  await context.close();
 }
 
 async function record() {
+  if (config.backend && (!config.adminEventId || !config.adminSlug)) {
+    console.error("--backend needs --admin-event <event id> and --admin-slug <that event's slug> (a DEMO event)");
+    process.exit(1);
+  }
+  if (config.backend) config.admin = true;
   if (config.admin && !existsSync(AUTH_FILE)) {
     console.error("--admin needs a saved session first: node record.mjs --login");
     process.exit(1);
@@ -612,6 +787,22 @@ async function record() {
     locale: "en-IN",
   });
   await context.addInitScript(OVERLAY_SCRIPT);
+  if (config.backend) {
+    // The owner's "active event" override (lib/admin-active-event.ts) — points
+    // every event-scoped admin page at the demo event for this recording only.
+    await context.addCookies([
+      {
+        name: "cm_admin_active_event",
+        value: config.adminEventId,
+        domain: new URL(config.baseUrl).hostname,
+        path: "/admin",
+        httpOnly: true,
+        secure: config.baseUrl.startsWith("https"),
+        sameSite: "Lax",
+      },
+    ]);
+    await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: config.baseUrl });
+  }
   // Keep the one-per-visit banners/tours out of the video.
   await context.addInitScript(() => {
     try {
@@ -630,7 +821,7 @@ async function record() {
 
   const rawPath = await video.path();
   const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
-  const outPath = path.join(OUTPUT_DIR, `everymoment-demo-${config.mobile ? "mobile" : "desktop"}-${stamp}.mp4`);
+  const outPath = path.join(OUTPUT_DIR, `everymoment-${config.backend ? "backend" : "demo"}-${config.mobile ? "mobile" : "desktop"}-${stamp}.mp4`);
   try {
     // Trim the blank first second, convert WebM → H.264 MP4 (plays everywhere, uploads to YouTube/WhatsApp).
     execFileSync(
