@@ -1,0 +1,14 @@
+{
+  "name": "everymoment-demo-recorder",
+  "private": true,
+  "type": "module",
+  "description": "Records an automated, captioned walkthrough video of EveryMoment with Playwright. See README.md.",
+  "scripts": {
+    "record": "node record.mjs",
+    "record:mobile": "node record.mjs --mobile",
+    "login": "node record.mjs --login"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}
