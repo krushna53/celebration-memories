@@ -5,17 +5,26 @@
  * saves an MP4. Re-run it whenever the product changes and the demo
  * stays current with no manual re-recording.
  *
- * Read-only by default: every scene only navigates, scrolls, and clicks
- * things that don't write data (no RSVP submit, no draft creation, no
- * uploads). The optional scenes need a token or a saved admin session —
- * point them at a demo event, never a real guest list, since whatever
- * is on screen ends up in the video.
+ * By default it builds a brand-new DEMO event through the /start wizard
+ * (event details, timeline + gallery uploads using the placeholder images
+ * in ../seed-demo-client-assets, a template, an AI invitation prompt, the
+ * slideshow composer, review) and then tours the site it just built — so
+ * no real guest's data is ever on screen. That run WRITES to whichever
+ * site --base points at: one draft event (never published — it stops
+ * before account creation/payment) plus its uploads, and the AI image
+ * step spends one OpenAI generation (skip with --no-ai). The Slideshow
+ * render is off by default (it spends Shotstack credits; --render-slideshow).
+ *
+ * The optional invite/game/admin scenes need a token or a saved admin
+ * session — point them at a demo event, never a real guest list.
  *
  * Usage (from this folder):
  *   npm install && npx playwright install chromium   # once
- *   node record.mjs                 # desktop 1280x720
+ *   node record.mjs                 # desktop 1280x720, full wizard walkthrough
  *   node record.mjs --mobile        # phone-shaped 390x844
- *   node record.mjs --event <slug> --invite <token> --game <token> --admin
+ *   node record.mjs --no-wizard --event <slug>   # read-only tour of an existing event
+ *   node record.mjs --no-ai         # wizard, but only type the AI prompt (don't generate)
+ *   node record.mjs --invite <token> --game <token> --admin
  *   node record.mjs --login         # sign in once by hand, saves session for --admin
  *
  * Output: ./output/everymoment-demo-<desktop|mobile>-<timestamp>.mp4
@@ -29,6 +38,8 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = path.join(__dirname, "output");
 const AUTH_FILE = path.join(__dirname, ".auth", "admin.json");
+const ASSETS_DIR = path.join(__dirname, "..", "seed-demo-client-assets");
+const asset = (name) => path.join(ASSETS_DIR, name);
 
 // ---------------------------------------------------------------- config
 
@@ -48,6 +59,9 @@ const config = {
   mobile: Boolean(arg("mobile")),
   login: Boolean(arg("login")),
   headed: Boolean(arg("headed")),
+  wizard: !arg("no-wizard"),
+  generateAi: !arg("no-ai"),
+  renderSlideshow: Boolean(arg("render-slideshow")),
   contactLine: process.env.DEMO_CONTACT_LINE || "WhatsApp +91 99879 82969",
 };
 
@@ -187,7 +201,10 @@ async function scrollToId(page, id, durationMs = 1600) {
 
 /** Glides the visible cursor to a locator's centre, then clicks it. */
 async function glideClick(page, locator) {
-  await locator.scrollIntoViewIfNeeded();
+  // Centre it rather than just "in view" — sticky footers/preview panels
+  // cover the viewport's bottom edge, and a raw mouse click there hits them.
+  await locator.evaluate((el) => el.scrollIntoView({ block: "center", behavior: "instant" }));
+  await sleep(150);
   const box = await locator.boundingBox();
   if (!box) throw new Error("element not visible");
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 25 });
@@ -197,17 +214,269 @@ async function glideClick(page, locator) {
   await page.mouse.up();
 }
 
-/** Runs one scene; a missing element skips that scene instead of killing the whole recording. */
+/** The page being recorded — lets scene() screenshot a failure without threading it through every call. */
+let activePage = null;
+
+/** Wall-clock start of the recording, and the [start, end] seconds of waits to fast-forward when encoding. */
+let recordingStartedAt = 0;
+const fastForwards = [];
+
+/** Runs a slow wait (AI generation, renders) and marks it to play at 8x in the final video. */
+async function fastForward(fn) {
+  const start = (Date.now() - recordingStartedAt) / 1000;
+  try {
+    return await fn();
+  } finally {
+    fastForwards.push([start, (Date.now() - recordingStartedAt) / 1000]);
+  }
+}
+
+/** Runs one scene; a missing element skips that scene (saving a screenshot of why) instead of killing the recording. */
 async function scene(name, fn) {
   try {
     console.log(`▶ ${name}`);
     await fn();
   } catch (err) {
-    console.warn(`  ↳ skipped "${name}": ${err instanceof Error ? err.message : err}`);
+    console.warn(`  ↳ skipped "${name}": ${err instanceof Error ? err.message.split("\n")[0] : err}`);
+    const shot = path.join(OUTPUT_DIR, `failed-${name.replace(/\W+/g, "-").toLowerCase()}.png`);
+    await activePage?.screenshot({ path: shot, fullPage: true }).catch(() => {});
+    console.warn(`    screenshot: ${path.relative(process.cwd(), shot)}`);
   }
 }
 
+/** The input/textarea/select that follows a <label> with this text (the wizard's labels aren't wired with htmlFor). */
+function fieldByLabel(page, text) {
+  const upper = text.toUpperCase().replace(/'/g, "");
+  return page
+    .locator(
+      `xpath=//label[contains(translate(normalize-space(.),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'),'${upper}')]/following::*[self::input or self::textarea or self::select][1]`,
+    )
+    .first();
+}
+
+/** Glides to a field, clears it, and types like a person would. */
+async function typeInto(page, locator, text, delay = 35) {
+  await glideClick(page, locator);
+  await locator.fill("");
+  await locator.pressSequentially(text, { delay });
+  await sleep(250);
+}
+
+/** Clicks a button that opens a file picker and answers it with local files. */
+async function uploadVia(page, trigger, files) {
+  const [chooser] = await Promise.all([
+    page.waitForEvent("filechooser", { timeout: 10_000 }),
+    glideClick(page, trigger),
+  ]);
+  await chooser.setFiles(files);
+}
+
+/** The wizard's gold "next step" link (its text is the next step's label, so match on href). */
+async function nextWizardStep(page, token, slug) {
+  const link = page.locator(`a[href$="/start/${token}/${slug}"]`).last();
+  if (await link.isVisible().catch(() => false)) {
+    await glideClick(page, link);
+    await page.waitForURL(new RegExp(`/start/${token}/${slug}`), { timeout: 30_000 });
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    await sleep(800);
+  } else {
+    await goto(page, `/start/${token}/${slug}`);
+  }
+}
+
+function futureDate(days) {
+  const d = new Date(Date.now() + days * 86_400_000);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Section-by-section tour of a public event page. */
+async function tourEventPage(page, slug) {
+  await goto(page, `/events/${slug}`);
+  await caption(page, "Birthdays · anniversaries · reunions · weddings — <b>one event page</b>", 3500);
+  const sections = [
+    ["countdown", "A live countdown to the big day"],
+    ["invitation", "A beautiful invitation, in your chosen template"],
+    ["details", "Date, venue, <b>Google Maps</b> and directions"],
+    ["gallery", "Photo gallery — memories through the years"],
+    ["timeline", "Life milestones, told as a story"],
+    ["rsvp", "<b>RSVP in seconds</b> — no app, no login"],
+    ["wish", "Guests leave wishes for the family"],
+    ["memories", "The <b>memory wall</b> — photos, videos &amp; voice messages"],
+  ];
+  for (const [id, text] of sections) {
+    if (await scrollToId(page, id)) await caption(page, text, 2800);
+  }
+  await caption(page, "");
+}
+
 // ------------------------------------------------------------- scenes
+
+/** Builds a demo event end to end through /start. Returns its public slug (or null if it didn't get that far). */
+async function wizardScenes(page) {
+  let token = null;
+  let slug = null;
+
+  await scene("Start", async () => {
+    await goto(page, "/start");
+    await caption(page, "Build your own event page — <b>no account needed to start</b>", 3000);
+    await glideClick(page, page.getByRole("button", { name: /Get Started/ }));
+    await page.waitForURL(/\/start\/[^/]+\/occasion/, { timeout: 30_000 });
+    token = page.url().split("/start/")[1].split("/")[0];
+    await sleep(1000);
+  });
+  if (!token) return null;
+
+  await scene("Occasion & goals", async () => {
+    await caption(page, "Pick the occasion", 1500);
+    await glideClick(page, page.getByRole("button", { name: "Birthday", exact: true }));
+    await page.waitForURL(/\/goals/, { timeout: 30_000 });
+    await sleep(1000);
+    await caption(page, "Choose what to build — an invitation card, a slideshow video, a full web page", 3200);
+    await glideClick(page, page.getByRole("button", { name: "Continue" }));
+    await page.waitForURL(/\/basics/, { timeout: 30_000 });
+    await sleep(1000);
+  });
+
+  await scene("Event details", async () => {
+    await caption(page, "A <b>live preview</b> of your page, right as you build it", 2800);
+    // The preview is a sticky panel over the top of the form — collapse it
+    // so the fields and Save button underneath stay clickable.
+    await page.evaluate(() => {
+      for (const d of document.querySelectorAll("details")) {
+        if (d.querySelector("summary")?.textContent?.includes("Live Preview")) d.open = false;
+      }
+    });
+    await caption(page, "Fill in the details once — everything else builds from them");
+    await typeInto(page, fieldByLabel(page, "Honoree"), "Mahesh Mama");
+    await typeInto(page, fieldByLabel(page, "Tagline"), "75 Years of Love & Laughter");
+    await typeInto(page, fieldByLabel(page, "Hosted By"), "The Shah Family");
+    await glideClick(page, page.getByRole("button", { name: "Generate from Name" }));
+    await sleep(600);
+    // Slugs are unique site-wide and every run builds a new event, so a
+    // name-derived slug collides from the second run on — add a run suffix.
+    await typeInto(page, fieldByLabel(page, "Slug"), `mahesh-mama-75-demo-${Date.now().toString(36).slice(-5)}`, 20);
+    await fieldByLabel(page, "Starts").scrollIntoViewIfNeeded();
+    const date = futureDate(45);
+    const dates = page.locator('input[type="date"]');
+    const times = page.locator('input[type="time"]');
+    await glideClick(page, dates.nth(0));
+    await dates.nth(0).fill(date);
+    await times.nth(0).fill("11:00");
+    await glideClick(page, dates.nth(1));
+    await dates.nth(1).fill(date);
+    await times.nth(1).fill("15:00");
+    await typeInto(page, fieldByLabel(page, "Venue Name"), "Sunrise Banquet Hall");
+    await typeInto(page, fieldByLabel(page, "Address"), "Andheri West, Mumbai");
+    await typeInto(page, fieldByLabel(page, "Dress Code"), "Indian festive");
+    await caption(page, "");
+    await glideClick(page, page.getByRole("button", { name: /Save & Continue/ }));
+    await page.waitForURL(/\/timeline/, { timeout: 45_000 });
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    await sleep(1000);
+  });
+
+  await scene("Timeline", async () => {
+    await caption(page, "Add life milestones — each one can carry a photo");
+    const milestones = [
+      ["1957", "Childhood", "Growing up in Surat", "childhood.jpg"],
+      ["1987", "Wedding Day", "The start of a beautiful journey", "wedding.jpg"],
+    ];
+    for (const [i, [period, title, description, photo]] of milestones.entries()) {
+      await typeInto(page, page.getByPlaceholder(/^Period/), period);
+      await typeInto(page, page.getByPlaceholder("Title", { exact: true }), title);
+      await typeInto(page, page.getByPlaceholder("Description", { exact: true }), description);
+      await glideClick(page, page.getByRole("button", { name: /Add Milestone/ }));
+      await page.waitForLoadState("load");
+      await page.getByRole("button", { name: /Add photo|Replace photo/ }).nth(i).waitFor({ timeout: 20_000 });
+      await sleep(600);
+      await uploadVia(page, page.getByRole("button", { name: /Add photo/ }).first(), asset(photo));
+      await page.waitForLoadState("load");
+      await page.getByRole("button", { name: /Replace photo/ }).nth(i).waitFor({ timeout: 30_000 });
+      await sleep(800);
+    }
+    await caption(page, "");
+    await nextWizardStep(page, token, "gallery");
+  });
+
+  await scene("Gallery", async () => {
+    await caption(page, "Upload photos in bulk — sorted into categories guests can browse", 1500);
+    await uploadVia(page, page.getByRole("button", { name: /^Upload to/ }), [
+      asset("family.jpg"),
+      asset("friends.jpg"),
+      asset("grandchildren.jpg"),
+      asset("travel.jpg"),
+    ]);
+    // Uploads run one after another — wait for all four thumbnails before
+    // moving on, or the next step's navigation interrupts the last upload.
+    await page.waitForFunction(
+      () => document.querySelectorAll('img[src*="/storage/v1/object/public/gallery/"]').length >= 4,
+      null,
+      { timeout: 90_000 },
+    );
+    await sleep(1500);
+    await scrollTo(page, VIEWPORT.height * 0.6, 1500);
+    await sleep(1500);
+    await caption(page, "");
+    await nextWizardStep(page, token, "template");
+  });
+
+  await scene("Template", async () => {
+    await caption(page, "Choose from ready-made templates — or design your own colours", 2500);
+    await scrollTo(page, VIEWPORT.height * 0.8, 2200);
+    await sleep(800);
+    await glideClick(page, page.getByRole("button", { name: /Golden Confetti/ }));
+    await sleep(2500);
+    await caption(page, "");
+    await nextWizardStep(page, token, "ai-image");
+  });
+
+  await scene("AI invitation card", async () => {
+    await caption(page, "Describe your invitation — <b>AI designs the card</b>");
+    await typeInto(
+      page,
+      page.locator("textarea").first(),
+      "A royal gold 75th birthday invitation for Mahesh Mama with soft floral borders, warm diya lights and elegant calligraphy",
+      22,
+    );
+    if (config.generateAi) {
+      await glideClick(page, page.getByRole("button", { name: /Generate Image/ }));
+      await caption(page, "Generating your invitation card…");
+      await fastForward(() => page.locator('img[alt="AI-generated invitation"]').waitFor({ timeout: 240_000 }));
+      await sleep(800);
+      await page.locator('img[alt="AI-generated invitation"]').scrollIntoViewIfNeeded();
+      await caption(page, "Your invitation card — ready to share on WhatsApp", 3500);
+    } else {
+      await sleep(1500);
+    }
+    await caption(page, "");
+    await nextWizardStep(page, token, "slideshow");
+  });
+
+  await scene("Slideshow", async () => {
+    await caption(page, "Turn your photos into a <b>music-backed slideshow video</b>", 3000);
+    await scrollTo(page, VIEWPORT.height * 0.7, 2000);
+    await sleep(1500);
+    if (config.renderSlideshow) {
+      await glideClick(page, page.getByRole("button", { name: /Generate Video/ }));
+      await caption(page, "Rendering…");
+      await fastForward(() => page.locator("video").first().waitFor({ timeout: 300_000 }));
+      await sleep(3000);
+    }
+    await caption(page, "");
+    await nextWizardStep(page, token, "review");
+  });
+
+  await scene("Review", async () => {
+    await caption(page, "Review everything before you create an account or pay anything", 3000);
+    await scrollTo(page, 100_000, 3000);
+    await sleep(1500);
+    const href = await page.locator('a:has-text("View Your Site")').first().getAttribute("href");
+    slug = href?.split("/events/")[1] ?? null;
+    await caption(page, "");
+  });
+
+  return slug;
+}
 
 async function runScenes(page) {
   await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height / 2);
@@ -216,30 +485,19 @@ async function runScenes(page) {
     await goto(page, "/");
     await caption(page, "<b>EveryMoment</b> — one page for every celebration", 3000);
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
-    const stops = Math.min(4, Math.floor(height / VIEWPORT.height));
+    const stops = Math.min(3, Math.floor(height / VIEWPORT.height));
     for (let i = 1; i <= stops; i++) {
       await scrollTo(page, i * VIEWPORT.height * 0.9, 1800);
-      await sleep(1200);
+      await sleep(1000);
     }
     await caption(page, "");
   });
 
+  const builtSlug = config.wizard ? await wizardScenes(page) : null;
+  if (config.wizard && builtSlug) console.log(`  ↳ demo event built: ${config.baseUrl}/events/${builtSlug}`);
+
   await scene("Event page", async () => {
-    await goto(page, `/events/${config.eventSlug}`);
-    await caption(page, "Birthdays · anniversaries · reunions · weddings — <b>one event page</b>", 3500);
-    const sections = [
-      ["countdown", "A live countdown to the big day"],
-      ["invitation", "A beautiful invitation, in your chosen template"],
-      ["details", "Date, venue, <b>Google Maps</b> and directions"],
-      ["gallery", "Photo gallery — memories through the years"],
-      ["rsvp", "<b>RSVP in seconds</b> — no app, no login"],
-      ["wish", "Guests leave wishes for the family"],
-      ["memories", "The <b>memory wall</b> — photos, videos &amp; voice messages"],
-    ];
-    for (const [id, text] of sections) {
-      if (await scrollToId(page, id)) await caption(page, text, 2800);
-    }
-    await caption(page, "");
+    await tourEventPage(page, builtSlug ?? config.eventSlug);
   });
 
   if (config.inviteToken) {
@@ -297,6 +555,27 @@ async function runScenes(page) {
 
 // --------------------------------------------------------------- main
 
+/**
+ * ffmpeg filter that trims the blank first second and plays each
+ * fast-forward stretch at 8x (the rest at normal speed), concatenated
+ * back into one stream labelled [out].
+ */
+function buildTimelineFilter(ranges, speed = 8) {
+  const cuts = [];
+  let cursor = 1;
+  for (const [a, b] of [...ranges].sort((x, y) => x[0] - y[0])) {
+    if (b - a < 3 || a < cursor) continue;
+    cuts.push([cursor, a, 1], [a, b, speed]);
+    cursor = b;
+  }
+  cuts.push([cursor, null, 1]);
+  const parts = cuts.map(([from, to, rate], i) => {
+    const trim = to === null ? `trim=start=${from.toFixed(2)}` : `trim=start=${from.toFixed(2)}:end=${to.toFixed(2)}`;
+    return `[0:v]${trim},setpts=(PTS-STARTPTS)/${rate}[p${i}]`;
+  });
+  return `${parts.join(";")};${cuts.map((_, i) => `[p${i}]`).join("")}concat=n=${cuts.length}:v=1:a=0[out]`;
+}
+
 async function saveLogin() {
   mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
   const browser = await chromium.launch({ headless: false });
@@ -341,7 +620,9 @@ async function record() {
   });
 
   const page = await context.newPage();
-  const started = Date.now();
+  activePage = page;
+  recordingStartedAt = Date.now();
+  const started = recordingStartedAt;
   await runScenes(page);
   const video = page.video();
   await context.close();
@@ -354,7 +635,11 @@ async function record() {
     // Trim the blank first second, convert WebM → H.264 MP4 (plays everywhere, uploads to YouTube/WhatsApp).
     execFileSync(
       "ffmpeg",
-      ["-y", "-loglevel", "error", "-ss", "1", "-i", rawPath, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", outPath],
+      [
+        "-y", "-loglevel", "error", "-i", rawPath,
+        "-filter_complex", buildTimelineFilter(fastForwards), "-map", "[out]",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", outPath,
+      ],
       { stdio: "inherit" },
     );
     rmSync(rawDir, { recursive: true, force: true });
