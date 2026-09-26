@@ -67,7 +67,9 @@ export function VisibilityToggle({ eventId, visibility, variant = "compact" }: V
           onClick={toggle}
           disabled={pending}
           className={cn(
-            "tap-target relative h-7 w-12 shrink-0 rounded-full transition-luxury duration-200 disabled:opacity-60",
+            // No `tap-target` here — its 44px min-height stretches the track
+            // into a blob. The invisible ::before keeps a 44px hit area instead.
+            "relative h-7 w-12 shrink-0 rounded-full transition-luxury duration-200 before:absolute before:-inset-2 before:content-[''] disabled:opacity-60",
             isPublic ? "bg-gold-500" : "bg-navy-950/15",
           )}
         >
