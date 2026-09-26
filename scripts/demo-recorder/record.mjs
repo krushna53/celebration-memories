@@ -73,6 +73,8 @@ const config = {
   backend: Boolean(arg("backend")),
   extras: Boolean(arg("extras")),
   narrate: !arg("no-voice"),
+  // Clean footage for re-editing elsewhere (e.g. reels with their own captions).
+  captions: !arg("no-captions"),
   voice: typeof arg("voice") === "string" ? arg("voice") : "Rishi",
   adminEventId: typeof arg("admin-event") === "string" ? arg("admin-event") : null,
   adminSlug: typeof arg("admin-slug") === "string" ? arg("admin-slug") : null,
@@ -80,8 +82,9 @@ const config = {
 };
 
 const VIEWPORT = config.mobile ? { width: 390, height: 844 } : { width: 1280, height: 720 };
-// Record mobile at 2x so the phone-shaped video isn't blurry.
-const VIDEO_SIZE = config.mobile ? { width: 780, height: 1688 } : { width: 1280, height: 720 };
+// Video frames are captured at the viewport's CSS size — a bigger video size
+// just leaves the page in the top-left corner with grey around it.
+const VIDEO_SIZE = VIEWPORT;
 
 // ------------------------------------------------------- page overlay
 
@@ -211,7 +214,7 @@ async function speak(text) {
 async function caption(page, html, holdMs = 0) {
   // Voice first (it may wait for the previous line), then show the caption as it starts speaking.
   if (html) await speak(speechText(html));
-  await page.evaluate((h) => window.__demo?.caption(h), html).catch(() => {});
+  if (config.captions) await page.evaluate((h) => window.__demo?.caption(h), html).catch(() => {});
   if (holdMs) await sleep(holdMs);
 }
 
