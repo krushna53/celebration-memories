@@ -25,6 +25,9 @@
  *   node record.mjs --no-wizard --event <slug>   # read-only tour of an existing event
  *   node record.mjs --no-ai         # wizard, but only type the AI prompt (don't generate)
  *   node record.mjs --invite <token> --game <token> --admin
+ *   Voiceover: every caption is also spoken (macOS `say`, voice "Rishi" —
+ *   Indian English) and mixed into the MP4. --voice "<name>" picks another
+ *   (`say -v '?'` lists them), --no-voice records silent.
  *   node record.mjs --login         # sign in once by hand, saves session for --admin
  *   node record.mjs --backend --admin-event <demo event id> --admin-slug <its slug>
  *                                   # host dashboard walkthrough on a DEMO event (owner login)
@@ -69,6 +72,8 @@ const config = {
   renderSlideshow: Boolean(arg("render-slideshow")),
   backend: Boolean(arg("backend")),
   extras: Boolean(arg("extras")),
+  narrate: !arg("no-voice"),
+  voice: typeof arg("voice") === "string" ? arg("voice") : "Rishi",
   adminEventId: typeof arg("admin-event") === "string" ? arg("admin-event") : null,
   adminSlug: typeof arg("admin-slug") === "string" ? arg("admin-slug") : null,
   contactLine: process.env.DEMO_CONTACT_LINE || "WhatsApp +91 99879 82969",
@@ -164,7 +169,48 @@ const OVERLAY_SCRIPT = `
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** Voiceover clips: { file, at } — `at` is seconds since the recording started. Mixed in at encode time. */
+const narrationClips = [];
+let narrationBusyUntil = 0;
+
+/** Caption HTML → something a text-to-speech voice reads naturally. */
+function speechText(html) {
+  return html
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, " and ")
+    .replace(/&[a-z]+;/g, " ")
+    .replace(/\s*[·—]\s*/g, ", ")
+    .replace(/…/g, "... ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Renders one voiceover line with macOS `say` (offline, free) and waits
+ * for the previous line to finish, so lines never talk over each other.
+ * Returns the clip's duration in ms (0 when narration is off/unavailable).
+ */
+async function speak(text) {
+  if (!config.narrate || !text) return 0;
+  const file = path.join(OUTPUT_DIR, ".media", `voice-${narrationClips.length}.aiff`);
+  let durationMs = 0;
+  try {
+    mkdirSync(path.dirname(file), { recursive: true });
+    execFileSync("say", ["-v", config.voice, "-r", "180", "-o", file, text]);
+    durationMs = Number(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file]).toString()) * 1000;
+  } catch {
+    return 0;
+  }
+  const wait = narrationBusyUntil - Date.now();
+  if (wait > 0) await sleep(wait);
+  narrationClips.push({ file, at: (Date.now() - recordingStartedAt) / 1000 });
+  narrationBusyUntil = Date.now() + durationMs + 250;
+  return durationMs;
+}
+
 async function caption(page, html, holdMs = 0) {
+  // Voice first (it may wait for the previous line), then show the caption as it starts speaking.
+  if (html) await speak(speechText(html));
   await page.evaluate((h) => window.__demo?.caption(h), html).catch(() => {});
   if (holdMs) await sleep(holdMs);
 }
@@ -943,6 +989,7 @@ async function runScenes(page) {
 
 async function outro(page) {
   await scene("Outro", async () => {
+    const outroVoice = speak("EveryMoment. Invites, RSVPs, memories and games, on one page. Visit everymoment dot in.");
     await page.evaluate(
       ([contact]) =>
         window.__demo?.outro("Every<span class='accent'>Moment</span>", [
@@ -952,7 +999,8 @@ async function outro(page) {
         ]),
       [config.contactLine],
     );
-    await sleep(4500);
+    await outroVoice;
+    await sleep(Math.max(4500, narrationBusyUntil - Date.now() + 1000));
   });
 }
 
@@ -963,7 +1011,7 @@ async function outro(page) {
  * fast-forward stretch at 8x (the rest at normal speed), concatenated
  * back into one stream labelled [out].
  */
-function buildTimelineFilter(ranges, speed = 8) {
+function timelineCuts(ranges, speed = 8) {
   const cuts = [];
   let cursor = 1;
   for (const [a, b] of [...ranges].sort((x, y) => x[0] - y[0])) {
@@ -972,6 +1020,39 @@ function buildTimelineFilter(ranges, speed = 8) {
     cursor = b;
   }
   cuts.push([cursor, null, 1]);
+  return cuts;
+}
+
+/** Where a moment of the raw recording lands in the final (trimmed, fast-forwarded) video, in seconds. */
+function toOutputTime(t, cuts) {
+  let out = 0;
+  for (const [from, to, rate] of cuts) {
+    if (t < from) break;
+    const end = to === null ? t : Math.min(t, to);
+    out += (end - from) / rate;
+    if (to === null || t <= to) break;
+  }
+  return Math.max(0, out);
+}
+
+/**
+ * Adds the voiceover clips to the filter graph (each delayed to where its
+ * caption appears in the final video, mixed into one track [aout]).
+ * Returns [filterFragment, extraInputArgs].
+ */
+function buildNarrationFilter(cuts, firstInputIndex) {
+  if (narrationClips.length === 0) return ["", []];
+  const inputs = narrationClips.flatMap((c) => ["-i", c.file]);
+  const delayed = narrationClips.map((c, i) => {
+    const ms = Math.round(toOutputTime(c.at, cuts) * 1000);
+    return `[${firstInputIndex + i}:a]aresample=48000,adelay=${ms}|${ms}[a${i}]`;
+  });
+  const mix = `${narrationClips.map((_, i) => `[a${i}]`).join("")}amix=inputs=${narrationClips.length}:normalize=0:dropout_transition=0,volume=1.2[aout]`;
+  return [`;${delayed.join(";")};${mix}`, inputs];
+}
+
+function buildTimelineFilter(ranges, speed = 8) {
+  const cuts = timelineCuts(ranges, speed);
   const parts = cuts.map(([from, to, rate], i) => {
     const trim = to === null ? `trim=start=${from.toFixed(2)}` : `trim=start=${from.toFixed(2)}:end=${to.toFixed(2)}`;
     return `[0:v]${trim},setpts=(PTS-STARTPTS)/${rate}[p${i}]`;
@@ -1099,11 +1180,15 @@ async function record() {
   const outPath = path.join(OUTPUT_DIR, `everymoment-${config.backend ? "backend" : config.extras ? "extras" : "demo"}-${config.mobile ? "mobile" : "desktop"}-${stamp}.mp4`);
   try {
     // Trim the blank first second, convert WebM → H.264 MP4 (plays everywhere, uploads to YouTube/WhatsApp).
+    const [narrationFilter, narrationInputs] = buildNarrationFilter(timelineCuts(fastForwards), 1);
     execFileSync(
       "ffmpeg",
       [
         "-y", "-loglevel", "error", "-i", rawPath,
-        "-filter_complex", buildTimelineFilter(fastForwards), "-map", "[out]",
+        ...narrationInputs,
+        "-filter_complex", buildTimelineFilter(fastForwards) + narrationFilter,
+        "-map", "[out]",
+        ...(narrationFilter ? ["-map", "[aout]", "-c:a", "aac", "-b:a", "160k"] : []),
         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", outPath,
       ],
       { stdio: "inherit" },
