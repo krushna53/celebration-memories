@@ -12,6 +12,8 @@ const DISMISS_KEY = "em_concierge_dismissed";
 const HIDDEN_ON_PATHS = ["/display"];
 /** Routes where the banner must never appear (exact match). */
 const HIDDEN_ON_EXACT = ["/"];
+/** Route prefixes where the banner must never appear (guest-facing event pages). */
+const HIDDEN_ON_PREFIXES = ["/events/"];
 
 const COUNTRY_CODES = [
   { code: "+91", flag: "🇮🇳", label: "India" },
@@ -30,6 +32,7 @@ export function ConciergeHelpBanner() {
   // Never show on full-screen kiosk/display routes or the platform homepage
   if (HIDDEN_ON_PATHS.some((p) => pathname.endsWith(p))) return null;
   if (HIDDEN_ON_EXACT.includes(pathname)) return null;
+  if (HIDDEN_ON_PREFIXES.some((p) => pathname.startsWith(p))) return null;
 
   const [visible, setVisible] = useState(false);
   const [countryCode, setCountryCode] = useState("+91");
