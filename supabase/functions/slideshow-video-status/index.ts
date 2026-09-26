@@ -97,6 +97,7 @@ Deno.serve(async (req: Request) => {
 
   let shotstackStatus: string;
   let shotstackUrl: string | null = null;
+  let shotstackError: string | null = null;
   try {
     const res = await fetch(`https://api.shotstack.io/edit/${shotstackEnv}/render/${job.shotstack_render_id}`, {
       headers: { "x-api-key": shotstackKey },
@@ -108,6 +109,7 @@ Deno.serve(async (req: Request) => {
     }
     shotstackStatus = payload.response.status;
     shotstackUrl = payload.response.url ?? null;
+    shotstackError = typeof payload.response.error === "string" ? payload.response.error : null;
   } catch (err) {
     // A transient error checking status shouldn't fail the whole job —
     // the browser will just poll again shortly.
@@ -117,7 +119,12 @@ Deno.serve(async (req: Request) => {
   }
 
   if (shotstackStatus === "failed") {
-    const message = "Shotstack failed to render this video.";
+    // Keep Shotstack's own reason (e.g. an unreachable asset URL) — the
+    // bare "failed" status alone gives the admin nothing to act on.
+    const message = shotstackError
+      ? `Shotstack failed to render this video: ${shotstackError}`.slice(0, 2000)
+      : "Shotstack failed to render this video.";
+    console.error(`slideshow-video-status: render failed for job ${jobId}: ${shotstackError ?? "no reason given"}`);
     await supabase
       .from("slideshow_video_jobs")
       .update({ status: "error", error_message: message, updated_at: new Date().toISOString() })
