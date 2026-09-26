@@ -28,6 +28,9 @@
  *   node record.mjs --login         # sign in once by hand, saves session for --admin
  *   node record.mjs --backend --admin-event <demo event id> --admin-slug <its slug>
  *                                   # host dashboard walkthrough on a DEMO event (owner login)
+ *   node record.mjs --extras --admin-event <id> --admin-slug <slug>
+ *                                   # share-a-memory (photo/video/voice/guest book), games played for real,
+ *                                   # Big Screen Display — needs public memories enabled on that demo event
  *
  * Output: ./output/everymoment-demo-<desktop|mobile>-<timestamp>.mp4
  */
@@ -65,6 +68,7 @@ const config = {
   generateAi: !arg("no-ai"),
   renderSlideshow: Boolean(arg("render-slideshow")),
   backend: Boolean(arg("backend")),
+  extras: Boolean(arg("extras")),
   adminEventId: typeof arg("admin-event") === "string" ? arg("admin-event") : null,
   adminSlug: typeof arg("admin-slug") === "string" ? arg("admin-slug") : null,
   contactLine: process.env.DEMO_CONTACT_LINE || "WhatsApp +91 99879 82969",
@@ -630,11 +634,248 @@ async function backendScenes(page) {
   });
 }
 
+/** Opens the public "share a memory" page and gets past the name step, landing on the action tiles. */
+async function openShareMemory(page) {
+  await goto(page, `/events/${config.adminSlug}/memories`);
+  const name = page.getByPlaceholder(/e\.g\. Priya/).first();
+  if (await name.isVisible().catch(() => false)) {
+    if (!(await name.inputValue())) await typeInto(page, name, "Priya (Mahesh's niece)");
+  }
+}
+
+/** Records with the browser's fake camera/mic (see launch args), then uploads the take. */
+async function recordAndUpload(page, tileName, seconds) {
+  await glideClick(page, page.getByRole("button", { name: tileName }).first());
+  await sleep(2500); // camera/mic warm-up
+  // Video's record button is icon-only (aria-label), audio's has text — both resolve by accessible name.
+  await glideClick(page, page.getByRole("button", { name: "Start Recording" }).filter({ visible: true }).first());
+  await sleep(seconds * 1000);
+  await glideClick(page, page.getByRole("button", { name: /^Stop$/ }).first());
+  await sleep(800);
+  await glideClick(page, page.getByRole("button", { name: /Done — Review/ }).first());
+  await sleep(800);
+  await glideClick(page, page.getByRole("button", { name: /^Upload( All)?$/ }).first());
+  await sleep(4000);
+}
+
+/** Finds each word in the Word Search grid (any of 8 directions) and drags across it like a player would. */
+async function solveWordSearch(page, words) {
+  for (const word of words) {
+    const span = await page.evaluate((w) => {
+      const cells = [...document.querySelectorAll("[data-row][data-col]")];
+      const grid = {};
+      for (const el of cells) grid[`${el.dataset.row},${el.dataset.col}`] = el.textContent.trim().toUpperCase();
+      const size = Math.round(Math.sqrt(cells.length));
+      const dirs = [[0, 1], [1, 0], [1, 1], [-1, 1], [0, -1], [-1, 0], [-1, -1], [1, -1]];
+      for (let r = 0; r < size; r++)
+        for (let c = 0; c < size; c++)
+          for (const [dr, dc] of dirs) {
+            let ok = true;
+            for (let i = 0; i < w.length && ok; i++) ok = grid[`${r + dr * i},${c + dc * i}`] === w[i];
+            if (ok) return [r, c, r + dr * (w.length - 1), c + dc * (w.length - 1)];
+          }
+      return null;
+    }, word.toUpperCase());
+    if (!span) continue;
+    const center = async (r, c) => {
+      const box = await page.locator(`[data-row="${r}"][data-col="${c}"]`).boundingBox();
+      return [box.x + box.width / 2, box.y + box.height / 2];
+    };
+    const [sx, sy] = await center(span[0], span[1]);
+    const [ex, ey] = await center(span[2], span[3]);
+    await page.mouse.move(sx, sy, { steps: 15 });
+    await sleep(200);
+    await page.mouse.down();
+    await page.mouse.move(ex, ey, { steps: 20 });
+    await sleep(150);
+    await page.mouse.up();
+    await sleep(700);
+  }
+}
+
+/** Creates a game on /admin/games (tab by label) and returns its guest link. */
+async function createGame(page, tabLabel, title, wordsText) {
+  await goto(page, "/admin/games");
+  const tab = page.getByRole("button", { name: tabLabel, exact: true }).first();
+  if (await tab.isVisible().catch(() => false)) await glideClick(page, tab);
+  await typeInto(page, page.getByPlaceholder(/title — e\.g\./).first(), title);
+  if (wordsText) await typeInto(page, page.locator("textarea").first(), wordsText, 25);
+  await glideClick(page, page.getByRole("button", { name: /Create Game/ }));
+  await page.getByText(title).first().waitFor({ timeout: 20_000 });
+  await sleep(1500);
+  // Games list newest first, so the first guest link on the page is the one
+  // just created (even if an earlier run left a game with the same title).
+  return page.evaluate(() => {
+    const re = /https?:\/\/[^\s"'<>]+\/games\/[A-Za-z0-9_-]+/;
+    for (const el of document.querySelectorAll("input, a, span, p, code, div")) {
+      const text = el instanceof HTMLInputElement ? el.value : el.children.length === 0 ? el.textContent : "";
+      const match = text?.match(re);
+      if (match) return match[0];
+    }
+    return null;
+  });
+}
+
+/** Share-a-memory flow, moderation onto the memory wall, games played for real, Big Screen Display. */
+async function extrasScenes(page) {
+  let onDemoEvent = false;
+  await scene("Confirm demo event", async () => {
+    await goto(page, "/admin/event-settings");
+    if (page.url().includes("/login")) throw new Error("admin session expired — run with --login again");
+    if (!(await page.locator(`input[value="${config.adminSlug}"]`).count())) {
+      throw new Error(`admin isn't pointed at ${config.adminSlug} — not recording`);
+    }
+    onDemoEvent = true;
+  });
+  if (!onDemoEvent) return;
+
+  // ---- Share a memory (one public link / QR for everyone, no invite needed)
+  await scene("Share a memory — photo", async () => {
+    await openShareMemory(page);
+    await caption(page, "One link or QR code for everyone — guests <b>share a memory</b>, no app, no login", 3200);
+    await glideClick(page, page.getByRole("button", { name: /Upload Image/ }).first());
+    await sleep(800);
+    await uploadVia(page, page.getByRole("button", { name: /Choose from Gallery/ }), asset("guest-upload.jpg"));
+    await sleep(800);
+    await glideClick(page, page.getByRole("button", { name: /^Upload( All)?$/ }).first());
+    await sleep(3500);
+    await caption(page, "");
+  });
+  await scene("Share a memory — video message", async () => {
+    await openShareMemory(page);
+    await caption(page, "Record a <b>video message</b> right in the browser");
+    await recordAndUpload(page, /Record Video/, 5);
+    await caption(page, "");
+  });
+  await scene("Share a memory — voice note", async () => {
+    await openShareMemory(page);
+    await caption(page, "…or a <b>voice note</b> for Mahesh Mama");
+    await recordAndUpload(page, /Record Audio/, 4);
+    await caption(page, "");
+  });
+  await scene("Share a memory — guest book", async () => {
+    await openShareMemory(page);
+    await caption(page, "…or write a wish in the <b>guest book</b>");
+    await glideClick(page, page.getByRole("button", { name: /Add a Text Message/ }).first());
+    await sleep(800);
+    await typeInto(page, page.getByPlaceholder(/Share a wish/), "Happy 75th, Mama! Thank you for every story, every laugh and every cup of chai. Love you!", 25);
+    await glideClick(page, page.getByRole("button", { name: /Sign the Guest Book/ }));
+    await sleep(3000);
+    await caption(page, "");
+  });
+
+  await scene("Approve onto the memory wall", async () => {
+    await goto(page, "/admin/memories");
+    await caption(page, "Everything lands in your approval queue first", 2500);
+    for (let i = 0; i < 6; i++) {
+      const approve = page.locator('button[title="Approve"]').first();
+      if (!(await approve.isVisible().catch(() => false))) break;
+      await glideClick(page, approve);
+      await sleep(1200);
+    }
+    await caption(page, "");
+    await goto(page, `/events/${config.adminSlug}`);
+    if (await scrollToId(page, "memories")) {
+      await caption(page, "…then it's live on the <b>memory wall</b> — photos, videos, voice notes, wishes", 3500);
+      await scrollTo(page, (await page.evaluate(() => window.scrollY)) + VIEWPORT.height * 0.7, 2000);
+      await sleep(1500);
+    }
+    await caption(page, "");
+  });
+
+  // ---- Games
+  let wordSearchUrl = null;
+  await scene("Create Word Search", async () => {
+    await caption(page, "<b>Party games</b> — set one up in seconds");
+    wordSearchUrl = await createGame(page, "Word Search", "Find Mahesh's Favourites", "MAHESH\nMUMBAI\nCRICKET\nFAMILY\nCHAI\nGOLF");
+    await caption(page, "");
+  });
+  if (wordSearchUrl?.includes("/games/")) {
+    await scene("Play Word Search", async () => {
+      await page.goto(wordSearchUrl, { waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+      await caption(page, "Guests open the game link on their phone", 2000);
+      await typeInto(page, page.getByPlaceholder("Your name"), "Priya Shah");
+      await typeInto(page, page.getByPlaceholder("Your phone number"), "+12025550101");
+      await glideClick(page, page.getByRole("button", { name: /Start Puzzle/ }));
+      await page.locator("[data-row][data-col]").first().waitFor({ timeout: 20_000 });
+      await sleep(800);
+      await caption(page, "…and race the clock to find every word");
+      await solveWordSearch(page, ["MAHESH", "MUMBAI", "CRICKET", "FAMILY", "CHAI", "GOLF"]);
+      await page.getByText(/All words found/).waitFor({ timeout: 10_000 }).catch(() => {});
+      await caption(page, "Scores show up for the host — fastest finishers win", 3000);
+      await caption(page, "");
+    });
+  }
+
+  let housieUrl = null;
+  await scene("Create Tambola", async () => {
+    await caption(page, "Classic <b>Tambola / Housie</b> — tickets on every phone");
+    housieUrl = await createGame(page, /^Housie/, "Mahesh's Birthday Tambola", null);
+    await caption(page, "");
+  });
+  if (housieUrl?.includes("/games/")) {
+    await scene("Play Tambola", async () => {
+      await page.goto(housieUrl, { waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+      await caption(page, "Each guest joins and gets their own ticket");
+      await typeInto(page, page.getByPlaceholder("Your name"), "Rohan Mehta");
+      await typeInto(page, page.getByPlaceholder("Your phone number"), "+12025550102");
+      await glideClick(page, page.getByRole("button", { name: /Join Game/ }));
+      await sleep(3000);
+      await caption(page, "");
+
+      await goto(page, "/admin/games");
+      const tab = page.getByRole("button", { name: /^Housie/ }).first();
+      if (await tab.isVisible().catch(() => false)) await glideClick(page, tab);
+      await caption(page, "The host calls numbers live from their phone");
+      await glideClick(page, page.getByRole("button", { name: /^Start$/ }).first());
+      await sleep(1200);
+      for (let i = 0; i < 6; i++) {
+        await glideClick(page, page.getByRole("button", { name: /Call Next/ }).first());
+        await sleep(900);
+      }
+      await caption(page, "");
+
+      await page.goto(housieUrl, { waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+      // The ticket page doesn't remember the guest across visits — joining
+      // again with the same name + phone brings back the same ticket.
+      const nameField = page.getByPlaceholder("Your name");
+      if (await nameField.isVisible().catch(() => false)) {
+        await typeInto(page, nameField, "Rohan Mehta", 20);
+        await typeInto(page, page.getByPlaceholder("Your phone number"), "+12025550102", 20);
+        await glideClick(page, page.getByRole("button", { name: /Join Game/ }));
+        await sleep(2500);
+      }
+      await caption(page, "Guests see every number called — and claim prizes right from their ticket", 4000);
+      await scrollTo(page, VIEWPORT.height * 0.6, 1800);
+      await sleep(1500);
+      await caption(page, "");
+    });
+  }
+
+  await scene("Big Screen Display", async () => {
+    await goto(page, `/events/${config.adminSlug}/display`);
+    await caption(page, "<b>Big Screen Display</b> — put it on the TV or projector at the venue", 2500);
+    const begin = page.getByText("Tap to Begin").first();
+    if (await begin.isVisible().catch(() => false)) await glideClick(page, begin);
+    await caption(page, "Photos, videos, voice notes and wishes play in a loop", 3000);
+    await caption(page, "");
+    await sleep(9000);
+  });
+}
+
 async function runScenes(page) {
   await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height / 2);
 
   if (config.backend) {
     await backendScenes(page);
+    await outro(page);
+    return;
+  }
+  if (config.extras) {
+    await extrasScenes(page);
     await outro(page);
     return;
   }
@@ -738,6 +979,26 @@ function buildTimelineFilter(ranges, speed = 8) {
   return `${parts.join(";")};${cuts.map((_, i) => `[p${i}]`).join("")}concat=n=${cuts.length}:v=1:a=0[out]`;
 }
 
+/**
+ * Feeds the fake camera the placeholder "Happy 75th Birthday! From Priya
+ * Shah" clip instead of Chrome's green test pattern. Mirrored on purpose:
+ * the recorder previews the front camera mirrored, like a selfie, so this
+ * reads the right way round on screen. Falls back to the test pattern if
+ * ffmpeg isn't installed.
+ */
+function fakeCameraArgs() {
+  const y4m = path.join(OUTPUT_DIR, ".media", "camera.y4m");
+  try {
+    if (!existsSync(y4m)) {
+      mkdirSync(path.dirname(y4m), { recursive: true });
+      execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", asset("guest-video.mp4"), "-vf", "hflip,scale=640:360,fps=15", "-pix_fmt", "yuv420p", y4m]);
+    }
+    return [`--use-file-for-fake-video-capture=${y4m}`];
+  } catch {
+    return [];
+  }
+}
+
 async function saveLogin() {
   mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
   // Real Google Chrome with its own throwaway profile, minus the automation
@@ -760,11 +1021,12 @@ async function saveLogin() {
 }
 
 async function record() {
-  if (config.backend && (!config.adminEventId || !config.adminSlug)) {
-    console.error("--backend needs --admin-event <event id> and --admin-slug <that event's slug> (a DEMO event)");
+  const needsAdminEvent = config.backend || config.extras;
+  if (needsAdminEvent && (!config.adminEventId || !config.adminSlug)) {
+    console.error("--backend/--extras need --admin-event <event id> and --admin-slug <that event's slug> (a DEMO event)");
     process.exit(1);
   }
-  if (config.backend) config.admin = true;
+  if (needsAdminEvent) config.admin = true;
   if (config.admin && !existsSync(AUTH_FILE)) {
     console.error("--admin needs a saved session first: node record.mjs --login");
     process.exit(1);
@@ -773,7 +1035,12 @@ async function record() {
   const rawDir = path.join(OUTPUT_DIR, ".raw");
   rmSync(rawDir, { recursive: true, force: true });
 
-  const browser = await chromium.launch({ headless: !config.headed });
+  const browser = await chromium.launch({
+    headless: !config.headed,
+    // A synthetic camera + mic so the in-browser video/voice recorders can
+    // be demoed without real hardware — see fakeCameraArgs().
+    args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", ...fakeCameraArgs()],
+  });
   const context = await browser.newContext({
     viewport: VIEWPORT,
     deviceScaleFactor: config.mobile ? 2 : 1,
@@ -787,7 +1054,15 @@ async function record() {
     locale: "en-IN",
   });
   await context.addInitScript(OVERLAY_SCRIPT);
-  if (config.backend) {
+  // Headless fullscreen (the video recorder and Big Screen Display both
+  // request it) resizes the page out from under the video capture and
+  // leaves grey bars — the pages already fill the viewport, so no-op it.
+  await context.addInitScript(() => {
+    Element.prototype.requestFullscreen = function () {
+      return Promise.resolve();
+    };
+  });
+  if (needsAdminEvent) {
     // The owner's "active event" override (lib/admin-active-event.ts) — points
     // every event-scoped admin page at the demo event for this recording only.
     await context.addCookies([
@@ -801,7 +1076,7 @@ async function record() {
         sameSite: "Lax",
       },
     ]);
-    await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: config.baseUrl });
+    await context.grantPermissions(["clipboard-read", "clipboard-write", "camera", "microphone"], { origin: config.baseUrl });
   }
   // Keep the one-per-visit banners/tours out of the video.
   await context.addInitScript(() => {
@@ -821,7 +1096,7 @@ async function record() {
 
   const rawPath = await video.path();
   const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
-  const outPath = path.join(OUTPUT_DIR, `everymoment-${config.backend ? "backend" : "demo"}-${config.mobile ? "mobile" : "desktop"}-${stamp}.mp4`);
+  const outPath = path.join(OUTPUT_DIR, `everymoment-${config.backend ? "backend" : config.extras ? "extras" : "demo"}-${config.mobile ? "mobile" : "desktop"}-${stamp}.mp4`);
   try {
     // Trim the blank first second, convert WebM → H.264 MP4 (plays everywhere, uploads to YouTube/WhatsApp).
     execFileSync(
