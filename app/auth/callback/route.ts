@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createFormOwnerAccount, getFormByDraftToken } from "@/services/custom-forms";
+import { SITE_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,22 @@ function safeNextPath(raw: string | null): string {
   if (!raw) return DEFAULT_NEXT;
   if (!raw.startsWith("/") || raw.startsWith("//")) return DEFAULT_NEXT;
   return raw;
+}
+
+/**
+ * The public origin to send the browser back to. On Netlify, `request.url`
+ * carries the deploy's internal permalink host
+ * (`<deploy-id>--ai-invitation-designer.netlify.app`), not the domain the
+ * visitor actually used — so prefer the forwarded host, and never hand a
+ * deploy permalink back to a real visitor (fall back to SITE_URL).
+ */
+function publicOrigin(request: Request, url: URL): string {
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+  const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : url.origin;
+  const host = new URL(origin).hostname;
+  if (/^[0-9a-f]{24}--.+\.netlify\.app$/.test(host)) return SITE_URL;
+  return origin;
 }
 
 /**
@@ -151,5 +168,5 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
 
-  return NextResponse.redirect(new URL(next, url.origin));
+  return NextResponse.redirect(new URL(next, publicOrigin(request, url)));
 }
