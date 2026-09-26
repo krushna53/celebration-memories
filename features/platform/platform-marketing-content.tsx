@@ -147,10 +147,7 @@ export async function PlatformMarketingContent() {
       <div className="bg-navy-950 pb-24 pt-32 text-ivory-50 sm:pt-40">
         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           <Reveal>
-            <p className="text-xs uppercase tracking-[0.35em] text-gold-300">
-              A Krushna Web Works Product
-            </p>
-            <h1 className="mt-5 font-display text-4xl sm:text-5xl lg:text-6xl">
+            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl">
               EveryMoment
             </h1>
             <p className="mt-3 font-display text-xl italic text-gold-300 sm:text-2xl">
