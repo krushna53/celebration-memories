@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { getInviteeByToken } from "@/services/invitees";
 import { logInviteOpened } from "@/services/tracking";
 import { formatEventDate, formatEventTime } from "@/lib/format";
+import { SITE_URL } from "@/lib/constants";
 import { buildEventMetadata } from "@/lib/event-metadata";
 import { computeRsvpPrice } from "@/lib/rsvp-pricing";
 import { listScheduleItems } from "@/services/event-day";
@@ -88,6 +89,19 @@ export default async function InvitePage({ params }: InvitePageProps) {
               guestName={invitee.name}
               rsvpPrice={rsvpPrice}
               workshopSessions={workshopSessions}
+              story={{
+                card: {
+                  eyebrow: "I'm going!",
+                  title: event.honoreeName,
+                  subtitle: event.eventTitle,
+                  details: [
+                    formatEventDate(event.startAt, event.timezone),
+                    `${formatEventTime(event.startAt, event.timezone)} – ${formatEventTime(event.endAt, event.timezone)}`,
+                    ...(event.venueName ? [event.venueName] : []),
+                  ],
+                },
+                shareText: `I'm celebrating ${event.honoreeName}'s ${event.eventTitle} 🎉 ${SITE_URL}/events/${event.slug}`,
+              }}
               defaultValues={
                 existingRsvp
                   ? {

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Copy, Download, Facebook, Link2, Loader2, Mail, MessageCircle, Send, Share2, Twitter } from "lucide-react";
+import { Check, Copy, Download, Facebook, Instagram, Link2, Linkedin, Loader2, Mail, MessageCircle, Send, Share2, Twitter } from "lucide-react";
 
 interface MediaShareButtonsProps {
   url: string;
@@ -40,6 +40,12 @@ const BRAND_SHARE_LINKS = (pageUrl: string, text: string) => [
     label: "Facebook",
     icon: Facebook,
     href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`,
+  },
+  {
+    key: "linkedin",
+    label: "LinkedIn",
+    icon: Linkedin,
+    href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pageUrl)}`,
   },
   {
     key: "x",
@@ -200,7 +206,7 @@ export function MediaShareButtons({ url, fileNameBase, shareText, className, pag
             ref={shareToggleRef}
             type="button"
             onClick={toggleMenu}
-            aria-label="Share to WhatsApp, Facebook, X, Telegram, or email"
+            aria-label="Share to Instagram, WhatsApp, Facebook, LinkedIn, X, Telegram, or email"
             aria-expanded={menuOpen}
             className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 p-2 text-ivory-50 backdrop-blur-sm transition-luxury duration-200 hover:bg-navy-950"
           >
@@ -221,6 +227,17 @@ export function MediaShareButtons({ url, fileNameBase, shareText, className, pag
                     style={{ top: menuPos.top, right: menuPos.right }}
                     className="fixed z-50 w-44 overflow-hidden rounded-xl border border-navy-950/10 bg-white py-1.5 text-left shadow-xl"
                   >
+                    {/* Instagram has no web share URL — hand the file to the phone's share sheet (Story/Post); desktop downloads it. */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        void handleShare();
+                      }}
+                      className="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-navy-950 transition-luxury duration-150 hover:bg-gold-500/10"
+                    >
+                      <Instagram size={15} className="text-navy-700/70" /> Instagram
+                    </button>
                     {BRAND_SHARE_LINKS(absolutePageUrl, shareText ?? "").map(({ key, label, icon: Icon, href }) => (
                       <a
                         key={key}

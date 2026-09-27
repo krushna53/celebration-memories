@@ -1,6 +1,7 @@
 import type { EventDisplayData } from "@/lib/event-display";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/motion/reveal";
+import { StoryShareButton } from "@/features/share/story-share-button";
 
 interface InvitationSectionProps {
   data: EventDisplayData;
@@ -41,10 +42,25 @@ export function InvitationSection({ data }: InvitationSectionProps) {
             {data.endTime}
           </p>
 
-          <div className="mt-8">
+          <div className="mt-8 flex flex-col items-center gap-4">
             <Button asChild size="lg">
               <a href="#rsvp">Reserve Your Spot</a>
             </Button>
+            <StoryShareButton
+              label="Share this invitation"
+              fileName="invitation"
+              card={{
+                eyebrow: "You're invited",
+                title: data.honoreeName,
+                subtitle: data.eventTitle,
+                details: [
+                  `${data.dayOfWeek}, ${data.date}`,
+                  `${data.startTime} – ${data.endTime}`,
+                  ...(data.venueName ? [data.venueName] : []),
+                ],
+              }}
+              shareText={`You're invited to ${data.honoreeName}'s ${data.eventTitle}! 🎉 {url}`}
+            />
           </div>
         </Reveal>
       </div>

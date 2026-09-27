@@ -22,6 +22,7 @@ import {
   type RsvpFormValues,
 } from "@/types/rsvp";
 import type { ScheduleItemRecord } from "@/types/content";
+import { StoryShareButton, type StoryCard } from "@/features/share/story-share-button";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 transition-luxury duration-200 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -38,9 +39,11 @@ interface RsvpFormProps {
   rsvpPrice?: RsvpPrice | null;
   /** Schedule items that require registration (#106) — shown as an optional "join a session" step after a "coming" RSVP. Empty/omitted for events with no such sessions (the common case). */
   workshopSessions?: ScheduleItemRecord[];
+  /** Event details for the "I'm going!" Story card shown after a "coming" RSVP; the link points at the public event page. */
+  story?: { card: StoryCard; shareText: string };
 }
 
-export function RsvpForm({ token, eventId, inviteeId, defaultValues, guestName, rsvpPrice, workshopSessions }: RsvpFormProps) {
+export function RsvpForm({ token, eventId, inviteeId, defaultValues, guestName, rsvpPrice, workshopSessions, story }: RsvpFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submittedComing, setSubmittedComing] = useState<RsvpFormValues["coming"] | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -96,6 +99,9 @@ export function RsvpForm({ token, eventId, inviteeId, defaultValues, guestName, 
         <Button variant="outline" onClick={() => setSubmitted(false)}>
           Edit my RSVP
         </Button>
+        {submittedComing === "coming" && story ? (
+          <StoryShareButton card={story.card} shareText={story.shareText} fileName="im-going" label="Tell your friends — share to your Story" />
+        ) : null}
         {submittedComing === "coming" && rsvpPrice ? (
           <div className="w-full text-left">
             <RsvpPaymentPanel source={{ mode: "token", token }} price={rsvpPrice} />

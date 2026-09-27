@@ -7,6 +7,7 @@ import { readLine, lineCells } from "@/lib/word-search";
 import { startGameAttemptAction, completeGameAttemptAction } from "@/features/games/actions";
 import { HowToPlay } from "@/features/games/how-to-play";
 import type { WordSearchConfig } from "@/types/games";
+import { StoryShareButton } from "@/features/share/story-share-button";
 
 type Cell = { row: number; col: number };
 
@@ -182,6 +183,13 @@ export function WordSearchGame({ token, title, config }: { token: string; title:
           Your time: <span className="font-medium text-navy-950">{formatDuration(finalDuration)}</span>
         </p>
         <p className="mt-3 text-xs text-navy-700/50">Thanks for playing, {name}!</p>
+        <StoryShareButton
+          className="mt-4"
+          label="Share your time"
+          fileName="word-search-score"
+          card={{ eyebrow: "All words found!", title: `in ${formatDuration(finalDuration)}`, subtitle: title, details: ["Can you beat my time?"] }}
+          shareText={`I found all the words in ${formatDuration(finalDuration)} 🏆 Can you beat me? {url}`}
+        />
       </div>
     );
   }
