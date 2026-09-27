@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Download, Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { StartBuildingButton } from "@/features/start/start-building-button";
 
 const EXAMPLE_PROMPTS = [
   "Elegant gold and navy 75th birthday invitation for Mahesh, with 'Join us to celebrate!' in an elegant script",
@@ -159,9 +159,9 @@ export function PublicAiImageTool() {
               <Button variant="outline" onClick={handleDownload} className="flex-1">
                 <Download size={16} className="mr-1.5" /> Download
               </Button>
-              <Button asChild className="flex-1">
-                <Link href="/start">Build Your Full Site — Free to Try</Link>
-              </Button>
+              <StartBuildingButton className="w-full" formClassName="flex-1">
+                Build Your Full Site — Free to Try
+              </StartBuildingButton>
             </div>
           </div>
         ) : (

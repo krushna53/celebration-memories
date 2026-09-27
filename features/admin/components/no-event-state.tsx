@@ -3,6 +3,7 @@ import { CalendarPlus, LayoutList, MessageCircle, Sparkles } from "lucide-react"
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { createOwnerEventAction } from "@/features/admin/events/actions";
+import { StartBuildingButton } from "@/features/start/start-building-button";
 
 const PRIMARY =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gold-500 px-6 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:brightness-110";
@@ -55,9 +56,9 @@ export async function NoEventState() {
           </>
         ) : (
           <>
-            <Link href="/start" className={PRIMARY}>
+            <StartBuildingButton plain className={PRIMARY}>
               <CalendarPlus size={16} /> Create Your Event
-            </Link>
+            </StartBuildingButton>
             <Link href="/contact" className={SECONDARY}>
               <MessageCircle size={16} /> Contact Us
             </Link>

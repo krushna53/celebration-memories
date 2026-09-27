@@ -8,6 +8,7 @@ import { getCurrentAdmin } from "@/services/admin-auth";
 import { FORM_CATEGORY_LABELS, isRsvpCategory } from "@/lib/form-category";
 import { SignOutButton } from "@/features/forms/sign-out-button";
 import { DashboardRoleToggle } from "@/features/forms/dashboard-role-toggle";
+import { StartBuildingButton } from "@/features/start/start-building-button";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -56,13 +57,12 @@ export default async function FormsDashboardPage() {
                 <Globe size={13} /> Website
               </Link>
             ) : (
-              <Link
-                href="/start"
-                title="You don't have an event website yet — start building one free"
+              <StartBuildingButton
+                plain
                 className="flex items-center gap-1.5 rounded-full border border-ivory-100/15 px-3 py-1.5 text-xs font-medium text-ivory-100/50 transition-luxury duration-200 hover:border-ivory-100/30 hover:text-ivory-100/80"
               >
                 <Lock size={12} /> Website
-              </Link>
+              </StartBuildingButton>
             )}
             <SignOutButton />
           </div>
@@ -82,9 +82,10 @@ export default async function FormsDashboardPage() {
             since the header's "Website" pill above covers that case
             without repeating the same pitch. */}
         {owner.role === "rsvp" && !admin ? (
-          <Link
-            href="/start"
-            className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold-500/30 bg-gold-500/5 px-4 py-3 text-sm text-navy-950 transition-luxury duration-200 hover:border-gold-500/50 hover:bg-gold-500/10"
+          <StartBuildingButton
+            plain
+            formClassName="mb-4"
+            className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border border-gold-500/30 bg-gold-500/5 px-4 py-3 text-left text-sm text-navy-950 transition-luxury duration-200 hover:border-gold-500/50 hover:bg-gold-500/10"
           >
             <span className="flex items-center gap-2">
               <Sparkles size={16} className="shrink-0 text-gold-600" />
@@ -93,7 +94,7 @@ export default async function FormsDashboardPage() {
             <span className="flex items-center gap-1 font-medium text-gold-700">
               Start building free <ArrowRight size={15} />
             </span>
-          </Link>
+          </StartBuildingButton>
         ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3">

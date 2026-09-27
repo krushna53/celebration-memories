@@ -24,6 +24,7 @@ import { BUILDER, SUPPORT } from "@/lib/constants";
 import { getPlatformVideoSettings } from "@/services/platform-video-settings";
 import { FeatureVideoSection } from "@/features/platform/feature-video-section";
 import { TestimonialsSection } from "@/features/testimonials/testimonials-section";
+import { StartBuildingButton } from "@/features/start/start-building-button";
 
 const LIVE_FEATURES = [
   {
@@ -163,9 +164,7 @@ export async function PlatformMarketingContent() {
               scanning a QR code.
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button size="lg" asChild>
-                <Link href="/start">Build Your Event Site — Free to Try</Link>
-              </Button>
+              <StartBuildingButton size="lg">Build Your Event Site — Free to Try</StartBuildingButton>
             </div>
             <p className="mt-6 text-xs text-ivory-100/60">
               Curious what a guest, host, or admin can each do?{" "}

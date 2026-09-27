@@ -9,6 +9,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { GoogleAuthButton } from "@/features/admin/auth/google-auth-button";
 import { EmailAuthDisclosure } from "@/features/auth/email-auth-disclosure";
 import { resolveLoginDestinationAction } from "@/features/auth/actions";
+import { StartBuildingButton } from "@/features/start/start-building-button";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -166,9 +167,9 @@ export function UnifiedLoginForm() {
 
       <p className="mt-6 text-sm text-ivory-100/60">
         New here?{" "}
-        <Link href="/start" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
+        <StartBuildingButton plain formClassName="inline" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
           Build your event site
-        </Link>
+        </StartBuildingButton>
         {", "}
         <Link href="/forms/new" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
           build a form
