@@ -22,6 +22,14 @@ const GIS_SRC = "https://accounts.google.com/gsi/client";
 
 export const GOOGLE_PHOTOS_ENABLED = Boolean(CLIENT_ID);
 
+/** A video picked in Google Photos, not yet copied: the queue shows `thumbnail`; the upload streams `sourceUrl` Google → Storage. */
+export interface GooglePhotosVideo {
+  name: string;
+  thumbnail: File;
+  sourceUrl: string;
+  googleToken: string;
+}
+
 interface TokenResponse {
   access_token?: string;
   error?: string;
@@ -76,13 +84,18 @@ type Stage =
 
 export function GooglePhotosButton({
   onFiles,
+  onVideos,
   className,
   label = "Google Photos",
 }: {
-  onFiles: (files: File[]) => void;
+  /** Photos mode — picked photos arrive as ready-to-upload JPEG files. */
+  onFiles?: (files: File[]) => void;
+  /** Videos mode — picked videos arrive as thumbnails + a source to stream from on upload. */
+  onVideos?: (videos: GooglePhotosVideo[]) => void;
   className?: string;
   label?: string;
 }) {
+  const want = onVideos ? "VIDEO" : "PHOTO";
   const [stage, setStage] = useState<Stage>({ kind: "idle" });
   const [message, setMessage] = useState<string | null>(null);
   const session = useRef<{ token: string; id: string; pollMs: number } | null>(null);
@@ -158,35 +171,49 @@ export function GooglePhotosButton({
       s.token,
       `/api/google-photos/items?sessionId=${encodeURIComponent(s.id)}`,
     );
-    const photos = items.filter((i) => i.type === "PHOTO");
-    const skipped = items.length - photos.length;
-    setStage({ kind: "importing", done: 0, total: photos.length });
+    const picked = items.filter((i) => i.type === want);
+    const skipped = items.length - picked.length;
+    setStage({ kind: "importing", done: 0, total: picked.length });
 
     const files: File[] = [];
+    const videos: GooglePhotosVideo[] = [];
     let failed = 0;
-    for (const [i, item] of photos.entries()) {
+    for (const [i, item] of picked.entries()) {
       try {
         const res = await fetch("/api/google-photos/media", {
           method: "POST",
           headers: { Authorization: `Bearer ${s.token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ baseUrl: item.baseUrl }),
+          body: JSON.stringify({ baseUrl: item.baseUrl, thumbnail: want === "VIDEO" }),
         });
         if (!res.ok) throw new Error();
         const blob = await res.blob();
-        const base = (item.filename ?? `google-photo-${i + 1}`).replace(/\.[^.]+$/, "");
-        files.push(new File([blob], `${base}.jpg`, { type: blob.type || "image/jpeg" }));
+        const base = (item.filename ?? `google-${want === "VIDEO" ? "video" : "photo"}-${i + 1}`).replace(/\.[^.]+$/, "");
+        const image = new File([blob], `${base}.jpg`, { type: blob.type || "image/jpeg" });
+        if (want === "VIDEO") {
+          // =dv is Google's download-video form (an MP4 transcode) — streamed server-side on upload.
+          videos.push({ name: `${base}.mp4`, thumbnail: image, sourceUrl: `${item.baseUrl}=dv`, googleToken: s.token });
+        } else {
+          files.push(image);
+        }
       } catch {
         failed++;
       }
-      setStage({ kind: "importing", done: i + 1, total: photos.length });
+      setStage({ kind: "importing", done: i + 1, total: picked.length });
     }
 
-    void fetch(`/api/google-photos/session?id=${encodeURIComponent(s.id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${s.token}` } });
-    if (files.length) onFiles(files);
+    // Videos still need the session's token to stream on upload, so only photo imports close the session now.
+    if (want === "PHOTO") {
+      void fetch(`/api/google-photos/session?id=${encodeURIComponent(s.id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${s.token}` } });
+    }
+    if (files.length) onFiles?.(files);
+    if (videos.length) onVideos?.(videos);
+    const added = files.length + videos.length;
+    const noun = want === "VIDEO" ? "video" : "photo";
+    const other = want === "VIDEO" ? "photo" : "video";
     const notes = [
-      files.length ? `Added ${files.length} photo${files.length === 1 ? "" : "s"} from Google Photos.` : "No photos were added.",
-      skipped ? `${skipped} video${skipped === 1 ? "" : "s"} skipped — upload videos from the video option.` : "",
-      failed ? `${failed} couldn't be downloaded.` : "",
+      added ? `Added ${added} ${noun}${added === 1 ? "" : "s"} from Google Photos${want === "VIDEO" ? " — tap Upload to copy them" : ""}.` : `No ${noun}s were added.`,
+      skipped ? `${skipped} ${other}${skipped === 1 ? "" : "s"} skipped — add ${other}s from the ${other} option.` : "",
+      failed ? `${failed} couldn't be loaded.` : "",
     ].filter(Boolean);
     reset(notes.join(" "));
   }

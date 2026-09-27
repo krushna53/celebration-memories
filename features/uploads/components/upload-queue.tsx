@@ -141,8 +141,8 @@ export function UploadQueue({
             {isPhoto(item.file) ? <PhotoThumbnail file={item.file} /> : null}
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-navy-950">{item.file.name}</p>
-              <p className="text-xs text-navy-700/50">{formatBytes(item.file.size)}</p>
+              <p className="truncate text-sm font-medium text-navy-950">{item.remote ? item.remote.name : item.file.name}</p>
+              <p className="text-xs text-navy-700/50">{item.remote ? "From Google Photos · video" : formatBytes(item.file.size)}</p>
               <span
                 className={cn(
                   "mt-1 flex items-center gap-1 text-xs",

@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
+import type { GooglePhotosVideo } from "@/features/uploads/components/google-photos-button";
 import { compressImage } from "@/lib/image-compression";
 import { confirmUpload, deleteUploadAction, logCaptureStartedAction, requestUploadUrl } from "@/features/uploads/actions";
 
@@ -14,6 +15,8 @@ export interface UploadItem {
   caption: string;
   /** Set once the upload finishes (the photos/videos/audio row's id) — lets remove() delete it server-side too, not just drop it from this local queue. Undefined until then. */
   mediaId?: string;
+  /** Set for a video picked in Google Photos: `file` is only its thumbnail; the video streams Google → Storage on upload. */
+  remote?: { sourceUrl: string; googleToken: string; name: string };
 }
 
 /**
@@ -50,6 +53,19 @@ export function useMediaUpload(token: string, kind: "photo" | "video" | "audio")
     return next.map((it) => it.id);
   }, [kind, token]);
 
+  /** Google Photos videos (see GooglePhotosButton) — queued with a thumbnail; uploaded by the google-photos-transfer Edge Function. */
+  const addRemoteVideos = useCallback((videos: GooglePhotosVideo[]): string[] => {
+    const next: UploadItem[] = videos.map((v) => ({
+      id: `gphotos-${Math.random().toString(36).slice(2)}`,
+      file: v.thumbnail,
+      status: "pending",
+      caption: "",
+      remote: { sourceUrl: v.sourceUrl, googleToken: v.googleToken, name: v.name },
+    }));
+    setItems((prev) => [...prev, ...next]);
+    return next.map((it) => it.id);
+  }, []);
+
   const setCaption = useCallback((id: string, caption: string) => {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, caption } : it)));
   }, []);
@@ -85,6 +101,27 @@ export function useMediaUpload(token: string, kind: "photo" | "video" | "audio")
       );
 
       try {
+        if (item.remote) {
+          // Size isn't known until it streams; the Edge Function enforces the video limit while copying.
+          const signedRemote = await requestUploadUrl(token, kind, item.remote.name, "video/mp4", 1);
+          if (!signedRemote.success) throw new Error(signedRemote.error);
+          const { bucket, path, token: uploadToken } = signedRemote.data;
+          const { data, error } = await supabaseBrowser().functions.invoke<{ ok?: boolean; error?: string }>("google-photos-transfer", {
+            body: { sourceUrl: item.remote.sourceUrl, googleToken: item.remote.googleToken, bucket, path, uploadToken },
+          });
+          if (error || !data?.ok) {
+            let message = data?.error;
+            if (!message && error && "context" in error && error.context instanceof Response) {
+              message = ((await error.context.json().catch(() => ({}))) as { error?: string }).error;
+            }
+            throw new Error(message ?? "Couldn't copy the video from Google Photos.");
+          }
+          const confirmedRemote = await confirmUpload(token, kind, path, item.caption);
+          if (!confirmedRemote.success) throw new Error(confirmedRemote.error);
+          setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, status: "done", mediaId: confirmedRemote.data.id } : it)));
+          return;
+        }
+
         const file = kind === "photo" ? await compressImage(item.file) : item.file;
 
         const signed = await requestUploadUrl(token, kind, file.name, file.type, file.size);
@@ -145,5 +182,5 @@ export function useMediaUpload(token: string, kind: "photo" | "video" | "audio")
     }
   }, [items, performUpload]);
 
-  return { items, addFiles, setCaption, remove, uploadOne, uploadAll };
+  return { items, addFiles, addRemoteVideos, setCaption, remove, uploadOne, uploadAll };
 }

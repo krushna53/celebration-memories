@@ -20,10 +20,11 @@ export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
     const token = googleToken(request);
-    const { baseUrl } = (await request.json().catch(() => ({}))) as { baseUrl?: string };
+    const { baseUrl, thumbnail } = (await request.json().catch(() => ({}))) as { baseUrl?: string; thumbnail?: boolean };
     if (!baseUrl || !isGoogleMediaUrl(baseUrl)) throw new GooglePhotosError("Invalid photo.", 400);
 
-    const res = await fetch(`${baseUrl}=w2560-h2560`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+    // A video's baseUrl with =w/=h returns a still frame — used as the upload-queue thumbnail.
+    const res = await fetch(`${baseUrl}=${thumbnail ? "w480-h480" : "w2560-h2560"}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
     if (!res.ok) {
       const expired = res.status === 401 || res.status === 403;
       throw new GooglePhotosError(

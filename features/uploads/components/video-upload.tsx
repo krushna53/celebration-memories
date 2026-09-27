@@ -12,6 +12,7 @@ import {
   type ZoomRange,
 } from "@/hooks/use-media-recorder";
 import { UploadQueue } from "@/features/uploads/components/upload-queue";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 
 const ASPECT_RATIO_LABELS: Record<AspectRatioPreset, string> = {
   "16:9": "Landscape",
@@ -68,7 +69,7 @@ export function VideoUpload({
   showCaption = true,
   onRecordingChange,
 }: VideoUploadProps) {
-  const { items, addFiles, setCaption, remove, uploadAll } = upload;
+  const { items, addFiles, addRemoteVideos, setCaption, remove, uploadAll } = upload;
   const [mode, setMode] = useState<"upload" | "record">(initialMode);
   const inputRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLVideoElement>(null);
@@ -492,6 +493,9 @@ export function VideoUpload({
         <span className="text-sm font-medium text-navy-950">Tap to choose a video</span>
         <span className="text-xs text-navy-700/60">MP4 or MOV · up to 1GB</span>
       </button>
+
+      {/* Renders nothing unless NEXT_PUBLIC_GOOGLE_PHOTOS_CLIENT_ID is set. */}
+      <GooglePhotosButton onVideos={addRemoteVideos} className="mt-3" />
 
       <button
         type="button"
