@@ -9,23 +9,46 @@ import "react-photo-view/dist/react-photo-view.css";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
-import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
-import type { GalleryPhotoRecord } from "@/types/content";
+import type { GalleryCategory } from "@/features/gallery/gallery-data";
+import { ThenNowCard } from "@/features/gallery/then-now-card";
+import type { GalleryPairRecord, GalleryPhotoRecord, GuestGalleryPhoto } from "@/types/content";
 import { MediaShareButtons } from "@/components/media/media-share-buttons";
 
 interface GallerySectionProps {
   photos: GalleryPhotoRecord[];
+  pairs?: GalleryPairRecord[];
+  guestPhotos?: GuestGalleryPhoto[];
 }
 
-/** Cover + this many more before "See all" — keeps the section to about one screen on a phone. */
+/** Cover + this many more before "See all" when there's only one chapter. */
 const HIGHLIGHT_COUNT = 9;
+/** Photos shown per chapter before its own "See all". */
+const CHAPTER_PREVIEW = 6;
 const SLIDESHOW_INTERVAL_MS = 3500;
+
+/** A life story reads oldest → newest: chapter order and titles per category. */
+const CHAPTERS: { category: GalleryCategory; title: string }[] = [
+  { category: "childhood", title: "The early years" },
+  { category: "wedding", title: "The wedding" },
+  { category: "family", title: "Family" },
+  { category: "travel", title: "Travels" },
+  { category: "friends", title: "Friends" },
+  { category: "grandchildren", title: "The grandchildren" },
+];
+
+/** "…, 1970s" in a caption (the AI tagger adds these for old prints) → 1970; photos without one sort after dated ones. */
+function decadeOf(caption: string | null): number {
+  const match = caption?.match(/\b(1[89]\d0|20\d0)s\b/);
+  return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
+}
+function chronological(list: GalleryPhotoRecord[]): GalleryPhotoRecord[] {
+  return [...list].sort((a, b) => decadeOf(a.caption) - decadeOf(b.caption) || a.sortOrder - b.sortOrder);
+}
 
 /**
  * Two columns on phones, three from `sm` up — tracked in JS (not CSS
- * `columns`) so photos can be dealt into columns row by row: CSS columns
- * fill top-to-bottom, which scattered the admin's sort order (and any
- * chronology) across the page.
+ * `columns`) so photos are dealt into columns row by row and keep their
+ * reading order.
  */
 function useColumnCount(): number {
   const [count, setCount] = useState(2);
@@ -39,73 +62,166 @@ function useColumnCount(): number {
   return count;
 }
 
+/** One photo the lightbox can show — family photos and guest photos alike. */
+interface ViewerItem {
+  id: string;
+  url: string;
+  caption: string | null;
+  shareBase: string;
+  pageUrl?: string;
+  byline?: string;
+}
+
+function toViewer(p: GalleryPhotoRecord): ViewerItem {
+  return { id: p.id, url: p.url, caption: p.caption, shareBase: `gallery-${p.category}`, pageUrl: `/p/gallery/${p.id}` };
+}
+
+function PhotoGrid({
+  entries,
+  columnCount,
+  onOpen,
+}: {
+  entries: { item: ViewerItem; index: number }[];
+  columnCount: number;
+  onOpen: (index: number) => void;
+}) {
+  const columns = Array.from({ length: columnCount }, (_, c) => entries.filter((_, i) => i % columnCount === c));
+  return (
+    <div className="flex gap-4">
+      {columns.map((column, c) => (
+        <div key={c} className="flex min-w-0 flex-1 flex-col gap-4">
+          {column.map(({ item, index }) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onOpen(index)}
+              aria-label={`Open photo${item.caption ? `: ${item.caption}` : ""}`}
+              className="group relative block cursor-zoom-in overflow-hidden rounded-xl border border-navy-950/5 text-left"
+            >
+              <Image
+                src={item.url}
+                alt={item.caption ?? ""}
+                width={600}
+                height={800}
+                loading="lazy"
+                sizes="(min-width: 640px) 33vw, 50vw"
+                className="h-auto w-full object-cover transition-luxury duration-500 group-hover:scale-105"
+              />
+              {item.byline ? (
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/70 to-transparent px-3 pb-2 pt-6 text-xs text-ivory-50">
+                  {item.byline}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /**
- * Photo gallery: a large cover photo plus a short highlight grid, with
- * "See all" to expand; category filters show only categories that
- * actually have photos (with counts); a full-screen lightbox holds the
- * share/download buttons and a "Play slideshow" mode. Photos come from
- * admin-curated `gallery_photos` (see /admin/gallery), in their admin
- * sort order.
+ * Photo gallery told as a story: a cover photo, "Then & Now" compare
+ * sliders, then one chapter per category (oldest first, using decades
+ * from captions), each previewing a few photos with its own "See all".
+ * Filter pills jump to a single chapter; a "From guests" tab shows
+ * approved guest photos from the memory wall. A full-screen lightbox
+ * holds share/download buttons and a "Play slideshow" mode.
  */
-export function GallerySection({ photos }: GallerySectionProps) {
-  const [active, setActive] = useState<GalleryCategory | "all">("all");
-  const [expanded, setExpanded] = useState(false);
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+export function GallerySection({ photos, pairs = [], guestPhotos = [] }: GallerySectionProps) {
+  const [active, setActive] = useState<GalleryCategory | "all" | "guests">("all");
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [viewer, setViewer] = useState<{ items: ViewerItem[]; index: number } | null>(null);
   const [playing, setPlaying] = useState(false);
   const columnCount = useColumnCount();
 
-  // Only categories that have photos get a filter pill.
-  const categories = useMemo(() => {
-    const counts = new Map<GalleryCategory, number>();
-    for (const photo of photos) counts.set(photo.category, (counts.get(photo.category) ?? 0) + 1);
-    return GALLERY_CATEGORIES.filter((c) => c.value !== "all" && counts.has(c.value)).map((c) => ({
-      ...c,
-      count: counts.get(c.value as GalleryCategory) ?? 0,
-    }));
-  }, [photos]);
-  const showFilters = categories.length > 1;
-
-  const items = useMemo(
-    () => (active === "all" ? photos : photos.filter((photo) => photo.category === active)),
-    [active, photos],
+  const chapters = useMemo(
+    () =>
+      CHAPTERS.map((c) => ({ ...c, photos: chronological(photos.filter((p) => p.category === c.category)) })).filter(
+        (c) => c.photos.length > 0,
+      ),
+    [photos],
   );
-  const [cover, ...rest] = items;
-  const visibleRest = expanded ? rest : rest.slice(0, HIGHLIGHT_COUNT - 1);
-  const hiddenCount = rest.length - visibleRest.length;
+  const guestItems = useMemo(
+    () =>
+      guestPhotos.map<ViewerItem>((g) => ({
+        id: `guest-${g.id}`,
+        url: g.url,
+        caption: g.caption,
+        shareBase: "guest-photo",
+        byline: `Shared by ${g.authorName}`,
+      })),
+    [guestPhotos],
+  );
 
-  // Deal the grid photos into columns row by row, keeping each photo's index in `items` for the lightbox.
-  const columns = useMemo(() => {
-    const cols: { photo: GalleryPhotoRecord; index: number }[][] = Array.from({ length: columnCount }, () => []);
-    visibleRest.forEach((photo, i) => cols[i % columnCount]?.push({ photo, index: i + 1 }));
-    return cols;
-  }, [visibleRest, columnCount]);
+  const tabs = [
+    ...(chapters.length > 1 || guestItems.length > 0 ? [{ value: "all" as const, label: "All", count: photos.length }] : []),
+    ...(chapters.length > 1 ? chapters.map((c) => ({ value: c.category, label: c.title, count: c.photos.length })) : []),
+    ...(guestItems.length > 0 ? [{ value: "guests" as const, label: "From guests", count: guestItems.length }] : []),
+  ];
 
-  // The lightbox browses every photo in the current filter, not just the visible highlights.
-  const sliderImages = useMemo(() => items.map((photo) => ({ key: photo.id, src: photo.url })), [items]);
+  // What's on screen for the current tab, in reading order — this is also the lightbox/slideshow order.
+  const view = useMemo(() => {
+    if (active === "guests") return { cover: null, groups: [{ key: "guests", title: null, items: guestItems }] };
+    if (active !== "all") {
+      const chapter = chapters.find((c) => c.category === active);
+      return { cover: null, groups: [{ key: active, title: null, items: (chapter?.photos ?? []).map(toViewer) }] };
+    }
+    const [cover, ...rest] = photos;
+    if (!cover) return { cover: null, groups: [] };
+    if (chapters.length <= 1) {
+      return { cover: toViewer(cover), groups: [{ key: "all", title: null, items: rest.map(toViewer) }] };
+    }
+    return {
+      cover: toViewer(cover),
+      // The cover is shown once, above the chapters — a chapter left empty by that is skipped.
+      groups: chapters
+        .map((c) => ({ key: c.category, title: c.title, items: c.photos.filter((p) => p.id !== cover.id).map(toViewer) }))
+        .filter((g) => g.items.length > 0),
+    };
+  }, [active, chapters, guestItems, photos]);
+
+  const allViewItems = useMemo(
+    () => [...(view.cover ? [view.cover] : []), ...view.groups.flatMap((g) => g.items)],
+    [view],
+  );
+  let offset = view.cover ? 1 : 0;
+  const groupsWithIndex = view.groups.map((g) => {
+    const start = offset;
+    offset += g.items.length;
+    const limit = expanded[g.key]
+      ? g.items.length
+      : g.title
+        ? CHAPTER_PREVIEW
+        : active === "all"
+          ? HIGHLIGHT_COUNT - 1
+          : g.items.length;
+    return { ...g, start, shown: g.items.slice(0, limit), hidden: Math.max(0, g.items.length - limit) };
+  });
 
   useEffect(() => {
-    if (!playing || viewerIndex === null || items.length < 2) return;
-    const timer = window.setTimeout(() => setViewerIndex((viewerIndex + 1) % items.length), SLIDESHOW_INTERVAL_MS);
+    if (!playing || !viewer || viewer.items.length < 2) return;
+    const timer = window.setTimeout(
+      () => setViewer((v) => (v ? { ...v, index: (v.index + 1) % v.items.length } : v)),
+      SLIDESHOW_INTERVAL_MS,
+    );
     return () => window.clearTimeout(timer);
-  }, [playing, viewerIndex, items.length]);
+  }, [playing, viewer]);
 
-  function selectCategory(value: GalleryCategory | "all") {
-    setActive(value);
-    setExpanded(false);
-  }
-
-  function openViewer(index: number, autoplay = false) {
+  function openViewer(items: ViewerItem[], index: number, autoplay = false) {
     setPlaying(autoplay);
-    setViewerIndex(index);
+    setViewer({ items, index });
   }
-
   function closeViewer() {
     setPlaying(false);
-    setViewerIndex(null);
+    setViewer(null);
+  }
+  function selectTab(value: typeof active) {
+    setActive(value);
+    setExpanded({});
   }
 
-  const tileLabel = (index: number) =>
-    `Open photo ${index + 1} of ${items.length}${items[index]?.caption ? `: ${items[index]?.caption}` : ""}`;
+  const current = viewer ? viewer.items[viewer.index] : null;
 
   return (
     <section id="gallery" className="bg-white py-20 sm:py-28">
@@ -118,34 +234,34 @@ export function GallerySection({ photos }: GallerySectionProps) {
           />
         </Reveal>
 
-        {photos.length > 0 ? (
+        {photos.length > 0 || guestItems.length > 0 ? (
           <Reveal delay={0.1}>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
-              {showFilters ? (
-                <div className="flex flex-wrap items-center justify-center gap-2" role="tablist" aria-label="Gallery categories">
-                  {[{ value: "all" as const, label: "All", count: photos.length }, ...categories].map((category) => (
+              {tabs.length > 1 ? (
+                <div className="flex flex-wrap items-center justify-center gap-2" role="tablist" aria-label="Gallery chapters">
+                  {tabs.map((tab) => (
                     <button
-                      key={category.value}
+                      key={tab.value}
                       type="button"
                       role="tab"
-                      aria-selected={active === category.value}
-                      onClick={() => selectCategory(category.value)}
+                      aria-selected={active === tab.value}
+                      onClick={() => selectTab(tab.value)}
                       className={cn(
                         "rounded-full border px-4 py-1.5 text-xs uppercase tracking-[0.15em] transition-luxury duration-300 sm:text-sm",
-                        active === category.value
+                        active === tab.value
                           ? "border-gold-500 bg-gold-500 text-navy-950"
                           : "border-navy-950/15 text-navy-700/70 hover:border-gold-400 hover:text-navy-950",
                       )}
                     >
-                      {category.label} <span className="opacity-60">{category.count}</span>
+                      {tab.label} <span className="opacity-60">{tab.count}</span>
                     </button>
                   ))}
                 </div>
               ) : null}
-              {items.length > 1 ? (
+              {allViewItems.length > 1 ? (
                 <button
                   type="button"
-                  onClick={() => openViewer(0, true)}
+                  onClick={() => openViewer(allViewItems, 0, true)}
                   className="inline-flex items-center gap-1.5 rounded-full border border-navy-950/15 px-4 py-1.5 text-xs uppercase tracking-[0.15em] text-navy-700/80 transition-luxury duration-300 hover:border-gold-400 hover:text-navy-950 sm:text-sm"
                 >
                   <Play size={13} /> Play slideshow
@@ -156,111 +272,120 @@ export function GallerySection({ photos }: GallerySectionProps) {
         ) : null}
 
         <Reveal delay={0.2} className="mt-10">
-          {!cover ? (
+          {allViewItems.length === 0 ? (
             <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-navy-950/15 py-20 text-center text-navy-700/50">
               <ImageOff size={28} />
               <p className="text-sm">Photos are coming soon.</p>
             </div>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => openViewer(0)}
-                aria-label={tileLabel(0)}
-                className="group relative block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-navy-950/5"
-              >
-                <Image
-                  src={cover.url}
-                  alt={cover.caption ?? ""}
-                  width={1200}
-                  height={800}
-                  sizes="(min-width: 1152px) 1104px, 100vw"
-                  priority={false}
-                  className="max-h-[70vh] w-full object-cover transition-luxury duration-700 group-hover:scale-[1.02]"
-                />
-                {cover.caption ? (
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/70 to-transparent px-5 pb-4 pt-10 text-left font-display text-lg text-ivory-50">
-                    {cover.caption}
-                  </span>
-                ) : null}
-              </button>
+              {view.cover ? (
+                <button
+                  type="button"
+                  onClick={() => openViewer(allViewItems, 0)}
+                  aria-label={`Open photo${view.cover.caption ? `: ${view.cover.caption}` : ""}`}
+                  className="group relative block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-navy-950/5"
+                >
+                  <Image
+                    src={view.cover.url}
+                    alt={view.cover.caption ?? ""}
+                    width={1200}
+                    height={800}
+                    sizes="(min-width: 1152px) 1104px, 100vw"
+                    className="max-h-[70vh] w-full object-cover transition-luxury duration-700 group-hover:scale-[1.02]"
+                  />
+                  {view.cover.caption ? (
+                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/70 to-transparent px-5 pb-4 pt-10 text-left font-display text-lg text-ivory-50">
+                      {view.cover.caption}
+                    </span>
+                  ) : null}
+                </button>
+              ) : null}
 
-              {visibleRest.length > 0 ? (
-                <div className="mt-4 flex gap-4">
-                  {columns.map((column, c) => (
-                    <div key={c} className="flex min-w-0 flex-1 flex-col gap-4">
-                      {column.map(({ photo, index }) => (
-                        <button
-                          key={photo.id}
-                          type="button"
-                          onClick={() => openViewer(index)}
-                          aria-label={tileLabel(index)}
-                          className="group relative block cursor-zoom-in overflow-hidden rounded-xl border border-navy-950/5"
-                        >
-                          <Image
-                            src={photo.url}
-                            alt={photo.caption ?? ""}
-                            width={600}
-                            height={800}
-                            loading="lazy"
-                            sizes="(min-width: 640px) 33vw, 50vw"
-                            className="h-auto w-full object-cover transition-luxury duration-500 group-hover:scale-105"
-                          />
-                        </button>
-                      ))}
+              {active === "all" && pairs.length > 0 ? (
+                <div className="mt-12">
+                  <p className="text-center text-xs uppercase tracking-[0.3em] text-gold-600">Then &amp; Now</p>
+                  <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {pairs.map((pair) => (
+                      <ThenNowCard key={pair.id} pair={pair} />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {groupsWithIndex.map((group) => (
+                <div key={group.key} className={group.title ? "mt-14" : "mt-4"}>
+                  {group.title ? (
+                    <div className="mb-5 flex items-baseline justify-between gap-3 border-b border-navy-950/10 pb-3">
+                      <h3 className="font-display text-2xl text-navy-950">{group.title}</h3>
+                      <span className="text-xs uppercase tracking-[0.15em] text-navy-700/50">
+                        {group.items.length} {group.items.length === 1 ? "photo" : "photos"}
+                      </span>
                     </div>
-                  ))}
+                  ) : null}
+                  {group.shown.length > 0 ? (
+                    <PhotoGrid
+                      entries={group.shown.map((item, i) => ({ item, index: group.start + i }))}
+                      columnCount={columnCount}
+                      onOpen={(index) => openViewer(allViewItems, index)}
+                    />
+                  ) : null}
+                  {group.hidden > 0 ? (
+                    <div className="mt-6 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setExpanded((e) => ({ ...e, [group.key]: true }))}
+                        className="inline-flex items-center gap-2 rounded-full bg-navy-950 px-6 py-3 text-sm font-medium text-ivory-50 transition-luxury duration-300 hover:bg-navy-900"
+                      >
+                        See all {group.items.length + (group.title ? 0 : view.cover ? 1 : 0)}
+                        {group.title ? ` in ${group.title}` : " photos"} <ChevronDown size={16} />
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-
-              {hiddenCount > 0 ? (
-                <div className="mt-8 flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => setExpanded(true)}
-                    className="inline-flex items-center gap-2 rounded-full bg-navy-950 px-6 py-3 text-sm font-medium text-ivory-50 transition-luxury duration-300 hover:bg-navy-900"
-                  >
-                    See all {items.length} photos <ChevronDown size={16} />
-                  </button>
-                </div>
-              ) : null}
+              ))}
             </>
           )}
         </Reveal>
       </div>
 
       <PhotoSlider
-        images={sliderImages}
-        visible={viewerIndex !== null}
-        index={viewerIndex ?? 0}
-        onIndexChange={setViewerIndex}
+        images={(viewer?.items ?? []).map((item) => ({ key: item.id, src: item.url }))}
+        visible={viewer !== null}
+        index={viewer?.index ?? 0}
+        onIndexChange={(index) => setViewer((v) => (v ? { ...v, index } : v))}
         onClose={closeViewer}
-        toolbarRender={({ index }) => {
-          const photo = items[index];
-          return (
-            <div className="flex items-center gap-1.5">
-              {items.length > 1 ? (
-                <button
-                  type="button"
-                  onClick={() => setPlaying((p) => !p)}
-                  aria-label={playing ? "Pause slideshow" : "Play slideshow"}
-                  className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 p-2 text-ivory-50 backdrop-blur-sm transition-luxury duration-200 hover:bg-navy-950"
-                >
-                  {playing ? <Pause size={15} /> : <Play size={15} />}
-                </button>
-              ) : null}
-              {photo ? (
-                <MediaShareButtons
-                  url={photo.url}
-                  fileNameBase={`gallery-${photo.category}`}
-                  shareText={photo.caption ?? undefined}
-                  pageUrl={`/p/gallery/${photo.id}`}
-                  className="flex gap-1.5"
-                />
-              ) : null}
+        toolbarRender={() => (
+          <div className="flex items-center gap-1.5">
+            {viewer && viewer.items.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => setPlaying((p) => !p)}
+                aria-label={playing ? "Pause slideshow" : "Play slideshow"}
+                className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 p-2 text-ivory-50 backdrop-blur-sm transition-luxury duration-200 hover:bg-navy-950"
+              >
+                {playing ? <Pause size={15} /> : <Play size={15} />}
+              </button>
+            ) : null}
+            {current ? (
+              <MediaShareButtons
+                url={current.url}
+                fileNameBase={current.shareBase}
+                shareText={current.caption ?? undefined}
+                pageUrl={current.pageUrl}
+                className="flex gap-1.5"
+              />
+            ) : null}
+          </div>
+        )}
+        overlayRender={() =>
+          current?.caption || current?.byline ? (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/70 to-transparent px-6 pb-8 pt-16 text-center text-ivory-50">
+              {current.caption ? <p className="font-display text-lg">{current.caption}</p> : null}
+              {current.byline ? <p className="mt-1 text-xs opacity-80">{current.byline}</p> : null}
             </div>
-          );
-        }}
+          ) : null
+        }
       />
     </section>
   );

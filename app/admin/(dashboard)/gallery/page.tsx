@@ -4,6 +4,7 @@ import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listGalleryPhotos } from "@/services/gallery-photos";
+import { listGalleryPairs } from "@/services/gallery-story";
 import { GalleryManager } from "@/features/admin/gallery/gallery-manager";
 import { NoEventState } from "@/features/admin/components/no-event-state";
 
@@ -17,7 +18,7 @@ export default async function AdminGalleryPage() {
     return <NoEventState />;
   }
 
-  const photos = await listGalleryPhotos(event.id);
+  const [photos, pairs] = await Promise.all([listGalleryPhotos(event.id), listGalleryPairs(event.id)]);
 
   return (
     <div>
@@ -26,7 +27,7 @@ export default async function AdminGalleryPage() {
         Curate the photos shown in the public Gallery section, by category.
       </p>
       <div className="mt-6">
-        <GalleryManager eventId={event.id} initialPhotos={photos} />
+        <GalleryManager eventId={event.id} initialPhotos={photos} initialPairs={pairs} />
       </div>
     </div>
   );

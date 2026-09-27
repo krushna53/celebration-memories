@@ -10,6 +10,7 @@ interface GalleryPhotoRow {
   event_id: string;
   category: GalleryCategory;
   storage_path: string;
+  original_storage_path: string | null;
   caption: string | null;
   sort_order: number;
   created_at: string;
@@ -24,7 +25,31 @@ function mapRow(row: GalleryPhotoRow): GalleryPhotoRecord {
     caption: row.caption,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
+    cleaned: row.original_storage_path !== null,
   };
+}
+
+/** Storage paths for one photo — only for server-side image processing (scanned-print cleanup), never sent to the browser. */
+export async function getGalleryPhotoPaths(
+  id: string,
+): Promise<{ eventId: string; storagePath: string; originalStoragePath: string | null } | null> {
+  const { data, error } = await supabaseAdmin()
+    .from("gallery_photos")
+    .select("event_id, storage_path, original_storage_path")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle<{ event_id: string; storage_path: string; original_storage_path: string | null }>();
+  if (error) throw new Error(`Failed to look up gallery photo: ${error.message}`);
+  return data ? { eventId: data.event_id, storagePath: data.storage_path, originalStoragePath: data.original_storage_path } : null;
+}
+
+/** Points a photo at a new stored file, remembering the untouched original (see migration 0062). Pass originalStoragePath null to revert. */
+export async function setGalleryPhotoFile(id: string, storagePath: string, originalStoragePath: string | null): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .from("gallery_photos")
+    .update({ storage_path: storagePath, original_storage_path: originalStoragePath })
+    .eq("id", id);
+  if (error) throw new Error(`Failed to update gallery photo file: ${error.message}`);
 }
 
 export async function listGalleryPhotos(eventId: string): Promise<GalleryPhotoRecord[]> {

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
-import type { GalleryPhotoRecord } from "@/types/content";
+import type { GalleryPairRecord, GalleryPhotoRecord } from "@/types/content";
 import {
   confirmGalleryUploadAction,
   deleteGalleryPhotoAction,
@@ -16,6 +16,8 @@ import {
   updateGalleryPhotoAction,
 } from "@/features/admin/gallery/actions";
 import { GalleryAiTagger } from "@/features/admin/gallery/ai-tagger";
+import { ThenNowPanel } from "@/features/admin/gallery/then-now-panel";
+import { CleanupPanel } from "@/features/admin/gallery/cleanup-panel";
 
 /** See AiImageActions's doc comment — same override pattern for the self-serve wizard. */
 export interface GalleryActions {
@@ -34,6 +36,8 @@ interface GalleryManagerProps {
   eventId: string;
   initialPhotos: GalleryPhotoRecord[];
   actions?: GalleryActions;
+  /** Admin only — "Then & Now" pairs for this event. */
+  initialPairs?: GalleryPairRecord[];
 }
 
 const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
@@ -268,7 +272,7 @@ function CategoryGrid({
   );
 }
 
-export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIONS }: GalleryManagerProps) {
+export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIONS, initialPairs = [] }: GalleryManagerProps) {
   const [photos, setPhotos] = useState(initialPhotos);
   const [category, setCategory] = useState<GalleryCategory>("family");
   const [uploadCaption, setUploadCaption] = useState("");
@@ -368,7 +372,13 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
       </div>
 
       {/* Admin only — the /start wizard passes its own token-based actions and has no admin session for the AI actions. */}
-      {actions === DEFAULT_ACTIONS && photos.length > 0 ? <GalleryAiTagger eventId={eventId} photos={photos} /> : null}
+      {actions === DEFAULT_ACTIONS && photos.length > 0 ? (
+        <>
+          <GalleryAiTagger eventId={eventId} photos={photos} />
+          <ThenNowPanel eventId={eventId} photos={photos} initialPairs={initialPairs} />
+          <CleanupPanel photos={photos} />
+        </>
+      ) : null}
 
       <p className="mt-3 text-xs text-navy-700/40">
         Drag the <GripVertical size={11} className="inline" /> handle on any photo to reorder within its category.

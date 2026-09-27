@@ -8,6 +8,24 @@ export interface GalleryPhotoRecord {
   caption: string | null;
   sortOrder: number;
   createdAt: string;
+  /** True once a scanned print has been cropped/enhanced — the original is kept for "Revert" (gallery_photos.original_storage_path). */
+  cleaned?: boolean;
+}
+
+/** "Then & Now": an old gallery photo paired with a recent one (gallery_pairs). */
+export interface GalleryPairRecord {
+  id: string;
+  thenPhoto: GalleryPhotoRecord;
+  nowPhoto: GalleryPhotoRecord;
+  caption: string | null;
+}
+
+/** An approved guest photo from the memory wall, shown in the gallery's "From guests" tab. */
+export interface GuestGalleryPhoto {
+  id: string;
+  url: string;
+  caption: string | null;
+  authorName: string;
 }
 
 /**

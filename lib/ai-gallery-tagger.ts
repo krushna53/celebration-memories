@@ -99,3 +99,66 @@ export async function suggestGalleryTags(imageUrl: string): Promise<GalleryTagSu
   if (!raw) throw new AiGalleryTaggerError("The AI didn't return a suggestion for this photo.");
   return parse(raw);
 }
+
+const BoundsSchema = z.object({
+  isPrint: z.boolean(),
+  box: z.object({
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+    width: z.number().min(0.05).max(1),
+    height: z.number().min(0.05).max(1),
+  }),
+});
+
+export type PrintBounds = z.infer<typeof BoundsSchema>;
+
+const BOUNDS_INSTRUCTIONS = `You help clean up scanned or photographed family prints. Given one image, decide whether it is a photo OF a printed photograph (a print lying on a table/album page, with background, table edges or other prints visible around it), and if so where the main printed photograph is.
+
+Output ONLY a single raw JSON object — no markdown, no other text:
+{ "isPrint": boolean, "box": { "x": number, "y": number, "width": number, "height": number } }
+
+- Coordinates are fractions of the full image (0 to 1): x/y is the top-left corner of the printed photograph's picture area, width/height its size.
+- Hug the printed picture tightly — exclude the table, album page, background and any white print border.
+- If several prints are visible, choose the largest / most central one.
+- If it is NOT a photo of a print (a normal digital photo), return isPrint false and a box of {"x":0,"y":0,"width":1,"height":1}.`;
+
+/** Where the printed photograph sits inside a photo-of-a-photo — a starting crop the admin can adjust before saving. */
+export async function detectPrintBounds(imageUrl: string): Promise<PrintBounds> {
+  const client = getClient();
+  if (!client) throw new AiGalleryTaggerError("AI suggestions aren't configured — add OPENAI_API_KEY to enable them.");
+  const model = process.env.OPENAI_TEXT_MODEL || "gpt-5.6-luna";
+  let response;
+  try {
+    response = await client.responses.create({
+      model,
+      instructions: BOUNDS_INSTRUCTIONS,
+      input: [
+        {
+          role: "user",
+          content: [
+            { type: "input_text", text: "Find the printed photograph in this image." },
+            { type: "input_image", image_url: imageUrl, detail: "high" },
+          ],
+        },
+      ],
+      max_output_tokens: 1200,
+    });
+  } catch (err) {
+    throw new AiGalleryTaggerError(`Couldn't analyse this photo: ${err instanceof Error ? err.message : "Unknown error"}`);
+  }
+  const raw = response.output_text?.trim();
+  if (!raw) throw new AiGalleryTaggerError("The AI didn't return a crop for this photo.");
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  let json: unknown;
+  try {
+    json = JSON.parse(cleaned);
+  } catch {
+    throw new AiGalleryTaggerError("The AI didn't return a usable crop.");
+  }
+  const result = BoundsSchema.safeParse(json);
+  if (!result.success) throw new AiGalleryTaggerError("The AI's crop didn't match the expected shape.");
+  const { x, y, width, height } = result.data.box;
+  // Keep the box inside the image even if the model overshoots an edge.
+  const cx = Math.min(x, 0.95), cy = Math.min(y, 0.95);
+  return { isPrint: result.data.isPrint, box: { x: cx, y: cy, width: Math.min(width, 1 - cx), height: Math.min(height, 1 - cy) } };
+}

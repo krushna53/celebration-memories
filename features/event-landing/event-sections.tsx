@@ -6,6 +6,7 @@ import { InvitationSection } from "@/features/invitation/invitation-section";
 import { EventDetailsSection } from "@/features/event-details/event-details-section";
 import { LiveStreamSection } from "@/features/live-stream/live-stream-section";
 import { GallerySection } from "@/features/gallery/gallery-section";
+import { GallerySectionServer } from "@/features/gallery/gallery-section-server";
 import { TimelineSection } from "@/features/timeline/timeline-section";
 import { EventDayHomepageSection } from "@/features/event-day/event-day-homepage-section";
 import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
@@ -45,7 +46,7 @@ export function EventSections({ event, displayData: data, galleryPhotos, milesto
     invitation: <InvitationSection data={data} />,
     eventDetails: <EventDetailsSection data={data} />,
     liveStream: <LiveStreamSection enabled={event?.liveStreamEnabled ?? false} url={event?.liveStreamUrl ?? null} />,
-    gallery: <GallerySection photos={galleryPhotos} />,
+    gallery: event ? <GallerySectionServer eventId={event.id} photos={galleryPhotos} /> : <GallerySection photos={galleryPhotos} />,
     timeline: <TimelineSection milestones={milestones} />,
     rsvp: (
       <RsvpTeaserSection
