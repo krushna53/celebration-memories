@@ -18,6 +18,7 @@ import {
 import { GalleryAiTagger } from "@/features/admin/gallery/ai-tagger";
 import { ThenNowPanel } from "@/features/admin/gallery/then-now-panel";
 import { CleanupPanel } from "@/features/admin/gallery/cleanup-panel";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 
 /** See AiImageActions's doc comment — same override pattern for the self-serve wizard. */
 export interface GalleryActions {
@@ -281,7 +282,7 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
   const [busyId, setBusyId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  async function handleFiles(files: FileList) {
+  async function handleFiles(files: FileList | File[]) {
     setUploading(true);
     setError(null);
 
@@ -368,6 +369,8 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
           {uploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
           Upload to {CATEGORY_OPTIONS.find((c) => c.value === category)?.label}
         </button>
+        {/* Imports straight into the selected category — renders nothing without a Google Photos client id. */}
+        {!uploading ? <GooglePhotosButton onFiles={handleFiles} label="From Google Photos" className="w-full sm:w-56" /> : null}
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </div>
 

@@ -5,6 +5,7 @@ import { Camera, ImagePlus } from "lucide-react";
 
 import type { useMediaUpload } from "@/hooks/use-media-upload";
 import { UploadQueue } from "@/features/uploads/components/upload-queue";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 
 interface PhotoUploadProps {
   /**
@@ -84,6 +85,9 @@ export function PhotoUpload({ upload, showCaption = true }: PhotoUploadProps) {
           <span className="text-xs text-navy-700/60">Opens your camera</span>
         </button>
       </div>
+
+      {/* Renders nothing unless NEXT_PUBLIC_GOOGLE_PHOTOS_CLIENT_ID is set. */}
+      <GooglePhotosButton onFiles={addFiles} className="mt-3" />
 
       <UploadQueue
         items={items}
