@@ -9,6 +9,10 @@ import { ACTIVE_EVENT, BUILDER } from "@/lib/constants";
 export const DEFAULT_INVITE_MESSAGE_TEMPLATE =
   "Hello {{name}}\n{{hostedBy}} warmly invites you to celebrate {{honoreeName}}'s Birthday.\nPlease use your personal invitation\n{{link}}";
 
+/** After the event: thank guests and ask for their photos/videos (Bulk Send's "Thank you" mode — links go straight to the guest's upload section). */
+export const THANK_YOU_MESSAGE_TEMPLATE =
+  "Hello {{name}} 🙏\nThank you for celebrating {{honoreeName}} with us — it meant so much to have you there!\nIf you took any photos or videos, we'd love to see them. Add them here (from your phone or Google Photos):\n{{link}}\nWith love,\n{{hostedBy}}";
+
 /** Placeholders an admin can use in a custom invite message template. */
 export const INVITE_TEMPLATE_PLACEHOLDERS = [
   { token: "{{name}}", description: "Guest's name" },

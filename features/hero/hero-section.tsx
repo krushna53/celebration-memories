@@ -22,6 +22,8 @@ const fadeUp = {
 
 interface HeroSectionProps {
   data: EventDisplayData;
+  /** Set once the event has ended ("Relive the day" mode): thank-you copy and an "add your photos" call to action instead of the countdown and RSVP. */
+  relive?: { shareHref: string } | null;
 }
 
 // CSS custom properties, not hex literals, so the particle colors
@@ -46,7 +48,7 @@ const THEME_PARTICLE_COLORS = [
  * rising balloons instead of the original gold-dust drift, so a
  * birthday event actually reads as a celebration at a glance.
  */
-export function HeroSection({ data }: HeroSectionProps) {
+export function HeroSection({ data, relive = null }: HeroSectionProps) {
   const personality = useTemplateAnimation();
   // No real family video has been uploaded to /public/hero/family.mp4 yet,
   // so this renders a static ornamental background (/hero/poster.jpg)
@@ -101,7 +103,7 @@ export function HeroSection({ data }: HeroSectionProps) {
             animate="show"
             className="text-xs uppercase tracking-[0.35em] text-gold-300/90"
           >
-            {data.occasion ? `${data.occasion} · ` : ""}Hosted by {data.hostedBy}
+            {relive ? "Thank you for celebrating with us" : `${data.occasion ? `${data.occasion} · ` : ""}Hosted by ${data.hostedBy}`}
           </motion.p>
 
           <motion.h1
@@ -151,7 +153,13 @@ export function HeroSection({ data }: HeroSectionProps) {
             animate="show"
             className="mt-8"
           >
-            <CountdownBadge isoStart={data.isoStart} />
+            {relive ? (
+              <p className="mx-auto max-w-md text-sm leading-relaxed text-ivory-100/85 sm:text-base">
+                Relive the day — add the photos and videos you took, and see everyone else&rsquo;s.
+              </p>
+            ) : (
+              <CountdownBadge isoStart={data.isoStart} />
+            )}
           </motion.div>
 
           <motion.div
@@ -161,12 +169,25 @@ export function HeroSection({ data }: HeroSectionProps) {
             animate="show"
             className="mt-10 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row"
           >
-            <Button asChild size="lg" className="w-full sm:w-auto">
-              <a href="#rsvp">RSVP Now</a>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
-              <a href="#details">View Details</a>
-            </Button>
+            {relive ? (
+              <>
+                <Button asChild size="lg" className="w-full sm:w-auto">
+                  <a href={relive.shareHref}>Add your photos &amp; videos</a>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                  <a href="#memories">See the memories</a>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild size="lg" className="w-full sm:w-auto">
+                  <a href="#rsvp">RSVP Now</a>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                  <a href="#details">View Details</a>
+                </Button>
+              </>
+            )}
           </motion.div>
         </motion.div>
       </div>

@@ -38,8 +38,21 @@ export interface EventSectionsProps {
  * colour/font/layout wrapper, never by section logic or data-fetching
  * — and the section builder works identically across all of them.
  */
+/** After the event: memories first; the invitation-era sections no longer apply. */
+const RELIVE_ORDER: SectionKey[] = ["memoryWall", "gallery", "timeline", "wishMessage"];
+
 export function EventSections({ event, displayData: data, galleryPhotos, milestones }: EventSectionsProps) {
-  const config = normalizeSectionConfig(event?.sectionConfig);
+  // "Relive the day" mode switches on by itself once the event has ended (endAt is an absolute
+  // instant, so no timezone maths needed); the page revalidates every minute.
+  const ended = Boolean(event?.endAt && Date.parse(event.endAt) < Date.now());
+  const baseConfig = normalizeSectionConfig(event?.sectionConfig);
+  const config = ended
+    ? RELIVE_ORDER.flatMap((key) => baseConfig.filter((item) => item.key === key))
+    : baseConfig;
+  const relive =
+    ended && event
+      ? { shareHref: event.publicMemoriesEnabled ? `/events/${event.slug}/memories` : "#memories" }
+      : null;
 
   const sectionsByKey: Record<SectionKey, ReactNode> = {
     countdown: <CountdownSection isoStart={data.isoStart} />,
@@ -69,7 +82,7 @@ export function EventSections({ event, displayData: data, galleryPhotos, milesto
   return (
     <>
       {event ? <PageViewBeacon eventId={event.id} page="landing" /> : null}
-      <HeroSection data={data} />
+      <HeroSection data={data} relive={relive} />
       {config
         .filter((item) => item.visible)
         .map((item) => (
@@ -84,7 +97,7 @@ export function EventSections({ event, displayData: data, galleryPhotos, milesto
         "private", it's reachable only via the phone-verified
         /event-day/[token] link, never on this page.
       */}
-      {event && event.eventDayMode === "public" ? (
+      {event && event.eventDayMode === "public" && !ended ? (
         <EventDayHomepageSection eventId={event.id} menuStyle={event.menuStyle} />
       ) : null}
     </>

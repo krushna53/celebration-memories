@@ -132,6 +132,8 @@ interface InviteeManagerProps {
   hostedBy: string;
   honoreeName: string;
   inviteMessageTemplate: string | null;
+  /** Past the event's end — Bulk Send then defaults to the thank-you + share-your-photos message. */
+  eventEnded?: boolean;
 }
 
 export function InviteeManager({
@@ -141,6 +143,7 @@ export function InviteeManager({
   hostedBy,
   honoreeName,
   inviteMessageTemplate,
+  eventEnded = false,
 }: InviteeManagerProps) {
   const [invitees, setInvitees] = useState(initialInvitees);
   const [search, setSearch] = useState("");
@@ -375,6 +378,7 @@ export function InviteeManager({
           hostedBy={hostedBy}
           honoreeName={honoreeName}
           messageTemplate={inviteMessageTemplate}
+          eventEnded={eventEnded}
           onOpen={markSent}
           onClose={() => setShowBulkSend(false)}
         />

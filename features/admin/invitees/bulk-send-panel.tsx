@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Check, ChevronRight, Copy, MessageCircle, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { buildWhatsAppInviteUrl } from "@/lib/whatsapp";
+import { buildWhatsAppInviteUrl, THANK_YOU_MESSAGE_TEMPLATE } from "@/lib/whatsapp";
 import type { InviteeRecord } from "@/types/event";
 
 interface BulkSendPanelProps {
@@ -13,6 +13,8 @@ interface BulkSendPanelProps {
   hostedBy: string;
   honoreeName: string;
   messageTemplate: string | null;
+  /** True once the event is over — the panel then defaults to the "Thank you + share your photos" message. */
+  eventEnded?: boolean;
   onOpen: (inviteeId: string) => void;
   onClose: () => void;
 }
@@ -36,17 +38,24 @@ export function BulkSendPanel({
   hostedBy,
   honoreeName,
   messageTemplate,
+  eventEnded = false,
   onOpen,
   onClose,
 }: BulkSendPanelProps) {
+  const [mode, setMode] = useState<"invite" | "thanks">(eventEnded ? "thanks" : "invite");
   const [onlyUnsent, setOnlyUnsent] = useState(true);
+  // Thank-you sends are tracked for this session only — they must not overwrite "invite sent".
+  const [thankedIds, setThankedIds] = useState<Set<string>>(new Set());
   const [index, setIndex] = useState(0);
   const [copied, setCopied] = useState(false);
 
   const queue = useMemo(() => {
     const withPhone = invitees.filter((inv) => inv.phone);
+    if (mode === "thanks") return onlyUnsent ? withPhone.filter((inv) => !thankedIds.has(inv.id)) : withPhone;
     return onlyUnsent ? withPhone.filter((inv) => !inv.inviteSentAt) : withPhone;
-  }, [invitees, onlyUnsent]);
+    // thankedIds only matters in "thanks" mode; recomputing the queue as it changes would skip guests mid-run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invitees, onlyUnsent, mode]);
 
   const current = queue[index] ?? null;
   const remainingAfterCurrent = Math.max(queue.length - index - 1, 0);
@@ -55,17 +64,18 @@ export function BulkSendPanel({
     return buildWhatsAppInviteUrl({
       guestName: inv.name,
       phone: inv.phone!,
-      inviteUrl: `${origin}/invite/${inv.token}`,
+      inviteUrl: mode === "thanks" ? `${origin}/invite/${inv.token}#share` : `${origin}/invite/${inv.token}`,
       hostedBy,
       honoreeName,
-      messageTemplate,
+      messageTemplate: mode === "thanks" ? THANK_YOU_MESSAGE_TEMPLATE : messageTemplate,
     });
   }
 
   function handleOpenCurrent() {
     if (!current) return;
     window.open(currentLink(current), "_blank", "noopener,noreferrer");
-    onOpen(current.id);
+    if (mode === "thanks") setThankedIds((prev) => new Set(prev).add(current.id));
+    else onOpen(current.id);
     setIndex((i) => Math.min(i + 1, queue.length));
   }
 
@@ -83,7 +93,29 @@ export function BulkSendPanel({
     <div className="mt-4 rounded-xl border border-gold-500/25 bg-gold-500/5 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-display text-base text-navy-950">Bulk Send Invites</h3>
+          <h3 className="font-display text-base text-navy-950">{mode === "thanks" ? "Bulk Send Thank-You Messages" : "Bulk Send Invites"}</h3>
+          <div className="mt-2 inline-flex rounded-full border border-navy-950/15 bg-white p-0.5 text-xs" role="tablist" aria-label="Message">
+            {(
+              [
+                ["invite", "Invitation"],
+                ["thanks", "Thank you + share your photos"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={mode === value}
+                onClick={() => {
+                  setMode(value);
+                  setIndex(0);
+                }}
+                className={mode === value ? "rounded-full bg-navy-950 px-3 py-1 text-ivory-50" : "rounded-full px-3 py-1 text-navy-700/70"}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-navy-700/60">
             WhatsApp only lets one conversation open at a time — there&rsquo;s no
             true one-tap &ldquo;send to everyone&rdquo; without WhatsApp&rsquo;s paid Business
@@ -111,7 +143,7 @@ export function BulkSendPanel({
               setIndex(0);
             }}
           />
-          Only guests not yet sent
+          {mode === "thanks" ? "Only guests not yet thanked (this session)" : "Only guests not yet sent"}
         </label>
         <span>&middot;</span>
         <span>{queue.length} in queue</span>

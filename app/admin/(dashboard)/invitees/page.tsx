@@ -40,6 +40,7 @@ export default async function AdminInviteesPage() {
           hostedBy={event.hostedBy}
           honoreeName={event.honoreeName}
           inviteMessageTemplate={event.inviteMessageTemplate}
+          eventEnded={Date.parse(event.endAt) < Date.now()}
         />
       </div>
     </div>
