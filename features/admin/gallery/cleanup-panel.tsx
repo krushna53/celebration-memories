@@ -155,9 +155,16 @@ function CleanupEditor({ photo, onClose }: { photo: GalleryPhotoRecord; onClose:
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- exact natural-size mapping for the crop box */}
                 <img src={src} alt="" className="block max-h-[55vh] w-auto max-w-full" draggable={false} />
+                {/* Shading outside the crop, clipped to the photo (an unclipped spread shadow dims the whole dialog). */}
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                  <div
+                    className="absolute"
+                    style={{ left: pct(box.x), top: pct(box.y), width: pct(box.width), height: pct(box.height), boxShadow: "0 0 0 9999px rgba(10,16,36,0.55)" }}
+                  />
+                </div>
                 <div
                   className="absolute border-2 border-gold-400"
-                  style={{ left: pct(box.x), top: pct(box.y), width: pct(box.width), height: pct(box.height), boxShadow: "0 0 0 9999px rgba(10,16,36,0.55)", cursor: "move", touchAction: "none" }}
+                  style={{ left: pct(box.x), top: pct(box.y), width: pct(box.width), height: pct(box.height), cursor: "move", touchAction: "none" }}
                   onPointerDown={onPointerDown("move")}
                 >
                   {handle("nw", { left: -10, top: -10 })}
