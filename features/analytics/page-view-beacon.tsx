@@ -23,6 +23,8 @@ export function PageViewBeacon({ eventId, page }: PageViewBeaconProps) {
   useEffect(() => {
     if (fired.current) return;
     fired.current = true;
+    // Template previews (/events/[slug]/preview/[template]) are the host looking, not a visit.
+    if (window.location.pathname.includes("/preview/")) return;
     logPageViewAction(eventId, page).catch(() => {
       // Analytics failures should be invisible to the visitor.
     });

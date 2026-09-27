@@ -9,6 +9,8 @@ import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/conten
 
 interface EventLandingPageProps {
   event: EventRecord | null;
+  /** Render with this template instead of the event's own — the template picker's preview popup. */
+  templateOverride?: string;
 }
 
 /**
@@ -21,7 +23,7 @@ interface EventLandingPageProps {
  * /events/[slug] route, so every event gets the identical experience
  * regardless of which URL it's reached through.
  */
-export async function EventLandingPage({ event }: EventLandingPageProps) {
+export async function EventLandingPage({ event, templateOverride }: EventLandingPageProps) {
   let galleryPhotos: GalleryPhotoRecord[] = [];
   let milestones: TimelineMilestoneRecord[] = [];
 
@@ -36,7 +38,7 @@ export async function EventLandingPage({ event }: EventLandingPageProps) {
     }
   }
 
-  const template = await resolveTemplate(event?.templateSlug);
+  const template = await resolveTemplate(templateOverride ?? event?.templateSlug);
   const TemplateComponent = template.component;
   const displayData = toEventDisplayData(event);
 

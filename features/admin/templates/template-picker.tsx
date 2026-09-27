@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
-import { Check, Crown, Loader2 } from "lucide-react";
+import { Check, Crown, Eye, Loader2 } from "lucide-react";
+
+import { TemplatePreviewDialog } from "@/features/admin/templates/template-preview-dialog";
 
 import { updateEventAction } from "@/features/admin/event-settings/actions";
 import type { AdminActionResult } from "@/features/admin/event-settings/actions";
@@ -32,6 +34,8 @@ interface TemplatePickerProps {
    * in the same way) can keep passing nothing and get the flat grid.
    */
   occasion?: EventCategory | null;
+  /** The event's slug — enables each card's "Preview" popup (the event's own page in that template). */
+  eventSlug?: string;
 }
 
 /**
@@ -48,7 +52,9 @@ export function TemplatePicker({
   templates,
   updateAction = updateEventAction,
   occasion,
+  eventSlug,
 }: TemplatePickerProps) {
+  const [previewing, setPreviewing] = useState<PickerTemplate | null>(null);
   const [selected, setSelected] = useState(currentTemplateSlug);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -72,12 +78,21 @@ export function TemplatePicker({
         {list.map((template) => {
           const isSelected = template.slug === selected;
           return (
-            <button
+            // A div rather than a <button> so the card can hold its own "Preview" button.
+            <div
               key={template.slug}
-              type="button"
-              disabled={pending}
+              role="button"
+              tabIndex={0}
+              aria-pressed={isSelected}
+              aria-disabled={pending}
               onClick={() => selectTemplate(template.slug)}
-              className={`group relative overflow-hidden rounded-2xl border-2 bg-white text-left transition-luxury duration-300 disabled:cursor-wait ${
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  selectTemplate(template.slug);
+                }
+              }}
+              className={`group relative cursor-pointer overflow-hidden rounded-2xl border-2 bg-white text-left transition-luxury duration-300 ${pending ? "cursor-wait" : ""} ${
                 isSelected
                   ? "border-gold-500 shadow-md"
                   : "border-navy-950/10 hover:border-gold-500/50"
@@ -105,6 +120,19 @@ export function TemplatePicker({
                     {pending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                   </span>
                 ) : null}
+                {eventSlug ? (
+                  // Always visible on touch screens; revealed on hover/focus on desktop.
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewing(template);
+                    }}
+                    className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/95 px-4 py-2 text-xs font-medium text-navy-950 shadow-md transition-luxury duration-200 hover:bg-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 sm:group-focus-within:opacity-100"
+                  >
+                    <Eye size={14} /> Preview your page
+                  </button>
+                ) : null}
               </div>
               <div className="p-4">
                 <div className="flex items-center justify-between gap-2">
@@ -122,7 +150,7 @@ export function TemplatePicker({
                   </p>
                 ) : null}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -174,6 +202,16 @@ export function TemplatePicker({
           Request a Custom Design
         </a>
       </div>
+      {previewing && eventSlug ? (
+        <TemplatePreviewDialog
+          eventSlug={eventSlug}
+          template={previewing}
+          isSelected={previewing.slug === selected}
+          pending={pending}
+          onUse={() => selectTemplate(previewing.slug)}
+          onClose={() => setPreviewing(null)}
+        />
+      ) : null}
     </div>
   );
 }
