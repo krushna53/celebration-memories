@@ -87,6 +87,8 @@ export function GooglePhotosButton({
   onVideos,
   className,
   label = "Google Photos",
+  max = 30,
+  variant = "block",
 }: {
   /** Photos mode — picked photos arrive as ready-to-upload JPEG files. */
   onFiles?: (files: File[]) => void;
@@ -94,8 +96,13 @@ export function GooglePhotosButton({
   onVideos?: (videos: GooglePhotosVideo[]) => void;
   className?: string;
   label?: string;
+  /** Most items Google's picker lets the person choose (1 for single-photo fields like a cover image). Max 30. */
+  max?: number;
+  /** "block" = full-width tile next to other upload tiles; "compact" = small pill beside an existing upload button. */
+  variant?: "block" | "compact";
 }) {
   const want = onVideos ? "VIDEO" : "PHOTO";
+  const compact = variant === "compact";
   const [stage, setStage] = useState<Stage>({ kind: "idle" });
   const [message, setMessage] = useState<string | null>(null);
   const session = useRef<{ token: string; id: string; pollMs: number } | null>(null);
@@ -134,7 +141,7 @@ export function GooglePhotosButton({
           })
           .requestAccessToken();
       });
-      const s = await api<{ id: string; pickerUri: string; pollIntervalMs: number }>(token, "/api/google-photos/session", { method: "POST" });
+      const s = await api<{ id: string; pickerUri: string; pollIntervalMs: number }>(token, "/api/google-photos/session", { method: "POST", body: JSON.stringify({ max }) });
       session.current = { token, id: s.id, pollMs: s.pollIntervalMs };
       setStage({ kind: "ready", pickerUri: s.pickerUri });
     } catch (err) {
@@ -223,7 +230,13 @@ export function GooglePhotosButton({
   return (
     <div className={className}>
       {stage.kind === "ready" || stage.kind === "picking" ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gold-500/40 bg-gold-500/5 px-3 py-4 text-center">
+        <div
+          className={
+            compact
+              ? "flex flex-col items-start gap-1.5 rounded-lg border border-gold-500/40 bg-gold-500/5 px-3 py-2"
+              : "flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gold-500/40 bg-gold-500/5 px-3 py-4 text-center"
+          }
+        >
           <button
             type="button"
             onClick={() => openPicker(stage.pickerUri)}
@@ -246,29 +259,33 @@ export function GooglePhotosButton({
           type="button"
           onClick={connect}
           disabled={busy}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gold-500/30 bg-gold-500/5 px-3 py-4 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:border-gold-500/60 hover:bg-gold-500/10 disabled:opacity-70"
+          className={
+            compact
+              ? "inline-flex items-center gap-1.5 rounded-full border border-navy-950/15 bg-white px-3 py-1.5 text-xs font-medium text-navy-950 transition-luxury duration-200 hover:border-gold-500/60 disabled:opacity-70"
+              : "flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gold-500/30 bg-gold-500/5 px-3 py-4 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:border-gold-500/60 hover:bg-gold-500/10 disabled:opacity-70"
+          }
         >
           {busy ? (
             <>
-              <Loader2 size={18} className="animate-spin text-gold-600" />
+              <Loader2 size={compact ? 13 : 18} className="animate-spin text-gold-600" />
               {stage.kind === "importing" ? `Importing ${stage.done} of ${stage.total}…` : "Connecting to Google…"}
             </>
           ) : (
             <>
-              <GooglePhotosMark /> {label}
+              <GooglePhotosMark size={compact ? 14 : 20} /> {label}
             </>
           )}
         </button>
       )}
-      {message ? <p className="mt-2 text-center text-xs text-navy-700/80">{message}</p> : null}
+      {message ? <p className={compact ? "mt-1 text-xs text-navy-700/80" : "mt-2 text-center text-xs text-navy-700/80"}>{message}</p> : null}
     </div>
   );
 }
 
 /** Simple four-petal mark in Google's colours — not Google's logo, just a recognisable hint. */
-function GooglePhotosMark() {
+function GooglePhotosMark({ size = 20 }: { size?: number }) {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 12V2a5 5 0 0 1 5 5v5z" fill="#EA4335" />
       <path d="M12 12h10a5 5 0 0 1-5 5h-5z" fill="#4285F4" />
       <path d="M12 12v10a5 5 0 0 1-5-5v-5z" fill="#34A853" />

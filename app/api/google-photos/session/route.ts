@@ -7,6 +7,13 @@ export const dynamic = "force-dynamic";
 /** Picks per import — enough for a batch of memories, small enough to import quickly on a phone. */
 const MAX_ITEMS = 30;
 
+/** Callers can ask for fewer (1 for single-photo fields like a cover image); never more than MAX_ITEMS. */
+async function requestedMax(request: Request): Promise<number> {
+  const body = (await request.json().catch(() => ({}))) as { max?: unknown };
+  const n = Number(body.max);
+  return Number.isInteger(n) && n >= 1 ? Math.min(n, MAX_ITEMS) : MAX_ITEMS;
+}
+
 function errorResponse(err: unknown) {
   const status = err instanceof GooglePhotosError ? err.status : 500;
   return NextResponse.json({ error: err instanceof Error ? err.message : "Failed." }, { status });
@@ -16,7 +23,7 @@ function errorResponse(err: unknown) {
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
-    const session = await createSession(googleToken(request), MAX_ITEMS);
+    const session = await createSession(googleToken(request), await requestedMax(request));
     return NextResponse.json({
       id: session.id,
       pickerUri: session.pickerUri,

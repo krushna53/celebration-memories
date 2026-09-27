@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Download, Share2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 
 interface ShareImageGeneratorProps {
   honoreeName: string;
@@ -105,7 +106,10 @@ export function ShareImageGenerator(props: ShareImageGeneratorProps) {
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) applyBackground(file);
+  }
+
+  function applyBackground(file: File) {
     const img = new window.Image();
     img.onload = () => setBgImage(img);
     img.src = URL.createObjectURL(file);
@@ -156,6 +160,7 @@ export function ShareImageGenerator(props: ShareImageGeneratorProps) {
           <Upload size={16} /> Use a photo as background
           <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
         </label>
+        <GooglePhotosButton variant="compact" max={1} label="Background from Google Photos" onFiles={(files) => files[0] && applyBackground(files[0])} />
         <Button type="button" onClick={download} className="w-full" disabled={!ready}>
           <Download size={16} /> Download Image
         </Button>

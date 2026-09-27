@@ -6,6 +6,7 @@ import { ImageUp, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CustomFormField } from "@/services/custom-forms";
 import { generateFormFromImageAction, generateFormFromPromptAction } from "@/features/forms/builder-actions";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
@@ -163,6 +164,7 @@ export function AiFormGenerator({ token, hasExistingFields, onGenerated }: AiFor
           >
             <ImageUp size={14} /> {imagePreview ? "Choose a different image" : "Choose an image"}
           </button>
+          <GooglePhotosButton variant="compact" max={1} onFiles={(files) => files[0] && handleImageFile(files[0])} />
           <button
             type="button"
             onClick={handleGenerateFromImage}

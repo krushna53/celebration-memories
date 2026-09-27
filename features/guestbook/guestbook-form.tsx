@@ -7,6 +7,7 @@ import { CheckCircle2, ImagePlus, Loader2, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import { requestUploadUrl } from "@/features/uploads/actions";
@@ -184,6 +185,7 @@ export function GuestbookForm({ token }: GuestbookFormProps) {
             <ImagePlus size={16} /> Add a photo
           </button>
         )}
+        {!photo ? <GooglePhotosButton variant="compact" max={1} className="mt-2" onFiles={(files) => setPhoto(files[0] ?? null)} /> : null}
       </div>
 
       <div

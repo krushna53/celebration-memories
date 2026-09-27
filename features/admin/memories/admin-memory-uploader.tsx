@@ -13,6 +13,7 @@ import {
   adminAddGuestbookNoteAction,
 } from "@/features/admin/memories/upload-actions";
 import { ACCEPTED_MIME_TYPES, UPLOAD_LIMITS } from "@/types/memory";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 
 type Tab = "photo" | "video" | "audio" | "note";
 
@@ -62,6 +63,9 @@ function FileDropZone({
           {UPLOAD_LIMITS[kind].label} max
         </span>
       </button>
+      {kind === "photo" ? (
+        <GooglePhotosButton variant="compact" max={1} className="mt-2" onFiles={(files) => files[0] && onFile(files[0])} />
+      ) : null}
     </div>
   );
 }

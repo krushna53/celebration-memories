@@ -37,6 +37,7 @@ import {
 } from "@/features/business/actions";
 import { MobileAccessCard } from "@/features/business/mobile-access/mobile-access-card";
 import type { BusinessListingWithRelations, MarketplaceCategory, MarketplaceCity, BusinessLead } from "@/types/marketplace";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 
 function storageUrl(path: string | null): string | null {
   if (!path) return null;
@@ -267,6 +268,9 @@ function ProfileTab({
             >
               {uploading === "profile" ? "Uploading..." : "Upload"}
             </button>
+            {uploading !== "profile" ? (
+              <GooglePhotosButton variant="compact" max={1} onFiles={(files) => files[0] && handleImageUpload(files[0], "profile")} />
+            ) : null}
           </div>
         </div>
 
@@ -294,6 +298,9 @@ function ProfileTab({
             >
               {uploading === "cover" ? "Uploading..." : "Upload"}
             </button>
+            {uploading !== "cover" ? (
+              <GooglePhotosButton variant="compact" max={1} onFiles={(files) => files[0] && handleImageUpload(files[0], "cover")} />
+            ) : null}
           </div>
         </div>
       </div>
@@ -357,13 +364,24 @@ function PhotosTab({ listing }: { listing: BusinessListingWithRelations }) {
           className="hidden"
           onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
         />
-        <button
-          onClick={() => fileRef.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-1.5 rounded-full bg-gold-500 px-3.5 py-1.5 text-sm font-medium text-navy-950 hover:brightness-110 disabled:opacity-60"
-        >
-          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Add Photo
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {!uploading ? (
+            <GooglePhotosButton
+              variant="compact"
+              max={10}
+              onFiles={async (files) => {
+                for (const file of files) await handleUpload(file);
+              }}
+            />
+          ) : null}
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-1.5 rounded-full bg-gold-500 px-3.5 py-1.5 text-sm font-medium text-navy-950 hover:brightness-110 disabled:opacity-60"
+          >
+            {uploading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Add Photo
+          </button>
+        </div>
       </div>
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
       {gallery.length === 0 ? (

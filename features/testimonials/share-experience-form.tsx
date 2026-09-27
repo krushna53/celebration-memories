@@ -7,6 +7,7 @@ import { CheckCircle2, ImagePlus, Loader2, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import { StarRatingInput } from "@/features/testimonials/star-rating";
@@ -143,6 +144,17 @@ export function ShareExperienceForm() {
             <ImagePlus size={16} /> Add your photo
           </button>
         )}
+        {!photo ? (
+          <GooglePhotosButton
+            variant="compact"
+            max={1}
+            className="mt-2"
+            onFiles={(files) => {
+              setPhoto(files[0] ?? null);
+              setPhotoError(null);
+            }}
+          />
+        ) : null}
         {photoError ? <p className="mt-1 text-xs text-red-600">{photoError}</p> : null}
       </div>
 

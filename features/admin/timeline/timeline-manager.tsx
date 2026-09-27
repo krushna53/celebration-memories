@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import type { TimelineMilestoneRecord } from "@/types/content";
@@ -236,6 +237,16 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
                   {imageBusyId === m.id ? <Loader2 className="animate-spin" size={13} /> : <Upload size={13} />}
                   {m.imageUrl ? "Replace photo" : "Add photo"}
                 </Button>
+                {imageBusyId !== m.id ? (
+                  <GooglePhotosButton
+                    variant="compact"
+                    max={1}
+                    onFiles={(files) => {
+                      pendingMilestoneId.current = m.id;
+                      if (files[0]) void handleImageFile(files[0]);
+                    }}
+                  />
+                ) : null}
                 {m.imageUrl ? (
                   <Button
                     type="button"

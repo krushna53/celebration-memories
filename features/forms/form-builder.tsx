@@ -29,6 +29,7 @@ import {
 } from "@/features/forms/builder-actions";
 import { FormOwnerAccountForm } from "@/features/forms/account-form";
 import { AiFormGenerator } from "@/features/forms/ai-form-generator";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -244,6 +245,7 @@ export function FormBuilder({ token, publicUrl, initialForm, initialFields }: Fo
               {uploadingCover ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
               {form.coverImagePath ? "Replace photo" : "Add photo"}
             </button>
+            {!uploadingCover ? <GooglePhotosButton variant="compact" max={1} onFiles={(files) => files[0] && handleCoverFile(files[0])} /> : null}
           </div>
         </div>
 

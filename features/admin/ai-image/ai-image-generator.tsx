@@ -20,6 +20,7 @@ import { confirmGalleryUploadAction } from "@/features/admin/gallery/actions";
 import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -514,6 +515,7 @@ export function AiImageGenerator({
               </span>
               <span className="text-xs text-navy-700/40">JPEG, PNG, WEBP, or HEIC — up to 50MB</span>
             </button>
+            {!uploading ? <GooglePhotosButton variant="compact" max={1} className="mt-2" onFiles={(files) => files[0] && handleUpload(files[0])} /> : null}
             <p className="mt-1.5 text-xs text-navy-700/50">
               Already have an invitation design? Upload it here instead of generating one — it&rsquo;s
               treated exactly the same afterward (download, use as Link Preview, or add to Gallery), and

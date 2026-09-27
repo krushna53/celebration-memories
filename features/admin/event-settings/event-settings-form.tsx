@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
@@ -1024,6 +1025,9 @@ export function EventSettingsForm({
               )}
               {shareImageUrl ? "Replace" : "Upload"}
             </Button>
+            {!uploadingShareImage ? (
+              <GooglePhotosButton variant="compact" max={1} onFiles={(files) => files[0] && handleShareImageFile(files[0])} />
+            ) : null}
             {shareImageUrl ? (
               <Button
                 type="button"
