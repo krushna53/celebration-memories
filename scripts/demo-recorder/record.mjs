@@ -72,6 +72,11 @@ const config = {
   renderSlideshow: Boolean(arg("render-slideshow")),
   backend: Boolean(arg("backend")),
   extras: Boolean(arg("extras")),
+  // Pretend to be the installed home-screen app (PWA standalone mode).
+  app: Boolean(arg("app")),
+  guestName: typeof arg("guest-name") === "string" ? arg("guest-name") : "Anita Desai",
+  guestPhone: typeof arg("guest-phone") === "string" ? arg("guest-phone") : "+12025550103",
+  shareEvent: typeof arg("share-event") === "string" ? arg("share-event") : null,
   narrate: !arg("no-voice"),
   // Clean footage for re-editing elsewhere (e.g. reels with their own captions).
   captions: !arg("no-captions"),
@@ -81,7 +86,8 @@ const config = {
   contactLine: process.env.DEMO_CONTACT_LINE || "WhatsApp +91 99879 82969",
 };
 
-const VIEWPORT = config.mobile ? { width: 390, height: 844 } : { width: 1280, height: 720 };
+// 430x932 = a large current iPhone in CSS pixels.
+const VIEWPORT = config.mobile ? { width: 430, height: 932 } : { width: 1280, height: 720 };
 // Video frames are captured at the viewport's CSS size — a bigger video size
 // just leaves the page in the top-left corner with grey around it.
 const VIDEO_SIZE = VIEWPORT;
@@ -267,6 +273,12 @@ async function glideClick(page, locator) {
   if (!box) throw new Error("element not visible");
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 25 });
   await sleep(350);
+  // Layout can shift during the glide (late content, re-renders) — re-aim before pressing.
+  const again = await locator.boundingBox();
+  if (again && (Math.abs(again.y - box.y) > 4 || Math.abs(again.x - box.x) > 4)) {
+    await page.mouse.move(again.x + again.width / 2, again.y + again.height / 2, { steps: 6 });
+    await sleep(150);
+  }
   await page.mouse.down();
   await sleep(90);
   await page.mouse.up();
@@ -918,13 +930,9 @@ async function extrasScenes(page) {
 async function runScenes(page) {
   await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height / 2);
 
-  if (config.backend) {
-    await backendScenes(page);
-    await outro(page);
-    return;
-  }
-  if (config.extras) {
-    await extrasScenes(page);
+  if (config.backend || config.extras) {
+    if (config.backend) await backendScenes(page);
+    if (config.extras) await extrasScenes(page);
     await outro(page);
     return;
   }
@@ -951,10 +959,33 @@ async function runScenes(page) {
   if (config.inviteToken) {
     await scene("Personal invite", async () => {
       await goto(page, `/invite/${config.inviteToken}`);
-      await caption(page, "Every guest gets a <b>personal WhatsApp link</b> — it knows who they are", 3500);
-      if (await scrollToId(page, "rsvp")) await caption(page, "They RSVP — and can change it any time", 3000);
-      await scrollTo(page, await page.evaluate(() => document.documentElement.scrollHeight), 2500);
-      await caption(page, "…and upload photos, videos and voice messages from their phone", 3200);
+      await caption(page, "Every guest gets a <b>personal WhatsApp link</b> — it knows who they are", 3200);
+      await scrollToId(page, "rsvp");
+      await caption(page, "They RSVP in seconds — no app, no login");
+      const edit = page.getByRole("button", { name: /Edit my RSVP/ });
+      if (await edit.isVisible().catch(() => false)) await glideClick(page, edit);
+      await glideClick(page, page.getByText("Joyfully Accepts", { exact: true }));
+      await glideClick(page, page.locator('input[type="checkbox"]').last());
+      await glideClick(page, page.getByRole("button", { name: /Submit RSVP/ }));
+      await sleep(2500);
+      await caption(page, "…and share photos straight from their phone");
+      await glideClick(page, page.getByRole("button", { name: /Upload Image/ }).first());
+      await sleep(800);
+      await uploadVia(page, page.getByRole("button", { name: /Choose from Gallery/ }), asset("guest-upload.jpg"));
+      await sleep(800);
+      await glideClick(page, page.getByRole("button", { name: /^Upload( All)?$/ }).first());
+      await sleep(3500);
+      await caption(page, "");
+    });
+  }
+
+  if (config.shareEvent) {
+    await scene("Share a memory", async () => {
+      config.adminSlug ??= config.shareEvent;
+      await openShareMemory(page);
+      await caption(page, "One link or QR code for everyone — <b>share a memory</b>", 3000);
+      await caption(page, "Record a <b>voice note</b> for the family");
+      await recordAndUpload(page, /Record Audio/, 4);
       await caption(page, "");
     });
   }
@@ -962,7 +993,15 @@ async function runScenes(page) {
   if (config.gameToken) {
     await scene("Word Search", async () => {
       await goto(page, `/games/${config.gameToken}`);
-      await caption(page, "<b>Word Search</b> — played live on guests' phones", 4000);
+      await caption(page, "<b>Party games</b> on every guest's phone", 2200);
+      await typeInto(page, page.getByPlaceholder("Your name"), config.guestName);
+      await typeInto(page, page.getByPlaceholder("Your phone number"), config.guestPhone);
+      await glideClick(page, page.getByRole("button", { name: /Start Puzzle/ }));
+      await page.locator("[data-row][data-col]").first().waitFor({ timeout: 20_000 });
+      await caption(page, "Race the clock to find every word");
+      await solveWordSearch(page, ["MAHESH", "MUMBAI", "CRICKET", "FAMILY", "CHAI", "GOLF"]);
+      await page.getByText(/All words found/).waitFor({ timeout: 10_000 }).catch(() => {});
+      await caption(page, "All words found!", 2500);
       await caption(page, "");
     });
   }
@@ -1060,7 +1099,9 @@ function buildTimelineFilter(ranges, speed = 8) {
     const trim = to === null ? `trim=start=${from.toFixed(2)}` : `trim=start=${from.toFixed(2)}:end=${to.toFixed(2)}`;
     return `[0:v]${trim},setpts=(PTS-STARTPTS)/${rate}[p${i}]`;
   });
-  return `${parts.join(";")};${cuts.map((_, i) => `[p${i}]`).join("")}concat=n=${cuts.length}:v=1:a=0[out]`;
+  // Phone recordings are captured at CSS-pixel size — upscale to 1080 wide for sharing.
+  const tail = config.mobile ? "[cat];[cat]scale=1080:-2:flags=lanczos[out]" : "[out]";
+  return `${parts.join(";")};${cuts.map((_, i) => `[p${i}]`).join("")}concat=n=${cuts.length}:v=1:a=0${tail}`;
 }
 
 /**
@@ -1138,6 +1179,12 @@ async function record() {
     locale: "en-IN",
   });
   await context.addInitScript(OVERLAY_SCRIPT);
+  if (config.app) {
+    // lib/pwa.ts's isStandalone() also honours iOS's navigator.standalone.
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, "standalone", { get: () => true });
+    });
+  }
   // Headless fullscreen (the video recorder and Big Screen Display both
   // request it) resizes the page out from under the video capture and
   // leaves grey bars — the pages already fill the viewport, so no-op it.
@@ -1160,8 +1207,8 @@ async function record() {
         sameSite: "Lax",
       },
     ]);
-    await context.grantPermissions(["clipboard-read", "clipboard-write", "camera", "microphone"], { origin: config.baseUrl });
   }
+  await context.grantPermissions(["clipboard-read", "clipboard-write", "camera", "microphone"], { origin: config.baseUrl });
   // Keep the one-per-visit banners/tours out of the video.
   await context.addInitScript(() => {
     try {
@@ -1171,6 +1218,11 @@ async function record() {
 
   const page = await context.newPage();
   activePage = page;
+  if (config.app) {
+    // The CSS side of standalone mode (app/globals.css @media (display-mode: standalone)).
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Emulation.setEmulatedMedia", { features: [{ name: "display-mode", value: "standalone" }] }).catch(() => {});
+  }
   recordingStartedAt = Date.now();
   const started = recordingStartedAt;
   await runScenes(page);
@@ -1180,7 +1232,7 @@ async function record() {
 
   const rawPath = await video.path();
   const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
-  const outPath = path.join(OUTPUT_DIR, `everymoment-${config.backend ? "backend" : config.extras ? "extras" : "demo"}-${config.mobile ? "mobile" : "desktop"}-${stamp}.mp4`);
+  const outPath = path.join(OUTPUT_DIR, `everymoment-${config.backend ? "backend" : config.extras ? "extras" : "demo"}${config.app ? "-app" : ""}-${config.mobile ? "mobile" : "desktop"}-${stamp}.mp4`);
   try {
     // Trim the blank first second, convert WebM → H.264 MP4 (plays everywhere, uploads to YouTube/WhatsApp).
     const [narrationFilter, narrationInputs] = buildNarrationFilter(timelineCuts(fastForwards), 1);
