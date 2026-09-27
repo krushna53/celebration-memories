@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import type { MemoryItem } from "@/types/memory";
 import { VideoPlayer } from "@/features/memory-wall/components/video-player";
 import { MediaShareButtons } from "@/components/media/media-share-buttons";
+import { InstagramEmbed } from "@/components/media/instagram-embed";
 
 interface MemoryCardProps {
   item: MemoryItem;
@@ -54,6 +55,12 @@ export function MemoryCard({ item }: MemoryCardProps) {
       {item.kind === "audio" ? (
         <div className="bg-navy-950 px-4 py-6">
           <audio controls src={item.url} className="w-full" />
+        </div>
+      ) : null}
+
+      {item.kind === "instagram" ? (
+        <div className="bg-ivory-50 p-2">
+          <InstagramEmbed permalink={item.url} />
         </div>
       ) : null}
 

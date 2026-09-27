@@ -63,7 +63,7 @@ export async function listMediaLibrary(eventId: string): Promise<MediaLibraryIte
     // not media, and unapproved content still belongs to the moderation
     // queue (/admin/memories), not the curated library.
     ...moderationItems
-      .filter((m) => m.approved && m.kind !== "guestbook" && m.url)
+      .filter((m) => m.approved && m.kind !== "guestbook" && m.kind !== "instagram" && m.url)
       .map(
         (m): MediaLibraryItem => ({
           id: m.id,

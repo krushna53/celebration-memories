@@ -23,7 +23,7 @@ function revalidateMemoryPaths() {
 }
 
 /** guestbook has no Recycle Bin equivalent (text, not media — see services/recycle-bin.ts) so it keeps its original hard-delete path below; the three media kinds share the same table name against RecycleBinKind. */
-function toRecycleBinKind(kind: Exclude<ModerationKind, "guestbook">): RecycleBinKind {
+function toRecycleBinKind(kind: Exclude<ModerationKind, "guestbook" | "instagram">): RecycleBinKind {
   return kind;
 }
 
@@ -88,7 +88,8 @@ export async function reorderMemoriesAction(
 /** Photos/videos/audio move to the Recycle Bin (soft delete, 30-day undo window — see services/recycle-bin.ts); guestbook messages are text, not media, and are still removed immediately. */
 export async function deleteMemoryAction(kind: ModerationKind, id: string) {
   await requireAdminForMemory(kind, id);
-  if (kind === "guestbook") {
+  if (kind === "guestbook" || kind === "instagram") {
+    // Guest-book text and Instagram link embeds have no stored file — removed immediately.
     await deleteMemory(kind, id);
   } else {
     await moveToTrash(toRecycleBinKind(kind), id);

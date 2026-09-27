@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
   const kindFilter = kindParam && EXPORTABLE_KINDS.has(kindParam) ? kindParam : null;
 
   const items = (await listMemoriesForModeration(event.id, "all")).filter(
-    (item) => item.kind !== "guestbook" && item.url && (!kindFilter || item.kind === kindFilter),
+    (item) => item.kind !== "guestbook" && item.kind !== "instagram" && item.url && (!kindFilter || item.kind === kindFilter),
   );
 
   if (items.length === 0) {

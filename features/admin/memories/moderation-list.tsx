@@ -15,6 +15,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import type { ModerationItem, ModerationKind } from "@/services/admin-memories";
+import { InstagramEmbed } from "@/components/media/instagram-embed";
 import {
   approveMemoryAction,
   deleteMemoryAction,
@@ -104,6 +105,7 @@ const KIND_LABEL: Record<ModerationKind, string> = {
   video: "Videos",
   audio: "Voice Messages",
   guestbook: "Guest Book",
+  instagram: "Instagram Posts",
 };
 
 /**
@@ -244,6 +246,17 @@ function KindGroup({
                 <audio src={item.url} controls className="w-full" />
               </div>
             ) : null}
+            {item.kind === "instagram" && item.url ? (
+              <div className="bg-ivory-50 p-2">
+                <InstagramEmbed permalink={item.url} className="mx-auto max-w-sm" />
+                <p className="px-1 pt-1.5 text-xs text-navy-700/60">
+                  Shared by {item.guestName} ·{" "}
+                  <a href={item.url} target="_blank" rel="noopener noreferrer" className="underline">
+                    Open on Instagram
+                  </a>
+                </p>
+              </div>
+            ) : null}
 
             {editingId === item.id ? (
               <InlineEdit
@@ -353,7 +366,7 @@ interface ModerationListProps {
 
 export function ModerationList({ items: initialItems }: ModerationListProps) {
   const [items, setItems] = useState(initialItems);
-  const kinds: ModerationKind[] = ["photo", "video", "audio", "guestbook"];
+  const kinds: ModerationKind[] = ["photo", "video", "audio", "guestbook", "instagram"];
 
   if (items.length === 0) {
     return (

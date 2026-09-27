@@ -8,6 +8,7 @@ import {
   FileAudio,
   FileVideo,
   ImagePlus,
+  Instagram,
   Loader2,
   Mic,
   PenLine,
@@ -22,6 +23,7 @@ import { PhotoUpload } from "@/features/uploads/components/photo-upload";
 import { VideoUpload } from "@/features/uploads/components/video-upload";
 import { AudioUpload } from "@/features/uploads/components/audio-upload";
 import { GuestbookForm } from "@/features/guestbook/guestbook-form";
+import { InstagramLinkForm } from "@/features/uploads/components/instagram-link-form";
 import { NotificationPrompt } from "@/features/push/notification-prompt";
 
 interface MediaUploadsSectionProps {
@@ -32,7 +34,7 @@ interface MediaUploadsSectionProps {
   showCaption?: boolean;
 }
 
-export type View = "menu" | "photo" | "video-record" | "video-upload" | "audio-record" | "audio-upload" | "note";
+export type View = "menu" | "photo" | "video-record" | "video-upload" | "audio-record" | "audio-upload" | "note" | "instagram";
 
 export interface ActionOption {
   view: View;
@@ -55,6 +57,7 @@ export const ACTIONS: ActionOption[] = [
   { view: "note", label: "Add a Text Message", icon: PenLine },
   { view: "audio-record", label: "Record Audio", icon: Mic, isRecordAction: true },
   { view: "audio-upload", label: "Upload Audio", icon: FileAudio },
+  { view: "instagram", label: "Share an Instagram Post", icon: Instagram },
 ];
 
 const VIEW_TITLES: Record<Exclude<View, "menu">, string> = {
@@ -64,6 +67,7 @@ const VIEW_TITLES: Record<Exclude<View, "menu">, string> = {
   "audio-record": "Record a Voice Message",
   "audio-upload": "Upload Audio",
   note: "Write a Message",
+  instagram: "Share an Instagram Post",
 };
 
 /**
@@ -345,6 +349,7 @@ export function MediaUploadsSection({ token, initialView = "menu", showCaption =
           />
         ) : null}
         {view === "note" ? <GuestbookForm token={token} /> : null}
+        {view === "instagram" ? <InstagramLinkForm token={token} /> : null}
       </div>
 
       {/* Only offered once there's something actually at risk of being

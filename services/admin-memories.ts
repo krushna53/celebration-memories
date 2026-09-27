@@ -3,13 +3,19 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { publicMediaUrl } from "@/services/uploads";
 
-export type ModerationKind = "photo" | "video" | "audio" | "guestbook";
+export type ModerationKind = "photo" | "video" | "audio" | "guestbook" | "instagram";
+
+/** Kinds with no stored file (and no deleted_at / Recycle Bin): guest-book text and Instagram link embeds. */
+export function isLinkOrTextKind(kind: ModerationKind): kind is "guestbook" | "instagram" {
+  return kind === "guestbook" || kind === "instagram";
+}
 
 const TABLE: Record<ModerationKind, string> = {
   photo: "photos",
   video: "videos",
   audio: "audio",
   guestbook: "guestbook",
+  instagram: "instagram_posts",
 };
 
 const BUCKET: Partial<Record<ModerationKind, string>> = {
@@ -34,7 +40,7 @@ export async function listMemoriesForModeration(
   eventId: string,
   filter: "pending" | "all" = "pending",
 ): Promise<ModerationItem[]> {
-  const kinds: ModerationKind[] = ["photo", "video", "audio", "guestbook"];
+  const kinds: ModerationKind[] = ["photo", "video", "audio", "guestbook", "instagram"];
 
   const results = await Promise.all(
     kinds.map(async (kind) => {
@@ -53,7 +59,7 @@ export async function listMemoriesForModeration(
       // applies to the three media kinds; a trashed photo/video/audio
       // item should drop out of the moderation queue immediately, same
       // as everywhere else.
-      if (kind !== "guestbook") query = query.is("deleted_at", null);
+      if (!isLinkOrTextKind(kind)) query = query.is("deleted_at", null);
       if (filter === "pending") query = query.eq("approved", false);
 
       const { data, error } = await query;
@@ -69,6 +75,7 @@ export async function listMemoriesForModeration(
           message?: string | null;
           guest_name?: string | null;
           storage_path?: string | null;
+          permalink?: string | null;
           approved: boolean;
           featured: boolean;
           created_at: string;
@@ -78,9 +85,11 @@ export async function listMemoriesForModeration(
         id: row.id,
         kind,
         url:
-          kind !== "guestbook" && row.storage_path && BUCKET[kind]
-            ? publicMediaUrl(BUCKET[kind]!, row.storage_path)
-            : null,
+          kind === "instagram"
+            ? (row.permalink ?? null)
+            : kind !== "guestbook" && row.storage_path && BUCKET[kind]
+              ? publicMediaUrl(BUCKET[kind]!, row.storage_path)
+              : null,
         caption: row.caption ?? null,
         message: row.message ?? null,
         // Guestbook entries store the name the guest actually typed

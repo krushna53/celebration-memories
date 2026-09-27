@@ -1,4 +1,4 @@
-export type MemoryKind = "photo" | "video" | "audio" | "guestbook";
+export type MemoryKind = "photo" | "video" | "audio" | "guestbook" | "instagram";
 
 export interface MemoryAuthor {
   name: string;

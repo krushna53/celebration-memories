@@ -8,6 +8,8 @@ import {
   UploadValidationError,
 } from "@/services/uploads";
 import { logActivity } from "@/services/tracking";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { parseInstagramUrl } from "@/lib/instagram";
 
 export type ActionResult<T> =
   | { success: true; data: T }
@@ -131,4 +133,41 @@ export async function deleteUploadAction(
     const message = err instanceof Error ? err.message : "Could not delete that upload.";
     return { success: false, error: message };
   }
+}
+
+/**
+ * Shares a public Instagram post/reel as a memory (link only — see
+ * lib/instagram.ts and migration 0063). Token-gated like every guest
+ * action: the invitee is re-resolved from the token, and the link is
+ * re-validated server-side. Lands in moderation (approved = false).
+ */
+export async function submitInstagramPostAction(
+  token: string,
+  url: string,
+  caption: string,
+): Promise<ActionResult<{ id: string }>> {
+  const found = await getInviteeByToken(token);
+  if (!found) return { success: false, error: "This invitation link is not valid." };
+
+  const link = parseInstagramUrl(url);
+  if (!link) return { success: false, error: "That doesn't look like a link to an Instagram post or reel." };
+
+  const { data, error } = await supabaseAdmin()
+    .from("instagram_posts")
+    .insert({
+      event_id: found.event.id,
+      invitee_id: found.invitee.id,
+      permalink: link.permalink,
+      caption: caption.trim().slice(0, 200) || null,
+    })
+    .select("id")
+    .single<{ id: string }>();
+
+  if (error) {
+    if (error.code === "23505") return { success: false, error: "This post has already been shared for this event." };
+    console.error("submitInstagramPostAction failed:", error.message);
+    return { success: false, error: "Could not share this post. Please try again." };
+  }
+  await logActivity(found.invitee.id, "instagram_shared").catch(() => {});
+  return { success: true, data: { id: data.id } };
 }

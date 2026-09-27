@@ -42,13 +42,23 @@ export async function getMemoryWallItems(
   eventId: string,
   limit = 24,
 ): Promise<MemoryItem[]> {
-  const [photos, videos, audio, guestbookRows] = await Promise.all([
+  const [photos, videos, audio, guestbookRows, instagramRows] = await Promise.all([
     fetchApproved("photos", eventId, limit),
     fetchApproved("videos", eventId, limit),
     fetchApproved("audio", eventId, limit),
     supabaseAdmin()
       .from("guestbook")
       .select("*, invitees(name, relationship)")
+      .eq("event_id", eventId)
+      .eq("approved", true)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(limit)
+      .then((res) => res.data ?? []),
+    // Instagram link embeds (migration 0063) — no stored file, so no deleted_at filter.
+    supabaseAdmin()
+      .from("instagram_posts")
+      .select("id, permalink, caption, featured, created_at, invitees(name, relationship)")
       .eq("event_id", eventId)
       .eq("approved", true)
       .order("sort_order", { ascending: true })
@@ -125,6 +135,25 @@ export async function getMemoryWallItems(
       featured: row.featured,
       createdAt: row.created_at,
       author: { name: row.guest_name, relationship: null },
+    })),
+    ...(instagramRows as unknown as Array<{
+      id: string;
+      permalink: string;
+      caption: string | null;
+      featured: boolean;
+      created_at: string;
+      invitees: { name: string; relationship: string | null } | null;
+    }>).map((row): MemoryItem => ({
+      id: row.id,
+      kind: "instagram",
+      url: row.permalink,
+      thumbnailUrl: null,
+      caption: row.caption,
+      message: null,
+      country: null,
+      featured: row.featured,
+      createdAt: row.created_at,
+      author: { name: row.invitees?.name ?? "A guest", relationship: row.invitees?.relationship ?? null },
     })),
   ];
 
