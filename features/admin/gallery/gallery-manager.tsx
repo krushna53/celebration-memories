@@ -15,6 +15,7 @@ import {
   requestGalleryUploadUrlAction,
   updateGalleryPhotoAction,
 } from "@/features/admin/gallery/actions";
+import { GalleryAiTagger } from "@/features/admin/gallery/ai-tagger";
 
 /** See AiImageActions's doc comment — same override pattern for the self-serve wizard. */
 export interface GalleryActions {
@@ -365,6 +366,9 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
         </button>
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </div>
+
+      {/* Admin only — the /start wizard passes its own token-based actions and has no admin session for the AI actions. */}
+      {actions === DEFAULT_ACTIONS && photos.length > 0 ? <GalleryAiTagger eventId={eventId} photos={photos} /> : null}
 
       <p className="mt-3 text-xs text-navy-700/40">
         Drag the <GripVertical size={11} className="inline" /> handle on any photo to reorder within its category.

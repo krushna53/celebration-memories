@@ -13,6 +13,7 @@ import {
 import { moveToTrash } from "@/services/recycle-bin";
 import { snapshotGallery } from "@/services/event-snapshots";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
+import { suggestGalleryTags, type GalleryTagSuggestion } from "@/lib/ai-gallery-tagger";
 
 function revalidateGalleryPaths() {
   revalidatePath("/admin/gallery");
@@ -105,6 +106,50 @@ export async function deleteGalleryPhotoAction(id: string) {
     await moveToTrash("gallery", id);
     revalidateGalleryPaths();
     return { success: true as const };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/**
+ * AI suggestion for one photo's category + caption — read-only, nothing
+ * is saved. The gallery manager calls this once per photo (a few in
+ * parallel) so no single request runs long enough to hit the hosting
+ * function time limit, then applies the admin-reviewed results in one
+ * go via applyGalleryTagSuggestionsAction.
+ */
+export async function suggestGalleryTagsAction(id: string) {
+  try {
+    const { photo } = await requireAdminForPhoto(id);
+    const suggestion = await suggestGalleryTags(photo.url);
+    return { success: true as const, data: suggestion };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/** Saves the reviewed suggestions. Every id is re-checked against `eventId` so a tampered list can't touch another event's photos. */
+export async function applyGalleryTagSuggestionsAction(
+  eventId: string,
+  updates: Array<{ id: string } & GalleryTagSuggestion>,
+) {
+  try {
+    const admin = await requireAdminForOrganizerArea(eventId, "gallery");
+    const allowed = new Set(["childhood", "wedding", "family", "friends", "travel", "grandchildren"]);
+    const valid: typeof updates = [];
+    for (const update of updates) {
+      const photo = await getGalleryPhotoById(update.id);
+      if (!photo || photo.eventId !== eventId || !allowed.has(update.category)) continue;
+      valid.push({ ...update, caption: update.caption.trim().slice(0, 200) });
+    }
+    if (valid.length === 0) return { success: true as const, data: { applied: 0 } };
+
+    await snapshotGallery(eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
+    for (const { id, category, caption } of valid) {
+      await updateGalleryPhoto(id, { category, caption: caption || null });
+    }
+    revalidateGalleryPaths();
+    return { success: true as const, data: { applied: valid.length } };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
   }
