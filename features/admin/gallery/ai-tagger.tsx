@@ -12,7 +12,7 @@ const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
   (c): c is { value: GalleryCategory; label: string } => c.value !== "all",
 );
 /** Photos analysed at once — enough to be quick, few enough to stay polite to the AI API. */
-const PARALLEL = 3;
+const PARALLEL = 5;
 
 interface Suggestion {
   photo: GalleryPhotoRecord;

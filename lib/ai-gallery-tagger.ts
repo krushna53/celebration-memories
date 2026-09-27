@@ -39,18 +39,20 @@ const INSTRUCTIONS = `You help families organise a photo gallery for a celebrati
 Output ONLY a single raw JSON object — no markdown fences, no text before or after:
 { "category": one of ${CATEGORIES.map((c) => `"${c}"`).join(" | ")}, "caption": string }
 
-Category guide:
-- "childhood": the photo's main subject is a child or children in an older/vintage photo (a family member growing up).
-- "wedding": a wedding, engagement or bride/groom photo, old or new.
-- "grandchildren": small children with grandparents, or young kids in a recent photo.
-- "travel": trips, landmarks, scenery, holidays.
+Category guide — prefer the most specific category that fits; use "family" only when none of the others do:
+- "childhood": a child or children are the main subject of an older/vintage photo (someone growing up).
+- "wedding": a wedding, engagement, bride/groom, or a couple dressed for their wedding, old or new.
+- "grandchildren": babies or young children with grandparents, or young kids as the focus of a recent photo.
+- "travel": away from home — trips, landmarks, scenery, beaches, lakes, city skylines, parks on holiday.
 - "friends": groups of friends or colleagues rather than family.
-- "family": everything else — family gatherings, functions, portraits, celebrations.
+- "family": family gatherings, functions, portraits and celebrations at home or a venue.
 
 Caption rules:
-- Warm and short: 3 to 8 words, sentence case, no quotes, no emoji, no hashtags.
-- Describe the moment, not the people's identities. NEVER guess anyone's name, religion, caste or relationship beyond what is obvious (e.g. "bride and groom" is fine).
-- If the photo is clearly old (black-and-white, faded print, scanned photo), you may add an approximate decade at the end, e.g. "Family portrait, 1970s". Only add a decade when you are reasonably confident; otherwise leave it out.
+- 3 to 8 words, sentence case, no quotes, no emoji, no hashtags.
+- Be concrete: name what is actually visible — the setting, activity, objects, clothing or occasion (e.g. "Cutting the birthday cake together", "Garlanded couple at the mandap", "Posing by the lake in winter coats", "Three generations on the sofa").
+- Never use these stock words: warm, cherished, joyful, lovely, beautiful, memories, moments, special. Never write a caption that could fit any family photo.
+- Describe the moment, not identities. NEVER guess anyone's name, religion, caste or relationship beyond what is obvious (e.g. "bride and groom", "grandfather with toddler" are fine).
+- Black-and-white, sepia or faded prints: add an approximate decade at the end when you can reasonably judge it, e.g. "Brothers in matching shirts, 1960s".
 - If the photo shows a printed photo lying on a table (a photo of a photo), caption the printed photo itself.`;
 
 function parse(raw: string): GalleryTagSuggestion {
