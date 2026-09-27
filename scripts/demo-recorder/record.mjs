@@ -72,6 +72,8 @@ const config = {
   renderSlideshow: Boolean(arg("render-slideshow")),
   backend: Boolean(arg("backend")),
   extras: Boolean(arg("extras")),
+  // Google Photos import showcase — simulates Google's side (see googlePhotosScenes).
+  gphotos: Boolean(arg("gphotos")),
   // Pretend to be the installed home-screen app (PWA standalone mode).
   app: Boolean(arg("app")),
   guestName: typeof arg("guest-name") === "string" ? arg("guest-name") : "Anita Desai",
@@ -159,6 +161,16 @@ const OVERLAY_SCRIPT = `
       if (!html) { el.classList.remove("show"); return; }
       el.innerHTML = html;
       el.classList.add("show");
+    },
+    card(title, lines, ms) {
+      mount();
+      const el = document.createElement("div");
+      el.id = "__demo-outro";
+      el.style.background = "rgba(15,23,42,.94)";
+      el.innerHTML = "<h1 style='font-size:clamp(26px,6vw,44px)'>" + title + "</h1>" + lines.map((l) => "<p>" + l + "</p>").join("");
+      document.body.appendChild(el);
+      requestAnimationFrame(() => el.classList.add("show"));
+      setTimeout(() => { el.classList.remove("show"); setTimeout(() => el.remove(), 800); }, ms);
     },
     outro(title, lines) {
       mount();
@@ -778,6 +790,104 @@ async function createGame(page, tabLabel, title, wordsText) {
 }
 
 /** Share-a-memory flow, moderation onto the memory wall, games played for real, Big Screen Display. */
+/**
+ * "Import from Google Photos" showcase. Google's own sign-in and picker
+ * pages need a real Google login and can't be scripted, so this run
+ * simulates Google's replies (a fake GIS token client + mocked
+ * /api/google-photos responses serving the demo placeholder photos) and
+ * shows the picker step as an EveryMoment-styled explainer card — never
+ * an imitation of Google's UI. Everything on EveryMoment's side (button,
+ * import progress, upload queue, upload, moderation, gallery) is the
+ * real code on the real site. Not suitable as a Google verification
+ * video — that must be a real screen recording of Google's screens.
+ */
+async function googlePhotosScenes(page) {
+  const demoPhotos = ["childhood.jpg", "wedding.jpg", "travel.jpg"];
+  let polls = 0;
+  await page.route("**/api/google-photos/session**", (route) => {
+    const method = route.request().method();
+    if (method === "POST") return route.fulfill({ json: { id: "demo-session", pickerUri: "https://photospicker.example/demo", pollIntervalMs: 2500 } });
+    if (method === "DELETE") return route.fulfill({ json: { ok: true } });
+    polls += 1;
+    return route.fulfill({ json: { done: polls >= 2 } });
+  });
+  await page.route("**/api/google-photos/items**", (route) =>
+    route.fulfill({
+      json: { items: demoPhotos.map((f, i) => ({ id: `demo-${i}`, type: "PHOTO", baseUrl: `https://lh3.googleusercontent.com/demo-${i}`, mimeType: "image/jpeg", filename: f })) },
+    }),
+  );
+  await page.route("**/api/google-photos/media**", (route) => {
+    const { baseUrl } = JSON.parse(route.request().postData() || "{}");
+    const i = Number(String(baseUrl).split("demo-")[1] ?? 0);
+    return route.fulfill({ path: asset(demoPhotos[i] ?? demoPhotos[0]), contentType: "image/jpeg" });
+  });
+  await page.addInitScript(() => {
+    window.google = {
+      accounts: {
+        oauth2: {
+          initTokenClient: (cfg) => ({ requestAccessToken: () => setTimeout(() => cfg.callback({ access_token: "demo-token" }), 900) }),
+        },
+      },
+    };
+    window.open = () => null;
+  });
+
+  await scene("Google Photos import", async () => {
+    await goto(page, `/invite/${config.inviteToken}`);
+    await caption(page, "New: guests can add photos straight from <b>Google Photos</b>", 3000);
+    await page.getByRole("button", { name: /Upload Image/ }).first().scrollIntoViewIfNeeded();
+    await glideClick(page, page.getByRole("button", { name: /Upload Image/ }).first());
+    await sleep(900);
+    await caption(page, "Tap <b>Google Photos</b> — no EveryMoment account needed");
+    await glideClick(page, page.getByRole("button", { name: /^Google Photos$/ }));
+    await caption(page, "Sign in with Google once — it can only see the photos you pick", 2500);
+    await page.getByRole("button", { name: /Open Google Photos/ }).waitFor({ timeout: 15000 });
+    await glideClick(page, page.getByRole("button", { name: /Open Google Photos/ }));
+    await caption(page, "");
+    await speak("Google Photos opens. Browse your albums, or search, tick the photos you want, and tap Done.");
+    await page.evaluate(() =>
+      window.__demo?.card("In Google Photos", [
+        "Browse your albums — or search, just like in the app",
+        "Tick the photos you want",
+        "Tap <span class='accent'>Done</span>",
+      ], 6500),
+    );
+    await sleep(7000);
+    await caption(page, "Your picks arrive instantly — ready to upload");
+    await page.getByText(/Added \d+ photo/).waitFor({ timeout: 30000 });
+    await sleep(1500);
+    const upload = page.getByRole("button", { name: /^Upload( All)?$/ }).first();
+    await glideClick(page, upload);
+    await sleep(4000);
+    await caption(page, "");
+  });
+
+  if (config.admin) {
+    await scene("Approve Google Photos imports", async () => {
+      await goto(page, "/admin/memories");
+      await caption(page, "The host approves them, like any guest upload", 2500);
+      for (let i = 0; i < 3; i++) {
+        const approve = page.locator('button[title="Approve"]').first();
+        if (!(await approve.isVisible().catch(() => false))) break;
+        await glideClick(page, approve);
+        await sleep(1100);
+      }
+      await caption(page, "");
+      await goto(page, `/events/${config.adminSlug}`);
+      if (await scrollToId(page, "gallery")) {
+        const tab = page.getByRole("tab", { name: /From guests/ });
+        if (await tab.isVisible().catch(() => false)) await glideClick(page, tab);
+        await caption(page, "…and they're in the gallery, <b>From guests</b>", 3500);
+      }
+      await caption(page, "");
+      await goto(page, "/admin/gallery");
+      await page.getByRole("button", { name: /From Google Photos/ }).scrollIntoViewIfNeeded().catch(() => {});
+      await caption(page, "Hosts can import the family's old albums too — <b>From Google Photos</b>", 3500);
+      await caption(page, "");
+    });
+  }
+}
+
 async function extrasScenes(page) {
   let onDemoEvent = false;
   await scene("Confirm demo event", async () => {
@@ -930,6 +1040,11 @@ async function extrasScenes(page) {
 async function runScenes(page) {
   await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height / 2);
 
+  if (config.gphotos) {
+    await googlePhotosScenes(page);
+    await outro(page);
+    return;
+  }
   if (config.backend || config.extras) {
     if (config.backend) await backendScenes(page);
     if (config.extras) await extrasScenes(page);
@@ -1146,7 +1261,7 @@ async function saveLogin() {
 }
 
 async function record() {
-  const needsAdminEvent = config.backend || config.extras;
+  const needsAdminEvent = config.backend || config.extras || config.gphotos;
   if (needsAdminEvent && (!config.adminEventId || !config.adminSlug)) {
     console.error("--backend/--extras need --admin-event <event id> and --admin-slug <that event's slug> (a DEMO event)");
     process.exit(1);
@@ -1232,7 +1347,7 @@ async function record() {
 
   const rawPath = await video.path();
   const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
-  const outPath = path.join(OUTPUT_DIR, `everymoment-${config.backend ? "backend" : config.extras ? "extras" : "demo"}${config.app ? "-app" : ""}-${config.mobile ? "mobile" : "desktop"}-${stamp}.mp4`);
+  const outPath = path.join(OUTPUT_DIR, `everymoment-${config.gphotos ? "google-photos" : config.backend ? "backend" : config.extras ? "extras" : "demo"}${config.app ? "-app" : ""}-${config.mobile ? "mobile" : "desktop"}-${stamp}.mp4`);
   try {
     // Trim the blank first second, convert WebM → H.264 MP4 (plays everywhere, uploads to YouTube/WhatsApp).
     const [narrationFilter, narrationInputs] = buildNarrationFilter(timelineCuts(fastForwards), 1);
