@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { guardedLookup } from "@/services/abuse-guard";
 import { mapEvent, type EventRow } from "@/services/events";
 import type { EventRecord, InviteeRecord } from "@/types/event";
 import type { AttendanceOption, MealPreference, RsvpRecord } from "@/types/rsvp";
@@ -84,6 +85,12 @@ export interface InviteeWithEvent {
 export async function getInviteeByToken(
   token: string,
 ): Promise<InviteeWithEvent | null> {
+  // Invite tokens are only 8 characters, so repeated wrong guesses from
+  // one IP get locked out (services/abuse-guard.ts).
+  return guardedLookup("invite-token", () => lookupInviteeByToken(token));
+}
+
+async function lookupInviteeByToken(token: string): Promise<InviteeWithEvent | null> {
   const client = supabaseAdmin();
 
   const { data, error } = await client

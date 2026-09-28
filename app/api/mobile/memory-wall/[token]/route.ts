@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { getInviteeByToken } from "@/services/invitees";
 import { getMemoryWallItems } from "@/services/memory-wall";
+import { absolutizeMediaLinksDeep } from "@/lib/media-url";
 
 export const dynamic = "force-dynamic";
 
@@ -30,5 +31,6 @@ export async function GET(
   const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 30;
 
   const items = await getMemoryWallItems(found.event.id, limit);
-  return NextResponse.json({ items });
+  // The app has no page to resolve /media/... links against.
+  return NextResponse.json({ items: absolutizeMediaLinksDeep(items, new URL(request.url).origin) });
 }

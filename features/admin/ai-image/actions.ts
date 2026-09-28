@@ -87,7 +87,7 @@ export async function generateAiImageAction(eventId: string, prompt: string): Pr
 }
 
 export type RequestUploadUrlResult =
-  | { success: true; data: { bucket: string; path: string; token: string } }
+  | { success: true; data: { bucket: string; path: string; token: string; viewUrl: string } }
   | { success: false; error: string };
 
 /**

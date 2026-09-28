@@ -175,9 +175,10 @@ Deno.serve(async (req: Request) => {
       prompt: prompt.slice(0, 2000),
     });
 
-    const { data: pub } = supabase.storage.from("gallery").getPublicUrl(path);
+    // Signed, not public — the bucket is private (lib/media-url.ts in the web app).
+    const { data: pub } = await supabase.storage.from("gallery").createSignedUrl(path, 7 * 24 * 60 * 60);
 
-    return jsonResponse({ success: true, resultPath: path, resultUrl: pub.publicUrl }, 200);
+    return jsonResponse({ success: true, resultPath: path, resultUrl: pub?.signedUrl ?? null }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error calling OpenAI.";
     return await fail(`OpenAI image generation failed: ${message}`, 502);

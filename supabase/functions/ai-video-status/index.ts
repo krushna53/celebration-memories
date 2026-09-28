@@ -28,8 +28,9 @@ Deno.serve(async (req) => {
     .maybeSingle<{ status: string; event_id: string; admin_id: string; openai_video_id: string | null; result_path: string | null; error_message: string | null }>();
   if (error || !job) return respond({ success: false, error: "Job not found" }, 404);
   if (job.status === "done" && job.result_path) {
-    const { data } = supabase.storage.from("gallery").getPublicUrl(job.result_path);
-    return respond({ success: true, status: "done", resultUrl: data.publicUrl });
+    // Signed, not public — the bucket is private (lib/media-url.ts in the web app).
+    const { data } = await supabase.storage.from("gallery").createSignedUrl(job.result_path, 7 * 24 * 60 * 60);
+    return respond({ success: true, status: "done", resultUrl: data?.signedUrl ?? null });
   }
   if (job.status === "error") return respond({ success: true, status: "error", error: job.error_message || "Generation failed." });
   if (!job.openai_video_id) return respond({ success: true, status: "processing" });
@@ -50,8 +51,9 @@ Deno.serve(async (req) => {
     if (uploadError) throw new Error(`Failed to save generated video: ${uploadError.message}`);
     await supabase.from("ai_video_jobs").update({ status: "done", result_path: path, updated_at: new Date().toISOString() }).eq("id", body.jobId);
     await supabase.from("ai_video_generations").insert({ event_id: job.event_id, admin_id: job.admin_id });
-    const { data } = supabase.storage.from("gallery").getPublicUrl(path);
-    return respond({ success: true, status: "done", resultUrl: data.publicUrl });
+    // Signed, not public — the bucket is private (lib/media-url.ts in the web app).
+    const { data } = await supabase.storage.from("gallery").createSignedUrl(path, 7 * 24 * 60 * 60);
+    return respond({ success: true, status: "done", resultUrl: data?.signedUrl ?? null });
   } catch {
     return respond({ success: true, status: "processing" });
   }

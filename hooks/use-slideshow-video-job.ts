@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { startSlideshowVideoAction, type StartSlideshowVideoResult } from "@/features/admin/slideshow/actions";
+import { externalizeMediaLinksAction } from "@/features/media/actions";
 
 export interface SlideshowVideoSlideInput {
   url: string;
@@ -90,6 +91,17 @@ export function useSlideshowVideoJob(
     }
     setRemaining(started.remaining);
 
+    // Shotstack fetches every photo itself, so the page's signed /media
+    // links are swapped for direct Storage links it can reach.
+    const links = await externalizeMediaLinksAction([...input.slides.map((s) => s.url), input.audioUrl]);
+    if (!links.success) {
+      setStatus("error");
+      setError(links.error);
+      return;
+    }
+    const slides = input.slides.map((s, i) => ({ ...s, url: links.data[i] ?? s.url }));
+    const audioUrl = links.data[input.slides.length] ?? null;
+
     const {
       data: { session },
     } = await supabaseBrowser().auth.getSession();
@@ -113,9 +125,9 @@ export function useSlideshowVideoJob(
         body: JSON.stringify({
           jobId: started.jobId,
           eventId: input.eventId,
-          slides: input.slides,
+          slides,
           secondsPerPhoto: input.secondsPerPhoto,
-          audioUrl: input.audioUrl,
+          audioUrl,
           showCaptions: input.showCaptions,
           theme: input.theme,
         }),

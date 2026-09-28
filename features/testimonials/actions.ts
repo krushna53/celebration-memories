@@ -25,7 +25,7 @@ export async function requestTestimonialPhotoUploadAction(
   fileName: string,
   contentType: string,
   fileSize: number,
-): Promise<ActionResult<{ bucket: string; path: string; token: string; signedUrl: string }>> {
+): Promise<ActionResult<{ bucket: string; path: string; token: string; signedUrl: string; viewUrl: string }>> {
   try {
     const upload = await createSignedTestimonialPhotoUpload({ fileName, contentType, fileSize });
     return { success: true, data: upload };

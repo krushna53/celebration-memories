@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { isPrivateMediaBucket, signedMediaPath } from "@/lib/media-url";
 import { ACCEPTED_MIME_TYPES, UPLOAD_LIMITS, type MemoryKind } from "@/types/memory";
 
 const BUCKET_BY_KIND: Record<"photo" | "video" | "audio", string> = {
@@ -90,7 +91,7 @@ export async function createSignedMediaUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket, path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket, path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl(bucket, path) };
 }
 
 /**
@@ -175,7 +176,17 @@ export async function deleteOwnMediaUpload(params: {
   }
 }
 
+/**
+ * The link a page should use to show a stored file. Private buckets
+ * (guest memories + gallery — see lib/media-url.ts) get a signed,
+ * expiring `/media/...` link on our own domain; the rest (hero, avatars,
+ * business) are public by design and keep their plain Storage URL.
+ * Relative for private buckets — callers that hand a link to something
+ * outside the browser (a mobile app, OpenAI, a renderer) use
+ * services/external-media.ts instead.
+ */
 export function publicMediaUrl(bucket: string, path: string): string {
+  if (isPrivateMediaBucket(bucket)) return signedMediaPath(bucket, path);
   const { data } = supabaseAdmin().storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }
@@ -214,7 +225,7 @@ export async function createSignedGalleryUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /**
@@ -251,7 +262,7 @@ export async function createSignedShareImageUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /**
@@ -291,7 +302,7 @@ export async function createSignedAiImageUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /**
@@ -354,7 +365,7 @@ export async function createSignedPaymentQrUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /**
@@ -395,7 +406,7 @@ export async function createSignedShareVideoUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /**
@@ -434,7 +445,7 @@ export async function createSignedTestimonialPhotoUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /** Same signed-upload pattern, for an optional photo attached to a Timeline milestone (see services/timeline.ts, /admin/timeline). */
@@ -466,7 +477,7 @@ export async function createSignedTimelineImageUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /**
@@ -513,7 +524,7 @@ export async function createSignedSlideshowMusicUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "audio", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "audio", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("audio", path) };
 }
 
 /**
@@ -552,7 +563,7 @@ export async function createSignedHighlightReelUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /**
@@ -595,7 +606,7 @@ export async function createSignedVideoEditorUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "videos", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "videos", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("videos", path) };
 }
 
 /**
@@ -631,7 +642,7 @@ export async function createSignedTimelineMovieUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "videos", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "videos", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("videos", path) };
 }
 
 /**
@@ -668,7 +679,7 @@ export async function createSignedBusinessImageUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "business", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "business", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("business", path) };
 }
 
 /**
@@ -706,7 +717,7 @@ export async function createSignedPlatformVideoUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "videos", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "videos", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("videos", path) };
 }
 
 /**
@@ -744,7 +755,7 @@ export async function createSignedCustomFormCoverUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /**
@@ -784,7 +795,7 @@ export async function createSignedAdminMediaUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket, path, token: data.token, signedUrl: data.signedUrl };
+  return { bucket, path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl(bucket, path) };
 }
 
 export async function confirmAdminMediaUpload(params: {

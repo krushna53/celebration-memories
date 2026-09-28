@@ -17,6 +17,7 @@ import { ClarityScript } from "@/features/analytics/clarity-script";
 import { ServiceWorkerRegister } from "@/features/pwa/service-worker-register";
 import { TopProgressBar } from "@/components/layout/top-progress-bar";
 import { ConciergeHelpBanner } from "@/features/concierge/concierge-help-banner";
+import { MediaProtection } from "@/components/media/media-protection";
 
 import "./globals.css";
 
@@ -76,6 +77,7 @@ export default function RootLayout({
         {children}
         <ClarityScript />
         <ServiceWorkerRegister />
+        <MediaProtection />
       </body>
     </html>
   );

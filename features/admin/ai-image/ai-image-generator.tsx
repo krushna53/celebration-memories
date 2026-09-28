@@ -283,8 +283,7 @@ export function AiImageGenerator({
         .uploadToSignedUrl(path, token, compressed);
       if (uploadError) throw new Error(uploadError.message);
 
-      const { data } = supabaseBrowser().storage.from(bucket).getPublicUrl(path);
-      setUploadedResult({ url: data.publicUrl, path });
+      setUploadedResult({ url: signed.data.viewUrl, path });
 
       // Best-effort persistence — if this fails, the upload still shows
       // in this session, it just won't survive a reload. Not worth

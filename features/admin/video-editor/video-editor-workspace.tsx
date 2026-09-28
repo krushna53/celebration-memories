@@ -470,8 +470,7 @@ export function VideoEditorWorkspace({
       return;
     }
 
-    const publicUrl = supabaseBrowser().storage.from(bucket).getPublicUrl(path).data.publicUrl;
-    await applySoundtrack({ src: publicUrl, volume: musicVolume });
+    await applySoundtrack({ src: requested.data.viewUrl, volume: musicVolume });
     setMusicFileName(file.name);
     setMusicUploading(false);
   }

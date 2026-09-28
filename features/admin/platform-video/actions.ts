@@ -17,7 +17,7 @@ export async function requestPlatformVideoUploadUrlAction(
   contentType: string,
   fileSize: number,
 ): Promise<
-  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string } }
+  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string; viewUrl: string } }
   | { success: false; error: string }
 > {
   try {

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { guardedLookup } from "@/services/abuse-guard";
 import { generateDraftToken } from "@/lib/tokens";
 import { listInvitees } from "@/services/admin-invitees";
 import type { MenuDietaryTag, MenuItemRecord, ScheduleItemRecord } from "@/types/content";
@@ -381,8 +382,12 @@ export async function findInviteeByPhoneForEventDay(eventId: string, phone: stri
   const normalized = normalizePhone(phone);
   if (!normalized || normalized.length < 7) return null;
 
-  const invitees = await listInvitees(eventId);
-  return invitees.find((inv) => inv.phone && normalizePhone(inv.phone) === normalized) ?? null;
+  // Without a limit, a script could try phone numbers to learn who is on
+  // the guest list (services/abuse-guard.ts).
+  return guardedLookup("event-day-phone", async () => {
+    const invitees = await listInvitees(eventId);
+    return invitees.find((inv) => inv.phone && normalizePhone(inv.phone) === normalized) ?? null;
+  });
 }
 
 /** Boolean-only sibling of findInviteeByPhoneForEventDay, kept for any caller that only needs a yes/no. */

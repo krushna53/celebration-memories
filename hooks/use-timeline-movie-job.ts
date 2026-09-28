@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { startTimelineMovieAction, type StartTimelineMovieResult } from "@/features/admin/timeline-movie/actions";
+import { externalizeMediaLinksAction } from "@/features/media/actions";
 
 export interface TimelineMovieSceneInput {
   script: string;
@@ -68,6 +69,16 @@ export function useTimelineMovieJob(initialVideoUrl?: string | null) {
     }
     setRemaining(started.remaining);
 
+    // HeyGen fetches each scene background itself, so the page's signed
+    // /media links are swapped for direct Storage links it can reach.
+    const links = await externalizeMediaLinksAction(input.scenes.map((s) => s.backgroundUrl));
+    if (!links.success) {
+      setStatus("error");
+      setError(links.error);
+      return;
+    }
+    const scenes = input.scenes.map((s, i) => ({ ...s, backgroundUrl: links.data[i] ?? null }));
+
     const {
       data: { session },
     } = await supabaseBrowser().auth.getSession();
@@ -91,7 +102,7 @@ export function useTimelineMovieJob(initialVideoUrl?: string | null) {
         body: JSON.stringify({
           jobId: started.jobId,
           eventId: input.eventId,
-          scenes: input.scenes,
+          scenes,
           avatarId: input.avatarId,
           voiceId: input.voiceId,
         }),

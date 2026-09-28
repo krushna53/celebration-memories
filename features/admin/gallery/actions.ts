@@ -14,6 +14,7 @@ import { moveToTrash } from "@/services/recycle-bin";
 import { snapshotGallery } from "@/services/event-snapshots";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
 import { suggestGalleryTags, type GalleryTagSuggestion } from "@/lib/ai-gallery-tagger";
+import { externalizeMediaLink } from "@/services/external-media";
 
 function revalidateGalleryPaths() {
   revalidatePath("/admin/gallery");
@@ -121,7 +122,8 @@ export async function deleteGalleryPhotoAction(id: string) {
 export async function suggestGalleryTagsAction(id: string) {
   try {
     const { photo } = await requireAdminForPhoto(id);
-    const suggestion = await suggestGalleryTags(photo.url);
+    // OpenAI fetches the image itself, so it needs a link it can reach.
+    const suggestion = await suggestGalleryTags(await externalizeMediaLink(photo.url, { ttlSeconds: 600 }));
     return { success: true as const, data: suggestion };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };

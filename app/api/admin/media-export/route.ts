@@ -5,6 +5,7 @@ import JSZip from "jszip";
 import { getCurrentAdmin, requireOwner } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { listMemoriesForModeration } from "@/services/admin-memories";
+import { externalizeMediaLink } from "@/services/external-media";
 
 export const dynamic = "force-dynamic";
 
@@ -65,10 +66,12 @@ export async function GET(request: NextRequest) {
   await Promise.all(
     items.map(async (item, index) => {
       try {
-        const res = await fetch(item.url!);
+        // Page links are relative /media/... paths; the server needs a
+        // direct Storage link to fetch the file itself.
+        const res = await fetch(await externalizeMediaLink(item.url!, { ttlSeconds: 600 }));
         if (!res.ok) return;
         const buffer = Buffer.from(await res.arrayBuffer());
-        const pathname = new URL(item.url!).pathname;
+        const pathname = new URL(item.url!, "http://local").pathname;
         const ext = pathname.split(".").pop()?.toLowerCase() || "bin";
         const safeGuestName =
           item.guestName.replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 40) || "guest";

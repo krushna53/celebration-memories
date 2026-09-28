@@ -2,6 +2,8 @@ import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { publicMediaUrl } from "@/services/uploads";
+import { refreshMediaLinksDeep } from "@/lib/media-url";
+import { externalizeMediaLinksDeep } from "@/services/external-media";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listMilestones } from "@/services/timeline";
 
@@ -250,7 +252,9 @@ function mapJobRow(row: VideoEditJobRow): VideoEditJob {
     id: row.id,
     eventId: row.event_id,
     title: row.title,
-    editJson: row.edit_json,
+    // Saved projects keep the links they were built with — re-sign them
+    // so an older draft still previews once those links have expired.
+    editJson: refreshMediaLinksDeep(row.edit_json),
     status: row.status,
     resultUrl: row.result_path ? publicMediaUrl("gallery", row.result_path) : null,
     errorMessage: row.error_message,
@@ -348,6 +352,33 @@ export async function deleteVideoEditJob(eventId: string, jobId: string): Promis
   }
   const { error: deleteError } = await client.from("video_edit_jobs").delete().eq("id", jobId);
   if (deleteError) throw new Error(`Failed to delete video edit: ${deleteError.message}`);
+}
+
+/**
+ * Right before a render: swaps every media link in the saved project for a
+ * direct Storage link Shotstack can fetch (the render-video-edit Edge
+ * Function sends edit_json to Shotstack as-is). Drafts only — once a job
+ * is rendering it is never edited again, so the longer-lived links stored
+ * here are never shown back in the editor. Callers check admin access to
+ * the job's event first.
+ */
+export async function prepareVideoEditJobForRender(jobId: string): Promise<void> {
+  const client = supabaseAdmin();
+  const { data, error } = await client
+    .from("video_edit_jobs")
+    .select("edit_json, status")
+    .eq("id", jobId)
+    .maybeSingle<{ edit_json: unknown; status: string }>();
+  if (error || !data) throw new Error("That video edit couldn't be found.");
+  if (data.status !== "draft" || !data.edit_json) return;
+
+  const editJson = await externalizeMediaLinksDeep(data.edit_json, { allowExpired: true });
+  const { error: updateError } = await client
+    .from("video_edit_jobs")
+    .update({ edit_json: editJson })
+    .eq("id", jobId)
+    .eq("status", "draft");
+  if (updateError) throw new Error(`Failed to prepare the render: ${updateError.message}`);
 }
 
 /** Marks a draft job as queued for rendering — the actual Shotstack submission happens in the render-video-edit Edge Function (task #83). */

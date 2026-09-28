@@ -307,3 +307,13 @@ h1, h2, h3, h4, h5, h6 {
     bottom: calc(5rem + env(safe-area-inset-bottom));
   }
 }
+
+/* Private media (signed /media/... links, incl. via next/image): no drag-to-save
+   and no iOS long-press "Save to Photos" menu. See components/media/media-protection.tsx. */
+img[src*="/media/"],
+img[src*="%2Fmedia%2F"],
+img[srcset*="%2Fmedia%2F"] {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}

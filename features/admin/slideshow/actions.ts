@@ -72,7 +72,7 @@ export async function startSlideshowVideoAction(eventId: string): Promise<StartS
 }
 
 export type RequestSlideshowMusicUploadResult =
-  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string } }
+  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string; viewUrl: string } }
   | { success: false; error: string };
 
 /** Issues a signed upload URL for an optional background-music file — see createSignedSlideshowMusicUpload. */

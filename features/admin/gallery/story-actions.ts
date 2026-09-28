@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminForOrganizerArea } from "@/services/admin-auth";
 import { getGalleryPhotoById, getGalleryPhotoPaths } from "@/services/gallery-photos";
 import { publicMediaUrl } from "@/services/uploads";
+import { externalMediaUrl } from "@/services/external-media";
 import { createGalleryPair, deleteGalleryPair } from "@/services/gallery-story";
 import { applyGalleryCleanup, previewGalleryCleanup, revertGalleryCleanup, type CropBox } from "@/services/gallery-cleanup";
 import { snapshotGallery } from "@/services/event-snapshots";
@@ -76,7 +77,11 @@ export async function getCleanupSourceAction(photoId: string) {
 export async function detectPrintBoundsAction(photoId: string) {
   try {
     await requireAdminForPhoto(photoId);
-    return { success: true as const, data: await detectPrintBounds(await originalUrl(photoId)) };
+    const paths = await getGalleryPhotoPaths(photoId);
+    if (!paths) throw new Error("Photo not found.");
+    // OpenAI fetches the image itself, so it needs a link it can reach.
+    const url = await externalMediaUrl("gallery", paths.originalStoragePath ?? paths.storagePath, 600);
+    return { success: true as const, data: await detectPrintBounds(url) };
   } catch (err) {
     return fail(err);
   }

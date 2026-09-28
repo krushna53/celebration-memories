@@ -2,6 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { currentIpHash, isLockedOut, recordFailure } from "@/services/abuse-guard";
 import { generateInviteToken } from "@/lib/tokens";
 import type { AdminRole, CurrentAdmin } from "@/services/admin-auth";
 
@@ -101,6 +102,13 @@ export async function loginWithMobileAccessCode(code: string): Promise<MobileLog
     return { success: false, error: "Please enter your access code." };
   }
 
+  // Access codes are typed by hand, so they're short — lock out an IP
+  // that keeps guessing (services/abuse-guard.ts).
+  const ipHash = await currentIpHash();
+  if (await isLockedOut("mobile-access-code", ipHash)) {
+    return { success: false, error: "Too many attempts. Please wait 15 minutes and try again." };
+  }
+
   const client = supabaseAdmin();
   const { data, error } = await client
     .from("admins")
@@ -112,6 +120,7 @@ export async function loginWithMobileAccessCode(code: string): Promise<MobileLog
     return { success: false, error: "Something went wrong. Please try again." };
   }
   if (!data) {
+    await recordFailure("mobile-access-code", ipHash);
     return { success: false, error: "That access code wasn't recognized. Check with whoever set up your event." };
   }
 

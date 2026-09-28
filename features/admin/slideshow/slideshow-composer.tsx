@@ -116,7 +116,7 @@ export function SlideshowComposer({
         const { error: uploadError } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, token, audioFile);
         if (uploadError) throw new Error(uploadError.message);
 
-        audioUrl = supabaseBrowser().storage.from(bucket).getPublicUrl(path).data.publicUrl;
+        audioUrl = signed.data.viewUrl;
       } catch (err) {
         setAudioUploading(false);
         setAudioError(err instanceof Error ? err.message : "Failed to upload audio.");

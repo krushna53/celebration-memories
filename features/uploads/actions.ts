@@ -26,7 +26,7 @@ export async function requestUploadUrl(
   fileName: string,
   contentType: string,
   fileSize: number,
-): Promise<ActionResult<{ bucket: string; path: string; token: string; signedUrl: string }>> {
+): Promise<ActionResult<{ bucket: string; path: string; token: string; signedUrl: string; viewUrl: string }>> {
   const found = await getInviteeByToken(token);
   if (!found) {
     return { success: false, error: "This invitation link is not valid." };

@@ -22,7 +22,7 @@ export async function adminRequestMediaUploadAction(
   fileName: string,
   contentType: string,
   fileSize: number,
-): Promise<Result<{ bucket: string; path: string; token: string; signedUrl: string }>> {
+): Promise<Result<{ bucket: string; path: string; token: string; signedUrl: string; viewUrl: string }>> {
   try {
     const admin = await getCurrentAdmin();
     if (!admin) return { success: false, error: "Not authenticated." };

@@ -57,7 +57,7 @@ export async function startTimelineMovieAction(eventId: string): Promise<StartTi
 }
 
 export type RequestTimelineMovieUploadResult =
-  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string } }
+  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string; viewUrl: string } }
   | { success: false; error: string };
 
 /** Issues a signed upload URL for the "upload your own video instead" path — see createSignedTimelineMovieUpload. Not quota-limited (doesn't touch HeyGen). */

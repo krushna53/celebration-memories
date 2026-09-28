@@ -163,7 +163,7 @@ export async function setListingImageAction(
 export async function requestBusinessImageUploadAction(
   listingId: string,
   input: { fileName: string; contentType: string; fileSize: number },
-): Promise<BizActionResult<{ bucket: string; path: string; token: string; signedUrl: string }>> {
+): Promise<BizActionResult<{ bucket: string; path: string; token: string; signedUrl: string; viewUrl: string }>> {
   try {
     const account = await requireBusinessAccount();
     await assertOwnsListing(listingId, account.id);

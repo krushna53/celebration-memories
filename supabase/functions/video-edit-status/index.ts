@@ -82,8 +82,9 @@ Deno.serve(async (req: Request) => {
   }
 
   if (job.status === "done" && job.result_path) {
-    const { data: pub } = supabase.storage.from("gallery").getPublicUrl(job.result_path);
-    return jsonResponse({ success: true, status: "done", resultPath: job.result_path, resultUrl: pub.publicUrl }, 200);
+    // Signed, not public — the bucket is private (lib/media-url.ts in the web app).
+    const { data: pub } = await supabase.storage.from("gallery").createSignedUrl(job.result_path, 7 * 24 * 60 * 60);
+    return jsonResponse({ success: true, status: "done", resultPath: job.result_path, resultUrl: pub?.signedUrl ?? null }, 200);
   }
   if (job.status === "error") {
     return jsonResponse({ success: true, status: "error", error: job.error_message || "Render failed." }, 200);
@@ -145,8 +146,9 @@ Deno.serve(async (req: Request) => {
       admin_id: job.admin_id,
     });
 
-    const { data: pub } = supabase.storage.from("gallery").getPublicUrl(path);
-    return jsonResponse({ success: true, status: "done", resultPath: path, resultUrl: pub.publicUrl }, 200);
+    // Signed, not public — the bucket is private (lib/media-url.ts in the web app).
+    const { data: pub } = await supabase.storage.from("gallery").createSignedUrl(path, 7 * 24 * 60 * 60);
+    return jsonResponse({ success: true, status: "done", resultPath: path, resultUrl: pub?.signedUrl ?? null }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error saving the rendered video.";
     console.error(`video-edit-status: finalize failed for job ${jobId}: ${message}`);

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { guardedLookup } from "@/services/abuse-guard";
 
 export interface PromoCodeRecord {
   id: string;
@@ -72,6 +73,11 @@ export async function setPromoCodeActive(id: string, active: boolean): Promise<v
  * redemption. Case-insensitive (codes are stored uppercased).
  */
 export async function findActivePromoCode(code: string): Promise<PromoCodeRecord | null> {
+  // Promo codes are human-chosen words — easy to guess without a limit.
+  return guardedLookup("promo-code", () => lookupPromoCode(code));
+}
+
+async function lookupPromoCode(code: string): Promise<PromoCodeRecord | null> {
   const { data, error } = await supabaseAdmin()
     .from("promo_codes")
     .select("*")
@@ -92,13 +98,15 @@ export async function findActivePromoCode(code: string): Promise<PromoCodeRecord
  * succeed. Returns true only if the code was actually consumed.
  */
 export async function redeemPromoCode(code: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin().rpc("redeem_promo_code", {
-    p_code: code.trim().toUpperCase(),
+  const redeemed = await guardedLookup("promo-code", async () => {
+    const { data, error } = await supabaseAdmin().rpc("redeem_promo_code", {
+      p_code: code.trim().toUpperCase(),
+    });
+    if (error) {
+      console.error("redeemPromoCode failed:", error.message);
+      return false;
+    }
+    return data === true;
   });
-
-  if (error) {
-    console.error("redeemPromoCode failed:", error.message);
-    return false;
-  }
-  return data === true;
+  return redeemed === true;
 }

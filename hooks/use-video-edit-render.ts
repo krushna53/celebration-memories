@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { prepareVideoEditRenderAction } from "@/features/admin/video-editor/actions";
 
 export type VideoEditRenderStatus = "idle" | "starting" | "processing" | "done" | "error";
 
@@ -39,6 +40,13 @@ export function useVideoEditRender() {
     setStatus("starting");
     setError(null);
     setResultUrl(null);
+
+    const prepared = await prepareVideoEditRenderAction(jobId);
+    if (!prepared.success) {
+      setStatus("error");
+      setError(prepared.error);
+      return;
+    }
 
     const {
       data: { session },

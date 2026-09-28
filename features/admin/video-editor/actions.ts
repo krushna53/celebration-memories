@@ -6,13 +6,15 @@ import { requireAdminForEvent } from "@/services/admin-auth";
 import {
   confirmVideoEditorUpload,
   deleteVideoEditorUpload,
+  getVideoEditJobEventId,
+  prepareVideoEditJobForRender,
   saveVideoEditDraft,
   setVideoEditJobLiveOnBigScreen,
 } from "@/services/video-editor";
 import { createSignedSlideshowMusicUpload, createSignedVideoEditorUpload, UploadValidationError } from "@/services/uploads";
 
 export type RequestVideoEditorUploadResult =
-  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string } }
+  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string; viewUrl: string } }
   | { success: false; error: string };
 
 /** Issues a signed upload URL for a custom video the client wants to bring into the editor — see createSignedVideoEditorUpload. */
@@ -38,7 +40,7 @@ export async function requestVideoEditorUploadAction(
 }
 
 export type RequestVideoEditorMusicUploadResult =
-  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string } }
+  | { success: true; data: { bucket: string; path: string; token: string; signedUrl: string; viewUrl: string } }
   | { success: false; error: string };
 
 /**
@@ -133,5 +135,18 @@ export async function setBigScreenVideoAction(eventId: string, jobId: string): P
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to update the Big Screen video." };
+  }
+}
+
+/** Called by useVideoEditRender right before it starts the render-video-edit Edge Function — see prepareVideoEditJobForRender. */
+export async function prepareVideoEditRenderAction(jobId: string): Promise<VideoEditorActionResult> {
+  try {
+    const eventId = await getVideoEditJobEventId(jobId);
+    if (!eventId) return { success: false, error: "That video edit couldn't be found." };
+    await requireAdminForEvent(eventId);
+    await prepareVideoEditJobForRender(jobId);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Couldn't prepare your video for rendering." };
   }
 }
