@@ -165,7 +165,7 @@ export function TemplatePicker({
                     {/* Desktop: a full overlay on hover. Touch screens: a permanent label, since there's no hover. */}
                     <span className="absolute inset-0 hidden items-center justify-center bg-navy-950/55 opacity-0 transition-opacity duration-300 group-hover:opacity-100 sm:flex">
                       <span className="flex items-center gap-2 whitespace-nowrap rounded-full bg-gold-500 px-5 py-2.5 text-sm font-medium text-navy-950 shadow-lg">
-                        <Eye size={16} /> See your page in it
+                        <Eye size={16} /> Preview your page
                       </span>
                     </span>
                     <span className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-medium text-navy-950 shadow-md sm:group-hover:opacity-0">
