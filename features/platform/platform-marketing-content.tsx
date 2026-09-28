@@ -156,7 +156,7 @@ export async function PlatformMarketingContent() {
             </p>
             <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-ivory-100/75 sm:text-lg">
               Create. Celebrate. Remember. A premium, mobile-first invitation
-              site for the moments worth gathering for — birthdays, weddings,
+              page for the moments worth gathering for — birthdays, weddings,
               anniversaries, retirements, baby showers, memorials, workshops,
               and more. Unique guest links, live RSVP tracking, a shared wall
               of photos, videos, and messages, a built-in event planner for
@@ -164,7 +164,7 @@ export async function PlatformMarketingContent() {
               scanning a QR code.
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <StartBuildingButton size="lg">Build Your Event Site — Free to Try</StartBuildingButton>
+              <StartBuildingButton size="lg">Build Your Event Page — Free to Try</StartBuildingButton>
             </div>
             <p className="mt-6 text-xs text-ivory-100/60">
               Curious what a guest, host, or admin can each do?{" "}
@@ -183,6 +183,9 @@ export async function PlatformMarketingContent() {
           </Reveal>
         </div>
       </div>
+
+      {/* Social proof first, straight under the hero banner. */}
+      <TestimonialsSection />
 
       <FeatureVideoSection settings={videoSettings} />
 
@@ -213,7 +216,6 @@ export async function PlatformMarketingContent() {
         </div>
       </div>
 
-      <TestimonialsSection />
 
       <div className="bg-navy-950 py-20 text-center text-ivory-50 sm:py-24">
         <div className="mx-auto max-w-xl px-4 sm:px-6">
