@@ -16,9 +16,9 @@
 --      SECURITY DEFINER function can't be tricked by objects created in
 --      another schema. Its body only references public.admins (fully
 --      qualified) and built-ins, so nothing changes functionally.
---    - The unused `http` extension moves out of the API-exposed public
---      schema. Scheduled jobs use pg_net (net.http_post), not this
---      extension; nothing in the database calls it (checked 2026-09-28).
+--    - The advisor also flags the `http` extension in the public schema.
+--      It can't be moved (`http` doesn't support SET SCHEMA), so it was
+--      left as is; scheduled jobs use pg_net (net.http_post), not it.
 -- ============================================================================
 
 update storage.buckets
