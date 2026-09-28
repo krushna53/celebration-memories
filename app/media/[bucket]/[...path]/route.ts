@@ -42,6 +42,11 @@ export async function GET(
 
   const secondsLeft = Math.max(0, check.expiresAt - Math.floor(Date.now() / 1000));
   const cacheControl = `public, max-age=${secondsLeft}, s-maxage=${secondsLeft}, immutable`;
+  // Netlify's CDN ignores query strings in its cache key unless told
+  // otherwise — without this, once a genuine link is cached, the same path
+  // with ANY signature or expiry (forged or long expired) is served from
+  // cache. Keying on e + s keeps every check above meaningful.
+  const cacheHeaders = { "Cache-Control": cacheControl, "Netlify-Vary": "query=e|s" };
 
   const redirectToStorage = async () => {
     const key = `${bucket}/${path}:${check.expiresAt}`;
@@ -57,7 +62,7 @@ export async function GET(
       signedUrlCache.set(key, { url: target, validUntil: Date.now() + (ttl - 300) * 1000 });
       if (signedUrlCache.size > 5000) signedUrlCache.clear();
     }
-    return NextResponse.redirect(target, { status: 302, headers: { "Cache-Control": cacheControl } });
+    return NextResponse.redirect(target, { status: 302, headers: cacheHeaders });
   };
 
   if (VIDEO_AUDIO.test(path)) return redirectToStorage();
@@ -73,7 +78,7 @@ export async function GET(
       "Content-Type": data.type || "application/octet-stream",
       "Content-Length": String(data.size),
       "Content-Disposition": "inline",
-      "Cache-Control": cacheControl,
+      ...cacheHeaders,
       "X-Content-Type-Options": "nosniff",
       "X-Robots-Tag": "noindex",
     },
