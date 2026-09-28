@@ -36,6 +36,121 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, September 28",
+    items: [
+      {
+        title: "Preview your own event page in any template before choosing",
+        detail:
+          "Every template card (admin Templates page and the Create Your Event wizard) now has a prominent Preview button. It opens your actual event page — your names, dates and photos — rendered in that template, in a phone frame or a desktop view, with \"Use this template\" right there. Tapping the template picture also opens the preview, and a banner nudges hosts to preview before they pick.",
+        test:
+          "Open Admin > Templates (or the wizard's template step). Tap Preview on two different templates, switch between phone and desktop view, then use \"Use this template\" and confirm your event page changes to it.",
+      },
+      {
+        title: "\"Relive the day\" after an event ends",
+        detail:
+          "Once an event's end time has passed, the event page switches mode: the hero says \"Thank you for celebrating with us\" with buttons to add photos & videos and see the memories, the Memory Wall moves to the top, and the countdown, RSVP and Event Day sections are hidden. Personal invite links thank the guest and lead with the upload section. Bulk Send gains a \"Thank you + share your photos\" message that links each guest straight to their upload section.",
+        test:
+          "Open a past event's page and confirm the thank-you hero and Memory Wall first. Open one guest's invite link for that event and confirm it leads with uploading. In Invitees > Bulk Send, confirm the thank-you message is offered.",
+      },
+      {
+        title: "Share to Instagram, LinkedIn and Stories",
+        detail:
+          "Share menus now include LinkedIn and Instagram (Instagram hands the photo to your phone's share sheet; on a laptop it downloads). A new \"Share to your Story\" button creates a ready-made 9:16 Story card in the event's style — on the invitation (\"You're invited\"), after a guest RSVPs Coming (\"I'm going!\") and at the end of Word Search.",
+        test:
+          "On a phone, RSVP Coming on a test invite and tap Share to your Story — confirm the card looks right and the share sheet opens. Open a gallery photo, tap Share > Instagram and confirm it opens the share sheet.",
+      },
+      {
+        title: "Share, Instagram and Copy Link buttons fixed in the photo viewer",
+        detail:
+          "Inside the full-screen photo viewer, the share menu opened behind the photo, so its options were invisible. It now appears on top, sharing works on phones, desktop falls back to sharing the link, and every action shows a confirmation.",
+        test:
+          "Open any gallery photo full-screen, tap the share menu, and try Copy Link and WhatsApp — confirm the menu is visible and a confirmation appears.",
+      },
+      {
+        title: "Storage page shows every file, by category",
+        detail:
+          "Admin > Storage (owner only) now counts everything: Memory Wall, Gallery & Timeline, Slideshow & Music, AI Images, Video Editor, Share & Display, plus draft/inactive events and platform files.",
+        test: "Open Admin > Storage and confirm the totals and per-event charts load.",
+      },
+    ],
+  },
+  {
+    date: "Sunday, September 27",
+    items: [
+      {
+        title: "Import photos and videos from Google Photos",
+        detail:
+          "Guests and hosts can pick photos and videos straight from Google Photos in Google's own picker (albums and search included). They go through the same upload queue as everything else — compressed, checked and held for approval. A single-photo Google Photos button also sits next to every other photo upload (timeline, guest book, testimonial, invitation, vendor profile and more). The button only appears once Google Photos is connected for the site.",
+        test:
+          "Open a test invite link > Upload Photos > Google Photos, sign in, pick two photos and one short video, and upload. Confirm they appear in Admin > Memories waiting for approval.",
+      },
+      {
+        title: "Share Instagram posts and reels as memories",
+        detail:
+          "Guests can paste a link to a public Instagram post or reel. It's previewed with Instagram's own embed, held for approval like any other memory, and shown as an Instagram embed on the Memory Wall once approved. Duplicate links for the same event are rejected.",
+        test:
+          "From a test invite link, paste a public Instagram reel link in the memories section and submit. Approve it in Admin > Memories and confirm it plays on the Memory Wall.",
+      },
+      {
+        title: "Gallery redesigned: cover photo, chapters and a slideshow",
+        detail:
+          "The public gallery now opens with one large cover photo and highlights instead of a long wall of tiles (about 5 phone screens of scrolling down to under 2). Photos are grouped into chapters — early years, wedding, family, travels, friends, grandchildren — oldest first, each with its own \"See all\". Share and download buttons moved off the tiles (no more icons over faces) into the full-screen viewer, which also has a Play/Pause slideshow. A new \"From guests\" tab shows approved guest photos with who shared them.",
+        test:
+          "Open an event page's gallery on a phone. Confirm the cover and chapters, tap a chapter pill, open a photo and play the slideshow, and check the From guests tab.",
+      },
+      {
+        title: "\"Then & Now\" photo comparisons",
+        detail:
+          "Hosts can pair an old photo with a recent one, and guests drag a slider across to compare them.",
+        test:
+          "In Admin > Gallery, create a Then & Now pair, then open the event page and drag the slider on phone and laptop.",
+      },
+      {
+        title: "Sort & caption gallery photos with AI",
+        detail:
+          "A new \"Sort & caption with AI\" button in Admin > Gallery suggests a category and a short, specific caption (with an approximate decade for old photos) for each uncaptioned photo, five at a time. Nothing is saved until you review and approve the suggestions, existing captions are never overwritten, and it never guesses people's names.",
+        test:
+          "In Admin > Gallery, run Sort & caption with AI on a few uncaptioned photos. Edit one suggestion, approve, and confirm only approved captions are saved.",
+      },
+      {
+        title: "Clean up scanned old prints",
+        detail:
+          "For photos scanned from old prints, the admin gallery can now suggest a crop that trims the scanner border. Drag to adjust, preview the result, and save — the original is kept so you can revert.",
+        test:
+          "In Admin > Gallery, open a scanned photo's cleanup, adjust the crop, save, then use Revert and confirm the original returns.",
+      },
+    ],
+  },
+  {
+    date: "Saturday, September 26",
+    items: [
+      {
+        title: "Build your event goes straight into the first step",
+        detail:
+          "The homepage \"Build Your Event\" button (and the same button on the AI Image tool, forms dashboard, login and empty dashboard) now lands directly on the wizard's first question instead of an extra intro page.",
+        test: "From the homepage, tap Build Your Event and confirm you land on the \"What are you celebrating?\" step.",
+      },
+      {
+        title: "Installed app bottom bar: Dashboard replaces Events",
+        detail:
+          "In the installed app, the bottom bar on platform pages is now Home, Discover, AI Image, Dashboard and Menu. Dashboard takes a signed-in user straight to their own dashboard. The Browse Public Events button was also removed from the homepage hero, along with the \"A Krushna Web Works Product\" line.",
+        test: "In the installed app, tap Dashboard in the bottom bar while signed in and confirm it opens your dashboard.",
+      },
+      {
+        title: "Sign-in links always come back to everymoment.in",
+        detail:
+          "Email confirmation and Google sign-in could return people to the raw Netlify address instead of everymoment.in. They now always return to the public domain.",
+        test: "Sign in with Google from everymoment.in and confirm the address bar still shows everymoment.in afterwards.",
+      },
+      {
+        title: "Smaller fixes",
+        detail:
+          "The \"need help setting up?\" banner no longer shows on guests' public event pages. The public/private visibility switch in settings is no longer stretched. Slideshow video errors now say why the render failed instead of a generic message.",
+        test: "Open a public event page as a guest and confirm no setup banner appears. Check the visibility switch in Event Settings looks normal.",
+      },
+    ],
+  },
+  {
     date: "Friday, September 25",
     items: [
       {
@@ -752,7 +867,7 @@ export default function WeeklyUpdatePage() {
       <div className="mx-auto max-w-2xl">
         <p className="text-xs font-medium uppercase tracking-[0.15em] text-gold-700">Internal — not linked anywhere on the site</p>
         <h1 className="mt-2 font-display text-3xl text-navy-950 sm:text-4xl">Weekly Update</h1>
-        <p className="mt-1 text-sm text-navy-700/60">Sunday, August 23, 2026</p>
+        <p className="mt-1 text-sm text-navy-700/60">Monday, September 28, 2026</p>
 
         <div className="mt-10 grid gap-10">
           {CHANGES.map((group) => (
