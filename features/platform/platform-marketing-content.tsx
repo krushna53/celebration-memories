@@ -24,6 +24,7 @@ import { BUILDER, SUPPORT } from "@/lib/constants";
 import { getPlatformVideoSettings } from "@/services/platform-video-settings";
 import { FeatureVideoSection } from "@/features/platform/feature-video-section";
 import { TestimonialsSection } from "@/features/testimonials/testimonials-section";
+import { VideoTestimonialSection } from "@/features/testimonials/video-testimonial-section";
 import { StartBuildingButton } from "@/features/start/start-building-button";
 
 const LIVE_FEATURES = [
@@ -184,8 +185,8 @@ export async function PlatformMarketingContent() {
         </div>
       </div>
 
-      {/* Social proof first, straight under the hero banner. */}
-      <TestimonialsSection />
+      {/* A real host's video review first, straight under the hero banner. */}
+      <VideoTestimonialSection />
 
       <FeatureVideoSection settings={videoSettings} />
 
@@ -216,21 +217,27 @@ export async function PlatformMarketingContent() {
         </div>
       </div>
 
+      <TestimonialsSection />
 
       <div className="bg-navy-950 py-20 text-center text-ivory-50 sm:py-24">
         <div className="mx-auto max-w-xl px-4 sm:px-6">
           <Reveal>
             <h2 className="font-display text-2xl sm:text-3xl">
-              Want a site like this for your event?
+              Want a page like this for your event?
             </h2>
             <p className="mt-4 text-sm text-ivory-100/75 sm:text-base">
-              Message {BUILDER.name} on WhatsApp and we&rsquo;ll set one up for you.
+              Build it yourself in minutes, free to try — or message {BUILDER.name} on WhatsApp and we&rsquo;ll set it up for you.
             </p>
-            <Button size="lg" className="mt-7" asChild>
-              <a href={BUILDER.whatsappUrl} target="_blank" rel="noopener noreferrer">
-                Start On WhatsApp
-              </a>
-            </Button>
+            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <StartBuildingButton size="lg" formClassName="w-full sm:w-auto" className="w-full sm:w-auto">
+                Build It Free Yourself
+              </StartBuildingButton>
+              <Button size="lg" variant="outline" className="w-full border-ivory-100/30 sm:w-auto bg-transparent text-ivory-50 hover:bg-ivory-50/10 hover:text-ivory-50" asChild>
+                <a href={BUILDER.whatsappUrl} target="_blank" rel="noopener noreferrer">
+                  Or Let Us Set It Up on WhatsApp
+                </a>
+              </Button>
+            </div>
             <p className="mt-8 text-xs text-ivory-100/60">
               Like this platform and want to help it grow?{" "}
               <a

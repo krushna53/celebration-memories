@@ -8,6 +8,14 @@ import { Reveal } from "@/components/motion/reveal";
 import { TestimonialCarousel } from "@/features/testimonials/testimonial-carousel";
 
 /**
+ * Below this many approved reviews the section stays hidden: one or two
+ * reviews read as "only one customer", and the same host already features
+ * in the video section under the hero (VideoTestimonialSection), which also
+ * carries the "Share your experience" link in the meantime.
+ */
+const MIN_REVIEWS_TO_SHOW = 3;
+
+/**
  * "What Our Hosts Say" — sits just below the homepage hero (see
  * features/platform/platform-marketing-content.tsx). Pulls only
  * approved testimonials (services/testimonials.ts) — nothing here is
@@ -22,6 +30,7 @@ export async function TestimonialsSection() {
   } catch (err) {
     console.error("TestimonialsSection failed to load:", err);
   }
+  if (testimonials.length < MIN_REVIEWS_TO_SHOW) return null;
 
   return (
     <div className="bg-white py-20 sm:py-28">
