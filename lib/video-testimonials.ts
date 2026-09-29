@@ -22,7 +22,10 @@ export interface VideoTestimonial {
   durationLabel: string;
 }
 
-const STORAGE = "https://ktbpnjrovzhjwardyime.supabase.co/storage/v1/object/public/hero/platform/testimonials";
+// Built from the env var, never hardcoded — Netlify's secret scanning
+// treats NEXT_PUBLIC_SUPABASE_URL's value as a secret and fails the build
+// if it appears in a repo file.
+const STORAGE = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""}/storage/v1/object/public/hero/platform/testimonials`;
 
 export const VIDEO_TESTIMONIALS: readonly VideoTestimonial[] = [
   {
