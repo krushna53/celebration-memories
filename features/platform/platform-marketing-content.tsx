@@ -2,15 +2,20 @@ import Link from "next/link";
 import {
   Bot,
   CalendarClock,
+  Check,
+  ChevronDown,
   Camera,
   CreditCard,
   Film,
   Gamepad2,
+  Heart,
   LayoutDashboard,
   Link2,
   ListChecks,
   MessageCircle,
   Palette,
+  PartyPopper,
+  Send,
   ShieldCheck,
   Sparkles,
   UtensilsCrossed,
@@ -25,6 +30,7 @@ import { getPlatformVideoSettings } from "@/services/platform-video-settings";
 import { FeatureVideoSection } from "@/features/platform/feature-video-section";
 import { TestimonialsSection } from "@/features/testimonials/testimonials-section";
 import { VideoTestimonialSection } from "@/features/testimonials/video-testimonial-section";
+import { HowItWorksSection } from "@/features/platform/how-it-works-section";
 import { StartBuildingButton } from "@/features/start/start-building-button";
 
 const LIVE_FEATURES = [
@@ -115,6 +121,47 @@ const LIVE_FEATURES = [
 ];
 
 /**
+ * The homepage's short, grouped version of LIVE_FEATURES — what a host
+ * gets before, on and after the day, 4 points each. The full LIVE_FEATURES
+ * grid is still one click away under "See all features".
+ */
+const FEATURE_GROUPS = [
+  {
+    icon: Send,
+    when: "Before the event",
+    title: "Invite",
+    points: [
+      "Beautiful templates, or design an invite with AI",
+      "A personal link for every guest — RSVP and meal choice in a tap",
+      "Send invites on WhatsApp with ready-made messages",
+      "Live RSVP dashboard with spreadsheet export",
+    ],
+  },
+  {
+    icon: PartyPopper,
+    when: "On the day",
+    title: "Celebrate",
+    points: [
+      "Event Day schedule and menu on every guest's phone",
+      "Party games guests join by scanning a QR code",
+      "Guest photos and wishes playing on the big screen",
+      "A friendly AI host that greets and guides guests",
+    ],
+  },
+  {
+    icon: Heart,
+    title: "Remember",
+    when: "After the event",
+    points: [
+      "Photos, videos and voice wishes from every guest",
+      "A memory wall you approve before anyone sees it",
+      "An auto-made highlight video with music",
+      "Stored privately — photo links expire, so they can't be passed around",
+    ],
+  },
+] as const;
+
+/**
  * Shared nav for every platform-level (non-event) page — Pricing,
  * Roles, Events directory, Template submission, Contact, Privacy, and
  * the Visitor Guide. These pages have no #hero/#details/... sections,
@@ -190,30 +237,59 @@ export async function PlatformMarketingContent() {
 
       <FeatureVideoSection settings={videoSettings} />
 
-      <div className="bg-ivory-50 py-20 sm:py-28">
+      <HowItWorksSection />
+
+      <div className="bg-white py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             eyebrow="Live Today"
             title="Everything You Need To Host, Digitally"
-            description="Every event on the platform gets the same premium foundation — this is what's already working."
+            description="Before, during and after the celebration — one page does it all."
           />
-          <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {LIVE_FEATURES.map((feature) => (
-              <Reveal key={feature.title}>
-                <div className="h-full rounded-2xl border border-navy-950/10 bg-white p-6">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-500/10 text-gold-600">
-                    <feature.icon size={20} />
+          <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {FEATURE_GROUPS.map((group) => (
+              <Reveal key={group.title} className="h-full">
+                <div className="h-full rounded-2xl border border-navy-950/10 bg-ivory-50 p-6 sm:p-7">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-500/10 text-gold-600">
+                      <group.icon size={20} aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-gold-600">{group.when}</p>
+                      <h3 className="font-display text-2xl text-navy-950">{group.title}</h3>
+                    </div>
                   </div>
-                  <h3 className="mt-4 font-display text-xl text-navy-950">
-                    {feature.title}
-                  </h3>
-                  <p className="mt-2 text-base leading-relaxed text-navy-700/75">
-                    {feature.description}
-                  </p>
+                  <ul className="mt-5 space-y-2.5 text-base text-navy-700/80">
+                    {group.points.map((point) => (
+                      <li key={point} className="flex gap-2.5">
+                        <Check size={18} className="mt-1 shrink-0 text-gold-500" aria-hidden="true" />
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </Reveal>
             ))}
           </div>
+
+          <details className="group mt-10">
+            <summary className="mx-auto flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-full border border-gold-600 px-6 py-3 text-sm font-semibold text-gold-600 hover:bg-gold-600/10 [&::-webkit-details-marker]:hidden">
+              <span className="group-open:hidden">See all {LIVE_FEATURES.length} features</span>
+              <span className="hidden group-open:inline">Show fewer</span>
+              <ChevronDown size={16} className="transition group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {LIVE_FEATURES.map((feature) => (
+                <div key={feature.title} className="h-full rounded-2xl border border-navy-950/10 bg-white p-6">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-500/10 text-gold-600">
+                    <feature.icon size={20} />
+                  </div>
+                  <h3 className="mt-4 font-display text-xl text-navy-950">{feature.title}</h3>
+                  <p className="mt-2 text-base leading-relaxed text-navy-700/75">{feature.description}</p>
+                </div>
+              ))}
+            </div>
+          </details>
         </div>
       </div>
 
