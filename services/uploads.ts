@@ -1,4 +1,5 @@
 import "server-only";
+import { curatedMediaFile } from "@/lib/curated-media";
 import { randomUUID } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -203,17 +204,8 @@ export async function createSignedGalleryUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
-  const { eventId, fileName, contentType, fileSize } = params;
-
-  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
-  if (!acceptedTypes.includes(contentType)) {
-    throw new UploadValidationError(`Unsupported image type: ${contentType}`);
-  }
-
-  const limit = UPLOAD_LIMITS.photo;
-  if (fileSize > limit.maxBytes) {
-    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
-  }
+  const { eventId, fileSize } = params;
+  const { fileName, contentType } = curatedMediaFile(params.fileName, params.contentType, fileSize);
 
   const path = `${eventId}/gallery/${randomUUID()}-${sanitizeFileName(fileName)}`;
 
@@ -225,7 +217,7 @@ export async function createSignedGalleryUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
+  return { bucket: "gallery", contentType, path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /**
@@ -455,17 +447,8 @@ export async function createSignedTimelineImageUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
-  const { eventId, fileName, contentType, fileSize } = params;
-
-  const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
-  if (!acceptedTypes.includes(contentType)) {
-    throw new UploadValidationError(`Unsupported image type: ${contentType}`);
-  }
-
-  const limit = UPLOAD_LIMITS.photo;
-  if (fileSize > limit.maxBytes) {
-    throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
-  }
+  const { eventId, fileSize } = params;
+  const { fileName, contentType } = curatedMediaFile(params.fileName, params.contentType, fileSize);
 
   const path = `${eventId}/timeline/${randomUUID()}-${sanitizeFileName(fileName)}`;
 
@@ -477,7 +460,7 @@ export async function createSignedTimelineImageUpload(params: {
     throw new Error(`Failed to create signed upload URL: ${error?.message}`);
   }
 
-  return { bucket: "gallery", path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
+  return { bucket: "gallery", contentType, path, token: data.token, signedUrl: data.signedUrl, viewUrl: publicMediaUrl("gallery", path) };
 }
 
 /**

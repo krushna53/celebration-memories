@@ -1,4 +1,5 @@
 "use server";
+import { assertEventMediaPath } from "@/lib/curated-media";
 
 import { revalidatePath } from "next/cache";
 
@@ -10,6 +11,7 @@ import { snapshotTimeline } from "@/services/event-snapshots";
 function revalidateTimelinePaths() {
   revalidatePath("/admin/timeline");
   revalidatePath("/");
+  revalidatePath("/events/[slug]", "page");
 }
 
 /** Looks up which event a milestone belongs to and confirms the caller is allowed to manage it — closes the gap where any logged-in admin could edit/delete another client's timeline by milestone id alone. */
@@ -58,6 +60,7 @@ export async function updateMilestoneAction(
     if (!isPureReorder) {
       await snapshotTimeline(milestone.eventId, admin.id).catch((err) => console.error("snapshotTimeline failed:", err));
     }
+    if (input.imagePath) assertEventMediaPath(milestone.eventId, input.imagePath);
     await updateMilestone(id, input);
     revalidateTimelinePaths();
     return { success: true as const };
@@ -85,6 +88,7 @@ export async function confirmTimelineImageUploadAction(milestoneId: string, path
   try {
     const { admin, milestone } = await requireAdminForMilestone(milestoneId);
     await snapshotTimeline(milestone.eventId, admin.id).catch((err) => console.error("snapshotTimeline failed:", err));
+    assertEventMediaPath(milestone.eventId, path);
     await updateMilestone(milestoneId, { imagePath: path });
     revalidateTimelinePaths();
     return { success: true as const };

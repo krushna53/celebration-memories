@@ -6,6 +6,7 @@ import { ChevronDown, ImageOff, Pause, Play } from "lucide-react";
 import { PhotoSlider } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 
+import { isVideoMedia } from "@/lib/curated-media";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
@@ -95,10 +96,12 @@ function PhotoGrid({
               key={item.id}
               type="button"
               onClick={() => onOpen(index)}
-              aria-label={`Open photo${item.caption ? `: ${item.caption}` : ""}`}
+              aria-label={`Open media${item.caption ? `: ${item.caption}` : ""}`}
               className="group relative block cursor-zoom-in overflow-hidden rounded-xl border border-navy-950/5 text-left"
             >
-              <Image
+              {isVideoMedia(item.url) ? (
+                <div className="relative"><video src={item.url} muted playsInline preload="metadata" className="aspect-video w-full bg-black" /><span className="absolute inset-0 flex items-center justify-center text-white"><Play size={36} /></span></div>
+              ) : <Image
                 src={item.url}
                 alt={item.caption ?? ""}
                 width={600}
@@ -106,7 +109,7 @@ function PhotoGrid({
                 loading="lazy"
                 sizes="(min-width: 640px) 33vw, 50vw"
                 className="h-auto w-full object-cover transition-luxury duration-500 group-hover:scale-105"
-              />
+              />}
               {item.byline ? (
                 <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/70 to-transparent px-3 pb-2 pt-6 text-xs text-ivory-50">
                   {item.byline}
@@ -200,7 +203,7 @@ export function GallerySection({ photos, pairs = [], guestPhotos = [] }: Gallery
   });
 
   useEffect(() => {
-    if (!playing || !viewer || viewer.items.length < 2) return;
+    if (!playing || !viewer || viewer.items.length < 2 || isVideoMedia(viewer.items[viewer.index]?.url)) return;
     const timer = window.setTimeout(
       () => setViewer((v) => (v ? { ...v, index: (v.index + 1) % v.items.length } : v)),
       SLIDESHOW_INTERVAL_MS,
@@ -283,17 +286,19 @@ export function GallerySection({ photos, pairs = [], guestPhotos = [] }: Gallery
                 <button
                   type="button"
                   onClick={() => openViewer(allViewItems, 0)}
-                  aria-label={`Open photo${view.cover.caption ? `: ${view.cover.caption}` : ""}`}
+                  aria-label={`Open media${view.cover.caption ? `: ${view.cover.caption}` : ""}`}
                   className="group relative block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-navy-950/5"
                 >
-                  <Image
+                  {isVideoMedia(view.cover.url) ? (
+                    <div className="relative"><video src={view.cover.url} muted playsInline preload="metadata" className="max-h-[70vh] w-full bg-black" /><span className="absolute inset-0 flex items-center justify-center text-white"><Play size={48} /></span></div>
+                  ) : <Image
                     src={view.cover.url}
                     alt={view.cover.caption ?? ""}
                     width={1200}
                     height={800}
                     sizes="(min-width: 1152px) 1104px, 100vw"
                     className="max-h-[70vh] w-full object-cover transition-luxury duration-700 group-hover:scale-[1.02]"
-                  />
+                  />}
                   {view.cover.caption ? (
                     <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/70 to-transparent px-5 pb-4 pt-10 text-left font-display text-lg text-ivory-50">
                       {view.cover.caption}
@@ -350,10 +355,13 @@ export function GallerySection({ photos, pairs = [], guestPhotos = [] }: Gallery
       </div>
 
       <PhotoSlider
-        images={(viewer?.items ?? []).map((item) => ({ key: item.id, src: item.url }))}
+        images={(viewer?.items ?? []).map((item, index) => isVideoMedia(item.url) ? {
+          key: item.id, width: 960, height: 540,
+          render: () => index === viewer?.index ? <video key={item.id} src={item.url} controls playsInline preload="metadata" aria-label={item.caption || "Gallery video"} className="h-full w-full bg-black object-contain" /> : null,
+        } : { key: item.id, src: item.url })}
         visible={viewer !== null}
         index={viewer?.index ?? 0}
-        onIndexChange={(index) => setViewer((v) => (v ? { ...v, index } : v))}
+        onIndexChange={(index) => { setPlaying(false); setViewer((v) => (v ? { ...v, index } : v)); }}
         onClose={closeViewer}
         toolbarRender={() => (
           <div className="flex items-center gap-1.5">

@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { Check, GripVertical, Loader2, Pencil, Trash2, Upload, X } from "lucide-react";
+import { Check, GripVertical, Loader2, Pencil, Trash2, Upload } from "lucide-react";
 
+import { CURATED_MEDIA_ACCEPT, isVideoMedia } from "@/lib/curated-media";
 import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
@@ -108,13 +110,11 @@ function CaptionEditor({
  * and is the same order used by the Big Screen display.
  */
 function CategoryGrid({
-  category,
   label,
   initialPhotos,
   busyId,
   onDelete,
 }: {
-  category: GalleryCategory;
   label: string;
   initialPhotos: GalleryPhotoRecord[];
   busyId: string | null;
@@ -213,8 +213,12 @@ function CategoryGrid({
             )}
           >
             <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.url} alt={photo.caption ?? ""} className="aspect-square w-full object-cover" />
+              {isVideoMedia(photo.url) ? (
+                <video src={photo.url} controls playsInline preload="metadata" aria-label={photo.caption || "Gallery video"} className="aspect-square w-full bg-black object-contain" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photo.url} alt={photo.caption ?? ""} className="aspect-square w-full object-cover" />
+              )}
 
               {/* Drag handle — always visible on touch/mobile, hover on desktop */}
               <div
@@ -226,11 +230,12 @@ function CategoryGrid({
               </div>
 
               {/* Edit / Delete buttons */}
-              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="flex items-center justify-end gap-2 border-t border-navy-950/10 bg-white p-2">
                 <button
                   type="button"
                   onClick={() => setEditingId(editingId === photo.id ? null : photo.id)}
                   title="Edit caption"
+                  aria-label="Edit caption"
                   className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 text-white"
                 >
                   <Pencil size={14} />
@@ -238,17 +243,19 @@ function CategoryGrid({
                 <button
                   type="button"
                   onClick={() => onDelete(photo.id)}
-                  disabled={busyId === photo.id}
+                  disabled={busyId !== null}
                   title="Delete"
+                  aria-label={`Delete ${isVideoMedia(photo.url) ? "video" : "photo"}${photo.caption ? `: ${photo.caption}` : ""}`}
                   className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 text-white"
                 >
-                  <Trash2 size={14} />
+                  {busyId === photo.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  <span className="px-2 text-xs">Delete</span>
                 </button>
               </div>
 
               {/* Caption badge */}
               {photo.caption && editingId !== photo.id ? (
-                <div className="absolute bottom-0 left-0 right-0 bg-navy-950/60 px-2 py-1">
+                <div className="bg-navy-950/60 px-2 py-1">
                   <p className="truncate text-[11px] text-ivory-100">{photo.caption}</p>
                 </div>
               ) : null}
@@ -274,7 +281,13 @@ function CategoryGrid({
 }
 
 export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIONS, initialPairs = [] }: GalleryManagerProps) {
+  const router = useRouter();
   const [photos, setPhotos] = useState(initialPhotos);
+  const [previousPhotos, setPreviousPhotos] = useState(initialPhotos);
+  if (previousPhotos !== initialPhotos) {
+    setPreviousPhotos(initialPhotos);
+    setPhotos(initialPhotos);
+  }
   const [category, setCategory] = useState<GalleryCategory>("family");
   const [uploadCaption, setUploadCaption] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -288,14 +301,14 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
 
     for (const rawFile of Array.from(files)) {
       try {
-        const file = await compressImage(rawFile);
+        const file = rawFile.type.startsWith("video/") || isVideoMedia(rawFile.name) ? rawFile : await compressImage(rawFile);
         const signed = await actions.requestUploadUrl(eventId, file.name, file.type, file.size);
         if (!signed.success) throw new Error(signed.error);
 
         const { bucket, path, token } = signed.data;
         const { error: uploadError } = await supabaseBrowser()
           .storage.from(bucket)
-          .uploadToSignedUrl(path, token, file);
+          .uploadToSignedUrl(path, token, file, { contentType: signed.data.contentType });
         if (uploadError) throw new Error(uploadError.message);
 
         const confirmed = await actions.confirmUpload(eventId, category, path, uploadCaption.trim());
@@ -307,18 +320,22 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
 
     setUploading(false);
     setUploadCaption("");
-    window.location.reload();
+    if (inputRef.current) inputRef.current.value = "";
+    router.refresh();
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this photo?")) return;
+    if (!confirm(actions === DEFAULT_ACTIONS ? "Move this item to the Recycle Bin? You can restore it for 30 days." : "Delete this item?")) return;
+    setError(null);
     setBusyId(id);
-    const result = await actions.deletePhoto(id);
-    setBusyId(null);
-    if (result.success) {
+    try {
+      const result = await actions.deletePhoto(id);
+      if (!result.success) throw new Error(result.error);
       setPhotos((prev) => prev.filter((p) => p.id !== id));
-    } else {
-      alert(result.error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete this item. Please try again.");
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -355,7 +372,7 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          accept={CURATED_MEDIA_ACCEPT}
           multiple
           className="hidden"
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
@@ -367,7 +384,7 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
           className="flex items-center gap-2 rounded-lg bg-gold-500 px-4 py-2 text-sm font-medium text-navy-950 disabled:opacity-60"
         >
           {uploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
-          Upload to {CATEGORY_OPTIONS.find((c) => c.value === category)?.label}
+          Upload photos or videos to {CATEGORY_OPTIONS.find((c) => c.value === category)?.label}
         </button>
         {/* Imports straight into the selected category — renders nothing without a Google Photos client id. */}
         {!uploading ? <GooglePhotosButton onFiles={handleFiles} label="From Google Photos" className="w-full sm:w-56" /> : null}
@@ -377,13 +394,15 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
       {/* Admin only — the /start wizard passes its own token-based actions and has no admin session for the AI actions. */}
       {actions === DEFAULT_ACTIONS && photos.length > 0 ? (
         <>
-          <GalleryAiTagger eventId={eventId} photos={photos} />
-          <ThenNowPanel eventId={eventId} photos={photos} initialPairs={initialPairs} />
-          <CleanupPanel photos={photos} />
+          <GalleryAiTagger eventId={eventId} photos={photos.filter((photo) => !isVideoMedia(photo.url))} />
+          <ThenNowPanel eventId={eventId} photos={photos.filter((photo) => !isVideoMedia(photo.url))} initialPairs={initialPairs} />
+          <CleanupPanel photos={photos.filter((photo) => !isVideoMedia(photo.url))} />
         </>
       ) : null}
 
       <p className="mt-3 text-xs text-navy-700/40">
+        Photos up to 50MB; MP4 videos up to 300MB.
+        {actions === DEFAULT_ACTIONS ? " Deleted items can be restored from the Recycle Bin for 30 days." : ""}
         Drag the <GripVertical size={11} className="inline" /> handle on any photo to reorder within its category.
         The same order appears on the Big Screen display.
       </p>
@@ -391,8 +410,7 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
       {/* Per-category draggable grids */}
       {CATEGORY_OPTIONS.map((cat) => (
         <CategoryGrid
-          key={cat.value}
-          category={cat.value}
+          key={`${cat.value}:${photos.filter((p) => p.category === cat.value).map((p) => p.id).join(",")}`}
           label={cat.label}
           initialPhotos={photos.filter((p) => p.category === cat.value)}
           busyId={busyId}
@@ -402,7 +420,7 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
 
       {photos.length === 0 ? (
         <p className="mt-8 rounded-xl border border-dashed border-navy-950/15 py-16 text-center text-sm text-navy-700/50">
-          No gallery photos yet — upload some above.
+          No gallery photos or videos yet — upload some above.
         </p>
       ) : null}
     </div>

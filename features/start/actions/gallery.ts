@@ -1,4 +1,5 @@
 "use server";
+import { assertEventMediaPath } from "@/lib/curated-media";
 
 import { requireDraftEvent } from "@/features/start/draft-auth";
 import { createSignedGalleryUpload } from "@/services/uploads";
@@ -34,6 +35,7 @@ export async function draftConfirmGalleryUploadAction(
   try {
     const event = await requireDraftEvent(token);
     if (event.id !== eventId) return { success: false as const, error: "This link doesn't match that event." };
+    assertEventMediaPath(eventId, path);
     await createGalleryPhoto({ eventId: event.id, category, storagePath: path, caption });
     return { success: true as const };
   } catch (err) {

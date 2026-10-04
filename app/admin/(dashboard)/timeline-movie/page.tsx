@@ -1,3 +1,4 @@
+import { isVideoMedia } from "@/lib/curated-media";
 import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -42,9 +43,9 @@ export default async function AdminTimelineMoviePage() {
     period: m.period,
     title: m.title,
     description: m.description ?? "",
-    imageUrl: m.imageUrl,
+    imageUrl: isVideoMedia(m.imageUrl) ? null : m.imageUrl,
   }));
-  const fallbackPhotoUrls = photos.map((p) => p.url);
+  const fallbackPhotoUrls = photos.filter((p) => !isVideoMedia(p.url)).map((p) => p.url);
 
   const isClient = admin?.role === "client";
   const used = isClient ? await countTimelineMovieGenerations(event.id) : 0;

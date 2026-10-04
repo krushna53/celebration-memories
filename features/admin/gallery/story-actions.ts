@@ -1,4 +1,5 @@
 "use server";
+import { isVideoMedia } from "@/lib/curated-media";
 
 import { revalidatePath } from "next/cache";
 
@@ -28,6 +29,7 @@ async function requireAdminForPhoto(id: string) {
   const photo = await getGalleryPhotoById(id);
   if (!photo) throw new Error("Photo not found.");
   const admin = await requireAdminForOrganizerArea(photo.eventId, "gallery");
+  if (isVideoMedia(photo.url)) throw new Error("This tool is available for photos only.");
   return { admin, photo };
 }
 
@@ -61,6 +63,7 @@ function validBox(box: CropBox): CropBox {
 /** The untouched original's URL — the crop editor draws on this, and cleanup always re-crops from it. */
 async function originalUrl(photoId: string): Promise<string> {
   const paths = await getGalleryPhotoPaths(photoId);
+  if (paths && isVideoMedia(paths.storagePath)) throw new Error("Photo cleanup is not available for videos.");
   if (!paths) throw new Error("Photo not found.");
   return publicMediaUrl("gallery", paths.originalStoragePath ?? paths.storagePath);
 }
@@ -78,6 +81,7 @@ export async function detectPrintBoundsAction(photoId: string) {
   try {
     await requireAdminForPhoto(photoId);
     const paths = await getGalleryPhotoPaths(photoId);
+    if (paths && isVideoMedia(paths.storagePath)) throw new Error("Photo cleanup is not available for videos.");
     if (!paths) throw new Error("Photo not found.");
     // OpenAI fetches the image itself, so it needs a link it can reach.
     const url = await externalMediaUrl("gallery", paths.originalStoragePath ?? paths.storagePath, 600);

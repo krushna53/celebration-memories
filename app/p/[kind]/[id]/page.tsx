@@ -1,3 +1,4 @@
+import { isVideoMedia } from "@/lib/curated-media";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: PublicMediaPageProps): Promis
     : `${data.honoreeName}'s ${data.eventTitle}`;
   const description = `Shared via ${SITE_NAME} · Hosted by ${data.hostedBy}.`;
 
-  let ogImage: string | null = item.kind === "video" ? null : item.url;
+  let ogImage: string | null = (item.kind === "video" || isVideoMedia(item.url)) ? null : item.url;
   if (!ogImage) {
     ogImage = item.event.shareImagePath
       ? publicMediaUrl("gallery", item.event.shareImagePath)
@@ -57,7 +58,7 @@ export async function generateMetadata({ params }: PublicMediaPageProps): Promis
       description,
       type: "website",
       images: ogImage ? [{ url: ogImage, width: 1200, height: 900 }] : undefined,
-      videos: item.kind === "video" ? [{ url: item.url, secureUrl: item.url, type: "video/mp4" }] : undefined,
+      videos: (item.kind === "video" || isVideoMedia(item.url)) ? [{ url: item.url, secureUrl: item.url, type: "video/mp4" }] : undefined,
     },
     twitter: {
       card: ogImage ? "summary_large_image" : "summary",
@@ -96,7 +97,7 @@ export default async function PublicMediaPage({ params }: PublicMediaPageProps) 
         </Link>
 
         <div className="mt-6 overflow-hidden rounded-2xl border border-navy-950/10 bg-white shadow-sm">
-          {item.kind === "video" ? (
+          {(item.kind === "video" || isVideoMedia(item.url)) ? (
             <video controls src={item.url} className="w-full bg-navy-950" />
           ) : (
             <div className="relative aspect-[4/3] w-full bg-navy-950/5">

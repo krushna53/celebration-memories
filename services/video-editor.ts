@@ -1,3 +1,4 @@
+import { isVideoMedia } from "@/lib/curated-media";
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -78,7 +79,7 @@ export async function listVideoEditorMediaLibrary(eventId: string): Promise<Vide
 
   const galleryClips: VideoEditorClip[] = galleryPhotos.map((p) => ({
     id: `gallery-${p.id}`,
-    kind: "photo",
+    kind: isVideoMedia(p.url) ? "video" : "photo",
     source: "gallery",
     url: p.url,
     thumbnailUrl: null,
@@ -91,7 +92,7 @@ export async function listVideoEditorMediaLibrary(eventId: string): Promise<Vide
     .filter((m) => m.imageUrl)
     .map((m) => ({
       id: `timeline-${m.id}`,
-      kind: "photo",
+      kind: isVideoMedia(m.imageUrl) ? "video" : "photo",
       source: "timeline",
       url: m.imageUrl!,
       thumbnailUrl: null,

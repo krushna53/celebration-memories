@@ -1,4 +1,5 @@
 "use server";
+import { assertEventMediaPath } from "@/lib/curated-media";
 
 import { requireDraftEvent } from "@/features/start/draft-auth";
 import { createMilestone, deleteMilestone, getMilestoneById, updateMilestone } from "@/services/timeline";
@@ -33,7 +34,8 @@ export async function draftUpdateMilestoneAction(
   input: { period?: string; title?: string; description?: string; sortOrder?: number; imagePath?: string | null },
 ) {
   try {
-    await ownedMilestone(token, id);
+    const { event } = await ownedMilestone(token, id);
+    if (input.imagePath) assertEventMediaPath(event.id, input.imagePath);
     await updateMilestone(id, input);
     return { success: true as const };
   } catch (err) {
@@ -60,7 +62,8 @@ export async function draftRequestTimelineImageUploadUrlAction(
 
 export async function draftConfirmTimelineImageUploadAction(token: string, milestoneId: string, path: string) {
   try {
-    await ownedMilestone(token, milestoneId);
+    const { event } = await ownedMilestone(token, milestoneId);
+    assertEventMediaPath(event.id, path);
     await updateMilestone(milestoneId, { imagePath: path });
     return { success: true as const };
   } catch (err) {

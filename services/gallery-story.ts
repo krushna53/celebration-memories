@@ -1,3 +1,4 @@
+import { isVideoMedia } from "@/lib/curated-media";
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -54,7 +55,7 @@ export async function createGalleryPair(input: {
     getGalleryPhotoById(input.thenPhotoId),
     getGalleryPhotoById(input.nowPhotoId),
   ]);
-  if (!thenPhoto || !nowPhoto || thenPhoto.eventId !== input.eventId || nowPhoto.eventId !== input.eventId) {
+  if (!thenPhoto || !nowPhoto || isVideoMedia(thenPhoto.url) || isVideoMedia(nowPhoto.url) || thenPhoto.eventId !== input.eventId || nowPhoto.eventId !== input.eventId) {
     throw new Error("Photo not found.");
   }
   const { count } = await supabaseAdmin()

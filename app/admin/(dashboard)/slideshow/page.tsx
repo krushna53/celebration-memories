@@ -1,3 +1,4 @@
+import { isVideoMedia } from "@/lib/curated-media";
 import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -39,7 +40,7 @@ export default async function AdminSlideshowPage() {
   // Gallery photos and Timeline milestone photos are both selectable as
   // slides — prefixed IDs so the two sources' UUIDs can't collide once
   // merged into one selection list. See types/content.ts's SlideSource.
-  const gallerySlides: SlideSource[] = photos.map((p) => ({
+  const gallerySlides: SlideSource[] = photos.filter((p) => !isVideoMedia(p.url)).map((p) => ({
     id: `photo-${p.id}`,
     url: p.url,
     caption: p.caption,
@@ -47,7 +48,7 @@ export default async function AdminSlideshowPage() {
     captionSubtitle: null,
   }));
   const timelineSlides: SlideSource[] = milestones
-    .filter((m) => m.imageUrl)
+    .filter((m) => m.imageUrl && !isVideoMedia(m.imageUrl))
     .map((m) => ({
       id: `timeline-${m.id}`,
       url: m.imageUrl!,

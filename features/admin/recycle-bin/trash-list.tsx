@@ -1,4 +1,6 @@
 "use client";
+import { isVideoMedia } from "@/lib/curated-media";
+
 
 import { useState } from "react";
 import { Loader2, RotateCcw, Trash2 } from "lucide-react";
@@ -60,11 +62,11 @@ export function TrashList({ items: initialItems }: TrashListProps) {
             key={`${item.kind}-${item.id}`}
             className="flex flex-col overflow-hidden rounded-xl border border-navy-950/10 bg-white shadow-sm"
           >
-            {(item.kind === "gallery" || item.kind === "photo") && item.url ? (
+            {(item.kind === "gallery" || item.kind === "photo") && !isVideoMedia(item.url) && item.url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={item.url} alt="" className="aspect-[4/3] w-full object-cover opacity-80" />
             ) : null}
-            {item.kind === "video" && item.url ? (
+            {(item.kind === "video" || isVideoMedia(item.url)) && item.url ? (
               <video src={item.url} controls className="aspect-video w-full bg-navy-950 opacity-80" />
             ) : null}
             {item.kind === "audio" && item.url ? (

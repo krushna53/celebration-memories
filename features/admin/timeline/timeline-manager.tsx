@@ -1,5 +1,6 @@
 "use client";
 
+import { CURATED_MEDIA_ACCEPT, isVideoMedia } from "@/lib/curated-media";
 import { useRef, useState } from "react";
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 
@@ -117,12 +118,12 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
 
     setImageBusyId(milestoneId);
     try {
-      const file = await compressImage(rawFile);
+      const file = rawFile.type.startsWith("video/") || isVideoMedia(rawFile.name) ? rawFile : await compressImage(rawFile);
       const signed = await actions.requestImageUpload(eventId, file.name, file.type, file.size);
       if (!signed.success) throw new Error(signed.error);
 
       const { bucket, path, token } = signed.data;
-      const { error: uploadError } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, token, file);
+      const { error: uploadError } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, token, file, { contentType: signed.data.contentType });
       if (uploadError) throw new Error(uploadError.message);
 
       const confirmed = await actions.confirmImageUpload(milestoneId, path);
@@ -136,7 +137,7 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
   }
 
   async function handleRemoveImage(milestoneId: string) {
-    if (!confirm("Remove this milestone's photo?")) return;
+    if (!confirm("Remove this milestone’s photo or video?")) return;
     setImageBusyId(milestoneId);
     const result = await actions.removeImage(milestoneId);
     if (result.success) {
@@ -152,7 +153,7 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+        accept={CURATED_MEDIA_ACCEPT}
         className="hidden"
         onChange={(e) => e.target.files?.[0] && handleImageFile(e.target.files[0])}
       />
@@ -184,7 +185,7 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
         </div>
       </div>
       <p className="mt-2 text-xs text-navy-700/50">
-        Add the milestone first, then attach a photo to it below — photos also become
+        Add the milestone first, then attach a photo or MP4 video (up to 300MB) below — photos also become
         selectable slides in the Slideshow Video composer.
       </p>
 
@@ -214,6 +215,7 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
             </div>
 
             {m.imageUrl ? (
+              isVideoMedia(m.imageUrl) ? <video src={m.imageUrl} controls playsInline preload="metadata" aria-label={m.title} className="w-40 shrink-0 rounded-lg bg-black" /> :
               // eslint-disable-next-line @next/next/no-img-element
               <img src={m.imageUrl} alt={m.title} className="h-16 w-16 shrink-0 rounded-lg object-cover" />
             ) : (
@@ -235,7 +237,7 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
                   onClick={() => triggerImageUpload(m.id)}
                 >
                   {imageBusyId === m.id ? <Loader2 className="animate-spin" size={13} /> : <Upload size={13} />}
-                  {m.imageUrl ? "Replace photo" : "Add photo"}
+                  {m.imageUrl ? "Replace media" : "Add photo or video"}
                 </Button>
                 {imageBusyId !== m.id ? (
                   <GooglePhotosButton

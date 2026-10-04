@@ -1,3 +1,4 @@
+import { isVideoMedia } from "@/lib/curated-media";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 import type { MemoryItem } from "@/types/memory";
@@ -81,6 +82,10 @@ export function buildDisplaySlides(params: {
   }
 
   for (const photo of galleryPhotos) {
+    if (isVideoMedia(photo.url)) {
+      slides.push({ id: `gallery-${photo.id}`, kind: "memory-video", url: photo.url, authorName: "", caption: photo.caption });
+      continue;
+    }
     slides.push({
       id: `gallery-${photo.id}`,
       kind: "gallery-photo",
@@ -90,6 +95,10 @@ export function buildDisplaySlides(params: {
   }
 
   for (const milestone of milestones) {
+    if (milestone.imageUrl && isVideoMedia(milestone.imageUrl)) {
+      slides.push({ id: `timeline-${milestone.id}`, kind: "memory-video", url: milestone.imageUrl, authorName: milestone.title, caption: `${milestone.period} — ${milestone.description}` });
+      continue;
+    }
     slides.push({
       id: `timeline-${milestone.id}`,
       kind: "timeline",

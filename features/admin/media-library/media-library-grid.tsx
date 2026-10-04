@@ -1,4 +1,6 @@
 "use client";
+import { isVideoMedia } from "@/lib/curated-media";
+
 
 import { useMemo, useState } from "react";
 import { Check, Copy, Download, Loader2, Share2, Sparkles, Square, SquareCheck, Trash2, X } from "lucide-react";
@@ -294,10 +296,10 @@ export function MediaLibraryGrid({ eventId, items: initialItems }: MediaLibraryG
                       <Sparkles size={14} />
                     </span>
                   ) : null}
-                  {isPlayableImage(item.kind) ? (
+                  {(isPlayableImage(item.kind) && !isVideoMedia(item.url)) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={item.url} alt="" className="aspect-[4/3] w-full object-cover" />
-                  ) : isPlayableVideo(item.kind) ? (
+                  ) : (isPlayableVideo(item.kind) || isVideoMedia(item.url)) ? (
                     <video src={item.url} controls className="aspect-video w-full bg-navy-950" />
                   ) : (
                     <div className="bg-navy-950 px-4 py-6">

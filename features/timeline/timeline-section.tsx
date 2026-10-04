@@ -1,3 +1,4 @@
+import { isVideoMedia } from "@/lib/curated-media";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import type { TimelineMilestoneRecord } from "@/types/content";
@@ -42,6 +43,7 @@ export function TimelineSection({ milestones }: TimelineSectionProps) {
                   {milestone.description}
                 </p>
                 {milestone.imageUrl ? (
+                  isVideoMedia(milestone.imageUrl) ? <video src={milestone.imageUrl} controls playsInline preload="metadata" aria-label={milestone.title} className="mt-4 aspect-video w-full max-w-lg rounded-xl bg-black" /> :
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={milestone.imageUrl}

@@ -1,3 +1,4 @@
+import { isVideoMedia } from "@/lib/curated-media";
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -67,17 +68,8 @@ export async function listGalleryPhotos(eventId: string): Promise<GalleryPhotoRe
 
 /** One representative photo for an event card (e.g. the /events directory). */
 export async function getCoverPhoto(eventId: string): Promise<string | null> {
-  const { data, error } = await supabaseAdmin()
-    .from("gallery_photos")
-    .select("storage_path")
-    .eq("event_id", eventId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw new Error(`Failed to load cover photo: ${error.message}`);
-  return data ? publicMediaUrl("gallery", data.storage_path) : null;
+  const photos = await listGalleryPhotos(eventId);
+  return photos.find((photo) => !isVideoMedia(photo.url))?.url ?? null;
 }
 
 /** Used by the wizard's draft-scoped delete action to verify a photo actually belongs to the caller's draft event before deleting it — see features/start/actions/gallery.ts. Filters out trashed photos (deleted_at not null) same as every other normal read — a moved-to-trash item should behave as "not found" everywhere except the Recycle Bin's own queries (see services/recycle-bin.ts's getRecycleItemEventId for the unfiltered equivalent). */

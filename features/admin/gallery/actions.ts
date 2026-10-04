@@ -1,4 +1,5 @@
 "use server";
+import { assertEventMediaPath, isVideoMedia } from "@/lib/curated-media";
 
 import { revalidatePath } from "next/cache";
 
@@ -21,6 +22,8 @@ function revalidateGalleryPaths() {
   revalidatePath("/admin/recycle-bin");
   revalidatePath("/admin/media-library");
   revalidatePath("/");
+  revalidatePath("/events/[slug]", "page");
+  revalidatePath("/p/[kind]/[id]", "page");
 }
 
 export async function requestGalleryUploadUrlAction(
@@ -48,6 +51,7 @@ export async function confirmGalleryUploadAction(
     const admin = await requireAdminForOrganizerArea(eventId, "gallery");
     // Best-effort — never let a snapshot failure block the actual save.
     await snapshotGallery(eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
+    assertEventMediaPath(eventId, path);
     await createGalleryPhoto({ eventId, category, storagePath: path, caption });
     revalidateGalleryPaths();
     return { success: true as const };
@@ -123,6 +127,7 @@ export async function suggestGalleryTagsAction(id: string) {
   try {
     const { photo } = await requireAdminForPhoto(id);
     // OpenAI fetches the image itself, so it needs a link it can reach.
+    if (isVideoMedia(photo.url)) throw new Error("Auto-tagging is available for photos only.");
     const suggestion = await suggestGalleryTags(await externalizeMediaLink(photo.url, { ttlSeconds: 600 }));
     return { success: true as const, data: suggestion };
   } catch (err) {

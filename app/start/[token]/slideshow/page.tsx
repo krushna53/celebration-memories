@@ -1,3 +1,4 @@
+import { isVideoMedia } from "@/lib/curated-media";
 import { notFound } from "next/navigation";
 
 import { getDraftEventByToken } from "@/services/event-drafts";
@@ -45,7 +46,7 @@ export default async function WizardSlideshowPage({ params }: { params: Promise<
     : [];
 
   const gallerySlides: SlideSource[] = photos
-    .filter((p) => p.url !== shareImageUrl)
+    .filter((p) => p.url !== shareImageUrl && !isVideoMedia(p.url))
     .map((p) => ({
       id: `photo-${p.id}`,
       url: p.url,
@@ -54,7 +55,7 @@ export default async function WizardSlideshowPage({ params }: { params: Promise<
       captionSubtitle: null,
     }));
   const timelineSlides: SlideSource[] = milestones
-    .filter((m) => m.imageUrl)
+    .filter((m) => m.imageUrl && !isVideoMedia(m.imageUrl))
     .map((m) => ({
       id: `timeline-${m.id}`,
       url: m.imageUrl!,
