@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
     return withRefCookie(NextResponse.next({ request: { headers: requestHeaders } }), refCode);
   }
 
-  if (!request.nextUrl.pathname.startsWith("/admin")) {
+  if (!request.nextUrl.pathname.startsWith("/admin") && request.nextUrl.pathname !== "/login") {
     // Every other route: no session to refresh, just carry the referral cookie forward.
     return withRefCookie(NextResponse.next({ request }), refCode);
   }

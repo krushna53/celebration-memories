@@ -9,7 +9,8 @@ import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminTeamPage() {
+export default async function AdminTeamPage({ searchParams }: { searchParams: Promise<{ add?: string }> }) {
+  const { add } = await searchParams;
   const admin = await getCurrentAdmin();
   if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
@@ -29,7 +30,7 @@ export default async function AdminTeamPage() {
         directly and share it however works best.
       </p>
       <div className="mt-6">
-        <TeamManager eventId={event.id} currentAdminId={admin.id} initialMembers={members} />
+        <TeamManager key={event.id} initiallyAdding={add === "1"} eventId={event.id} currentAdminId={admin.id} initialMembers={members} />
       </div>
     </div>
   );

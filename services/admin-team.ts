@@ -70,13 +70,30 @@ async function assertRoomAndUniqueEmail(eventId: string, email: string): Promise
 
   const { data: existing, error: existingError } = await supabaseAdmin()
     .from("admins")
-    .select("id")
-    .ilike("email", email.trim())
-    .maybeSingle<{ id: string }>();
+    .select("id, event_id")
+    .ilike("email", email.trim().replace(/[\\%_]/g, "\\$&"))
+    .maybeSingle<{ id: string; event_id: string | null }>();
 
   if (existingError) throw new Error(`Failed to check existing accounts: ${existingError.message}`);
   if (existing) {
-    throw new Error("That email already has dashboard access somewhere — use a different email.");
+    throw new Error(existing.event_id === eventId
+      ? "This person is already on this event’s team."
+      : "This person already manages another event. Their existing access has not been changed.");
+  }
+}
+
+/** Recover an existing shared Auth account without changing its credentials. */
+async function findExistingAuthUser(email: string, error: { code?: string; message: string }) {
+  if (!(["email_exists", "user_already_exists"].includes(error.code ?? "") || /already.*registered|already.*exists/i.test(error.message))) {
+    throw new Error(error.message);
+  }
+  const client = supabaseAdmin();
+  for (let page = 1; ; page++) {
+    const { data, error: lookupError } = await client.auth.admin.listUsers({ page, perPage: 100 });
+    if (lookupError) throw new Error(`Failed to check existing login: ${lookupError.message}`);
+    const user = data.users.find((candidate) => candidate.email?.toLowerCase() === email);
+    if (user) return user;
+    if (data.users.length < 100) throw new Error("Could not find the existing login. Please try again.");
   }
 }
 
@@ -98,7 +115,7 @@ export interface InviteTeamMemberInput {
  * right away, so there's no need to replicate that trigger here.
  */
 export async function inviteTeamMemberByEmail({ eventId, name, email }: InviteTeamMemberInput): Promise<void> {
-  const trimmedEmail = email.trim();
+  const trimmedEmail = email.trim().toLowerCase();
   const trimmedName = name.trim();
   if (!trimmedName) throw new Error("Please enter a name.");
   if (!trimmedEmail) throw new Error("Please enter an email.");
@@ -111,12 +128,17 @@ export async function inviteTeamMemberByEmail({ eventId, name, email }: InviteTe
     redirectTo: `${SITE_URL}/admin/set-password`,
   });
 
-  if (error || !data.user) {
-    throw new Error(error?.message ?? "Failed to send the invite email.");
+  const user = error ? await findExistingAuthUser(trimmedEmail, error) : data.user;
+  if (!user) throw new Error("Failed to send the invite email.");
+  if (error) {
+    const { error: resetError } = await client.auth.resetPasswordForEmail(trimmedEmail, {
+      redirectTo: `${SITE_URL}/admin/set-password`,
+    });
+    if (resetError) throw new Error(`Failed to send the login email: ${resetError.message}`);
   }
 
   const { error: insertError } = await client.from("admins").insert({
-    id: data.user.id,
+    id: user.id,
     email: trimmedEmail,
     name: trimmedName,
     role: "client",
@@ -127,7 +149,7 @@ export async function inviteTeamMemberByEmail({ eventId, name, email }: InviteTe
     // The auth user was created but the allowlist row wasn't — undo the
     // auth side so this doesn't leave a half-provisioned account that
     // can never actually reach the dashboard.
-    await client.auth.admin.deleteUser(data.user.id).catch(() => {});
+    if (!error) await client.auth.admin.deleteUser(user.id).catch(() => {});
     throw new Error(`Failed to grant dashboard access: ${insertError.message}`);
   }
 }
@@ -152,7 +174,7 @@ export async function addTeamMemberWithPassword({
   email,
   password,
 }: AddTeamMemberWithPasswordInput): Promise<void> {
-  const trimmedEmail = email.trim();
+  const trimmedEmail = email.trim().toLowerCase();
   const trimmedName = name.trim();
   if (!trimmedName) throw new Error("Please enter a name.");
   if (!trimmedEmail) throw new Error("Please enter an email.");
@@ -168,12 +190,11 @@ export async function addTeamMemberWithPassword({
     user_metadata: { name: trimmedName },
   });
 
-  if (error || !data.user) {
-    throw new Error(error?.message ?? "Failed to create the account.");
-  }
+  const user = error ? await findExistingAuthUser(trimmedEmail, error) : data.user;
+  if (!user) throw new Error("Failed to create the account.");
 
   const { error: insertError } = await client.from("admins").insert({
-    id: data.user.id,
+    id: user.id,
     email: trimmedEmail,
     name: trimmedName,
     role: "client",
@@ -181,21 +202,12 @@ export async function addTeamMemberWithPassword({
   });
 
   if (insertError) {
-    await client.auth.admin.deleteUser(data.user.id).catch(() => {});
+    if (!error) await client.auth.admin.deleteUser(user.id).catch(() => {});
     throw new Error(`Failed to grant dashboard access: ${insertError.message}`);
   }
 }
 
-/**
- * Removes a team member's login entirely (both the admins allowlist
- * row and their Supabase Auth account) — same two-step pattern as
- * services/admin-danger-zone.ts's deleteAdminAccountAndAssets, minus
- * the event/asset deletion (removing a team member should never touch
- * the event itself, only that one person's access to it). Re-verifies
- * the target actually belongs to `eventId` server-side rather than
- * trusting the caller, and refuses to remove the last remaining admin
- * for an event so nobody can lock everyone out by mistake.
- */
+/** Removes event access while preserving the shared login and other products. */
 export async function removeTeamMember(eventId: string, adminId: string): Promise<void> {
   const client = supabaseAdmin();
 
@@ -220,10 +232,6 @@ export async function removeTeamMember(eventId: string, adminId: string): Promis
     throw new Error("You can't remove the last team member on this event.");
   }
 
-  await client.from("admins").delete().eq("id", adminId);
-
-  const { error: authError } = await client.auth.admin.deleteUser(adminId);
-  if (authError) {
-    throw new Error(`Removed their dashboard access, but couldn't remove their login itself: ${authError.message}`);
-  }
+  const { error: deleteError } = await client.from("admins").delete().eq("id", adminId).eq("event_id", eventId);
+  if (deleteError) throw new Error(`Failed to remove dashboard access: ${deleteError.message}`);
 }

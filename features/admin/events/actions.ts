@@ -157,3 +157,12 @@ export async function createOwnerEventAction(): Promise<void> {
   revalidatePath("/admin", "layout");
   redirect("/admin/event-settings");
 }
+
+/** Opens account provisioning for the selected event without changing the owner's login. */
+export async function manageEventTeamAction(eventId: string): Promise<void> {
+  await requireOwner();
+  if (!await getEventById(eventId)) throw new Error("Event not found.");
+  await setActiveEventOverrideId(eventId);
+  revalidatePath("/admin", "layout");
+  redirect("/admin/team?add=1");
+}

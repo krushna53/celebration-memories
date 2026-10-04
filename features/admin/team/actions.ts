@@ -7,9 +7,11 @@ import {
   addTeamMemberWithPassword,
   inviteTeamMemberByEmail,
   removeTeamMember,
+  getTeamMembers,
+  type TeamMember,
 } from "@/services/admin-team";
 
-export type TeamActionResult = { success: true } | { success: false; error: string };
+export type TeamActionResult = { success: true; member?: TeamMember } | { success: false; error: string };
 
 /**
  * Available to the owner (any event) or the client who owns this
@@ -22,7 +24,9 @@ export async function inviteTeamMemberAction(eventId: string, name: string, emai
     await requireAdminForEvent(eventId);
     await inviteTeamMemberByEmail({ eventId, name, email });
     revalidatePath("/admin/team");
-    return { success: true };
+    revalidatePath("/admin/events");
+    const member = (await getTeamMembers(eventId)).find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
+    return { success: true, member };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to send invite." };
   }
@@ -38,7 +42,9 @@ export async function addTeamMemberWithPasswordAction(
     await requireAdminForEvent(eventId);
     await addTeamMemberWithPassword({ eventId, name, email, password });
     revalidatePath("/admin/team");
-    return { success: true };
+    revalidatePath("/admin/events");
+    const member = (await getTeamMembers(eventId)).find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
+    return { success: true, member };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to add team member." };
   }

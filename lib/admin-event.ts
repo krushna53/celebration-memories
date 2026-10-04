@@ -41,19 +41,15 @@ import type { EventRecord } from "@/types/event";
  *   no-event-state.tsx then points them at All Events / New Event).
  */
 export async function resolveAdminEvent(admin: CurrentAdmin): Promise<EventRecord | null> {
-  if (admin.eventId) {
-    return getEventById(admin.eventId);
-  }
-
   if (admin.role !== "owner") {
-    return null;
+    return admin.eventId ? getEventById(admin.eventId) : null;
   }
 
+  // The owner's explicit selection takes priority over their assigned event.
   const overrideId = await getActiveEventOverrideId();
-  if (overrideId) {
-    const overridden = await getEventById(overrideId);
-    if (overridden) return overridden;
-  }
+  if (overrideId) return getEventById(overrideId);
+
+  if (admin.eventId) return getEventById(admin.eventId);
 
   const flagship = await getEventBySlug(EVENT_SLUG);
   if (flagship) return flagship;

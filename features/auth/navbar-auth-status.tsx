@@ -81,7 +81,10 @@ export function NavbarAuthStatus({ variant, onNavigate }: NavbarAuthStatusProps)
     load();
     const {
       data: { subscription },
-    } = supabaseBrowser().auth.onAuthStateChange(() => load());
+    } = supabaseBrowser().auth.onAuthStateChange(() => {
+      // Run outside the auth callback lock before making another auth request.
+      setTimeout(() => { if (!cancelled) void load(); }, 0);
+    });
     return () => {
       cancelled = true;
       subscription.unsubscribe();
@@ -117,11 +120,7 @@ export function NavbarAuthStatus({ variant, onNavigate }: NavbarAuthStatusProps)
           <Link href={dashboardPath} onClick={onNavigate} className={LOGIN_PILL_CLASSES.mobile}>
             Go to Dashboard
           </Link>
-        ) : (
-          <Link href="/login" onClick={onNavigate} className={LOGIN_PILL_CLASSES.mobile}>
-            Login
-          </Link>
-        )}
+        ) : null}
         <button type="button" onClick={handleSignOut} className={cn(LINK_CLASSES.mobile, "gap-2")}>
           <LogOut size={16} /> Logout
         </button>

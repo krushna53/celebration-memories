@@ -3,7 +3,7 @@ import { CalendarCheck, Eye, Globe, MonitorPlay, Settings, UserPlus } from "luci
 
 import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
 import type { EventSummary } from "@/services/events";
-import { setActiveAdminEventAction, viewAsClientAction } from "@/features/admin/events/actions";
+import { setActiveAdminEventAction, viewAsClientAction, manageEventTeamAction } from "@/features/admin/events/actions";
 import { VisibilityToggle } from "@/features/admin/events/visibility-toggle";
 import { DeleteEventButton } from "@/features/admin/events/delete-event-button";
 
@@ -97,13 +97,11 @@ export function EventList({ events, membersByEvent }: EventListProps) {
                     ))}
                   </div>
                 ) : (
-                  <Link
-                    href={`/admin/register?event=${event.id}`}
-                    target="_blank"
-                    className="inline-flex items-center gap-1 text-xs text-gold-600 hover:text-gold-700"
-                  >
-                    <UserPlus size={12} /> Create Login
-                  </Link>
+                  <form action={manageEventTeamAction.bind(null, event.id)}>
+                    <button type="submit" className="inline-flex items-center gap-1 text-xs text-gold-600 hover:text-gold-700">
+                      <UserPlus size={12} /> Create Login
+                    </button>
+                  </form>
                 )}
               </td>
               <td data-label="Created" className="px-4 py-3 text-navy-700/70">

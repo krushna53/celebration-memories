@@ -21,6 +21,7 @@ interface TeamManagerProps {
   eventId: string;
   currentAdminId: string;
   initialMembers: TeamMember[];
+  initiallyAdding?: boolean;
 }
 
 /**
@@ -32,9 +33,9 @@ interface TeamManagerProps {
  * band. Both land the new person as a full-access "client" admin —
  * there's no lighter/view-only role today.
  */
-export function TeamManager({ eventId, currentAdminId, initialMembers }: TeamManagerProps) {
+export function TeamManager({ eventId, currentAdminId, initialMembers, initiallyAdding = false }: TeamManagerProps) {
   const [members, setMembers] = useState(initialMembers);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(initiallyAdding);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -42,7 +43,7 @@ export function TeamManager({ eventId, currentAdminId, initialMembers }: TeamMan
   const atCap = members.length >= TEAM_MEMBER_CAP;
 
   function handleRemove(member: TeamMember) {
-    if (!confirm(`Remove dashboard access for ${member.name || member.email}? They'll be signed out immediately.`)) {
+    if (!confirm(`Remove dashboard access for ${member.name || member.email}? They'll lose access to this event.`)) {
       return;
     }
     setListError(null);
@@ -180,17 +181,7 @@ function AddMemberForm({
       return;
     }
 
-    // The server actions don't return the new row's id/createdAt (they
-    // only revalidate the page), so this is an optimistic placeholder —
-    // good enough for the list to feel immediately responsive, and a
-    // page refresh will show the real created_at either way.
-    onAdded({
-      id: `pending-${Date.now()}`,
-      name: name.trim(),
-      email: email.trim(),
-      role: "client",
-      createdAt: new Date().toISOString(),
-    });
+    if (result.member) onAdded(result.member);
   }
 
   return (
@@ -236,8 +227,8 @@ function AddMemberForm({
 
       <p className="mt-3 text-xs text-navy-700/60">
         {method === "invite"
-          ? "They'll get an email with a link to set their own password."
-          : "You choose the password now and share it with them yourself — their account is ready immediately."}
+          ? "New users receive an invite; existing users receive a password reset link."
+          : "Choose a password for a new account. Existing users keep their current login and password."}
       </p>
 
       <form onSubmit={onSubmit} className="mt-4 grid gap-3">
