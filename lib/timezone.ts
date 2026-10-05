@@ -97,6 +97,20 @@ export function formatEventTime(iso: string, timezone: string = DEFAULT_EVENT_TI
 }
 
 /**
+ * The event's time line as guests see it — "11:00 AM IST – 3:00 PM IST",
+ * or "7:00 PM IST onwards" when the host only gave a start time
+ * (events.has_end_time = false). Every page that shows an event's time
+ * should go through this rather than joining start/end itself.
+ */
+export function formatEventTimeRange(
+  event: { startAt: string; endAt: string; hasEndTime?: boolean },
+  timezone: string = DEFAULT_EVENT_TIMEZONE,
+): string {
+  const start = formatEventTime(event.startAt, timezone);
+  return event.hasEndTime === false ? `${start} onwards` : `${start} – ${formatEventTime(event.endAt, timezone)}`;
+}
+
+/**
  * A pure calendar date (YYYY-MM-DD, no time-of-day — e.g.
  * events.occasion_date) formatted as "Month D, YYYY". Deliberately does
  * NOT take a timezone: a bare calendar date isn't an instant in time,

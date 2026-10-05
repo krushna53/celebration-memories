@@ -7,6 +7,7 @@ import { requireAdminForOrganizerArea } from "@/services/admin-auth";
 import { createMilestone, deleteMilestone, getMilestoneById, updateMilestone } from "@/services/timeline";
 import { createSignedTimelineImageUpload } from "@/services/uploads";
 import { snapshotTimeline } from "@/services/event-snapshots";
+import { reverseGeocode } from "@/lib/reverse-geocode";
 
 function revalidateTimelinePaths() {
   revalidatePath("/admin/timeline");
@@ -32,9 +33,9 @@ export async function createMilestoneAction(input: {
   try {
     const admin = await requireAdminForOrganizerArea(input.eventId, "timeline");
     await snapshotTimeline(input.eventId, admin.id).catch((err) => console.error("snapshotTimeline failed:", err));
-    await createMilestone(input);
+    const id = await createMilestone(input);
     revalidateTimelinePaths();
-    return { success: true as const };
+    return { success: true as const, data: { id } };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
   }
@@ -116,6 +117,21 @@ export async function deleteMilestoneAction(id: string) {
     await deleteMilestone(id);
     revalidateTimelinePaths();
     return { success: true as const };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/**
+ * Place name for a photo's GPS position ("Lonavala, Maharashtra") — used
+ * to pre-fill a milestone from a photo (lib/photo-metadata.ts). Read-only;
+ * gated like every other timeline action so it can't be used as an open
+ * geocoding proxy.
+ */
+export async function describePhotoPlaceAction(eventId: string, lat: number, lon: number) {
+  try {
+    await requireAdminForOrganizerArea(eventId, "timeline");
+    return { success: true as const, data: { place: await reverseGeocode(lat, lon) } };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
   }

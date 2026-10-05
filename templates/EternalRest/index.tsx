@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function EternalRest(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={eternalRestTheme}>
+    <TemplateThemeWrapper theme={eternalRestTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

@@ -76,6 +76,8 @@ export function deleteSession(token: string, id: string) {
 export interface PickedItem {
   id: string;
   type: "PHOTO" | "VIDEO" | string;
+  /** When the photo was taken (RFC 3339) — the downloaded copy has no EXIF, so this is the only capture date we get. */
+  createTime?: string;
   mediaFile: { baseUrl: string; mimeType: string; filename?: string };
 }
 

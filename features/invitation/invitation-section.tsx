@@ -38,8 +38,7 @@ export function InvitationSection({ data }: InvitationSectionProps) {
           </p>
 
           <p className="mt-6 text-sm tracking-wide text-navy-700/70">
-            {data.dayOfWeek}, {data.date} &middot; {data.startTime} &ndash;{" "}
-            {data.endTime}
+            {data.dayOfWeek}, {data.date} &middot; {data.timeRange}
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-4">
@@ -55,7 +54,7 @@ export function InvitationSection({ data }: InvitationSectionProps) {
                 subtitle: data.eventTitle,
                 details: [
                   `${data.dayOfWeek}, ${data.date}`,
-                  `${data.startTime} – ${data.endTime}`,
+                  data.timeRange,
                   ...(data.venueName ? [data.venueName] : []),
                 ],
               }}

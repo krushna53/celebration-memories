@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function InLovingMemory(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={inLovingMemoryTheme}>
+    <TemplateThemeWrapper theme={inLovingMemoryTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

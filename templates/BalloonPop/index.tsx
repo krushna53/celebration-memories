@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function BalloonPop(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={balloonPopTheme}>
+    <TemplateThemeWrapper theme={balloonPopTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

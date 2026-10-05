@@ -2,12 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { Check, GripVertical, Loader2, Pencil, Trash2, Upload } from "lucide-react";
+import { Check, GripVertical, Loader2, Pencil, Sparkles, Trash2, Upload } from "lucide-react";
 
 import { CURATED_MEDIA_ACCEPT, isVideoMedia } from "@/lib/curated-media";
 import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
+import { readPhotoMetadata } from "@/lib/photo-metadata";
 import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
 import type { GalleryPairRecord, GalleryPhotoRecord } from "@/types/content";
 import {
@@ -21,18 +22,22 @@ import { GalleryAiTagger } from "@/features/admin/gallery/ai-tagger";
 import { ThenNowPanel } from "@/features/admin/gallery/then-now-panel";
 import { CleanupPanel } from "@/features/admin/gallery/cleanup-panel";
 import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
+import { GoogleDriveButton } from "@/features/uploads/components/google-drive-button";
+import { PhotoMetadataTip } from "@/features/uploads/components/photo-metadata-tip";
 
 /** See AiImageActions's doc comment — same override pattern for the self-serve wizard. */
 export interface GalleryActions {
   requestUploadUrl: typeof requestGalleryUploadUrlAction;
   confirmUpload: typeof confirmGalleryUploadAction;
   deletePhoto: typeof deleteGalleryPhotoAction;
+  updatePhoto: typeof updateGalleryPhotoAction;
 }
 
 const DEFAULT_ACTIONS: GalleryActions = {
   requestUploadUrl: requestGalleryUploadUrlAction,
   confirmUpload: confirmGalleryUploadAction,
   deletePhoto: deleteGalleryPhotoAction,
+  updatePhoto: updateGalleryPhotoAction,
 };
 
 interface GalleryManagerProps {
@@ -41,6 +46,8 @@ interface GalleryManagerProps {
   actions?: GalleryActions;
   /** Admin only — "Then & Now" pairs for this event. */
   initialPairs?: GalleryPairRecord[];
+  /** Whether AI auto-sorting is available (OPENAI_API_KEY set) — shows the "Auto-sort & caption" toggle. */
+  aiAutoTagAvailable?: boolean;
 }
 
 const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
@@ -50,30 +57,48 @@ const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
 const inputCls =
   "w-full rounded border border-navy-950/15 bg-white px-2 py-1 text-xs text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-1 focus:ring-gold-500/30";
 
-/** Inline caption editor shown below a photo card when the pencil is clicked. */
+/** Inline caption + category editor shown below a photo card when the pencil is clicked. */
 function CaptionEditor({
   photoId,
   initial,
+  initialCategory,
+  updatePhoto,
   onSaved,
   onCancel,
 }: {
   photoId: string;
   initial: string;
-  onSaved: (caption: string) => void;
+  initialCategory: GalleryCategory;
+  updatePhoto: GalleryActions["updatePhoto"];
+  onSaved: (caption: string, category: GalleryCategory) => void;
   onCancel: () => void;
 }) {
   const [value, setValue] = useState(initial);
+  const [category, setCategory] = useState(initialCategory);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSave() {
     setSaving(true);
-    const result = await updateGalleryPhotoAction(photoId, { caption: value.trim() || null });
+    setError(null);
+    const result = await updatePhoto(photoId, { caption: value.trim() || null, category });
     setSaving(false);
-    if (result.success) onSaved(value.trim());
+    if (result.success) onSaved(value.trim(), category);
+    else setError(result.error);
   }
 
   return (
     <div className="flex flex-col gap-1.5 border-t border-navy-950/10 bg-ivory-50 p-2">
+      <select
+        value={category}
+        onChange={(e) => setCategory(e.target.value as GalleryCategory)}
+        aria-label="Category"
+        className={inputCls}
+      >
+        {CATEGORY_OPTIONS.map((c) => (
+          <option key={c.value} value={c.value}>{c.label}</option>
+        ))}
+      </select>
       <input
         className={inputCls}
         value={value}
@@ -99,6 +124,7 @@ function CaptionEditor({
           Cancel
         </button>
       </div>
+      {error ? <p className="text-[11px] text-red-600">{error}</p> : null}
     </div>
   );
 }
@@ -114,11 +140,19 @@ function CategoryGrid({
   initialPhotos,
   busyId,
   onDelete,
+  updatePhoto,
+  onUpdated,
+  autoTaggedIds,
 }: {
   label: string;
   initialPhotos: GalleryPhotoRecord[];
   busyId: string | null;
   onDelete: (id: string) => void;
+  updatePhoto: GalleryActions["updatePhoto"];
+  /** Lifts an edit to the parent — a category change moves the photo to another grid. */
+  onUpdated: (id: string, patch: { caption: string; category: GalleryCategory }) => void;
+  /** Photos the AI sorted/captioned in this session — get an "Auto" badge until the page reloads. */
+  autoTaggedIds: ReadonlySet<string>;
 }) {
   const [photos, setPhotos] = useState(initialPhotos);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -234,8 +268,8 @@ function CategoryGrid({
                 <button
                   type="button"
                   onClick={() => setEditingId(editingId === photo.id ? null : photo.id)}
-                  title="Edit caption"
-                  aria-label="Edit caption"
+                  title="Edit caption & category"
+                  aria-label="Edit caption and category"
                   className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 text-white"
                 >
                   <Pencil size={14} />
@@ -253,6 +287,15 @@ function CategoryGrid({
                 </button>
               </div>
 
+              {autoTaggedIds.has(photo.id) ? (
+                <span
+                  className="absolute right-1 top-1 inline-flex items-center gap-1 rounded-full bg-gold-500 px-2 py-0.5 text-[10px] font-medium text-navy-950 shadow"
+                  title="Category and caption suggested by AI — tap the pencil to change them"
+                >
+                  <Sparkles size={10} /> Auto
+                </span>
+              ) : null}
+
               {/* Caption badge */}
               {photo.caption && editingId !== photo.id ? (
                 <div className="bg-navy-950/60 px-2 py-1">
@@ -266,9 +309,12 @@ function CategoryGrid({
               <CaptionEditor
                 photoId={photo.id}
                 initial={photo.caption ?? ""}
-                onSaved={(caption) => {
+                initialCategory={photo.category}
+                updatePhoto={updatePhoto}
+                onSaved={(caption, category) => {
                   setPhotos((prev) => prev.map((p) => (p.id === photo.id ? { ...p, caption } : p)));
                   setEditingId(null);
+                  onUpdated(photo.id, { caption, category });
                 }}
                 onCancel={() => setEditingId(null)}
               />
@@ -280,7 +326,13 @@ function CategoryGrid({
   );
 }
 
-export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIONS, initialPairs = [] }: GalleryManagerProps) {
+export function GalleryManager({
+  eventId,
+  initialPhotos,
+  actions = DEFAULT_ACTIONS,
+  initialPairs = [],
+  aiAutoTagAvailable = false,
+}: GalleryManagerProps) {
   const router = useRouter();
   const [photos, setPhotos] = useState(initialPhotos);
   const [previousPhotos, setPreviousPhotos] = useState(initialPhotos);
@@ -294,14 +346,24 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [autoTag, setAutoTag] = useState(aiAutoTagAvailable);
+  const [autoTaggedIds, setAutoTaggedIds] = useState<ReadonlySet<string>>(new Set());
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function handleFiles(files: FileList | File[]) {
     setUploading(true);
     setError(null);
+    setNotice(null);
+    const tagged: string[] = [];
+    let withMetadata = 0;
 
     for (const rawFile of Array.from(files)) {
       try {
-        const file = rawFile.type.startsWith("video/") || isVideoMedia(rawFile.name) ? rawFile : await compressImage(rawFile);
+        const isVideo = rawFile.type.startsWith("video/") || isVideoMedia(rawFile.name);
+        // EXIF must be read from the original — compression strips it.
+        const meta = isVideo ? null : await readPhotoMetadata(rawFile);
+        if (meta && (meta.takenAt || meta.lat !== null)) withMetadata++;
+        const file = isVideo ? rawFile : await compressImage(rawFile);
         const signed = await actions.requestUploadUrl(eventId, file.name, file.type, file.size);
         if (!signed.success) throw new Error(signed.error);
 
@@ -311,17 +373,35 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
           .uploadToSignedUrl(path, token, file, { contentType: signed.data.contentType });
         if (uploadError) throw new Error(uploadError.message);
 
-        const confirmed = await actions.confirmUpload(eventId, category, path, uploadCaption.trim());
+        const confirmed = await actions.confirmUpload(eventId, category, path, uploadCaption.trim(), {
+          autoTag: autoTag && !isVideo,
+          takenAt: meta?.takenAt ?? null,
+          lat: meta?.lat ?? null,
+          lon: meta?.lon ?? null,
+        });
         if (!confirmed.success) throw new Error(confirmed.error);
+        if (confirmed.data.autoTagged) tagged.push(confirmed.data.id);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Upload failed.");
       }
     }
 
     setUploading(false);
+    if (tagged.length > 0) {
+      setAutoTaggedIds((prev) => new Set([...prev, ...tagged]));
+      setNotice(
+        `AI sorted ${tagged.length} photo${tagged.length === 1 ? "" : "s"} into categories and wrote captions${
+          withMetadata > 0 ? " using when and where they were taken" : ""
+        } — look for the “Auto” badge, and tap the pencil on any photo to change it.`,
+      );
+    }
     setUploadCaption("");
     if (inputRef.current) inputRef.current.value = "";
     router.refresh();
+  }
+
+  function handlePhotoUpdated(id: string, patch: { caption: string; category: GalleryCategory }) {
+    setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   }
 
   async function handleDelete(id: string) {
@@ -344,7 +424,9 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
       {/* Upload bar */}
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gold-500/20 bg-gold-500/5 p-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-medium uppercase tracking-widest text-navy-700/50">Category</label>
+          <label className="text-[10px] font-medium uppercase tracking-widest text-navy-700/50">
+            {autoTag ? "Category for videos / if unsure" : "Category"}
+          </label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as GalleryCategory)}
@@ -384,12 +466,39 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
           className="flex items-center gap-2 rounded-lg bg-gold-500 px-4 py-2 text-sm font-medium text-navy-950 disabled:opacity-60"
         >
           {uploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
-          Upload photos or videos to {CATEGORY_OPTIONS.find((c) => c.value === category)?.label}
+          {autoTag
+            ? "Upload photos or videos"
+            : `Upload photos or videos to ${CATEGORY_OPTIONS.find((c) => c.value === category)?.label}`}
         </button>
         {/* Imports straight into the selected category — renders nothing without a Google Photos client id. */}
         {!uploading ? <GooglePhotosButton onFiles={handleFiles} label="From Google Photos" className="w-full sm:w-56" /> : null}
+        {!uploading ? <GoogleDriveButton onFiles={handleFiles} includeVideos label="From Google Drive" className="w-full sm:w-56" /> : null}
+        {aiAutoTagAvailable ? (
+          <label className="flex w-full items-start gap-2 text-sm text-navy-950">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 accent-gold-500"
+              checked={autoTag}
+              onChange={(e) => setAutoTag(e.target.checked)}
+            />
+            <span>
+              <Sparkles size={13} className="mr-1 inline text-gold-600" />
+              Auto-sort &amp; caption photos with AI
+              <span className="block text-xs text-navy-700/60">
+                Picks the category and writes a short caption for each photo — using when and where it was taken, if
+                the photo knows. Anything you type in Caption above is kept instead. You can edit both afterwards.
+              </span>
+            </span>
+          </label>
+        ) : null}
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {notice ? (
+          <p className="w-full text-sm text-navy-950" role="status">
+            {notice}
+          </p>
+        ) : null}
       </div>
+      <PhotoMetadataTip pickHint="tap Upload, then choose Browse / Files / Drive instead of the gallery" />
 
       {/* Admin only — the /start wizard passes its own token-based actions and has no admin session for the AI actions. */}
       {actions === DEFAULT_ACTIONS && photos.length > 0 ? (
@@ -415,6 +524,9 @@ export function GalleryManager({ eventId, initialPhotos, actions = DEFAULT_ACTIO
           initialPhotos={photos.filter((p) => p.category === cat.value)}
           busyId={busyId}
           onDelete={handleDelete}
+          updatePhoto={actions.updatePhoto}
+          onUpdated={handlePhotoUpdated}
+          autoTaggedIds={autoTaggedIds}
         />
       ))}
 

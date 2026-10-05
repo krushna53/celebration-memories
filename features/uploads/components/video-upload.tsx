@@ -13,6 +13,7 @@ import {
 } from "@/hooks/use-media-recorder";
 import { UploadQueue } from "@/features/uploads/components/upload-queue";
 import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
+import { GoogleDriveButton } from "@/features/uploads/components/google-drive-button";
 
 const ASPECT_RATIO_LABELS: Record<AspectRatioPreset, string> = {
   "16:9": "Landscape",
@@ -494,8 +495,11 @@ export function VideoUpload({
         <span className="text-xs text-navy-700/60">MP4 or MOV · up to 1GB</span>
       </button>
 
-      {/* Renders nothing unless NEXT_PUBLIC_GOOGLE_PHOTOS_CLIENT_ID is set. */}
-      <GooglePhotosButton onVideos={addRemoteVideos} className="mt-3" />
+      {/* Each renders nothing until its Google keys are configured. */}
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+        <GooglePhotosButton onVideos={addRemoteVideos} className="flex-1" />
+        <GoogleDriveButton onFiles={(files) => addFiles(files)} includeVideos label="Google Drive" className="flex-1" />
+      </div>
 
       <button
         type="button"

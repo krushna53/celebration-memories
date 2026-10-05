@@ -8,8 +8,15 @@ import { wizardStepHref, nextWizardStep } from "@/features/start/wizard-steps";
 
 export const dynamic = "force-dynamic";
 
-export default async function WizardBasicsPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function WizardBasicsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ fromCard?: string }>;
+}) {
   const { token } = await params;
+  const { fromCard } = await searchParams;
   const event = await getDraftEventByToken(token);
   if (!event) notFound();
 
@@ -29,6 +36,7 @@ export default async function WizardBasicsPage({ params }: { params: Promise<{ t
         event={event}
         updateAction={draftUpdateEventAction}
         nextHref={next ? wizardStepHref(token, next.slug) : undefined}
+        prefilledFromCard={fromCard === "1"}
       />
     </WizardStepShell>
   );

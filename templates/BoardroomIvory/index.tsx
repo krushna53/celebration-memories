@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function BoardroomIvory(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={boardroomIvoryTheme}>
+    <TemplateThemeWrapper theme={boardroomIvoryTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

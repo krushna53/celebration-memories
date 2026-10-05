@@ -4,6 +4,7 @@ import { assertEventMediaPath } from "@/lib/curated-media";
 import { requireDraftEvent } from "@/features/start/draft-auth";
 import { createMilestone, deleteMilestone, getMilestoneById, updateMilestone } from "@/services/timeline";
 import { createSignedTimelineImageUpload } from "@/services/uploads";
+import { reverseGeocode } from "@/lib/reverse-geocode";
 
 /** Draft-token-gated mirrors of features/admin/timeline/actions.ts — see that file and draft-auth.ts. */
 
@@ -21,8 +22,8 @@ export async function draftCreateMilestoneAction(
   try {
     const event = await requireDraftEvent(token);
     if (event.id !== input.eventId) return { success: false as const, error: "This link doesn't match that event." };
-    await createMilestone(input);
-    return { success: true as const };
+    const id = await createMilestone(input);
+    return { success: true as const, data: { id } };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
   }
@@ -86,6 +87,17 @@ export async function draftDeleteMilestoneAction(token: string, id: string) {
     await ownedMilestone(token, id);
     await deleteMilestone(id);
     return { success: true as const };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/** Draft-token-gated mirror of describePhotoPlaceAction. */
+export async function draftDescribePhotoPlaceAction(token: string, eventId: string, lat: number, lon: number) {
+  try {
+    const event = await requireDraftEvent(token);
+    if (event.id !== eventId) return { success: false as const, error: "This link doesn't match that event." };
+    return { success: true as const, data: { place: await reverseGeocode(lat, lon) } };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
   }

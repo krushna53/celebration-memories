@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function RetroDisco(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={retroDiscoTheme}>
+    <TemplateThemeWrapper theme={retroDiscoTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

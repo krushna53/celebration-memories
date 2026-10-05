@@ -90,14 +90,28 @@ export async function createGalleryPhoto(input: {
   category: GalleryCategory;
   storagePath: string;
   caption?: string | null;
-}): Promise<void> {
-  const { error } = await supabaseAdmin().from("gallery_photos").insert({
-    event_id: input.eventId,
-    category: input.category,
-    storage_path: input.storagePath,
-    caption: input.caption || null,
-  });
-  if (error) throw new Error(`Failed to add gallery photo: ${error.message}`);
+}): Promise<string> {
+  const { data, error } = await supabaseAdmin()
+    .from("gallery_photos")
+    .insert({
+      event_id: input.eventId,
+      category: input.category,
+      storage_path: input.storagePath,
+      caption: input.caption || null,
+    })
+    .select("id")
+    .single<{ id: string }>();
+  if (error || !data) throw new Error(`Failed to add gallery photo: ${error?.message}`);
+  return data.id;
+}
+
+export async function countGalleryPhotos(eventId: string): Promise<number> {
+  const { count, error } = await supabaseAdmin()
+    .from("gallery_photos")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", eventId);
+  if (error) return 0;
+  return count ?? 0;
 }
 
 export async function updateGalleryPhoto(

@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function CandlelightTribute(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={candlelightTributeTheme}>
+    <TemplateThemeWrapper theme={candlelightTributeTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

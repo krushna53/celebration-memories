@@ -21,4 +21,5 @@ export const littleBlessingsTheme: TemplateTheme = {
   fontDisplayVar: "var(--font-quicksand), \"Helvetica Neue\", Arial, sans-serif",
   fontSansVar: "var(--font-poppins), \"Helvetica Neue\", Arial, sans-serif",
   animation: "dreamy",
+  highlightSurface: "light",
 };

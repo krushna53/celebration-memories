@@ -70,6 +70,7 @@ function galleryActions(allowed) {
     '@/services/recycle-bin': { moveToTrash: async (...args) => calls.deleted.push(args) },
     '@/services/event-snapshots': { snapshotGallery: async () => {} },
     '@/lib/ai-gallery-tagger': {}, '@/services/external-media': {},
+    '@/services/gallery-auto-tag': { resolveGalleryUpload: async ({ category, caption }) => ({ category, caption, autoTagged: false }) },
   });
   return { actions, calls };
 }

@@ -1,5 +1,5 @@
 import { ACTIVE_EVENT, VENUE } from "@/lib/constants";
-import { DEFAULT_EVENT_TIMEZONE, formatCalendarDate, formatEventTime } from "@/lib/timezone";
+import { DEFAULT_EVENT_TIMEZONE, formatCalendarDate, formatEventTime, formatEventTimeRange } from "@/lib/timezone";
 import type { EventRecord, EventCategory } from "@/types/event";
 
 /**
@@ -21,6 +21,8 @@ export interface EventDisplayData {
   date: string;
   startTime: string;
   endTime: string;
+  /** "11:00 AM IST – 3:00 PM IST", or "7:00 PM IST onwards" with no end time — use this for display, not startTime/endTime. */
+  timeRange: string;
   isoStart: string;
   venueName: string | null;
   venueAddress: string | null;
@@ -53,6 +55,7 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
       date: ACTIVE_EVENT.date,
       startTime: ACTIVE_EVENT.startTime,
       endTime: ACTIVE_EVENT.endTime,
+      timeRange: `${ACTIVE_EVENT.startTime} – ${ACTIVE_EVENT.endTime}`,
       isoStart: ACTIVE_EVENT.isoStart,
       venueName: VENUE.name,
       venueAddress: VENUE.address,
@@ -82,6 +85,7 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
     date: zonedPart(event.startAt, timezone, { month: "long", day: "numeric", year: "numeric" }),
     startTime: formatEventTime(event.startAt, timezone),
     endTime: formatEventTime(event.endAt, timezone),
+    timeRange: formatEventTimeRange(event, timezone),
     isoStart: event.startAt,
     venueName: event.venueName,
     venueAddress: event.venueAddress,

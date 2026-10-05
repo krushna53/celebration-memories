@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function KidsCartoon(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={kidsCartoonTheme}>
+    <TemplateThemeWrapper theme={kidsCartoonTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

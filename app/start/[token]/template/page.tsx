@@ -38,6 +38,7 @@ export default async function WizardTemplatePage({ params }: { params: Promise<{
         templates={templates}
         updateAction={draftUpdateEventAction.bind(null, token)}
         occasion={event.category}
+        currentThemeOverrides={event.themeOverrides}
       />
     </WizardStepShell>
   );

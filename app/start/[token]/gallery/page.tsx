@@ -9,7 +9,9 @@ import {
   draftRequestGalleryUploadUrlAction,
   draftConfirmGalleryUploadAction,
   draftDeleteGalleryPhotoAction,
+  draftUpdateGalleryPhotoAction,
 } from "@/features/start/actions/gallery";
+import { AI_GALLERY_TAGGER_CONFIGURED } from "@/lib/ai-gallery-tagger";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +38,9 @@ export default async function WizardGalleryPage({ params }: { params: Promise<{ 
           requestUploadUrl: draftRequestGalleryUploadUrlAction.bind(null, token),
           confirmUpload: draftConfirmGalleryUploadAction.bind(null, token),
           deletePhoto: draftDeleteGalleryPhotoAction.bind(null, token),
+          updatePhoto: draftUpdateGalleryPhotoAction.bind(null, token),
         }}
+        aiAutoTagAvailable={AI_GALLERY_TAGGER_CONFIGURED}
       />
     </WizardStepShell>
   );

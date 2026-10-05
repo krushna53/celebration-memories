@@ -137,6 +137,15 @@ export interface EventRecord {
    */
   wizardGoals: string[] | null;
   /**
+   * False when the host only gave a start time ("7 PM onwards") — every
+   * public page then shows "7:00 PM onwards" instead of a range.
+   * `endAt` is still stored (start + a default duration) so "has the
+   * event ended?" checks keep working; it's just never displayed.
+   */
+  hasEndTime: boolean;
+  /** Host-chosen colour tweaks layered on top of the selected template — see lib/template-theme-vars.ts. */
+  themeOverrides: ThemeOverrides | null;
+  /**
    * Controls the event-day Schedule + Menu feature (see services/event-day.ts
    * and features/event-day):
    * - "off": feature unused, nothing shown anywhere.
@@ -252,4 +261,22 @@ export interface InviteeRecord {
   inviteChannel: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Per-event colour customisation on top of a template (Templates step /
+ * admin Templates page). Every field is optional; unset means "use the
+ * template's own value".
+ */
+export interface ThemeOverrides {
+  /** Main accent colour (buttons, headings' eyebrow text, dividers) as #rrggbb. */
+  accentColor?: string | null;
+  /**
+   * Look of the "highlight" bands — Hero, Countdown, Timeline, Live
+   * Stream, Event Day, plus the navbar/footer. "auto" follows the
+   * template's own default.
+   */
+  highlightStyle?: "auto" | "light" | "dark";
+  /** Exact background for those highlight bands, as #rrggbb — text colour adapts automatically. */
+  highlightColor?: string | null;
 }

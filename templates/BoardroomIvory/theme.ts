@@ -21,4 +21,5 @@ export const boardroomIvoryTheme: TemplateTheme = {
   fontDisplayVar: "var(--font-inter), \"Helvetica Neue\", Arial, sans-serif",
   fontSansVar: "var(--font-inter), \"Helvetica Neue\", Arial, sans-serif",
   animation: "minimal",
+  highlightSurface: "light",
 };

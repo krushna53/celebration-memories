@@ -7,10 +7,14 @@ import type { EventCategory } from "@/types/event";
  *
  * The step list is no longer fixed: it's computed from what the host
  * actually wants (see WizardGoal / resolveWizardSteps below), chosen on
- * the new Goals step right after Occasion. Occasion and Goals always
- * run first, in that order, for every draft — everything after that is
- * conditional:
+ * the new Goals step right after Occasion. Occasion, Goals and Your
+ * Card always run first, in that order, for every draft — everything
+ * after that is conditional:
  *
+ *   - Your Card asks whether the host already has an invitation card.
+ *     "Yes" uploads it, saves it as the invitation/link-preview image
+ *     and reads its details with AI so Event Details opens pre-filled;
+ *     "No" goes straight on to Event Details.
  *   - Event Details and Template always show (every goal benefits from
  *     both — Template even shapes the AI Image prompt's palette).
  *   - Timeline and Gallery show if "slideshow" or "website" was picked
@@ -113,6 +117,16 @@ const STEP_REGISTRY = {
       "Just want a quick invitation card or video? You won't need an account or payment at all for those.",
     ],
   },
+  card: {
+    slug: "card",
+    label: "Your Card",
+    description: "Already have an invitation card?",
+    tips: [
+      "Upload the card you've already designed and we'll read the name, date, time and venue off it — you'll just need to check them.",
+      "Your card also becomes the image shown when your link is shared on WhatsApp, and the first slide of your Slideshow.",
+      "No card yet? No problem — you can fill in the details yourself and create one with AI later on.",
+    ],
+  },
   basics: {
     slug: "basics",
     label: "Event Details",
@@ -192,7 +206,7 @@ export function resolveWizardSteps(goals: string[] | null | undefined): WizardSt
   const wantsCard = !hasGoals || goals!.includes("invitation_card");
   const wantsSlideshow = !hasGoals || goals!.includes("slideshow");
 
-  steps.push(STEP_REGISTRY.basics);
+  steps.push(STEP_REGISTRY.card, STEP_REGISTRY.basics);
   if (wantsWebsite || wantsSlideshow) steps.push(STEP_REGISTRY.timeline, STEP_REGISTRY.gallery);
   steps.push(STEP_REGISTRY.template);
   if (wantsWebsite || wantsCard) steps.push(STEP_REGISTRY["ai-image"]);

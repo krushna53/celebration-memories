@@ -13,13 +13,15 @@ import {
 } from "lucide-react";
 
 import { TemplatePreviewDialog } from "@/features/admin/templates/template-preview-dialog";
+import { ThemeColorCustomizer } from "@/features/templates/theme-color-customizer";
 
 import { updateEventAction } from "@/features/admin/event-settings/actions";
 import type { AdminActionResult } from "@/features/admin/event-settings/actions";
 import type { TemplateSummary } from "@/lib/template-catalog";
 import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
 import { CUSTOM_TEMPLATE_REQUEST } from "@/lib/constants";
-import type { EventCategory } from "@/types/event";
+import { TEMPLATE_THEMES } from "@/lib/template-themes";
+import type { EventCategory, ThemeOverrides } from "@/types/event";
 
 const PREVIEW_SEEN_KEY = "em:template-preview-seen";
 
@@ -30,7 +32,7 @@ export type PickerTemplate = TemplateSummary & {
 /** The one action this component needs — swappable so the wizard can pass its draft-token-gated mirror instead. Defaults to the real admin action. */
 export type UpdateTemplateAction = (
   eventId: string,
-  input: { templateSlug: string },
+  input: { templateSlug?: string; themeOverrides?: ThemeOverrides | null },
 ) => Promise<AdminActionResult>;
 
 interface TemplatePickerProps {
@@ -49,6 +51,8 @@ interface TemplatePickerProps {
   occasion?: EventCategory | null;
   /** The event's slug — enables each card's "Preview" popup (the event's own page in that template). */
   eventSlug?: string;
+  /** The event's saved colour tweaks (events.theme_overrides) — enables the "Customise colours" panel. */
+  currentThemeOverrides?: ThemeOverrides | null;
 }
 
 /**
@@ -66,7 +70,9 @@ export function TemplatePicker({
   updateAction = updateEventAction,
   occasion,
   eventSlug,
+  currentThemeOverrides = null,
 }: TemplatePickerProps) {
+  const [themeOverrides, setThemeOverrides] = useState<ThemeOverrides | null>(currentThemeOverrides);
   const [previewing, setPreviewing] = useState<PickerTemplate | null>(null);
   const [selected, setSelected] = useState(currentTemplateSlug);
   const [pending, startTransition] = useTransition();
@@ -285,6 +291,20 @@ export function TemplatePicker({
             <Eye size={16} /> Preview my page
           </button>
         </div>
+      ) : null}
+
+      {TEMPLATE_THEMES[selected] ? (
+        <ThemeColorCustomizer
+          key={selected}
+          templateName={templates.find((t) => t.slug === selected)?.name ?? "this template"}
+          theme={TEMPLATE_THEMES[selected]}
+          initialOverrides={themeOverrides}
+          onSave={async (next) => {
+            const result = await updateAction(eventId, { themeOverrides: next });
+            if (result.success) setThemeOverrides(next);
+            return result;
+          }}
+        />
       ) : null}
 
       {recommended.length > 0 ? (

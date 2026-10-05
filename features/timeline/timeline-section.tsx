@@ -17,7 +17,7 @@ export function TimelineSection({ milestones }: TimelineSectionProps) {
   if (milestones.length === 0) return null;
 
   return (
-    <section id="timeline" className="bg-navy-950 py-20 sm:py-28">
+    <section id="timeline" className="surface-feature bg-navy-950 py-20 sm:py-28">
       <div className="mx-auto max-w-3xl px-6">
         <Reveal>
           <SectionHeading

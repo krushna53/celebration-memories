@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function MinimalWhite(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={minimalWhiteTheme}>
+    <TemplateThemeWrapper theme={minimalWhiteTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function EmeraldVow(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={emeraldVowTheme}>
+    <TemplateThemeWrapper theme={emeraldVowTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Loader2 } from "lucide-react";
 
+import { loadGis, requestGoogleToken } from "@/lib/google-identity";
+import { rememberPhotoTakenAt } from "@/lib/photo-metadata";
+
 /**
  * "Google Photos" import (Google Photos Picker API). Flow:
  *   1. Tap → Google sign-in popup (Google Identity Services token client,
@@ -18,7 +21,6 @@ import { ExternalLink, Loader2 } from "lucide-react";
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_PHOTOS_CLIENT_ID;
 const SCOPE = "https://www.googleapis.com/auth/photospicker.mediaitems.readonly";
-const GIS_SRC = "https://accounts.google.com/gsi/client";
 
 export const GOOGLE_PHOTOS_ENABLED = Boolean(CLIENT_ID);
 
@@ -28,42 +30,6 @@ export interface GooglePhotosVideo {
   thumbnail: File;
   sourceUrl: string;
   googleToken: string;
-}
-
-interface TokenResponse {
-  access_token?: string;
-  error?: string;
-  error_description?: string;
-}
-interface GoogleOauth2 {
-  initTokenClient(config: {
-    client_id: string;
-    scope: string;
-    callback: (response: TokenResponse) => void;
-    error_callback?: (error: { type?: string; message?: string }) => void;
-  }): { requestAccessToken(options?: { prompt?: string }): void };
-}
-declare global {
-  interface Window {
-    google?: { accounts?: { oauth2?: GoogleOauth2 } };
-  }
-}
-
-let gisLoading: Promise<void> | null = null;
-function loadGis(): Promise<void> {
-  if (window.google?.accounts?.oauth2) return Promise.resolve();
-  gisLoading ??= new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = GIS_SRC;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => {
-      gisLoading = null;
-      reject(new Error("Couldn't load Google sign-in. Check your connection and try again."));
-    };
-    document.head.appendChild(script);
-  });
-  return gisLoading;
 }
 
 async function api<T>(token: string, path: string, init?: RequestInit): Promise<T> {
@@ -127,20 +93,8 @@ export function GooglePhotosButton({
   async function connect() {
     setMessage(null);
     try {
-      await loadGis();
-      const oauth2 = window.google?.accounts?.oauth2;
-      if (!oauth2) throw new Error("Google sign-in didn't load.");
       setStage({ kind: "signing-in" });
-      const token = await new Promise<string>((resolve, reject) => {
-        oauth2
-          .initTokenClient({
-            client_id: CLIENT_ID!,
-            scope: SCOPE,
-            callback: (r) => (r.access_token ? resolve(r.access_token) : reject(new Error(r.error_description ?? r.error ?? "Google sign-in was cancelled."))),
-            error_callback: (e) => reject(new Error(e.type === "popup_closed" ? "Google sign-in was closed." : e.message ?? "Google sign-in failed.")),
-          })
-          .requestAccessToken();
-      });
+      const token = await requestGoogleToken(CLIENT_ID!, SCOPE);
       const s = await api<{ id: string; pickerUri: string; pollIntervalMs: number }>(token, "/api/google-photos/session", { method: "POST", body: JSON.stringify({ max }) });
       session.current = { token, id: s.id, pollMs: s.pollIntervalMs };
       setStage({ kind: "ready", pickerUri: s.pickerUri });
@@ -174,7 +128,7 @@ export function GooglePhotosButton({
   }
 
   async function importPicks(s: { token: string; id: string }) {
-    const { items } = await api<{ items: { id: string; type: string; baseUrl: string; filename: string | null }[] }>(
+    const { items } = await api<{ items: { id: string; type: string; baseUrl: string; filename: string | null; createTime: string | null }[] }>(
       s.token,
       `/api/google-photos/items?sessionId=${encodeURIComponent(s.id)}`,
     );
@@ -196,6 +150,8 @@ export function GooglePhotosButton({
         const blob = await res.blob();
         const base = (item.filename ?? `google-${want === "VIDEO" ? "video" : "photo"}-${i + 1}`).replace(/\.[^.]+$/, "");
         const image = new File([blob], `${base}.jpg`, { type: blob.type || "image/jpeg" });
+        // The resized download has no EXIF — carry Google's capture time over for Timeline/Gallery pre-fill.
+        if (item.createTime) rememberPhotoTakenAt(image, item.createTime);
         if (want === "VIDEO") {
           // =dv is Google's download-video form (an MP4 transcode) — streamed server-side on upload.
           videos.push({ name: `${base}.mp4`, thumbnail: image, sourceUrl: `${item.baseUrl}=dv`, googleToken: s.token });

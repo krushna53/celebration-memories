@@ -16,6 +16,7 @@ import { snapshotGallery } from "@/services/event-snapshots";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
 import { suggestGalleryTags, type GalleryTagSuggestion } from "@/lib/ai-gallery-tagger";
 import { externalizeMediaLink } from "@/services/external-media";
+import { resolveGalleryUpload, type GalleryUploadOptions } from "@/services/gallery-auto-tag";
 
 function revalidateGalleryPaths() {
   revalidatePath("/admin/gallery");
@@ -46,15 +47,17 @@ export async function confirmGalleryUploadAction(
   category: GalleryCategory,
   path: string,
   caption: string,
+  options?: GalleryUploadOptions,
 ) {
   try {
     const admin = await requireAdminForOrganizerArea(eventId, "gallery");
     // Best-effort — never let a snapshot failure block the actual save.
     await snapshotGallery(eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
     assertEventMediaPath(eventId, path);
-    await createGalleryPhoto({ eventId, category, storagePath: path, caption });
+    const resolved = await resolveGalleryUpload({ path, category, caption, options });
+    const id = await createGalleryPhoto({ eventId, category: resolved.category, storagePath: path, caption: resolved.caption });
     revalidateGalleryPaths();
-    return { success: true as const };
+    return { success: true as const, data: { id, ...resolved } };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
   }

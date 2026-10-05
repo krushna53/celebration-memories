@@ -21,4 +21,5 @@ export const kidsCartoonTheme: TemplateTheme = {
   fontDisplayVar: "var(--font-baloo2), \"Comic Sans MS\", cursive",
   fontSansVar: "var(--font-poppins), \"Helvetica Neue\", Arial, sans-serif",
   animation: "playful",
+  highlightSurface: "light",
 };

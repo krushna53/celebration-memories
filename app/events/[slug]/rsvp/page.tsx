@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 import { getEventBySlug } from "@/services/events";
 import { listScheduleItems } from "@/services/event-day";
-import { formatEventDate, formatEventTime } from "@/lib/format";
+import { formatEventDate, formatEventTimeRange } from "@/lib/format";
 import { computeRsvpPrice } from "@/lib/rsvp-pricing";
 import { buildEventMetadata } from "@/lib/event-metadata";
 import { getTemplateBySlug } from "@/lib/templates";
@@ -100,7 +100,7 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
             <p className="mt-6 text-sm tracking-wide text-navy-700/70">
               {formatEventDate(event.startAt, event.timezone)}
               <br />
-              {formatEventTime(event.startAt, event.timezone)} &ndash; {formatEventTime(event.endAt, event.timezone)}
+              {formatEventTimeRange(event, event.timezone)}
             </p>
           </Reveal>
         </div>

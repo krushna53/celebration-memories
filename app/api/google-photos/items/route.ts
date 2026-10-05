@@ -4,7 +4,7 @@ import { assertSameOrigin, googleToken, GooglePhotosError, listPickedItems } fro
 
 export const dynamic = "force-dynamic";
 
-/** The items the user picked: ?sessionId=… → { items: [{ id, type, baseUrl, mimeType, filename }] } */
+/** The items the user picked: ?sessionId=… → { items: [{ id, type, baseUrl, mimeType, filename, createTime }] } */
 export async function GET(request: Request) {
   try {
     assertSameOrigin(request);
@@ -18,6 +18,7 @@ export async function GET(request: Request) {
         baseUrl: i.mediaFile.baseUrl,
         mimeType: i.mediaFile.mimeType,
         filename: i.mediaFile.filename ?? null,
+        createTime: i.createTime ?? null,
       })),
     });
   } catch (err) {

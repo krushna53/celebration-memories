@@ -6,6 +6,7 @@ import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listGalleryPairs } from "@/services/gallery-story";
 import { GalleryManager } from "@/features/admin/gallery/gallery-manager";
+import { AI_GALLERY_TAGGER_CONFIGURED } from "@/lib/ai-gallery-tagger";
 import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,12 @@ export default async function AdminGalleryPage() {
         Curate the photos shown in the public Gallery section, by category.
       </p>
       <div className="mt-6">
-        <GalleryManager eventId={event.id} initialPhotos={photos} initialPairs={pairs} />
+        <GalleryManager
+          eventId={event.id}
+          initialPhotos={photos}
+          initialPairs={pairs}
+          aiAutoTagAvailable={AI_GALLERY_TAGGER_CONFIGURED}
+        />
       </div>
     </div>
   );

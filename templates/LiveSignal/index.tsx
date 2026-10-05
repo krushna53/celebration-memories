@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function LiveSignal(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={liveSignalTheme}>
+    <TemplateThemeWrapper theme={liveSignalTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

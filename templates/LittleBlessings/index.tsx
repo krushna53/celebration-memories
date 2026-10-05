@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function LittleBlessings(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={littleBlessingsTheme}>
+    <TemplateThemeWrapper theme={littleBlessingsTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

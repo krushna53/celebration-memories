@@ -60,7 +60,7 @@ export function EventDetailsSection({ data }: EventDetailsSectionProps) {
             <DetailCard
               icon={<Clock size={20} />}
               label="Time"
-              value={`${data.startTime} – ${data.endTime}`}
+              value={data.timeRange}
             />
             {data.occasionDate ? (
               <DetailCard

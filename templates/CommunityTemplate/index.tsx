@@ -30,7 +30,7 @@ export default function CommunityTemplate({ submission, ...props }: CommunityTem
   return (
     <>
       <link rel="stylesheet" href={googleFontStylesheetUrl(submission.fontDisplay)} />
-      <TemplateThemeWrapper theme={theme}>
+      <TemplateThemeWrapper theme={theme} overrides={props.event?.themeOverrides}>
         <SiteShell
           honoreeName={props.displayData.honoreeName}
           designerCredit={{ name: submission.authorName, website: submission.authorWebsite }}

@@ -57,15 +57,20 @@ export async function createMilestone(input: {
   title: string;
   description: string;
   sortOrder?: number;
-}): Promise<void> {
-  const { error } = await supabaseAdmin().from("timeline_milestones").insert({
-    event_id: input.eventId,
-    period: input.period,
-    title: input.title,
-    description: input.description,
-    sort_order: input.sortOrder ?? 0,
-  });
-  if (error) throw new Error(`Failed to add milestone: ${error.message}`);
+}): Promise<string> {
+  const { data, error } = await supabaseAdmin()
+    .from("timeline_milestones")
+    .insert({
+      event_id: input.eventId,
+      period: input.period,
+      title: input.title,
+      description: input.description,
+      sort_order: input.sortOrder ?? 0,
+    })
+    .select("id")
+    .single<{ id: string }>();
+  if (error || !data) throw new Error(`Failed to add milestone: ${error?.message}`);
+  return data.id;
 }
 
 export async function updateMilestone(

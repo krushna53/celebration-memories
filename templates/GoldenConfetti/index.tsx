@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function GoldenConfetti(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={goldenConfettiTheme}>
+    <TemplateThemeWrapper theme={goldenConfettiTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

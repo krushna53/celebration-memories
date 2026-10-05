@@ -4,4 +4,4 @@
  * file's header comment for why. Kept as a separate module so existing
  * `@/lib/format` imports across the app don't need to change.
  */
-export { formatEventDate, formatEventTime } from "@/lib/timezone";
+export { formatEventDate, formatEventTime, formatEventTimeRange } from "@/lib/timezone";

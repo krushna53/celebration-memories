@@ -68,7 +68,18 @@
   }
 }
 
-:root {
+/*
+ * Re-declared on template wrappers ([data-template-animation], see
+ * templates/shared/template-theme-wrapper.tsx) and highlight bands
+ * (.surface-feature): a custom property that references another is
+ * resolved where it's declared, so declaring these on :root alone froze
+ * them to the platform defaults — every template's buttons rendered in
+ * platform coral instead of the template's own accent.
+ * --primary-foreground is set inline by the wrapper (contrast-picked).
+ */
+:root,
+[data-template-animation],
+.surface-feature {
   --background: var(--color-ivory-50);
   --foreground: var(--color-navy-950);
 
@@ -186,6 +197,33 @@ h1, h2, h3, h4, h5, h6 {
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   border: 1px solid color-mix(in srgb, var(--color-gold-300) 30%, transparent);
+}
+
+/*
+ * "Highlight" bands — Hero, Countdown, Timeline, Live Stream, Event Day,
+ * navbar, footer, mobile tab bar. Inside this scope the palette tokens
+ * take their --feature-* values, which TemplateThemeWrapper sets per
+ * template/event (lib/template-theme-vars.ts): unchanged for a dark band,
+ * swapped (navy = light background, ivory = dark text, contrast-checked
+ * accent) for a light one. Fallbacks are the @theme defaults, so outside
+ * any template this is a no-op.
+ */
+.surface-feature {
+  --primary-foreground: var(--feature-on-accent, var(--color-navy-950));
+  --color-navy-950: var(--feature-navy-950, #1e1b4b);
+  --color-navy-900: var(--feature-navy-900, #272257);
+  --color-navy-800: var(--feature-navy-800, #322b6e);
+  --color-navy-700: var(--feature-navy-700, #3f358a);
+  --color-navy-600: var(--feature-navy-600, #4f46e5);
+  --color-gold-100: var(--feature-gold-100, #ffe4de);
+  --color-gold-200: var(--feature-gold-200, #ffc7bc);
+  --color-gold-300: var(--feature-gold-300, #ffa292);
+  --color-gold-400: var(--feature-gold-400, #ff8770);
+  --color-gold-500: var(--feature-gold-500, #ff6b57);
+  --color-gold-600: var(--feature-gold-600, #e5503c);
+  --color-ivory-50: var(--feature-ivory-50, #fdf6ec);
+  --color-ivory-100: var(--feature-ivory-100, #faeedd);
+  --color-ivory-200: var(--feature-ivory-200, #f3e2c7);
 }
 
 /* Thin gold divider */

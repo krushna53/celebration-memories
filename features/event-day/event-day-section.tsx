@@ -168,7 +168,7 @@ export function EventDaySection({
   if (!asHomepageSection) return body;
 
   return (
-    <section id="event-day" className="bg-navy-950 py-20 sm:py-28">
+    <section id="event-day" className="surface-feature bg-navy-950 py-20 sm:py-28">
       {body}
     </section>
   );

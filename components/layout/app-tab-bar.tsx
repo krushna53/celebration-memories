@@ -121,7 +121,7 @@ export function AppTabBar({ isApp, homeHref, navLinks, showDashboard, menuOpen, 
   return (
     <nav
       aria-label="App"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-navy-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+      className="surface-feature fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-navy-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
     >
       <ul className="grid grid-cols-5">
         <li>

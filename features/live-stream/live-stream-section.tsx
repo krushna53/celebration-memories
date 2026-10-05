@@ -26,7 +26,7 @@ export function LiveStreamSection({ enabled, url }: LiveStreamSectionProps) {
   if (!embedUrl) return null;
 
   return (
-    <section id="live-stream" className="bg-navy-950 py-20 sm:py-28">
+    <section id="live-stream" className="surface-feature bg-navy-950 py-20 sm:py-28">
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
         <Reveal>
           <SectionHeading

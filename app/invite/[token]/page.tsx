@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 import { getInviteeByToken } from "@/services/invitees";
 import { logInviteOpened } from "@/services/tracking";
-import { formatEventDate, formatEventTime } from "@/lib/format";
+import { formatEventDate, formatEventTimeRange } from "@/lib/format";
 import { SITE_URL } from "@/lib/constants";
 import { buildEventMetadata } from "@/lib/event-metadata";
 import { computeRsvpPrice } from "@/lib/rsvp-pricing";
@@ -89,8 +89,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
             <p className="mt-6 text-sm tracking-wide text-navy-700/70">
               {formatEventDate(event.startAt, event.timezone)}
               <br />
-              {formatEventTime(event.startAt, event.timezone)} &ndash;{" "}
-              {formatEventTime(event.endAt, event.timezone)}
+              {formatEventTimeRange(event, event.timezone)}
             </p>
           </Reveal>
         </div>
@@ -112,7 +111,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                     subtitle: event.eventTitle,
                     details: [
                       formatEventDate(event.startAt, event.timezone),
-                      `${formatEventTime(event.startAt, event.timezone)} – ${formatEventTime(event.endAt, event.timezone)}`,
+                      formatEventTimeRange(event, event.timezone),
                       ...(event.venueName ? [event.venueName] : []),
                     ],
                   },

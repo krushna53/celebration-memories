@@ -55,6 +55,12 @@ Caption rules:
 - Black-and-white, sepia or faded prints: add an approximate decade at the end when you can reasonably judge it, e.g. "Brothers in matching shirts, 1960s".
 - If the photo shows a printed photo lying on a table (a photo of a photo), caption the printed photo itself.`;
 
+function promptWithContext({ taken, place }: GalleryPhotoContext): string {
+  const facts = [taken ? `taken ${taken}` : null, place ? `in ${place}` : null].filter(Boolean).join(", ");
+  if (!facts) return "Suggest a category and caption for this photo.";
+  return `Suggest a category and caption for this photo. The photo file says it was ${facts} — this is reliable, so you may end the caption with the place and/or year when it fits naturally (e.g. "Sunset walk on the beach, Goa 2019"), still within the word limit. A place outside the family's home region suggests "travel".`;
+}
+
 function parse(raw: string): GalleryTagSuggestion {
   const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   let json: unknown;
@@ -68,8 +74,16 @@ function parse(raw: string): GalleryTagSuggestion {
   return result.data;
 }
 
+/** What the photo file itself says about when/where it was taken (lib/photo-metadata.ts) — facts the model can't see in the pixels. */
+export interface GalleryPhotoContext {
+  /** e.g. "March 1998". */
+  taken?: string | null;
+  /** e.g. "Lonavala, Maharashtra". */
+  place?: string | null;
+}
+
 /** `imageUrl` is the photo's public Storage URL — low detail is plenty to tell a wedding from a trip, and keeps each call cheap. */
-export async function suggestGalleryTags(imageUrl: string): Promise<GalleryTagSuggestion> {
+export async function suggestGalleryTags(imageUrl: string, context: GalleryPhotoContext = {}): Promise<GalleryTagSuggestion> {
   const client = getClient();
   if (!client) throw new AiGalleryTaggerError("AI suggestions aren't configured — add OPENAI_API_KEY to enable them.");
 
@@ -83,7 +97,7 @@ export async function suggestGalleryTags(imageUrl: string): Promise<GalleryTagSu
         {
           role: "user",
           content: [
-            { type: "input_text", text: "Suggest a category and caption for this photo." },
+            { type: "input_text", text: promptWithContext(context) },
             { type: "input_image", image_url: imageUrl, detail: "low" },
           ],
         },

@@ -48,6 +48,9 @@ import { EVENT_CATEGORY_OPTIONS, getEventFieldCopy, getWishSectionCopy } from "@
 import { formatBytes } from "@/lib/format-bytes";
 import { validateCustomCss } from "@/lib/custom-css";
 import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
+import { placeFullAddress, type PlaceSuggestion } from "@/lib/place-search";
+import { MapEmbedPreview } from "@/components/forms/map-embed-preview";
+import { VenueAutocomplete } from "@/components/forms/venue-autocomplete";
 import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
 import { zonedInputValueToUtcIso, utcIsoToZonedInputValue, listSupportedTimezones } from "@/lib/timezone";
 import { parseLiveStreamUrl } from "@/lib/live-stream";
@@ -57,6 +60,8 @@ import type { EventRecord } from "@/types/event";
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70";
+/** Stored end for a "start time only" event — never shown, just keeps "has it ended?" checks working. */
+const OPEN_ENDED_DURATION_MS = 5 * 60 * 60 * 1000;
 
 interface EventSettingsFormProps {
   event: EventRecord;
@@ -136,6 +141,7 @@ export function EventSettingsForm({
   const [origin, setOrigin] = useState("");
   const [detectingTimezone, setDetectingTimezone] = useState(false);
   const [timezoneError, setTimezoneError] = useState<string | null>(null);
+  const [hasEndTime, setHasEndTime] = useState(event.hasEndTime);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -417,6 +423,21 @@ export function EventSettingsForm({
     }
   }
 
+  /** Fills every Location field from a place picked in the venue search — all still editable afterward. */
+  function applyPlace(place: PlaceSuggestion, timezone: string | null) {
+    const full = placeFullAddress(place);
+    setForm((f) => ({
+      ...f,
+      venueName: place.name,
+      venueAddress: place.address || place.name,
+      mapsUrl: buildMapsSearchUrl(full),
+      mapsEmbedUrl: buildMapsEmbedUrl(full),
+      timezone: timezone ?? f.timezone,
+    }));
+    setTimezoneError(null);
+    setSaved(false);
+  }
+
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
     setSaved(false);
@@ -453,7 +474,10 @@ export function EventSettingsForm({
       eventTitle: form.eventTitle,
       hostedBy: form.hostedBy,
       startAt: zonedInputValueToUtcIso(form.startAt, form.timezone),
-      endAt: zonedInputValueToUtcIso(form.endAt, form.timezone),
+      endAt: hasEndTime
+        ? zonedInputValueToUtcIso(form.endAt, form.timezone)
+        : new Date(new Date(zonedInputValueToUtcIso(form.startAt, form.timezone)).getTime() + OPEN_ENDED_DURATION_MS).toISOString(),
+      hasEndTime,
       timezone: form.timezone,
       venueName: form.venueName || null,
       venueAddress: form.venueAddress || null,
@@ -666,16 +690,35 @@ export function EventSettingsForm({
               required
             />
           </div>
-          <div>
-            <label className={labelClasses}>Celebration Ends</label>
+          {hasEndTime ? (
+            <div>
+              <label className={labelClasses}>Celebration Ends</label>
+              <input
+                type="datetime-local"
+                className={`${inputClasses} mt-1.5`}
+                value={form.endAt}
+                onChange={(e) => set("endAt", e.target.value)}
+                required
+              />
+            </div>
+          ) : null}
+          <label className="flex items-start gap-2.5 self-end text-sm text-navy-950 sm:col-span-2">
             <input
-              type="datetime-local"
-              className={`${inputClasses} mt-1.5`}
-              value={form.endAt}
-              onChange={(e) => set("endAt", e.target.value)}
-              required
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 accent-gold-500"
+              checked={hasEndTime}
+              onChange={(e) => {
+                setHasEndTime(e.target.checked);
+                setSaved(false);
+              }}
             />
-          </div>
+            <span>
+              Add an end time
+              <span className="block text-xs text-navy-700/60">
+                Leave this off to show just the start everywhere, e.g. &ldquo;7:00 PM onwards&rdquo;.
+              </span>
+            </span>
+          </label>
           <div>
             <label className={labelClasses}>Actual Occasion Date (optional)</label>
             <input
@@ -694,6 +737,16 @@ export function EventSettingsForm({
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Location</h2>
+        <div>
+          <label className={labelClasses}>Find your venue</label>
+          <div className="mt-1.5">
+            <VenueAutocomplete inputClassName={inputClasses} onSelect={applyPlace} />
+          </div>
+          <p className="mt-1.5 text-xs text-navy-700/50">
+            Pick a match to fill in the venue, address, timezone, directions link and map automatically — or edit
+            the fields below by hand.
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={labelClasses}>Venue Name</label>
@@ -788,6 +841,11 @@ export function EventSettingsForm({
               </Button>
             </div>
           </div>
+          {form.mapsEmbedUrl ? (
+            <div className="sm:col-span-2">
+              <MapEmbedPreview embedUrl={form.mapsEmbedUrl} title={form.venueName || "Venue map"} />
+            </div>
+          ) : null}
           <div>
             <label className={labelClasses}>Parking Info</label>
             <input

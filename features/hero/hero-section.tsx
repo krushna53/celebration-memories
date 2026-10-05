@@ -60,7 +60,7 @@ export function HeroSection({ data, relive = null }: HeroSectionProps) {
   return (
     <section
       id="hero"
-      className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-navy-950"
+      className="surface-feature relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-navy-950"
     >
       {/* Background layer */}
       <div className="absolute inset-0">
@@ -143,7 +143,7 @@ export function HeroSection({ data, relive = null }: HeroSectionProps) {
           >
             {data.dayOfWeek}, {data.date}
             <br />
-            {data.startTime} &ndash; {data.endTime}
+            {data.timeRange}
           </motion.p>
 
           <motion.div

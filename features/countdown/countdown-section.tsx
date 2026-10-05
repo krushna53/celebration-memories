@@ -17,8 +17,9 @@ interface CountdownSectionProps {
 
 /**
  * Full-size dedicated countdown section, distinct from the compact
- * badge embedded in the hero card. Continues the hero's dark-navy,
- * gold-accented treatment.
+ * badge embedded in the hero card. Shares the hero's "highlight band"
+ * treatment — dark or light per template/event via `.surface-feature`
+ * (see lib/template-theme-vars.ts).
  */
 export function CountdownSection({ isoStart }: CountdownSectionProps) {
   const remaining = useCountdown(isoStart);
@@ -26,7 +27,7 @@ export function CountdownSection({ isoStart }: CountdownSectionProps) {
   return (
     <section
       id="countdown"
-      className="bg-navy-900 py-20 sm:py-28"
+      className="surface-feature bg-navy-900 py-20 sm:py-28"
     >
       <div className="mx-auto max-w-4xl px-6">
         <Reveal>

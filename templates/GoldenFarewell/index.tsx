@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function GoldenFarewell(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={goldenFarewellTheme}>
+    <TemplateThemeWrapper theme={goldenFarewellTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

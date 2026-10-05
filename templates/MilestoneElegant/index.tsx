@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function MilestoneElegant(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={milestoneElegantTheme}>
+    <TemplateThemeWrapper theme={milestoneElegantTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

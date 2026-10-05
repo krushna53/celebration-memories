@@ -21,4 +21,5 @@ export const floralPastelTheme: TemplateTheme = {
   fontDisplayVar: "var(--font-dancing-script), \"Brush Script MT\", cursive",
   fontSansVar: "var(--font-poppins), \"Helvetica Neue\", Arial, sans-serif",
   animation: "dreamy",
+  highlightSurface: "light",
 };

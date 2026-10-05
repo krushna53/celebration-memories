@@ -124,6 +124,21 @@ export async function recordAiImageUpload(params: {
   if (error) throw new Error(`Failed to record uploaded image: ${error.message}`);
 }
 
+/** How many "Upload Your Own" images an event has recorded — caps the wizard's paid card-reading call (features/start/actions/card.ts). */
+export async function countUploadedAiImages(eventId: string): Promise<number> {
+  const { count, error } = await supabaseAdmin()
+    .from("ai_image_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .eq("is_upload", true);
+
+  if (error) {
+    console.error("countUploadedAiImages failed:", error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
 export interface CompletedAiImageJob {
   id: string;
   url: string;

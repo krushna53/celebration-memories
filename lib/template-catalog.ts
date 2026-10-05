@@ -62,6 +62,14 @@ export interface TemplateTheme {
    * background renders — gold dust, confetti, or rising balloons).
    */
   animation: TemplateAnimationPersonality;
+  /**
+   * Default look of the "highlight" bands (Hero, Countdown, Timeline,
+   * Live Stream, Event Day, navbar, footer) — "dark" when unset. Light
+   * templates set "light" so those bands don't stay a dark slab on an
+   * otherwise bright page. Hosts can override per event; see
+   * lib/template-theme-vars.ts.
+   */
+  highlightSurface?: "light" | "dark";
 }
 
 export interface TemplateSummary {

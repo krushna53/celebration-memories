@@ -1,6 +1,8 @@
 import "server-only";
 import OpenAI from "openai";
 
+import { formatEventDate, formatEventTimeRange } from "@/lib/timezone";
+
 /**
  * Guest-facing "AI Avatar" chat host — a virtual stand-in for the event
  * host who can answer guest questions grounded only in that event's own
@@ -36,6 +38,10 @@ export interface AvatarEventContext {
   venueAddress: string | null;
   startAt: string;
   endAt: string;
+  /** False when the host gave no end time — the avatar then says "onwards" instead of inventing one. */
+  hasEndTime?: boolean;
+  /** The event's own IANA timezone, so times are stated in venue time rather than the server's. */
+  timezone?: string;
   dressCode: string | null;
   parkingInfo: string | null;
   additionalNotes: string | null;
@@ -52,15 +58,11 @@ export interface AvatarChatMessage {
   content: string;
 }
 
-function formatDateTimeRange(startAt: string, endAt: string): string {
+function formatDateTimeRange(event: AvatarEventContext): string {
   try {
-    const start = new Date(startAt);
-    const end = new Date(endAt);
-    const dateFmt = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-    const timeFmt = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" });
-    return `${dateFmt.format(start)}, ${timeFmt.format(start)} – ${timeFmt.format(end)}`;
+    return `${formatEventDate(event.startAt, event.timezone)}, ${formatEventTimeRange(event, event.timezone)}`;
   } catch {
-    return `${startAt} – ${endAt}`;
+    return `${event.startAt} – ${event.endAt}`;
   }
 }
 
@@ -69,7 +71,7 @@ function buildSystemInstructions(event: AvatarEventContext, games: AvatarGameLin
     `Honoree: ${event.honoreeName}`,
     `Event: ${event.eventTitle} (${event.category})`,
     `Hosted by: ${event.hostedBy}`,
-    `When: ${formatDateTimeRange(event.startAt, event.endAt)}`,
+    `When: ${formatDateTimeRange(event)}`,
     event.venueName ? `Venue: ${event.venueName}` : null,
     event.venueAddress ? `Address: ${event.venueAddress}` : null,
     event.dressCode ? `Dress code: ${event.dressCode}` : null,

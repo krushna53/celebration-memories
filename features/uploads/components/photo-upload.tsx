@@ -6,6 +6,7 @@ import { Camera, ImagePlus } from "lucide-react";
 import type { useMediaUpload } from "@/hooks/use-media-upload";
 import { UploadQueue } from "@/features/uploads/components/upload-queue";
 import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
+import { GoogleDriveButton } from "@/features/uploads/components/google-drive-button";
 
 interface PhotoUploadProps {
   /**
@@ -86,8 +87,11 @@ export function PhotoUpload({ upload, showCaption = true }: PhotoUploadProps) {
         </button>
       </div>
 
-      {/* Renders nothing unless NEXT_PUBLIC_GOOGLE_PHOTOS_CLIENT_ID is set. */}
-      <GooglePhotosButton onFiles={addFiles} className="mt-3" />
+      {/* Each renders nothing until its Google keys are configured. Drive keeps photos' original date and place. */}
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+        <GooglePhotosButton onFiles={addFiles} className="flex-1" />
+        <GoogleDriveButton onFiles={addFiles} className="flex-1" />
+      </div>
 
       <UploadQueue
         items={items}

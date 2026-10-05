@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function NeonParty(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={neonPartyTheme}>
+    <TemplateThemeWrapper theme={neonPartyTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

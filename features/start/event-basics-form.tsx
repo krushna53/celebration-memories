@@ -2,12 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, ScanText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EVENT_CATEGORY_OPTIONS, getEventFieldCopy } from "@/lib/event-category";
 import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
 import { zonedInputValueToUtcIso, utcIsoToZonedInputValue, listSupportedTimezones } from "@/lib/timezone";
+import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
+import { placeFullAddress, type PlaceSuggestion } from "@/lib/place-search";
+import { MapEmbedPreview } from "@/components/forms/map-embed-preview";
+import { VenueAutocomplete } from "@/components/forms/venue-autocomplete";
 import { EventSettingsPreview } from "@/features/admin/event-settings/event-settings-preview";
 import { draftDetectEventTimezoneAction } from "@/features/start/actions/event";
 import { WizardBackLink } from "@/features/start/wizard-back-link";
@@ -44,6 +48,9 @@ function combineDateTime(date: string, time: string): string {
   return `${d}T${t}`;
 }
 
+/** Stored end for a "start time only" event — never shown, just keeps "has it ended?" checks working. */
+const OPEN_ENDED_DURATION_MS = 5 * 60 * 60 * 1000;
+
 // Event start/end datetime-local fields are pinned to the event's own
 // timezone (see lib/timezone.ts; defaults to Asia/Kolkata until the
 // host sets a venue address and detects one in Event Settings) rather
@@ -62,6 +69,8 @@ interface EventBasicsFormProps {
   updateAction: DraftUpdateEventAction;
   /** Wizard step to navigate to after a successful save, e.g. "/start/TOKEN/template". */
   nextHref?: string;
+  /** True when arriving from the "Your Card" step after its details were read off the host's card — shows a "please check" banner and suggests a slug. */
+  prefilledFromCard?: boolean;
 }
 
 /**
@@ -76,10 +85,16 @@ interface EventBasicsFormProps {
  * a host filling out this step without an account yet (no login) still
  * gets the same live, no-save-required preview of their homepage.
  */
-export function EventBasicsForm({ token, event, updateAction, nextHref }: EventBasicsFormProps) {
+export function EventBasicsForm({ token, event, updateAction, nextHref, prefilledFromCard = false }: EventBasicsFormProps) {
   const router = useRouter();
   const [form, setForm] = useState({
-    slug: event.slug,
+    // A still-random draft slug gets a readable suggestion from the
+    // details just read off the card — only pre-filled into the field
+    // for the host to review, never saved without them pressing Save.
+    slug:
+      prefilledFromCard && event.slug.startsWith("draft-")
+        ? buildEventSlugSuggestion(event.honoreeName, event.occasion || event.eventTitle)
+        : event.slug,
     category: event.category,
     occasion: event.occasion ?? "",
     honoreeName: event.honoreeName,
@@ -87,10 +102,12 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
     hostedBy: event.hostedBy,
     startAt: utcIsoToZonedInputValue(event.startAt, event.timezone),
     endAt: utcIsoToZonedInputValue(event.endAt, event.timezone),
+    hasEndTime: event.hasEndTime,
     timezone: event.timezone,
     venueName: event.venueName ?? "",
     venueAddress: event.venueAddress ?? "",
     mapsUrl: event.mapsUrl ?? "",
+    mapsEmbedUrl: event.mapsEmbedUrl ?? "",
     parkingInfo: event.parkingInfo ?? "",
     dressCode: event.dressCode ?? "",
     visibility: event.visibility,
@@ -138,6 +155,21 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
     setSaved(false);
   }
 
+  /** Fills every Location field from a place picked in the venue search — all still editable afterward. */
+  function applyPlace(place: PlaceSuggestion, timezone: string | null) {
+    const full = placeFullAddress(place);
+    setForm((f) => ({
+      ...f,
+      venueName: place.name,
+      venueAddress: place.address || place.name,
+      mapsUrl: buildMapsSearchUrl(full),
+      mapsEmbedUrl: buildMapsEmbedUrl(full),
+      timezone: timezone ?? f.timezone,
+    }));
+    setTimezoneError(null);
+    setSaved(false);
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -160,11 +192,15 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
       eventTitle: form.eventTitle,
       hostedBy: form.hostedBy,
       startAt: zonedInputValueToUtcIso(form.startAt, form.timezone),
-      endAt: zonedInputValueToUtcIso(form.endAt, form.timezone),
+      endAt: form.hasEndTime
+        ? zonedInputValueToUtcIso(form.endAt, form.timezone)
+        : new Date(new Date(zonedInputValueToUtcIso(form.startAt, form.timezone)).getTime() + OPEN_ENDED_DURATION_MS).toISOString(),
+      hasEndTime: form.hasEndTime,
       timezone: form.timezone,
       venueName: form.venueName || null,
       venueAddress: form.venueAddress || null,
       mapsUrl: form.mapsUrl || null,
+      mapsEmbedUrl: form.mapsEmbedUrl || null,
       parkingInfo: form.parkingInfo || null,
       dressCode: form.dressCode || null,
       visibility: form.visibility,
@@ -208,6 +244,16 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
 
   return (
     <form onSubmit={onSubmit} className="grid max-w-2xl gap-6">
+      {prefilledFromCard ? (
+        <div className="flex items-start gap-3 rounded-xl border border-gold-500/30 bg-gold-500/5 p-4" role="status">
+          <ScanText className="mt-0.5 shrink-0 text-gold-700" size={18} />
+          <p className="text-sm text-navy-950">
+            We&rsquo;ve filled in what we could read from your invitation card. Please check every
+            field — especially the date, time and address — and fill in anything that&rsquo;s missing.
+          </p>
+        </div>
+      ) : null}
+
       <details className="sticky top-2 z-20 rounded-xl border border-gold-500/25 bg-ivory-50/95 p-4 shadow-md backdrop-blur" open>
         <summary className="cursor-pointer font-display text-sm font-medium text-navy-950">
           Live Preview
@@ -357,6 +403,7 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
               />
             </div>
           </div>
+          {form.hasEndTime ? (
           <div>
             <label className={labelClasses}>Ends</label>
             <div className="mt-1.5 flex gap-2">
@@ -376,7 +423,22 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
               />
             </div>
           </div>
+          ) : null}
         </div>
+        <label className="flex items-start gap-2.5 text-sm text-navy-950">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 accent-gold-500"
+            checked={form.hasEndTime}
+            onChange={(e) => set("hasEndTime", e.target.checked)}
+          />
+          <span>
+            Add an end time
+            <span className="block text-xs text-navy-700/60">
+              Leave this off to show just the start, e.g. &ldquo;7:00 PM onwards&rdquo;.
+            </span>
+          </span>
+        </label>
         <p className="text-xs text-navy-700/50">
           Date and time are separate fields on purpose — picking just a date used to leave the
           combined field half-filled and block saving until a time was also set. Now, if you only
@@ -387,6 +449,15 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
 
       <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Location</h2>
+        <div>
+          <label className={labelClasses}>Find your venue</label>
+          <div className="mt-1.5">
+            <VenueAutocomplete inputClassName={inputClasses} onSelect={applyPlace} />
+          </div>
+          <p className="mt-1.5 text-xs text-navy-700/50">
+            Pick a match to fill in the venue, address, timezone and map automatically — or type them below.
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={labelClasses}>Venue Name</label>
@@ -443,6 +514,39 @@ export function EventBasicsForm({ token, event, updateAction, nextHref }: EventB
               onChange={(e) => set("mapsUrl", e.target.value)}
               placeholder="https://maps.google.com/..."
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClasses}>Map on your page</label>
+            <div className="mt-1.5 flex gap-2">
+              <input
+                className={inputClasses}
+                value={form.mapsEmbedUrl}
+                onChange={(e) => set("mapsEmbedUrl", e.target.value)}
+                placeholder="https://maps.google.com/maps?...&output=embed"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                disabled={!form.venueAddress.trim()}
+                onClick={() => {
+                  const place = [form.venueName, form.venueAddress].filter((v) => v.trim()).join(", ");
+                  setForm((f) => ({ ...f, mapsUrl: f.mapsUrl || buildMapsSearchUrl(place), mapsEmbedUrl: buildMapsEmbedUrl(place) }));
+                  setSaved(false);
+                }}
+              >
+                Generate
+              </Button>
+            </div>
+            <p className="mt-1.5 text-xs text-navy-700/50">
+              &ldquo;Generate&rdquo; builds the map from the venue and address above — no API key needed.
+            </p>
+            {form.mapsEmbedUrl ? (
+              <div className="mt-3">
+                <MapEmbedPreview embedUrl={form.mapsEmbedUrl} title={form.venueName || "Venue map"} />
+              </div>
+            ) : null}
           </div>
           <div>
             <label className={labelClasses}>Parking Info</label>

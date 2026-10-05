@@ -46,7 +46,13 @@ export default async function AdminTemplatesPage() {
         .
       </p>
       <div className="mt-6">
-        <TemplatePicker eventId={event.id} eventSlug={event.slug} currentTemplateSlug={event.templateSlug} templates={templates} />
+        <TemplatePicker
+          eventId={event.id}
+          eventSlug={event.slug}
+          currentTemplateSlug={event.templateSlug}
+          currentThemeOverrides={event.themeOverrides}
+          templates={templates}
+        />
       </div>
     </div>
   );

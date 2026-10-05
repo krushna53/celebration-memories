@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function VintageKeepsake(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={vintageKeepsakeTheme}>
+    <TemplateThemeWrapper theme={vintageKeepsakeTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}

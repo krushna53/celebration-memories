@@ -75,7 +75,7 @@ const MINIMAL_LINKS = [
 
 export function Footer({ designerCredit, variant = "full" }: FooterProps = {}) {
   return (
-    <footer className="border-t border-gold-500/20 bg-navy-950 py-12 text-ivory-100/70">
+    <footer className="surface-feature border-t border-gold-500/20 bg-navy-950 py-12 text-ivory-100/70">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {variant === "full" ? (
           <div className="grid grid-cols-2 gap-8 text-center sm:grid-cols-4 sm:text-left">

@@ -36,6 +36,93 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Monday, October 5",
+    items: [
+      {
+        title: "Already have an invitation card? Upload it and we fill in your event",
+        detail:
+          "After \"What would you like to build?\", the Create Your Event wizard now asks whether you already have an invitation card. Say yes and upload it: it becomes your invitation and link-preview image straight away, and AI reads the name, date, time, venue, address, dress code and message off the card to pre-fill Event Details (with a banner asking you to check them). Say no and you go to Event Details as before.",
+        test:
+          "Start a new event, pick an occasion and goals, answer Yes and upload a photo of a real invitation. Confirm the filled-in details listed, then check them on Event Details. Start another and answer No — confirm Event Details opens empty.",
+      },
+      {
+        title: "Find your venue as you type — map filled in for you",
+        detail:
+          "Event Settings and the wizard's Event Details have a \"Find your venue\" search. Pick a suggestion and the venue name, address, timezone, Google Maps directions link and the map shown on your page are all filled in. A live map preview and a \"Copy embed code\" button sit underneath. Free, no Google key needed.",
+        test:
+          "In Event Details, type a hotel or hall name, pick it, and confirm the address, Maps link and map preview appear. Try a venue abroad and confirm the timezone changes.",
+      },
+      {
+        title: "\"7:00 PM onwards\" — end time is now optional",
+        detail:
+          "Untick \"Add an end time\" in Event Details / Event Settings and every page shows just the start, e.g. \"7:00 PM IST onwards\", instead of a range. A card that only says \"7 PM onwards\" is read the same way.",
+        test:
+          "Untick Add an end time, save, and open the event page: the hero, invitation and Event Details card should all say \"onwards\".",
+      },
+      {
+        title: "Light templates no longer have a dark countdown — and you can pick colours",
+        detail:
+          "Kids Cartoon, Minimal White, Floral Pastel, Little Blessings and Boardroom Ivory now have light top banner, countdown and timeline sections instead of a dark slab, and text in those sections is always checked for readability on every template. Buttons now use each template's own accent (they were all showing the platform's coral). On the Templates step / page, \"Customise colours\" lets you change the accent and make those sections light, dark, or any colour, with a live preview.",
+        test:
+          "Pick Kids Cartoon and open the event page — the countdown should be light. On the Templates page open Customise colours, choose an accent and \"Pick a colour\", save, and confirm the event page changes.",
+      },
+      {
+        title: "Timeline: start a milestone from a photo",
+        detail:
+          "\"Start from a photo\" reads when and where the photo was taken and fills in the milestone's Period (e.g. March 1998), title and description (\"Taken in Lonavala, Maharashtra on 14 March 1998.\") — all editable — then attaches the photo when you add it. Adding a photo to an existing milestone offers to add its date and place. A tip explains which sources keep this information (Google Drive / Files keep date and place; Google Photos keeps the date; WhatsApp copies keep neither).",
+        test:
+          "In Timeline, tap Start from a photo and choose an original phone photo from Files or Google Drive. Confirm the fields fill in, edit one, add the milestone, and check the photo is attached.",
+      },
+      {
+        title: "Gallery: AI sorts and captions photos as you upload",
+        detail:
+          "With \"Auto-sort & caption photos with AI\" ticked, each uploaded photo goes into the right category with a short caption that can include where and when it was taken. Newly sorted photos get an \"Auto\" badge. The pencil on any photo now edits both the caption and the category (this also fixes caption editing in the wizard). Without AI, photos with a date or place still get a caption like \"Lonavala, Maharashtra · March 1998\".",
+        test:
+          "In Admin > Gallery upload three different photos with auto-sort on. Confirm they land in sensible categories with captions and the Auto badge, then use the pencil to move one to another category.",
+      },
+      {
+        title: "Add photos straight from Google Drive",
+        detail:
+          "Next to every Google Photos button — guest photo and video uploads, Admin Gallery and Timeline — there's now a Google Drive button. Guests and hosts sign in with Google, pick files in Google's own Drive window (folders, Shared with me and search work), and they're added like any other upload. Drive sends the original file, so photos keep the date and place they were taken for Timeline and Gallery to fill in. The app can only open the files you pick, nothing else in your Drive.",
+        test:
+          "On a test invite link, open Upload Photos and tap Google Drive, sign in and pick two photos, then upload. In Admin > Timeline use Google Drive under Start from a photo with a phone photo saved in Drive, and confirm the date and place fill in.",
+      },
+      {
+        title: "Gallery and timeline videos, clearer delete buttons",
+        detail:
+          "The admin gallery and timeline accept MP4 videos as well as photos, and they play on the event page and in the Slideshow. Every gallery item has a labelled Delete button; in the admin it moves to the Recycle Bin for 30 days.",
+        test:
+          "Upload a short MP4 to the Gallery and to a timeline milestone, play both on the event page, then delete the gallery video and restore it from Recycle Bin.",
+      },
+      {
+        title: "Admin event switching and team accounts fixed",
+        detail:
+          "Choosing an event from the owner's event list now reliably shows that event across the dashboard, and leaving it returns to your own. Adding a team member whose email already has an account gives them access (and a recovery email) without changing their password, and a failed add never deletes someone's existing login. Signed-in users are no longer shown the sign-in form.",
+        test:
+          "As owner, switch to another event in Events and check Gallery/Invitees show that event. In Team, add an email that already has an account and confirm they can sign in with their existing password.",
+      },
+    ],
+  },
+  {
+    date: "Tuesday, September 29",
+    items: [
+      {
+        title: "Guest photos and videos are now private links",
+        detail:
+          "Guest photos, videos, voice notes and the gallery are served through expiring links on our own domain instead of permanent public addresses, so a copied link stops working after a while. Repeated wrong guesses of invite links, app access codes, promo codes and Event Day phone checks are locked out, and right-click / long-press saving is disabled on private media.",
+        test:
+          "Open an event page and confirm gallery photos and Memory Wall media load and play. Copy an image address, wait a day, and confirm it no longer opens.",
+      },
+      {
+        title: "Homepage: real host video, \"How it works\" and grouped features",
+        detail:
+          "A \"Hear it from a real host\" video review sits right under the homepage banner (plays muted, tap for sound). Below it, \"Ready In Three Steps\" explains the process, and features are grouped into Invite / Celebrate / Remember with the full list under \"See all features\". The closing section offers Build It Free Yourself or a WhatsApp set-up option.",
+        test:
+          "Open the homepage on a phone: play the host video with sound, scroll through the three steps and feature groups, and tap See all features.",
+      },
+    ],
+  },
+  {
     date: "Monday, September 28",
     items: [
       {
@@ -867,7 +954,7 @@ export default function WeeklyUpdatePage() {
       <div className="mx-auto max-w-2xl">
         <p className="text-xs font-medium uppercase tracking-[0.15em] text-gold-700">Internal — not linked anywhere on the site</p>
         <h1 className="mt-2 font-display text-3xl text-navy-950 sm:text-4xl">Weekly Update</h1>
-        <p className="mt-1 text-sm text-navy-700/60">Monday, September 28, 2026</p>
+        <p className="mt-1 text-sm text-navy-700/60">Monday, October 5, 2026</p>
 
         <div className="mt-10 grid gap-10">
           {CHANGES.map((group) => (

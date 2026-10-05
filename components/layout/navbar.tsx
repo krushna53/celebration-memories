@@ -115,7 +115,7 @@ export function Navbar({
     <>
       <header
         className={cn(
-          "fixed inset-x-0 top-0 z-50 transition-luxury duration-500",
+          "surface-feature fixed inset-x-0 top-0 z-50 transition-luxury duration-500",
           showSolidBackground
             ? "bg-navy-950/80 backdrop-blur-md shadow-[0_1px_0_0_rgba(201,162,39,0.25)]"
             : "bg-transparent",

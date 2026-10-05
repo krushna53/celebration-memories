@@ -6,7 +6,7 @@ import type { BirthdayTemplateProps } from "@/lib/templates";
 
 export default function CorporateSlate(props: BirthdayTemplateProps) {
   return (
-    <TemplateThemeWrapper theme={corporateSlateTheme}>
+    <TemplateThemeWrapper theme={corporateSlateTheme} overrides={props.event?.themeOverrides}>
       <SiteShell honoreeName={props.displayData.honoreeName} transparentUntilScroll>
         <EventSections
           event={props.event}
