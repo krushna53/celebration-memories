@@ -81,6 +81,13 @@ const CHANGES: ChangeGroup[] = [
           "In Admin > Gallery upload three different photos with auto-sort on. Confirm they land in sensible categories with captions and the Auto badge, then use the pencil to move one to another category.",
       },
       {
+        title: "Gallery uploads show clear progress",
+        detail:
+          "Uploading to the Gallery now shows a progress panel: \"Uploading 4 of 12…\", a progress bar, a reminder to keep the page open, and each photo's own step (Preparing, Uploading, AI sorting, Done). The browser asks before you leave mid-upload, photos upload three at a time so batches finish faster, and anything that fails shows why with a one-tap Retry.",
+        test:
+          "In Admin > Gallery, upload 10 photos at once. Watch the panel count up, try closing the tab mid-way and confirm the browser warns you, then confirm the green \"All 10 uploaded\" summary.",
+      },
+      {
         title: "Full-page gallery: Pinterest-style mosaic or Google Photos-style grid",
         detail:
           "Every event now has its own gallery page (event link + /gallery). Switch between Mosaic (photos at their natural shape, like Pinterest) and Grid (tight square tiles under chapter headings, like Google Photos) — the choice is remembered on that device. Chapter tabs, a slideshow over everything, and photos load in batches as you scroll, so big galleries stay quick on phones. On the event page, a chapter with more than 24 photos now opens this page from \"See all\" instead of making the event page endlessly long, and a \"View full gallery\" link appears once there are more than 24 photos and videos.",
