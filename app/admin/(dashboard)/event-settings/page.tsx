@@ -47,6 +47,7 @@ export default async function AdminEventSettingsPage() {
           aiCssConfigured={AI_CSS_CONFIGURED}
           aiCssQuota={isClient ? { used: aiCssUsed, limit: aiCssLimit } : null}
           storageUsedBytes={storageUsage.totalBytes}
+          canEditStorageQuota={admin?.role === "owner"}
         />
       </div>
     </div>

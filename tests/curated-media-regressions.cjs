@@ -46,6 +46,7 @@ test('both upload services issue signed gallery uploads with the correct MIME', 
     } } }) },
     '@/lib/media-url': { isPrivateMediaBucket: () => true, signedMediaPath: (bucket, path) => `/media/${bucket}/${path}?signed=true` },
     '@/types/memory': {},
+    '@/services/storage-quota': { assertEventStorageAvailable: async () => {}, StorageQuotaError: class StorageQuotaError extends Error {} },
   });
   for (const fn of [uploads.createSignedGalleryUpload, uploads.createSignedTimelineImageUpload]) {
     const result = await fn({ eventId: 'veda', fileName: 'clip', contentType: 'video/mp4', fileSize: 1024 });
@@ -54,6 +55,29 @@ test('both upload services issue signed gallery uploads with the correct MIME', 
   }
   assert.match(paths[0], /^veda\/gallery\/.+\.mp4$/);
   assert.match(paths[1], /^veda\/timeline\/.+\.mp4$/);
+});
+test('a full event refuses new upload links with the quota message', async () => {
+  class StorageQuotaError extends Error {}
+  let signed = 0;
+  const uploads = load('services/uploads.ts', {
+    '@/lib/curated-media': media,
+    '@/lib/supabase/admin': { supabaseAdmin: () => ({ storage: { from: () => ({ createSignedUploadUrl: async () => { signed++; return { data: { token: 't', signedUrl: '/u' }, error: null }; } }) } }) },
+    '@/lib/media-url': { isPrivateMediaBucket: () => true, signedMediaPath: (bucket, path) => `/media/${bucket}/${path}` },
+    '@/types/memory': {},
+    '@/services/storage-quota': {
+      StorageQuotaError,
+      assertEventStorageAvailable: async (eventId, bytes) => {
+        assert.equal(eventId, 'veda');
+        assert.equal(bytes, 2048);
+        throw new StorageQuotaError('This event has used all 5 GB of its storage.');
+      },
+    },
+  });
+  await assert.rejects(
+    uploads.createSignedGalleryUpload({ eventId: 'veda', fileName: 'p.jpg', contentType: 'image/jpeg', fileSize: 2048 }),
+    (err) => err instanceof uploads.UploadValidationError && /used all 5 GB/.test(err.message),
+  );
+  assert.equal(signed, 0, 'no upload link may be issued once the event is full');
 });
 function galleryActions(allowed) {
   const calls = { deleted: [], revalidated: [], saved: [] };

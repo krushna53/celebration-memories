@@ -81,6 +81,13 @@ const CHANGES: ChangeGroup[] = [
           "In Admin > Gallery upload three different photos with auto-sort on. Confirm they land in sensible categories with captions and the Auto badge, then use the pencil to move one to another category.",
       },
       {
+        title: "5 GB storage limit per event, with a warning before it's full",
+        detail:
+          "Each event now has a real 5 GB storage limit covering guest memories, gallery, timeline, slideshow files and AI images. From 90% the admin dashboard shows an amber \"Storage 92% full\" strip at the top; once full it turns red and new uploads are blocked — guests see a polite \"space is full, please let the host know\", and hosts see what to do (delete files, \"Delete Forever\" in the Recycle Bin, or ask us to raise it). Only the owner can change an event's limit now.",
+        test:
+          "As owner, set a test event's Storage quota (Event Settings) just above its current usage and confirm the amber strip; set it below and confirm the red strip, then try uploading in Gallery and from a guest link and check the messages. Put it back to 5 GB afterwards.",
+      },
+      {
         title: "Gallery uploads show clear progress",
         detail:
           "Uploading to the Gallery now shows a progress panel: \"Uploading 4 of 12…\", a progress bar, a reminder to keep the page open, and each photo's own step (Preparing, Uploading, AI sorting, Done). The browser asks before you leave mid-upload, photos upload three at a time so batches finish faster, and anything that fails shows why with a one-tap Retry.",

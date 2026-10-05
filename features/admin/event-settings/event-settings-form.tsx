@@ -71,6 +71,8 @@ interface EventSettingsFormProps {
   aiCssConfigured: boolean;
   aiCssQuota: { used: number; limit: number } | null;
   storageUsedBytes: number;
+  /** Only the platform owner can change an event's storage quota — it's what limits uploads. */
+  canEditStorageQuota?: boolean;
 }
 
 // Event start/end datetime-local fields are pinned to IST (see
@@ -85,6 +87,7 @@ export function EventSettingsForm({
   aiCssConfigured,
   aiCssQuota,
   storageUsedBytes,
+  canEditStorageQuota = false,
 }: EventSettingsFormProps) {
   const [form, setForm] = useState({
     slug: event.slug,
@@ -1721,11 +1724,13 @@ export function EventSettingsForm({
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
+      <section id="storage" className="grid scroll-mt-24 gap-4 rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Storage</h2>
         <p className="text-xs leading-relaxed text-navy-700/60">
           How much space this event&rsquo;s Gallery, Timeline, Slideshow, and guest-uploaded photos/videos/audio are
-          using, against an editable quota — an informational limit for now, not tied to a specific pricing plan.
+          using, against its quota (5 GB unless changed here). Once it&rsquo;s full, new uploads — from guests and
+          from the dashboard — are blocked until space is freed or the quota is raised. Items in the Recycle Bin still
+          count until they&rsquo;re deleted forever.
         </p>
         {(() => {
           const quotaBytes = form.storageQuotaGb * 1024 * 1024 * 1024;
@@ -1748,20 +1753,26 @@ export function EventSettingsForm({
         })()}
         <div>
           <label className={labelClasses}>Storage quota (GB)</label>
-          <input
-            type="number"
-            min={1}
-            max={1000}
-            step={0.5}
-            value={form.storageQuotaGb}
-            onChange={(e) => {
-              setForm((f) => ({ ...f, storageQuotaGb: Number(e.target.value) || 1 }));
-              setSaved(false);
-            }}
-            className={`${inputClasses} max-w-[10rem]`}
-          />
+          {canEditStorageQuota ? (
+            <input
+              type="number"
+              min={1}
+              max={1000}
+              step={0.5}
+              value={form.storageQuotaGb}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, storageQuotaGb: Number(e.target.value) || 1 }));
+                setSaved(false);
+              }}
+              className={`${inputClasses} max-w-[10rem]`}
+            />
+          ) : (
+            <p className="mt-1.5 text-sm text-navy-950">{form.storageQuotaGb} GB</p>
+          )}
           <p className="mt-1.5 text-xs text-navy-700/50">
-            You&rsquo;ll get a notification (in-app + this shows here) once usage crosses 80% of this.
+            You&rsquo;ll get a notification (in-app + this shows here) once usage crosses 80% of this, and a warning
+            across the dashboard from 90%.
+            {canEditStorageQuota ? "" : " Need more space? Contact us to raise the limit."}
           </p>
         </div>
       </section>

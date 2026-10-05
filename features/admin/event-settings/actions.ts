@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdminForEvent } from "@/services/admin-auth";
+import { withoutPlanLimits } from "@/lib/plan-limits";
 import { getEventById, updateEvent, type EventUpdateInput } from "@/services/events";
 import { snapshotEventSettings } from "@/services/event-snapshots";
 import {
@@ -148,6 +149,11 @@ export async function updateEventAction(
     const cssError = validateCustomCss(input.customCss);
     if (cssError) return { success: false, error: cssError };
   }
+
+  // Plan limits are the owner's to set — a client host saving Event
+  // Settings must not be able to lift their own storage quota (which now
+  // blocks uploads, services/storage-quota.ts) or AI generation caps.
+  if (admin.role !== "owner") input = withoutPlanLimits(input);
 
   try {
     // Best-effort — never let a snapshot failure block the actual save.

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { requireDraftEvent } from "@/features/start/draft-auth";
 import { updateEvent, type EventUpdateInput } from "@/services/events";
+import { withoutPlanLimits } from "@/lib/plan-limits";
 import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -28,7 +29,8 @@ export async function draftUpdateEventAction(
   try {
     const event = await requireDraftEvent(token);
     if (event.id !== eventId) return { success: false, error: "This link doesn't match that event." };
-    await updateEvent(eventId, input);
+    // Plan limits (storage quota, AI caps) are set by the platform — never by whoever holds a draft link.
+    await updateEvent(eventId, withoutPlanLimits(input));
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed." };

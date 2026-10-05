@@ -9,6 +9,7 @@ import { TOUR_STEP_COPY } from "@/lib/admin-tour-steps";
 import { AdminTourController, type TourStep } from "@/features/admin/tour/admin-tour-controller";
 import { FaqChatbot } from "@/features/admin/support/faq-chatbot";
 import { ActiveEventBanner } from "@/features/admin/events/active-event-banner";
+import { StorageQuotaBanner } from "@/features/admin/storage/storage-quota-banner";
 import { NotificationBell } from "@/features/admin/notifications/notification-bell";
 import { AdminNav } from "@/features/admin/components/admin-nav";
 import { ADMIN_NAV } from "@/lib/admin-nav";
@@ -88,6 +89,7 @@ export default async function AdminDashboardLayout({
       </header>
 
       <ActiveEventBanner admin={admin} />
+      <StorageQuotaBanner admin={admin} />
 
       {/* Bottom padding on phones clears the fixed bottom tab bar (AdminNav). */}
       <main className="mx-auto max-w-6xl px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 md:py-8">{children}</main>

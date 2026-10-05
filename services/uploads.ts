@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { isPrivateMediaBucket, signedMediaPath } from "@/lib/media-url";
 import { ACCEPTED_MIME_TYPES, UPLOAD_LIMITS, type MemoryKind } from "@/types/memory";
+import { assertEventStorageAvailable, StorageQuotaError } from "@/services/storage-quota";
 
 const BUCKET_BY_KIND: Record<"photo" | "video" | "audio", string> = {
   photo: "photos",
@@ -22,6 +23,20 @@ const TABLE_BY_KIND: Record<"photo" | "video" | "audio", string> = {
 const MAX_UPLOADS_PER_INVITEE = 40;
 
 export class UploadValidationError extends Error {}
+
+/**
+ * The per-event storage limit (services/storage-quota.ts), surfaced as an
+ * UploadValidationError — callers already show those messages to the
+ * person uploading instead of a generic "please try again".
+ */
+async function ensureEventSpace(eventId: string, fileSize: number, audience: "guest" | "host"): Promise<void> {
+  try {
+    await assertEventStorageAvailable(eventId, fileSize, audience);
+  } catch (err) {
+    if (err instanceof StorageQuotaError) throw new UploadValidationError(err.message);
+    throw err;
+  }
+}
 
 function sanitizeFileName(name: string): string {
   return name
@@ -45,6 +60,7 @@ export async function createSignedMediaUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "guest");
   const { inviteeId, eventId, kind, fileName, fileSize } = params;
 
   // Strip codec parameters (e.g. "video/webm;codecs=vp8,opus" ->
@@ -204,6 +220,7 @@ export async function createSignedGalleryUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
   const { eventId, fileSize } = params;
   const { fileName, contentType } = curatedMediaFile(params.fileName, params.contentType, fileSize);
 
@@ -232,6 +249,7 @@ export async function createSignedShareImageUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
   const { eventId, fileName, contentType, fileSize } = params;
 
   const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
@@ -272,6 +290,7 @@ export async function createSignedAiImageUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
   const { eventId, fileName, contentType, fileSize } = params;
 
   const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.photo;
@@ -378,6 +397,7 @@ export async function createSignedShareVideoUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
   const { eventId, fileName, contentType, fileSize } = params;
 
   if (contentType !== "video/mp4") {
@@ -447,6 +467,7 @@ export async function createSignedTimelineImageUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
   const { eventId, fileSize } = params;
   const { fileName, contentType } = curatedMediaFile(params.fileName, params.contentType, fileSize);
 
@@ -485,6 +506,7 @@ export async function createSignedSlideshowMusicUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
   const { eventId, fileName, contentType, fileSize } = params;
 
   const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.audio;
@@ -524,6 +546,7 @@ export async function createSignedHighlightReelUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
   const { eventId, fileName, contentType, fileSize } = params;
 
   const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.video;
@@ -567,6 +590,7 @@ export async function createSignedVideoEditorUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
   const { eventId, fileName, contentType, fileSize } = params;
 
   const acceptedTypes: readonly string[] = ACCEPTED_MIME_TYPES.video;
@@ -607,6 +631,7 @@ export async function createSignedTimelineMovieUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
   const { eventId, fileName, contentType, fileSize } = params;
 
   if (contentType !== "video/mp4" && contentType !== "video/quicktime") {
@@ -757,6 +782,7 @@ export async function createSignedAdminMediaUpload(params: {
   contentType: string;
   fileSize: number;
 }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
   const { adminId, eventId, kind, fileName, fileSize } = params;
   const contentType = (params.contentType.split(";")[0] ?? params.contentType).trim();
 
