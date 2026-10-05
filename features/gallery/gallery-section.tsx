@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
-import { ChevronDown, ImageOff, Pause, Play } from "lucide-react";
-import { PhotoSlider } from "react-photo-view";
-import "react-photo-view/dist/react-photo-view.css";
+import Link from "next/link";
+import { ArrowRight, ChevronDown, ImageOff, Play } from "lucide-react";
 
 import { isVideoMedia } from "@/lib/curated-media";
 import { cn } from "@/lib/utils";
@@ -12,116 +11,36 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
 import { ThenNowCard } from "@/features/gallery/then-now-card";
+import {
+  GalleryLightbox,
+  MasonryGrid,
+  guestToViewer,
+  toChapters,
+  toViewer,
+  useColumnCount,
+  type ViewerItem,
+} from "@/features/gallery/gallery-shared";
 import type { GalleryPairRecord, GalleryPhotoRecord, GuestGalleryPhoto } from "@/types/content";
-import { MediaShareButtons } from "@/components/media/media-share-buttons";
 
 interface GallerySectionProps {
   photos: GalleryPhotoRecord[];
   pairs?: GalleryPairRecord[];
   guestPhotos?: GuestGalleryPhoto[];
+  /**
+   * The event's full-page gallery (/events/[slug]/gallery). When set, a
+   * chapter too big to expand inline sends "See all" there instead, and a
+   * "View full gallery" link shows once the event has more photos than
+   * fit comfortably on the event page.
+   */
+  fullGalleryHref?: string;
 }
 
 /** Cover + this many more before "See all" when there's only one chapter. */
 const HIGHLIGHT_COUNT = 9;
 /** Photos shown per chapter before its own "See all". */
 const CHAPTER_PREVIEW = 6;
-const SLIDESHOW_INTERVAL_MS = 3500;
-
-/** A life story reads oldest → newest: chapter order and titles per category. */
-const CHAPTERS: { category: GalleryCategory; title: string }[] = [
-  { category: "childhood", title: "The early years" },
-  { category: "wedding", title: "The wedding" },
-  { category: "family", title: "Family" },
-  { category: "travel", title: "Travels" },
-  { category: "friends", title: "Friends" },
-  { category: "grandchildren", title: "The grandchildren" },
-];
-
-/** "…, 1970s" in a caption (the AI tagger adds these for old prints) → 1970; photos without one sort after dated ones. */
-function decadeOf(caption: string | null): number {
-  const match = caption?.match(/\b(1[89]\d0|20\d0)s\b/);
-  return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
-}
-function chronological(list: GalleryPhotoRecord[]): GalleryPhotoRecord[] {
-  return [...list].sort((a, b) => decadeOf(a.caption) - decadeOf(b.caption) || a.sortOrder - b.sortOrder);
-}
-
-/**
- * Two columns on phones, three from `sm` up — tracked in JS (not CSS
- * `columns`) so photos are dealt into columns row by row and keep their
- * reading order.
- */
-function useColumnCount(): number {
-  const [count, setCount] = useState(2);
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 640px)");
-    const update = () => setCount(query.matches ? 3 : 2);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-  return count;
-}
-
-/** One photo the lightbox can show — family photos and guest photos alike. */
-interface ViewerItem {
-  id: string;
-  url: string;
-  caption: string | null;
-  shareBase: string;
-  pageUrl?: string;
-  byline?: string;
-}
-
-function toViewer(p: GalleryPhotoRecord): ViewerItem {
-  return { id: p.id, url: p.url, caption: p.caption, shareBase: `gallery-${p.category}`, pageUrl: `/p/gallery/${p.id}` };
-}
-
-function PhotoGrid({
-  entries,
-  columnCount,
-  onOpen,
-}: {
-  entries: { item: ViewerItem; index: number }[];
-  columnCount: number;
-  onOpen: (index: number) => void;
-}) {
-  const columns = Array.from({ length: columnCount }, (_, c) => entries.filter((_, i) => i % columnCount === c));
-  return (
-    <div className="flex gap-4">
-      {columns.map((column, c) => (
-        <div key={c} className="flex min-w-0 flex-1 flex-col gap-4">
-          {column.map(({ item, index }) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onOpen(index)}
-              aria-label={`Open media${item.caption ? `: ${item.caption}` : ""}`}
-              className="group relative block cursor-zoom-in overflow-hidden rounded-xl border border-navy-950/5 text-left"
-            >
-              {isVideoMedia(item.url) ? (
-                <div className="relative"><video src={item.url} muted playsInline preload="metadata" className="aspect-video w-full bg-black" /><span className="absolute inset-0 flex items-center justify-center text-white"><Play size={36} /></span></div>
-              ) : <Image
-                src={item.url}
-                alt={item.caption ?? ""}
-                width={600}
-                height={800}
-                loading="lazy"
-                sizes="(min-width: 640px) 33vw, 50vw"
-                className="h-auto w-full object-cover transition-luxury duration-500 group-hover:scale-105"
-              />}
-              {item.byline ? (
-                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-950/70 to-transparent px-3 pb-2 pt-6 text-xs text-ivory-50">
-                  {item.byline}
-                </span>
-              ) : null}
-            </button>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
+/** Beyond this many photos a chapter opens on the full gallery page rather than expanding inside the event page. */
+const INLINE_EXPAND_LIMIT = 24;
 
 /**
  * Photo gallery told as a story: a cover photo, "Then & Now" compare
@@ -131,31 +50,15 @@ function PhotoGrid({
  * approved guest photos from the memory wall. A full-screen lightbox
  * holds share/download buttons and a "Play slideshow" mode.
  */
-export function GallerySection({ photos, pairs = [], guestPhotos = [] }: GallerySectionProps) {
+export function GallerySection({ photos, pairs = [], guestPhotos = [], fullGalleryHref }: GallerySectionProps) {
   const [active, setActive] = useState<GalleryCategory | "all" | "guests">("all");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [viewer, setViewer] = useState<{ items: ViewerItem[]; index: number } | null>(null);
   const [playing, setPlaying] = useState(false);
-  const columnCount = useColumnCount();
+  const columnCount = useColumnCount(2, { 640: 3 });
 
-  const chapters = useMemo(
-    () =>
-      CHAPTERS.map((c) => ({ ...c, photos: chronological(photos.filter((p) => p.category === c.category)) })).filter(
-        (c) => c.photos.length > 0,
-      ),
-    [photos],
-  );
-  const guestItems = useMemo(
-    () =>
-      guestPhotos.map<ViewerItem>((g) => ({
-        id: `guest-${g.id}`,
-        url: g.url,
-        caption: g.caption,
-        shareBase: "guest-photo",
-        byline: `Shared by ${g.authorName}`,
-      })),
-    [guestPhotos],
-  );
+  const chapters = useMemo(() => toChapters(photos), [photos]);
+  const guestItems = useMemo(() => guestPhotos.map<ViewerItem>(guestToViewer), [guestPhotos]);
 
   const tabs = [
     ...(chapters.length > 1 || guestItems.length > 0 ? [{ value: "all" as const, label: "All", count: photos.length }] : []),
@@ -202,14 +105,8 @@ export function GallerySection({ photos, pairs = [], guestPhotos = [] }: Gallery
     return { ...g, start, shown: g.items.slice(0, limit), hidden: Math.max(0, g.items.length - limit) };
   });
 
-  useEffect(() => {
-    if (!playing || !viewer || viewer.items.length < 2 || isVideoMedia(viewer.items[viewer.index]?.url)) return;
-    const timer = window.setTimeout(
-      () => setViewer((v) => (v ? { ...v, index: (v.index + 1) % v.items.length } : v)),
-      SLIDESHOW_INTERVAL_MS,
-    );
-    return () => window.clearTimeout(timer);
-  }, [playing, viewer]);
+  const setViewerIndex = useCallback((index: number) => setViewer((v) => (v ? { ...v, index } : v)), []);
+  const totalCount = photos.length + guestItems.length;
 
   function openViewer(items: ViewerItem[], index: number, autoplay = false) {
     setPlaying(autoplay);
@@ -223,8 +120,6 @@ export function GallerySection({ photos, pairs = [], guestPhotos = [] }: Gallery
     setActive(value);
     setExpanded({});
   }
-
-  const current = viewer ? viewer.items[viewer.index] : null;
 
   return (
     <section id="gallery" className="bg-white py-20 sm:py-28">
@@ -252,7 +147,7 @@ export function GallerySection({ photos, pairs = [], guestPhotos = [] }: Gallery
                       className={cn(
                         "rounded-full border px-4 py-1.5 text-xs uppercase tracking-[0.15em] transition-luxury duration-300 sm:text-sm",
                         active === tab.value
-                          ? "border-gold-500 bg-gold-500 text-navy-950"
+                          ? "border-navy-950 bg-navy-950 text-ivory-50"
                           : "border-navy-950/15 text-navy-700/70 hover:border-gold-400 hover:text-navy-950",
                       )}
                     >
@@ -329,7 +224,7 @@ export function GallerySection({ photos, pairs = [], guestPhotos = [] }: Gallery
                     </div>
                   ) : null}
                   {group.shown.length > 0 ? (
-                    <PhotoGrid
+                    <MasonryGrid
                       entries={group.shown.map((item, i) => ({ item, index: group.start + i }))}
                       columnCount={columnCount}
                       onOpen={(index) => openViewer(allViewItems, index)}
@@ -337,63 +232,50 @@ export function GallerySection({ photos, pairs = [], guestPhotos = [] }: Gallery
                   ) : null}
                   {group.hidden > 0 ? (
                     <div className="mt-6 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setExpanded((e) => ({ ...e, [group.key]: true }))}
-                        className="inline-flex items-center gap-2 rounded-full bg-navy-950 px-6 py-3 text-sm font-medium text-ivory-50 transition-luxury duration-300 hover:bg-navy-900"
-                      >
-                        See all {group.items.length + (group.title ? 0 : view.cover ? 1 : 0)}
-                        {group.title ? ` in ${group.title}` : " photos"} <ChevronDown size={16} />
-                      </button>
+                      {fullGalleryHref && group.items.length > INLINE_EXPAND_LIMIT ? (
+                        <Link
+                          href={`${fullGalleryHref}${group.key === "all" ? "" : `?chapter=${group.key}`}`}
+                          className="inline-flex items-center gap-2 rounded-full bg-navy-950 px-6 py-3 text-sm font-medium text-ivory-50 transition-luxury duration-300 hover:bg-navy-900"
+                        >
+                          See all {group.items.length + (group.title ? 0 : view.cover ? 1 : 0)}
+                          {group.title ? ` in ${group.title}` : " photos"} <ArrowRight size={16} />
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setExpanded((e) => ({ ...e, [group.key]: true }))}
+                          className="inline-flex items-center gap-2 rounded-full bg-navy-950 px-6 py-3 text-sm font-medium text-ivory-50 transition-luxury duration-300 hover:bg-navy-900"
+                        >
+                          See all {group.items.length + (group.title ? 0 : view.cover ? 1 : 0)}
+                          {group.title ? ` in ${group.title}` : " photos"} <ChevronDown size={16} />
+                        </button>
+                      )}
                     </div>
                   ) : null}
                 </div>
               ))}
+
+              {fullGalleryHref && totalCount > INLINE_EXPAND_LIMIT ? (
+                <div className="mt-12 flex justify-center">
+                  <Link
+                    href={fullGalleryHref}
+                    className="inline-flex items-center gap-2 rounded-full border border-navy-950/15 px-6 py-3 text-sm font-medium text-navy-950 transition-luxury duration-300 hover:border-gold-500"
+                  >
+                    View full gallery · {totalCount} photos &amp; videos <ArrowRight size={16} />
+                  </Link>
+                </div>
+              ) : null}
             </>
           )}
         </Reveal>
       </div>
 
-      <PhotoSlider
-        images={(viewer?.items ?? []).map((item, index) => isVideoMedia(item.url) ? {
-          key: item.id, width: 960, height: 540,
-          render: () => index === viewer?.index ? <video key={item.id} src={item.url} controls playsInline preload="metadata" aria-label={item.caption || "Gallery video"} className="h-full w-full bg-black object-contain" /> : null,
-        } : { key: item.id, src: item.url })}
-        visible={viewer !== null}
-        index={viewer?.index ?? 0}
-        onIndexChange={(index) => { setPlaying(false); setViewer((v) => (v ? { ...v, index } : v)); }}
+      <GalleryLightbox
+        viewer={viewer}
+        playing={playing}
+        setPlaying={setPlaying}
+        onIndexChange={setViewerIndex}
         onClose={closeViewer}
-        toolbarRender={() => (
-          <div className="flex items-center gap-1.5">
-            {viewer && viewer.items.length > 1 ? (
-              <button
-                type="button"
-                onClick={() => setPlaying((p) => !p)}
-                aria-label={playing ? "Pause slideshow" : "Play slideshow"}
-                className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 p-2 text-ivory-50 backdrop-blur-sm transition-luxury duration-200 hover:bg-navy-950"
-              >
-                {playing ? <Pause size={15} /> : <Play size={15} />}
-              </button>
-            ) : null}
-            {current ? (
-              <MediaShareButtons
-                url={current.url}
-                fileNameBase={current.shareBase}
-                shareText={current.caption ?? undefined}
-                pageUrl={current.pageUrl}
-                className="flex gap-1.5"
-              />
-            ) : null}
-          </div>
-        )}
-        overlayRender={() =>
-          current?.caption || current?.byline ? (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/70 to-transparent px-6 pb-8 pt-16 text-center text-ivory-50">
-              {current.caption ? <p className="font-display text-lg">{current.caption}</p> : null}
-              {current.byline ? <p className="mt-1 text-xs opacity-80">{current.byline}</p> : null}
-            </div>
-          ) : null
-        }
       />
     </section>
   );

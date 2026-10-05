@@ -81,6 +81,13 @@ const CHANGES: ChangeGroup[] = [
           "In Admin > Gallery upload three different photos with auto-sort on. Confirm they land in sensible categories with captions and the Auto badge, then use the pencil to move one to another category.",
       },
       {
+        title: "Full-page gallery: Pinterest-style mosaic or Google Photos-style grid",
+        detail:
+          "Every event now has its own gallery page (event link + /gallery). Switch between Mosaic (photos at their natural shape, like Pinterest) and Grid (tight square tiles under chapter headings, like Google Photos) — the choice is remembered on that device. Chapter tabs, a slideshow over everything, and photos load in batches as you scroll, so big galleries stay quick on phones. On the event page, a chapter with more than 24 photos now opens this page from \"See all\" instead of making the event page endlessly long, and a \"View full gallery\" link appears once there are more than 24 photos and videos.",
+        test:
+          "Open an event with lots of photos, tap See all on a big chapter and confirm the gallery page opens on that chapter. Switch Mosaic / Grid, scroll to the bottom, open a photo and play the slideshow — on a phone and a laptop.",
+      },
+      {
         title: "Add photos straight from Google Drive",
         detail:
           "Next to every Google Photos button — guest photo and video uploads, Admin Gallery and Timeline — there's now a Google Drive button. Guests and hosts sign in with Google, pick files in Google's own Drive window (folders, Shared with me and search work), and they're added like any other upload. Drive sends the original file, so photos keep the date and place they were taken for Timeline and Gallery to fill in. The app can only open the files you pick, nothing else in your Drive.",

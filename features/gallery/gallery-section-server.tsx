@@ -8,10 +8,25 @@ import type { GalleryPhotoRecord } from "@/types/content";
  * already fetched, so templates don't each need to thread new props.
  * Either extra failing just hides that part of the gallery.
  */
-export async function GallerySectionServer({ eventId, photos }: { eventId: string; photos: GalleryPhotoRecord[] }) {
+export async function GallerySectionServer({
+  eventId,
+  eventSlug,
+  photos,
+}: {
+  eventId: string;
+  eventSlug: string;
+  photos: GalleryPhotoRecord[];
+}) {
   const [pairs, guestPhotos] = await Promise.all([
     listGalleryPairs(eventId).catch(() => []),
     listGuestGalleryPhotos(eventId).catch(() => []),
   ]);
-  return <GallerySection photos={photos} pairs={pairs} guestPhotos={guestPhotos} />;
+  return (
+    <GallerySection
+      photos={photos}
+      pairs={pairs}
+      guestPhotos={guestPhotos}
+      fullGalleryHref={`/events/${encodeURIComponent(eventSlug)}/gallery`}
+    />
+  );
 }
