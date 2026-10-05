@@ -418,7 +418,7 @@ function CategoryGrid({
                   onClick={() => setEditingId(editingId === photo.id ? null : photo.id)}
                   title="Edit caption & category"
                   aria-label="Edit caption and category"
-                  className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 text-white"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-navy-700 ring-1 ring-inset ring-navy-950/20 transition-luxury duration-200 hover:text-navy-950 hover:ring-navy-950/50"
                 >
                   <Pencil size={14} />
                 </button>
@@ -428,10 +428,10 @@ function CategoryGrid({
                   disabled={busyId !== null}
                   title="Delete"
                   aria-label={`Delete ${isVideoMedia(photo.url) ? "video" : "photo"}${photo.caption ? `: ${photo.caption}` : ""}`}
-                  className="tap-target flex items-center justify-center rounded-full bg-navy-950/70 text-white"
+                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-white px-3 text-xs font-medium text-red-600 ring-1 ring-inset ring-red-200 transition-luxury duration-200 hover:bg-red-50 hover:ring-red-400 disabled:opacity-50"
                 >
                   {busyId === photo.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                  <span className="px-2 text-xs">Delete</span>
+                  Delete
                 </button>
               </div>
 
