@@ -60,7 +60,9 @@ function publicOrigin(request: Request, url: URL): string {
  * OAuth host signups can't supply `draft_event_id` either, they no
  * longer get an `admins` row from the trigger — this block creates it
  * directly instead, upserting rather than a plain UPDATE, but still
- * refusing to ever overwrite an *existing* event_id.
+ * refusing to ever overwrite an *existing* event_id. Only an unclaimed
+ * draft (status 'draft', no host yet) can be linked this way; an
+ * existing host gets it added as one more event (admin_event_memberships).
  *
  * `business=1`, when present, means this OAuth round-trip came from the
  * Marketplace vendor sign-in/sign-up pages (features/business/
@@ -106,13 +108,24 @@ export async function GET(request: Request): Promise<Response> {
 
     if (!error && data.user && linkEventId) {
       const meta = data.user.user_metadata as { full_name?: string; name?: string } | null;
+      // Only an unclaimed wizard draft can be linked from this URL parameter —
+      // never a live event or one that already has a host, whatever id is passed.
+      const [{ data: draft }, { count: hostCount }] = await Promise.all([
+        supabaseAdmin().from("events").select("id").eq("id", linkEventId).eq("status", "draft").maybeSingle<{ id: string }>(),
+        supabaseAdmin()
+          .from("admin_event_memberships")
+          .select("admin_id", { count: "exact", head: true })
+          .eq("event_id", linkEventId),
+      ]);
       const { data: existingAdmin, error: lookupError } = await supabaseAdmin()
         .from("admins")
-        .select("id, event_id")
+        .select("id, role")
         .eq("id", data.user.id)
-        .maybeSingle<{ id: string; event_id: string | null }>();
+        .maybeSingle<{ id: string; role: string }>();
 
-      if (lookupError) {
+      if (!draft || (hostCount ?? 0) > 0) {
+        console.error("auth callback: refused to link a non-draft or already-claimed event:", linkEventId);
+      } else if (lookupError) {
         console.error("auth callback: failed to look up admin row before linking event:", lookupError.message);
       } else if (!existingAdmin) {
         const { error: insertError } = await supabaseAdmin().from("admins").insert({
@@ -123,13 +136,13 @@ export async function GET(request: Request): Promise<Response> {
           event_id: linkEventId,
         });
         if (insertError) console.error("auth callback: failed to create admin row for Google host signup:", insertError.message);
-      } else if (!existingAdmin.event_id) {
+      } else if (existingAdmin.role !== "owner") {
+        // An existing host starting another event: add it to their account (they can run several).
         const { error: linkError } = await supabaseAdmin()
-          .from("admins")
-          .update({ event_id: linkEventId })
-          .eq("id", data.user.id)
-          .is("event_id", null);
-        if (linkError) console.error("auth callback: failed to link event to new admin:", linkError.message);
+          .from("admin_event_memberships")
+          .upsert({ admin_id: data.user.id, event_id: linkEventId, role: "client" }, { onConflict: "admin_id,event_id" });
+        if (linkError) console.error("auth callback: failed to link event to admin:", linkError.message);
+        await supabaseAdmin().from("admins").update({ event_id: linkEventId }).eq("id", data.user.id).is("event_id", null);
       }
     } else if (!error && data.user && isBusinessFlow) {
       const { data: existingAccount, error: lookupError } = await supabaseAdmin()

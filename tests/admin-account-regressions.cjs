@@ -41,18 +41,46 @@ test('exit restores owner assigned event; deleted selection cannot edit a differ
   assert.equal(await events('deleted').resolveAdminEvent({ role: 'owner', eventId: 'mgm' }), null);
 });
 
-function team({ existingAdmin = null, duplicate = true, insertError = null, authCode = 'email_exists' } = {}) {
-  const calls = { inserts: [], deletes: [], resets: [], pages: [] };
+/**
+ * Minimal table-aware Supabase mock for services/admin-team.ts: every
+ * query builder is chainable and resolves per table — `admins` lookups
+ * by email return `existingAdmin`, membership lookups return
+ * `membership`, head counts return `memberCount`, and every write is
+ * recorded in `calls` (with its table) for assertions.
+ */
+function team({ existingAdmin = null, duplicate = true, insertError = null, authCode = 'email_exists', membership = null, memberCount = 1, remaining = [] } = {}) {
+  const calls = { inserts: [], deletes: [], resets: [], pages: [], updates: [], rowDeletes: [] };
   const authResult = async () => duplicate
     ? { data: { user: null }, error: { code: authCode, message: authCode } }
     : { data: { user: { id: 'new' } }, error: null };
+  const builder = (table) => {
+    const state = { table, head: false, op: 'select', row: null, filters: [] };
+    const result = () => {
+      if (state.op === 'insert') { calls.inserts.push({ table, ...state.row }); return { error: insertError }; }
+      if (state.op === 'update') { calls.updates.push({ table, row: state.row, filters: state.filters }); return { error: null }; }
+      if (state.op === 'delete') { calls.rowDeletes.push({ table, filters: state.filters }); return { error: null }; }
+      if (state.head) return { count: memberCount, error: null };
+      if (table === 'admin_event_memberships') return { data: remaining, error: null };
+      return { data: [], error: null };
+    };
+    const b = {
+      select: (_cols, options) => { state.head = Boolean(options?.head); return b; },
+      insert: (row) => { state.op = 'insert'; state.row = row; return b; },
+      update: (row) => { state.op = 'update'; state.row = row; return b; },
+      delete: () => { state.op = 'delete'; return b; },
+      eq: (col, val) => { state.filters.push(['eq', col, val]); return b; },
+      neq: (col, val) => { state.filters.push(['neq', col, val]); return b; },
+      is: (col, val) => { state.filters.push(['is', col, val]); return b; },
+      ilike: () => b,
+      order: () => b,
+      limit: () => b,
+      maybeSingle: async () => ({ data: table === 'admins' ? existingAdmin : membership, error: null }),
+      then: (resolve, reject) => Promise.resolve(result()).then(resolve, reject),
+    };
+    return b;
+  };
   const client = {
-    from: () => ({
-      select: (_, options) => options?.head
-        ? { eq: async () => ({ count: 1, error: null }) }
-        : { ilike: () => ({ maybeSingle: async () => ({ data: existingAdmin, error: null }) }) },
-      insert: async (row) => { calls.inserts.push(row); return { error: insertError }; },
-    }),
+    from: (table) => builder(table),
     auth: {
       resetPasswordForEmail: async (email) => { calls.resets.push(email); return { error: null }; },
       admin: {
@@ -97,10 +125,41 @@ test('new user assignment failure cleans up only the newly created login', async
   await assert.rejects(service.addTeamMemberWithPassword(input), /conflict/);
   assert.deepEqual(calls.deletes, ['new']);
 });
-test('existing event membership is never silently reassigned', async () => {
-  const { service, calls } = team({ existingAdmin: { id: 'existing', event_id: 'mgm' } });
-  await assert.rejects(service.inviteTeamMemberByEmail(input), /another event/);
+test('someone already hosting another event is added to this one, keeping their login and other events', async () => {
+  for (const add of ['inviteTeamMemberByEmail', 'addTeamMemberWithPassword']) {
+    const { service, calls } = team({ existingAdmin: { id: 'existing', role: 'client' } });
+    await service[add](input);
+    assert.deepEqual(calls.inserts, [{ table: 'admin_event_memberships', admin_id: 'existing', event_id: 'veda', role: 'client' }]);
+    assert.deepEqual(calls.resets, [], 'no password email for an existing dashboard login');
+    assert.deepEqual(calls.deletes, []);
+    // Only a missing primary event is ever filled in — an existing one is never overwritten.
+    for (const update of calls.updates) assert.ok(update.filters.some(([op, col, val]) => op === 'is' && col === 'event_id' && val === null));
+  }
+});
+test('the same person cannot be added to one event twice, and the owner account is never added', async () => {
+  const twice = team({ existingAdmin: { id: 'existing', role: 'client' }, membership: { admin_id: 'existing' } });
+  await assert.rejects(twice.service.inviteTeamMemberByEmail(input), /already on this event/);
+  assert.equal(twice.calls.inserts.length, 0);
+  const owner = team({ existingAdmin: { id: 'boss', role: 'owner' } });
+  await assert.rejects(owner.service.inviteTeamMemberByEmail(input), /site owner/);
+  assert.equal(owner.calls.inserts.length, 0);
+});
+test('a full team refuses new members', async () => {
+  const { service, calls } = team({ memberCount: 4 });
+  await assert.rejects(service.inviteTeamMemberByEmail(input), /already has 4 team members/);
   assert.equal(calls.inserts.length, 0);
+});
+test('removing someone from one event keeps their login when they still manage others', async () => {
+  const { service, calls } = team({ membership: { admin_id: 'existing' }, memberCount: 2, remaining: [{ event_id: 'mgm' }] });
+  await service.removeTeamMember('veda', 'existing');
+  assert.deepEqual(calls.rowDeletes.map((d) => d.table), ['admin_event_memberships']);
+  assert.equal(calls.updates[0].row.event_id, 'mgm');
+  assert.equal(calls.updates.length, 1, 'their account row is only re-pointed, never deleted');
+});
+test('removing someone from their last event removes their dashboard account', async () => {
+  const { service, calls } = team({ membership: { admin_id: 'existing' }, memberCount: 2, remaining: [] });
+  await service.removeTeamMember('veda', 'existing');
+  assert.deepEqual(calls.rowDeletes.map((d) => d.table), ['admin_event_memberships', 'admins']);
 });
 test('unrelated auth errors do not trigger account reuse', async () => {
   const { service, calls } = team({ authCode: 'rate_limit' });
@@ -128,4 +187,27 @@ test('signed-in account without a dashboard does not see sign-in controls', asyn
   const page = await login({ kind: 'none' }, { id: 'existing', email: 'person@example.com' }).default();
   assert.match(JSON.stringify(page), /You’re signed in/);
   assert.doesNotMatch(JSON.stringify(page), /login-form/);
+});
+
+function auth() {
+  return load('services/admin-auth.ts', {
+    '@/lib/supabase/server': { supabaseServer: async () => ({}) },
+    '@/lib/supabase/admin': { supabaseAdmin: () => ({}) },
+    '@/services/session-organizers': { getAssignedSessionIds: async () => [] },
+    '@/lib/admin-active-event': { getActiveEventOverrideId: async () => null },
+  });
+}
+test('multi-event access is checked per event, with that event\'s own role', () => {
+  const { adminForEvent } = auth();
+  const person = {
+    id: 'p', role: 'client', eventId: 'veda',
+    memberships: [{ eventId: 'veda', role: 'client' }, { eventId: 'mgm', role: 'organizer' }],
+  };
+  assert.equal(adminForEvent(person, 'veda').role, 'client');
+  const onMgm = adminForEvent(person, 'mgm');
+  assert.equal(onMgm.role, 'organizer');
+  assert.equal(onMgm.eventId, 'mgm');
+  assert.equal(adminForEvent(person, 'someone-else'), null, 'no access to events they are not a member of');
+  const owner = { id: 'o', role: 'owner', eventId: 'flagship', memberships: [] };
+  assert.equal(adminForEvent(owner, 'anything'), owner);
 });

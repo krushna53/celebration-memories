@@ -105,24 +105,34 @@ export async function deleteAdminAccountAndAssets(adminId: string): Promise<void
     throw new Error("Refusing to delete an owner account.");
   }
 
-  if (adminRow.event_id) {
-    const { count } = await client
-      .from("admins")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", adminRow.event_id);
+  // A person can manage several events. Refuse if any of them is shared
+  // with someone else (deleting it would take it from them too) — same
+  // rule as before, now checked for every event this person manages.
+  const { data: memberships, error: membershipError } = await client
+    .from("admin_event_memberships")
+    .select("event_id")
+    .eq("admin_id", adminId);
+  if (membershipError) throw new Error(`Failed to look up account events: ${membershipError.message}`);
+  const eventIds = new Set<string>((memberships as { event_id: string }[]).map((m) => m.event_id));
+  if (adminRow.event_id) eventIds.add(adminRow.event_id);
 
-    if ((count ?? 0) > 1) {
+  for (const eventId of eventIds) {
+    const { count } = await client
+      .from("admin_event_memberships")
+      .select("admin_id", { count: "exact", head: true })
+      .eq("event_id", eventId)
+      .neq("admin_id", adminId);
+    if ((count ?? 0) > 0) {
       throw new Error(
-        "More than one login is attached to this account's event — remove the others first, or use Remove Access instead of a full delete.",
+        "Another login also manages one of this account's events — remove them first, or use Remove Access instead of a full delete.",
       );
     }
-
-    await deleteEventAndAllAssets(adminRow.event_id);
   }
 
-  // Cascades automatically once the event above is gone (if event_id
-  // was set), but this account might not have had an event at all —
-  // delete explicitly either way rather than assuming the cascade ran.
+  for (const eventId of eventIds) await deleteEventAndAllAssets(eventId);
+
+  // Deleting an event no longer deletes its host's account (they may run
+  // others — admins.event_id is ON DELETE SET NULL), so remove it here.
   await client.from("admins").delete().eq("id", adminId);
 
   const { error: authError } = await client.auth.admin.deleteUser(adminId);

@@ -27,23 +27,36 @@ export default async function WizardAccountPage({ params, searchParams }: Wizard
   // has no event linked yet) shouldn't go through AccountForm's
   // signUp() — that flow has no idea a session already exists and
   // would either fail with "already registered" or create a second,
-  // orphaned identity. Offer to link this draft to their existing
-  // account instead; only admins already scoped to a different event
-  // are turned away (linkDraftEventToExistingAdminAction re-checks
-  // this server-side regardless of what's shown here).
+  // orphaned identity. Offer to add this draft to their existing
+  // account instead — a host can run several events and switch between
+  // them in the dashboard. Only the site owner's account is turned away
+  // (linkDraftEventToExistingAdminAction re-checks server-side).
   const admin = await getCurrentAdmin();
+  const eventCount = admin?.memberships.length ?? 0;
 
-  if (admin && !admin.eventId) {
+  if (admin && admin.role !== "owner") {
     return (
       <div className="mx-auto max-w-sm px-4 py-16">
         <div className="rounded-2xl border border-navy-950/10 bg-white p-8 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold-500/15 text-gold-600">
             <CheckCircle2 size={22} />
           </div>
-          <h1 className="mt-4 font-display text-2xl text-navy-950">Link This Event to Your Account</h1>
+          <h1 className="mt-4 font-display text-2xl text-navy-950">
+            {eventCount > 0 ? "Add This Event to Your Account" : "Link This Event to Your Account"}
+          </h1>
           <p className="mt-2 text-sm text-navy-700/60">
-            You&rsquo;re signed in as <strong className="text-navy-950">{admin.email}</strong>, which
-            isn&rsquo;t linked to an event yet. Link it to what you just built here, no new account needed.
+            You&rsquo;re signed in as <strong className="text-navy-950">{admin.email}</strong>
+            {eventCount > 0 ? (
+              <>
+                , which already manages {eventCount === 1 ? "an event" : `${eventCount} events`}. Add this one too —
+                you&rsquo;ll switch between them from your dashboard, no new account needed.
+              </>
+            ) : (
+              <>
+                , which isn&rsquo;t linked to an event yet. Link it to what you just built here, no new account
+                needed.
+              </>
+            )}
           </p>
           {linkError ? (
             <p className="mt-4 text-sm font-medium text-red-600" role="alert">
@@ -55,7 +68,7 @@ export default async function WizardAccountPage({ params, searchParams }: Wizard
               type="submit"
               className="tap-target w-full rounded-lg bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:brightness-110"
             >
-              Link Event to {admin.email}
+              {eventCount > 0 ? "Add Event to" : "Link Event to"} {admin.email}
             </button>
           </form>
           <form action={signOutAction} className="mt-3">
@@ -74,8 +87,8 @@ export default async function WizardAccountPage({ params, searchParams }: Wizard
         <div className="rounded-2xl border border-navy-950/10 bg-white p-8 text-center">
           <h1 className="font-display text-2xl text-navy-950">Already Signed In</h1>
           <p className="mt-2 text-sm text-navy-700/60">
-            You&rsquo;re signed in as <strong className="text-navy-950">{admin.email}</strong>, which already
-            manages a different event. Sign out first if you meant to create a separate account for this one.
+            You&rsquo;re signed in as <strong className="text-navy-950">{admin.email}</strong>, the site owner&rsquo;s
+            account. Sign out first to set this event up under the host&rsquo;s own account.
           </p>
           <Link
             href="/admin"

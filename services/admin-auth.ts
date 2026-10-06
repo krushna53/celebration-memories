@@ -3,6 +3,7 @@ import "server-only";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getAssignedSessionIds } from "@/services/session-organizers";
+import { getActiveEventOverrideId } from "@/lib/admin-active-event";
 
 /**
  * "session_organizer" (added for #63) is a much narrower role than
@@ -24,6 +25,12 @@ import { getAssignedSessionIds } from "@/services/session-organizers";
  */
 export type AdminRole = "owner" | "client" | "session_organizer" | "organizer";
 
+/** One event a non-owner admin can manage, and their role on it (admin_event_memberships). */
+export interface EventMembership {
+  eventId: string;
+  role: Exclude<AdminRole, "owner">;
+}
+
 export interface CurrentAdmin {
   id: string;
   email: string;
@@ -40,6 +47,15 @@ export interface CurrentAdmin {
    * lib/admin-event.ts's resolveAdminEvent().
    */
   eventId: string | null;
+  /**
+   * Every event this person can manage (non-owners only; empty for the
+   * owner, who can manage all). `role` and `eventId` above describe the
+   * one they're currently working in — picked from their event switcher
+   * (the active-event cookie), else their primary event, else their
+   * newest. Gates that act on a specific event re-check membership for
+   * THAT event (adminForEvent), so a stale tab can't cross events.
+   */
+  memberships: EventMembership[];
 }
 
 /**
@@ -83,14 +99,55 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
 
   if (!data) return null;
 
-  return {
+  const base: CurrentAdmin = {
     id: data.id,
     email: data.email,
     name: data.name,
     role: data.role,
     hasSeenTour: data.has_seen_tour,
     eventId: data.event_id,
+    memberships: [],
   };
+  if (data.role === "owner") return base;
+
+  const memberships = await listMemberships(data.id);
+  if (memberships.length === 0) return { ...base, eventId: null };
+
+  const chosen = await getActiveEventOverrideId().catch(() => null);
+  const active =
+    memberships.find((m) => m.eventId === chosen) ??
+    memberships.find((m) => m.eventId === data.event_id) ??
+    memberships[0]!;
+  return { ...base, role: active.role, eventId: active.eventId, memberships };
+}
+
+/** A person's events, newest membership first. */
+async function listMemberships(adminId: string): Promise<EventMembership[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("admin_event_memberships")
+    .select("event_id, role, created_at")
+    .eq("admin_id", adminId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("Failed to load event memberships:", error.message);
+    return [];
+  }
+  return (data as { event_id: string; role: EventMembership["role"] }[]).map((row) => ({
+    eventId: row.event_id,
+    role: row.role,
+  }));
+}
+
+/**
+ * `admin` as they stand on one specific event: the owner as-is; a member
+ * with their role on THAT event; null if they aren't a member. Every
+ * event-scoped gate below goes through this rather than trusting the
+ * currently selected event.
+ */
+export function adminForEvent(admin: CurrentAdmin, eventId: string): CurrentAdmin | null {
+  if (admin.role === "owner") return admin;
+  const membership = admin.memberships.find((m) => m.eventId === eventId);
+  return membership ? { ...admin, role: membership.role, eventId } : null;
 }
 
 /**
@@ -143,8 +200,10 @@ export async function requireOwner(): Promise<CurrentAdmin> {
  * a future action forgetting to special-case it.
  */
 export async function requireAdminForEvent(eventId: string): Promise<CurrentAdmin> {
-  const admin = await getCurrentAdmin();
-  if (!admin) throw new Error("Not authorized.");
+  const signedIn = await getCurrentAdmin();
+  if (!signedIn) throw new Error("Not authorized.");
+  const admin = adminForEvent(signedIn, eventId);
+  if (!admin) throw new Error("You don't have access to this event.");
   if (admin.role === "session_organizer") {
     throw new Error("Session organizers have read-only access — this action isn't available to your account.");
   }
@@ -177,10 +236,11 @@ export type OrganizerArea = "invitees" | "gallery" | "timeline" | "checkin";
  * plus organizer.
  */
 export async function requireAdminForOrganizerArea(eventId: string, area: OrganizerArea): Promise<CurrentAdmin> {
-  const admin = await getCurrentAdmin();
-  if (!admin) throw new Error("Not authorized.");
+  const signedIn = await getCurrentAdmin();
+  if (!signedIn) throw new Error("Not authorized.");
+  const admin = adminForEvent(signedIn, eventId);
+  if (!admin) throw new Error("You don't have access to this event.");
   if (admin.role === "owner") return admin;
-  if (admin.eventId !== eventId) throw new Error("You don't have access to this event.");
   if (admin.role === "organizer") return admin;
   if (admin.role === "client" && area !== "checkin") return admin;
   throw new Error("You don't have access to this feature.");
@@ -226,7 +286,8 @@ export async function requireCheckInAccessForSession(eventId: string, scheduleIt
   const admin = await getCurrentAdmin();
   if (!admin) throw new Error("Not authorized.");
   if (admin.role === "owner") return admin;
-  if (admin.role === "client" && admin.eventId === eventId) return admin;
+  const onEvent = adminForEvent(admin, eventId);
+  if (onEvent?.role === "client") return onEvent;
   if (admin.role === "session_organizer") {
     const assignedIds = await getAssignedSessionIds(admin.id);
     if (assignedIds.includes(scheduleItemId)) return admin;
@@ -245,16 +306,20 @@ export async function requireCheckInAccessForSession(eventId: string, scheduleIt
 export async function getAdminByEventId(
   eventId: string,
 ): Promise<{ id: string; email: string; name: string | null } | null> {
+  // The event's host: its earliest "client" member (a person can host several events).
   const { data, error } = await supabaseAdmin()
-    .from("admins")
-    .select("id, email, name")
+    .from("admin_event_memberships")
+    .select("created_at, admins(id, email, name)")
     .eq("event_id", eventId)
-    .maybeSingle<{ id: string; email: string; name: string | null }>();
+    .eq("role", "client")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle<{ admins: { id: string; email: string; name: string | null } | null }>();
 
   if (error) {
     console.error("getAdminByEventId failed:", error.message);
     return null;
   }
-  return data;
+  return data?.admins ?? null;
 }
 

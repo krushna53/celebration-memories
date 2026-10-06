@@ -10,6 +10,7 @@ import { getCurrentAdmin } from "@/services/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
+import { setActiveEventOverrideId } from "@/lib/admin-active-event";
 import type { AdminActionResult, DetectTimezoneResult } from "@/features/admin/event-settings/actions";
 
 /**
@@ -134,6 +135,22 @@ export async function draftAddWebsiteGoalAction(token: string, eventId: string):
 }
 
 /**
+ * Adds a wizard draft to an existing account as one more event the
+ * person hosts (admin_event_memberships), makes it their primary event if
+ * they had none, and switches their dashboard to it.
+ */
+async function addDraftToAccount(adminId: string, eventId: string): Promise<AdminActionResult> {
+  const client = supabaseAdmin();
+  const { error } = await client
+    .from("admin_event_memberships")
+    .upsert({ admin_id: adminId, event_id: eventId, role: "client" }, { onConflict: "admin_id,event_id" });
+  if (error) return { success: false, error: "Something went wrong linking this event to your account." };
+  await client.from("admins").update({ event_id: eventId }).eq("id", adminId).is("event_id", null);
+  await setActiveEventOverrideId(eventId).catch(() => {});
+  return { success: true };
+}
+
+/**
  * Lets an admin who's already signed in (a client-role admin whose
  * `admins.event_id` is null — e.g. an old registration that never got
  * linked, or a Google signup where the OAuth callback's link_event_id
@@ -148,10 +165,8 @@ export async function draftAddWebsiteGoalAction(token: string, eventId: string):
  *
  * Re-resolves both the draft event (from `token`) and the admin (from
  * the actual server session) rather than trusting anything the client
- * passed in. Guarded with `.is("event_id", null)` so this can only
- * ever set the link once — an admin already scoped to a different
- * event is turned back with an explanation rather than silently
- * reassigned.
+ * passed in. A host who already runs other events just gets this one
+ * added (addDraftToAccount) — their existing events are untouched.
  */
 export async function linkDraftEventToExistingAdminAction(token: string): Promise<AdminActionResult> {
   const event = await requireDraftEvent(token);
@@ -160,29 +175,16 @@ export async function linkDraftEventToExistingAdminAction(token: string): Promis
   if (!admin) {
     return { success: false, error: "You've been signed out — please sign in again." };
   }
-  if (admin.eventId) {
+  if (admin.role === "owner") {
     return {
       success: false,
-      error: "This account is already linked to a different event. Sign out first if you meant to start a new one.",
+      error: "You're signed in as the site owner. Sign out first to set this event up under the host's own account.",
     };
   }
 
-  const { data, error } = await supabaseAdmin()
-    .from("admins")
-    .update({ event_id: event.id })
-    .eq("id", admin.id)
-    .is("event_id", null)
-    .select("id");
-
-  if (error) {
-    return { success: false, error: "Something went wrong linking this event to your account." };
-  }
-  if (!data || data.length === 0) {
-    return {
-      success: false,
-      error: "This account is already linked to a different event. Sign out first if you meant to start a new one.",
-    };
-  }
+  // A host can run several events: this one is simply added to their account.
+  const linked = await addDraftToAccount(admin.id, event.id);
+  if (!linked.success) return linked;
 
   redirect(wizardStepHref(token, "payment"));
 }
@@ -240,29 +242,23 @@ export async function claimDraftEventAsNewAdminAction(token: string): Promise<Ad
 
   const { data: existingAdmin, error: lookupError } = await supabaseAdmin()
     .from("admins")
-    .select("id, event_id")
+    .select("id, role")
     .eq("id", user.id)
-    .maybeSingle<{ id: string; event_id: string | null }>();
+    .maybeSingle<{ id: string; role: string }>();
 
   if (lookupError) {
     return { success: false, error: "Something went wrong checking your account." };
   }
 
+  if (existingAdmin?.role === "owner") {
+    return {
+      success: false,
+      error: "You're signed in as the site owner. Sign out first to set this event up under the host's own account.",
+    };
+  }
   if (existingAdmin) {
-    if (existingAdmin.event_id) {
-      return {
-        success: false,
-        error: "This account is already linked to a different event. Sign out first if you meant to start a new one.",
-      };
-    }
-    const { error: linkError } = await supabaseAdmin()
-      .from("admins")
-      .update({ event_id: event.id })
-      .eq("id", user.id)
-      .is("event_id", null);
-    if (linkError) {
-      return { success: false, error: "Something went wrong linking this event to your account." };
-    }
+    const linked = await addDraftToAccount(user.id, event.id);
+    if (!linked.success) return linked;
   } else {
     const meta = user.user_metadata as { full_name?: string; name?: string } | null;
     const { error: insertError } = await supabaseAdmin().from("admins").insert({

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { requireOwner, requireAdminForEvent } from "@/services/admin-auth";
+import { getCurrentAdmin, requireOwner, requireAdminForEvent } from "@/services/admin-auth";
 import { createOwnerEvent, updateEvent, getEventById } from "@/services/events";
 import { deleteEventAndAllAssets } from "@/services/admin-danger-zone";
 import {
@@ -60,6 +60,23 @@ export async function toggleEventVisibilityAction(
  */
 export async function setActiveAdminEventAction(eventId: string): Promise<void> {
   await requireOwner();
+  await setActiveEventOverrideId(eventId);
+  revalidatePath("/admin", "layout");
+  redirect("/admin");
+}
+
+/**
+ * A host (or organizer) who manages several events switching between
+ * them — same cookie as the owner's "step into an event", but only ever
+ * set to an event the person is actually a member of (re-checked here,
+ * never trusted from the client). See getCurrentAdmin's memberships.
+ */
+export async function switchMyEventAction(eventId: string): Promise<void> {
+  const admin = await getCurrentAdmin();
+  if (!admin) redirect("/login");
+  if (admin.role !== "owner" && !admin.memberships.some((m) => m.eventId === eventId)) {
+    redirect("/admin");
+  }
   await setActiveEventOverrideId(eventId);
   revalidatePath("/admin", "layout");
   redirect("/admin");

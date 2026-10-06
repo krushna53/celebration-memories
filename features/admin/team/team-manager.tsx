@@ -227,8 +227,8 @@ function AddMemberForm({
 
       <p className="mt-3 text-xs text-navy-700/60">
         {method === "invite"
-          ? "New users receive an invite; existing users receive a password reset link."
-          : "Choose a password for a new account. Existing users keep their current login and password."}
+          ? "New people get an invite email. Anyone who already has a dashboard login (even for another event) is simply given access to this event too — they keep their login and see it under “Switch event”."
+          : "Choose a password for a new account. Anyone who already has a dashboard login keeps their current password and just gets access to this event too."}
       </p>
 
       <form onSubmit={onSubmit} className="mt-4 grid gap-3">

@@ -81,6 +81,13 @@ const CHANGES: ChangeGroup[] = [
           "In Admin > Gallery upload three different photos with auto-sort on. Confirm they land in sensible categories with captions and the Auto badge, then use the pencil to move one to another category.",
       },
       {
+        title: "One login can now manage several events",
+        detail:
+          "A host can run more than one event from the same account, and someone already helping with one event can be added to another's team (no more \"This person already manages another event\"). People with more than one event see \"Managing X's event — Switch event\" under the dashboard header. Hosts who are signed in can start another event in the Create Your Event wizard and it's added to their account. Removing someone from one team leaves their other events untouched. Also closed a sign-up loophole: new accounts can only be linked to a fresh wizard draft, never to an existing event.",
+        test:
+          "From one event's Team page, add the email of someone who already hosts a different event — confirm they're added. Sign in as them, confirm \"Switch event\" lists both and switching changes the dashboard. Remove them from one team and confirm they still reach the other.",
+      },
+      {
         title: "5 GB storage limit per event, with a warning before it's full",
         detail:
           "Each event now has a real 5 GB storage limit covering guest memories, gallery, timeline, slideshow files and AI images. From 90% the admin dashboard shows an amber \"Storage 92% full\" strip at the top; once full it turns red and new uploads are blocked — guests see a polite \"space is full, please let the host know\", and hosts see what to do (delete files, \"Delete Forever\" in the Recycle Bin, or ask us to raise it). Only the owner can change an event's limit now.",

@@ -70,5 +70,5 @@ export async function resolveAdminEvent(admin: CurrentAdmin): Promise<EventRecor
  */
 export function isAdminForEvent(admin: CurrentAdmin | null, eventId: string): boolean {
   if (!admin) return false;
-  return admin.role === "owner" || admin.eventId === eventId;
+  return admin.role === "owner" || admin.memberships.some((m) => m.eventId === eventId);
 }

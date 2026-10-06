@@ -30,56 +30,90 @@ interface AdminRow {
 }
 
 /**
- * Every admin (owner or client) scoped to one event, oldest first —
- * this IS "the team" for that event. Multiple client-role rows sharing
- * the same event_id already works at the data-model level (no unique
- * constraint on admins.event_id) and at the dashboard-resolution level
- * (lib/admin-event.ts's resolveAdminEvent reads each admin's OWN
- * eventId column, not "the" admin for an event) — this feature is
- * purely about letting a client add more of these rows themselves,
- * instead of only the owner being able to create the first one.
+ * Everyone who can manage one event, oldest first — this IS "the team".
+ * Members come from admin_event_memberships (a person can be on several
+ * events' teams), plus the platform owner if this is their own primary
+ * event (the owner never needs a membership row).
  */
 export async function getTeamMembers(eventId: string): Promise<TeamMember[]> {
-  const { data, error } = await supabaseAdmin()
-    .from("admins")
-    .select("id, name, email, role, created_at")
-    .eq("event_id", eventId)
-    .order("created_at", { ascending: true });
+  const client = supabaseAdmin();
+  const [{ data: members, error }, { data: owners, error: ownerError }] = await Promise.all([
+    client
+      .from("admin_event_memberships")
+      .select("role, created_at, admins(id, name, email)")
+      .eq("event_id", eventId)
+      .order("created_at", { ascending: true }),
+    client.from("admins").select("id, name, email, role, created_at").eq("event_id", eventId).eq("role", "owner"),
+  ]);
 
   if (error) throw new Error(`Failed to load team members: ${error.message}`);
+  if (ownerError) throw new Error(`Failed to load team members: ${ownerError.message}`);
 
-  return (data as AdminRow[]).map((row) => ({
+  const team: TeamMember[] = (owners as AdminRow[]).map((row) => ({
     id: row.id,
     name: row.name,
     email: row.email,
     role: row.role,
     createdAt: row.created_at,
   }));
+  for (const row of members as unknown as { role: AdminRole; created_at: string; admins: { id: string; name: string | null; email: string } | null }[]) {
+    if (!row.admins) continue;
+    team.push({ id: row.admins.id, name: row.admins.name, email: row.admins.email, role: row.role, createdAt: row.created_at });
+  }
+  return team.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
-async function assertRoomAndUniqueEmail(eventId: string, email: string): Promise<void> {
-  const { count, error: countError } = await supabaseAdmin()
-    .from("admins")
-    .select("id", { count: "exact", head: true })
+async function countMembers(eventId: string): Promise<number> {
+  const { count, error } = await supabaseAdmin()
+    .from("admin_event_memberships")
+    .select("admin_id", { count: "exact", head: true })
     .eq("event_id", eventId);
+  if (error) throw new Error(`Failed to check team size: ${error.message}`);
+  return count ?? 0;
+}
 
-  if (countError) throw new Error(`Failed to check team size: ${countError.message}`);
-  if ((count ?? 0) >= TEAM_MEMBER_CAP) {
+/**
+ * Checks there's room on this event's team and works out who `email` is:
+ * an existing dashboard account (returned, so they're simply given access
+ * to this event too — their other events and password are untouched), or
+ * nobody yet (null, so a new account is created).
+ */
+async function checkRoomAndExisting(eventId: string, email: string): Promise<{ id: string } | null> {
+  if ((await countMembers(eventId)) >= TEAM_MEMBER_CAP) {
     throw new Error(`This event already has ${TEAM_MEMBER_CAP} team members — remove one before adding another.`);
   }
 
   const { data: existing, error: existingError } = await supabaseAdmin()
     .from("admins")
-    .select("id, event_id")
+    .select("id, role")
     .ilike("email", email.trim().replace(/[\\%_]/g, "\\$&"))
-    .maybeSingle<{ id: string; event_id: string | null }>();
+    .maybeSingle<{ id: string; role: AdminRole }>();
 
   if (existingError) throw new Error(`Failed to check existing accounts: ${existingError.message}`);
-  if (existing) {
-    throw new Error(existing.event_id === eventId
-      ? "This person is already on this event’s team."
-      : "This person already manages another event. Their existing access has not been changed.");
+  if (!existing) return null;
+  if (existing.role === "owner") {
+    throw new Error("That's the site owner's account — it already has access to every event.");
   }
+
+  const { data: membership } = await supabaseAdmin()
+    .from("admin_event_memberships")
+    .select("admin_id")
+    .eq("admin_id", existing.id)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (membership) throw new Error("This person is already on this event’s team.");
+  return { id: existing.id };
+}
+
+/** Gives an existing dashboard account access to one more event, as its host. */
+async function addMembership(adminId: string, eventId: string): Promise<void> {
+  const client = supabaseAdmin();
+  const { error } = await client
+    .from("admin_event_memberships")
+    .insert({ admin_id: adminId, event_id: eventId, role: "client" });
+  if (error) throw new Error(`Failed to grant dashboard access: ${error.message}`);
+  // Someone with no primary event yet (e.g. their only event was deleted) gets this one.
+  await client.from("admins").update({ event_id: eventId }).eq("id", adminId).is("event_id", null);
 }
 
 /** Recover an existing shared Auth account without changing its credentials. */
@@ -120,7 +154,12 @@ export async function inviteTeamMemberByEmail({ eventId, name, email }: InviteTe
   if (!trimmedName) throw new Error("Please enter a name.");
   if (!trimmedEmail) throw new Error("Please enter an email.");
 
-  await assertRoomAndUniqueEmail(eventId, trimmedEmail);
+  const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail);
+  if (existingAdmin) {
+    // Already has a dashboard login (maybe for another event) — just add this event to it.
+    await addMembership(existingAdmin.id, eventId);
+    return;
+  }
 
   const client = supabaseAdmin();
   const { data, error } = await client.auth.admin.inviteUserByEmail(trimmedEmail, {
@@ -180,7 +219,12 @@ export async function addTeamMemberWithPassword({
   if (!trimmedEmail) throw new Error("Please enter an email.");
   if (password.length < 8) throw new Error("Password must be at least 8 characters.");
 
-  await assertRoomAndUniqueEmail(eventId, trimmedEmail);
+  const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail);
+  if (existingAdmin) {
+    // Already has a dashboard login — add this event to it; their password is left exactly as it was.
+    await addMembership(existingAdmin.id, eventId);
+    return;
+  }
 
   const client = supabaseAdmin();
   const { data, error } = await client.auth.admin.createUser({
@@ -207,31 +251,48 @@ export async function addTeamMemberWithPassword({
   }
 }
 
-/** Removes event access while preserving the shared login and other products. */
+/**
+ * Removes one person's access to one event. Their other events (and
+ * their login) are untouched; only if this was their last event is the
+ * dashboard account itself removed, as before.
+ */
 export async function removeTeamMember(eventId: string, adminId: string): Promise<void> {
   const client = supabaseAdmin();
 
-  const { data: target, error: lookupError } = await client
-    .from("admins")
-    .select("id, event_id")
-    .eq("id", adminId)
-    .maybeSingle<{ id: string; event_id: string | null }>();
+  const { data: membership, error: lookupError } = await client
+    .from("admin_event_memberships")
+    .select("admin_id")
+    .eq("admin_id", adminId)
+    .eq("event_id", eventId)
+    .maybeSingle();
 
   if (lookupError) throw new Error(`Failed to look up team member: ${lookupError.message}`);
-  if (!target || target.event_id !== eventId) {
-    throw new Error("That team member doesn't belong to this event.");
-  }
+  if (!membership) throw new Error("That team member doesn't belong to this event.");
 
-  const { count, error: countError } = await client
-    .from("admins")
-    .select("id", { count: "exact", head: true })
-    .eq("event_id", eventId);
-
-  if (countError) throw new Error(`Failed to check team size: ${countError.message}`);
-  if ((count ?? 0) <= 1) {
+  if ((await countMembers(eventId)) <= 1) {
     throw new Error("You can't remove the last team member on this event.");
   }
 
-  const { error: deleteError } = await client.from("admins").delete().eq("id", adminId).eq("event_id", eventId);
+  const { error: deleteError } = await client
+    .from("admin_event_memberships")
+    .delete()
+    .eq("admin_id", adminId)
+    .eq("event_id", eventId);
   if (deleteError) throw new Error(`Failed to remove dashboard access: ${deleteError.message}`);
+
+  const { data: remaining } = await client
+    .from("admin_event_memberships")
+    .select("event_id")
+    .eq("admin_id", adminId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const next = (remaining as { event_id: string }[] | null)?.[0];
+
+  if (!next) {
+    const { error } = await client.from("admins").delete().eq("id", adminId).neq("role", "owner");
+    if (error) throw new Error(`Failed to remove dashboard access: ${error.message}`);
+    return;
+  }
+  // Their primary event pointer moves to another event they still manage.
+  await client.from("admins").update({ event_id: next.event_id }).eq("id", adminId).eq("event_id", eventId);
 }

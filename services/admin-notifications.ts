@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendRsvpSubmittedNotification } from "@/lib/email";
 import { getOrganizersForSession } from "@/services/session-organizers";
 import type { RsvpFormValues } from "@/types/rsvp";
+import { getAdminByEventId } from "@/services/admin-auth";
 
 export type AdminNotificationType =
   | "rsvp_submitted"
@@ -285,12 +286,10 @@ export async function notifyAdminsOfRsvpPayment(params: {
 
 /** All admins who should hear about activity on one event: the client admin scoped to it (if any) plus every owner. Used by the RSVP-submitted producer and could be reused by any other per-event producer. */
 export async function getAdminsToNotifyForEvent(eventId: string): Promise<{ id: string; email: string; name: string | null }[]> {
-  const [{ data: clientAdmin }, { data: owners }] = await Promise.all([
-    supabaseAdmin().from("admins").select("id, email, name").eq("event_id", eventId).maybeSingle<{
-      id: string;
-      email: string;
-      name: string | null;
-    }>(),
+  // The event's host via memberships — a host may run several events, and a
+  // single-row admins.event_id lookup errored (so nobody was told) once an event had a team.
+  const [clientAdmin, { data: owners }] = await Promise.all([
+    getAdminByEventId(eventId),
     supabaseAdmin().from("admins").select("id, email, name").eq("role", "owner"),
   ]);
 
