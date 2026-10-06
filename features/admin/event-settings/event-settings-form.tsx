@@ -47,8 +47,7 @@ import {
 import { EVENT_CATEGORY_OPTIONS, getEventFieldCopy, getWishSectionCopy } from "@/lib/event-category";
 import { formatBytes } from "@/lib/format-bytes";
 import { validateCustomCss } from "@/lib/custom-css";
-import { buildMapsEmbedUrl, buildMapsSearchUrl, buildVenueQuery } from "@/lib/maps";
-import { useAutoVenueMaps } from "@/hooks/use-auto-venue-maps";
+import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
 import { placeFullAddress, type PlaceSuggestion } from "@/lib/place-search";
 import { MapEmbedPreview } from "@/components/forms/map-embed-preview";
 import { VenueAutocomplete } from "@/components/forms/venue-autocomplete";
@@ -447,17 +446,6 @@ export function EventSettingsForm({
     setSaved(false);
   }
 
-  useAutoVenueMaps({
-    venueName: form.venueName,
-    venueAddress: form.venueAddress,
-    mapsUrl: form.mapsUrl,
-    mapsEmbedUrl: form.mapsEmbedUrl,
-    onChange: (patch) => {
-      setForm((f) => ({ ...f, ...patch }));
-      setSaved(false);
-    },
-  });
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -825,14 +813,14 @@ export function EventSettingsForm({
                 size="sm"
                 className="shrink-0"
                 disabled={!form.venueAddress.trim()}
-                onClick={() => set("mapsUrl", buildMapsSearchUrl(buildVenueQuery(form.venueName, form.venueAddress)))}
+                onClick={() => set("mapsUrl", buildMapsSearchUrl(form.venueAddress))}
               >
-                Regenerate
+                Generate
               </Button>
             </div>
             <p className="mt-1.5 text-xs text-navy-700/50">
-              Filled in automatically from the Venue Name + Address as you type — no API key needed. A link you
-              paste yourself is kept; &ldquo;Regenerate&rdquo; replaces it.
+              &ldquo;Generate&rdquo; builds this from the Venue Address above — no API key needed. Overwrites
+              whatever&rsquo;s in this field.
             </p>
           </div>
           <div>
@@ -850,14 +838,11 @@ export function EventSettingsForm({
                 size="sm"
                 className="shrink-0"
                 disabled={!form.venueAddress.trim()}
-                onClick={() => set("mapsEmbedUrl", buildMapsEmbedUrl(buildVenueQuery(form.venueName, form.venueAddress)))}
+                onClick={() => set("mapsEmbedUrl", buildMapsEmbedUrl(form.venueAddress))}
               >
-                Regenerate
+                Generate
               </Button>
             </div>
-            <p className="mt-1.5 text-xs text-navy-700/50">
-              Updates automatically with the Venue Name + Address, like the directions link.
-            </p>
           </div>
           {form.mapsEmbedUrl ? (
             <div className="sm:col-span-2">
