@@ -74,16 +74,13 @@ export function EventDetailsSection({ data }: EventDetailsSectionProps) {
               label="Venue"
               value={data.venueName ?? "To be announced"}
             />
-            <DetailCard
-              icon={<Shirt size={20} />}
-              label="Dress Code"
-              value={data.dressCode ?? "Details coming soon"}
-            />
-            <DetailCard
-              icon={<Car size={20} />}
-              label="Parking"
-              value={data.parkingInfo ?? "Details coming soon"}
-            />
+            {/* Optional details: no card at all when the host hasn't filled them in. */}
+            {data.dressCode?.trim() ? (
+              <DetailCard icon={<Shirt size={20} />} label="Dress Code" value={data.dressCode} />
+            ) : null}
+            {data.parkingInfo?.trim() ? (
+              <DetailCard icon={<Car size={20} />} label="Parking" value={data.parkingInfo} />
+            ) : null}
 
             {data.mapsUrl ? (
               <div className="sm:col-span-2">
