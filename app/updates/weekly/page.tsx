@@ -36,6 +36,60 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Tuesday, October 6",
+    items: [
+      {
+        title: "One login can now manage several events",
+        detail:
+          "A host can run more than one event from the same account, and someone already helping with one event can be added to another's team (no more \"This person already manages another event\"). People with more than one event see \"Managing X's event — Switch event\" under the dashboard header. Hosts who are signed in can start another event in the Create Your Event wizard and it's added to their account. Removing someone from one team leaves their other events untouched. Also closed a sign-up loophole: new accounts can only be linked to a fresh wizard draft, never to an existing event.",
+        test:
+          "From one event's Team page, add the email of someone who already hosts a different event — confirm they're added. Sign in as them, confirm \"Switch event\" lists both and switching changes the dashboard. Remove them from one team and confirm they still reach the other.",
+      },
+      {
+        title: "Rename gallery chapters — straight from the event page",
+        detail:
+          "Each event can give its gallery chapters its own names, e.g. \"The little ones\" → \"Aarav & Myra\" or \"The wedding\" → \"Our big day\". Rename them all in Admin > Gallery > Chapter names, or tap the pencil next to a chapter title on the event page or the full gallery page — the pencil only shows for people who manage that event. The new names appear in the tabs, headings and admin category lists.",
+        test:
+          "Signed in as the host, open the event page, tap the pencil next to a chapter title, rename it and save. Confirm the tab and heading change, then check the same name in Admin > Gallery. Sign out and confirm the pencil is gone.",
+      },
+      {
+        title: "Gallery page shows the invitation card — and uses it as the link preview",
+        detail:
+          "The full gallery page (event link + /gallery) now shows the event's invitation card in its header (tap to view it full size), and when the gallery link is shared on WhatsApp or social media the preview image is the invitation card, just like the event page.",
+        test:
+          "Open an event's /gallery page and tap the card in the header. Paste the gallery link into WhatsApp and confirm the preview shows the invitation card.",
+      },
+      {
+        title: "\"Grandchildren\" category is now \"Little Ones\"",
+        detail:
+          "The gallery category is labelled \"Little Ones\" (chapter: \"The little ones\") so it suits every kind of event, not just a grandparent's birthday. Existing photos stay where they are.",
+        test:
+          "Open Admin > Gallery and the event page gallery and confirm \"Little Ones\" / \"The little ones\" appear where \"Grandchildren\" used to.",
+      },
+      {
+        title: "5 GB storage limit per event, with a warning before it's full",
+        detail:
+          "Each event now has a real 5 GB storage limit covering guest memories, gallery, timeline, slideshow files and AI images. From 90% the admin dashboard shows an amber \"Storage 92% full\" strip at the top; once full it turns red and new uploads are blocked — guests see a polite \"space is full, please let the host know\", and hosts see what to do (delete files, \"Delete Forever\" in the Recycle Bin, or ask us to raise it). Only the owner can change an event's limit now.",
+        test:
+          "As owner, set a test event's Storage quota (Event Settings) just above its current usage and confirm the amber strip; set it below and confirm the red strip, then try uploading in Gallery and from a guest link and check the messages. Put it back to 5 GB afterwards.",
+      },
+      {
+        title: "Gallery uploads show clear progress",
+        detail:
+          "Uploading to the Gallery now shows a progress panel: \"Uploading 4 of 12…\", a progress bar, a reminder to keep the page open, and each photo's own step (Preparing, Uploading, AI sorting, Done). The browser asks before you leave mid-upload, photos upload three at a time so batches finish faster, and anything that fails shows why with a one-tap Retry.",
+        test:
+          "In Admin > Gallery, upload 10 photos at once. Watch the panel count up, try closing the tab mid-way and confirm the browser warns you, then confirm the green \"All 10 uploaded\" summary.",
+      },
+      {
+        title: "Smaller, clearer Edit and Delete buttons on gallery photos",
+        detail:
+          "The large dark circles under each photo in Admin > Gallery are now a small outlined pencil and a red-outlined \"Delete\" pill, so the photo stays the focus.",
+        test:
+          "Open Admin > Gallery and check the buttons under a few photos on a phone and a laptop.",
+      },
+    ],
+  },
+  {
     date: "Monday, October 5",
     items: [
       {
@@ -79,27 +133,6 @@ const CHANGES: ChangeGroup[] = [
           "With \"Auto-sort & caption photos with AI\" ticked, each uploaded photo goes into the right category with a short caption that can include where and when it was taken. Newly sorted photos get an \"Auto\" badge. The pencil on any photo now edits both the caption and the category (this also fixes caption editing in the wizard). Without AI, photos with a date or place still get a caption like \"Lonavala, Maharashtra · March 1998\".",
         test:
           "In Admin > Gallery upload three different photos with auto-sort on. Confirm they land in sensible categories with captions and the Auto badge, then use the pencil to move one to another category.",
-      },
-      {
-        title: "One login can now manage several events",
-        detail:
-          "A host can run more than one event from the same account, and someone already helping with one event can be added to another's team (no more \"This person already manages another event\"). People with more than one event see \"Managing X's event — Switch event\" under the dashboard header. Hosts who are signed in can start another event in the Create Your Event wizard and it's added to their account. Removing someone from one team leaves their other events untouched. Also closed a sign-up loophole: new accounts can only be linked to a fresh wizard draft, never to an existing event.",
-        test:
-          "From one event's Team page, add the email of someone who already hosts a different event — confirm they're added. Sign in as them, confirm \"Switch event\" lists both and switching changes the dashboard. Remove them from one team and confirm they still reach the other.",
-      },
-      {
-        title: "5 GB storage limit per event, with a warning before it's full",
-        detail:
-          "Each event now has a real 5 GB storage limit covering guest memories, gallery, timeline, slideshow files and AI images. From 90% the admin dashboard shows an amber \"Storage 92% full\" strip at the top; once full it turns red and new uploads are blocked — guests see a polite \"space is full, please let the host know\", and hosts see what to do (delete files, \"Delete Forever\" in the Recycle Bin, or ask us to raise it). Only the owner can change an event's limit now.",
-        test:
-          "As owner, set a test event's Storage quota (Event Settings) just above its current usage and confirm the amber strip; set it below and confirm the red strip, then try uploading in Gallery and from a guest link and check the messages. Put it back to 5 GB afterwards.",
-      },
-      {
-        title: "Gallery uploads show clear progress",
-        detail:
-          "Uploading to the Gallery now shows a progress panel: \"Uploading 4 of 12…\", a progress bar, a reminder to keep the page open, and each photo's own step (Preparing, Uploading, AI sorting, Done). The browser asks before you leave mid-upload, photos upload three at a time so batches finish faster, and anything that fails shows why with a one-tap Retry.",
-        test:
-          "In Admin > Gallery, upload 10 photos at once. Watch the panel count up, try closing the tab mid-way and confirm the browser warns you, then confirm the green \"All 10 uploaded\" summary.",
       },
       {
         title: "Full-page gallery: Pinterest-style mosaic or Google Photos-style grid",
@@ -982,7 +1015,7 @@ export default function WeeklyUpdatePage() {
       <div className="mx-auto max-w-2xl">
         <p className="text-xs font-medium uppercase tracking-[0.15em] text-gold-700">Internal — not linked anywhere on the site</p>
         <h1 className="mt-2 font-display text-3xl text-navy-950 sm:text-4xl">Weekly Update</h1>
-        <p className="mt-1 text-sm text-navy-700/60">Monday, October 5, 2026</p>
+        <p className="mt-1 text-sm text-navy-700/60">Tuesday, October 6, 2026</p>
 
         <div className="mt-10 grid gap-10">
           {CHANGES.map((group) => (
