@@ -13,6 +13,8 @@ import { listScheduleItems } from "@/services/event-day";
 import { RsvpForm } from "@/features/rsvp/rsvp-form";
 import { MediaUploadsSection } from "@/features/uploads/media-uploads-section";
 import { EngagementOptInBanner } from "@/features/push/engagement-opt-in-banner";
+import { GuestReelSection } from "@/features/reels/guest-reel-section";
+import { areGuestReelsEnabled, getInviteeReelOptIn } from "@/services/guest-reels";
 import { Reveal } from "@/components/motion/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SiteShell } from "@/components/layout/site-shell";
@@ -55,6 +57,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
   const workshopSessions = (await listScheduleItems(event.id)).filter(
     (item) => item.requiresRegistration,
   );
+  const reelsEnabled = await areGuestReelsEnabled(event.id);
+  const reelOptIn = reelsEnabled && !ended ? await getInviteeReelOptIn(invitee.id) : null;
 
   const requestHeaders = await headers();
   await logInviteOpened(invitee.id, {
@@ -104,6 +108,15 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 guestName={invitee.name}
                 rsvpPrice={rsvpPrice}
                 workshopSessions={workshopSessions}
+                reelSelfie={
+                  reelOptIn
+                    ? {
+                        photoUrl: reelOptIn.photoUrl,
+                        honoreeName: event.honoreeName,
+                        hostedBy: event.hostedBy,
+                      }
+                    : undefined
+                }
                 story={{
                   card: {
                     eyebrow: "I'm going!",
@@ -136,6 +149,16 @@ export default async function InvitePage({ params }: InvitePageProps) {
               />
             </Reveal>
           </div>
+        ) : null}
+
+        {ended && reelsEnabled ? (
+          <GuestReelSection
+            token={token}
+            inviteeId={invitee.id}
+            guestName={invitee.name}
+            honoreeName={event.honoreeName}
+            hostedBy={event.hostedBy}
+          />
         ) : null}
 
         <div

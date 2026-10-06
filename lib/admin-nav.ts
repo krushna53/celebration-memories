@@ -45,6 +45,7 @@ import {
   Wand2,
   UserRoundPlus,
   ClipboardCheck,
+  ScanFace,
 } from "lucide-react";
 
 /*
@@ -96,6 +97,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/ai-image", label: "AI Image", icon: Sparkles, group: "Create" },
   { href: "/admin/ai-video", label: "AI Video", icon: Wand2, group: "Create" },
   { href: "/admin/slideshow", label: "Slideshow Video", icon: Film, group: "Create" },
+  { href: "/admin/reels", label: "Guest Reels", icon: ScanFace, group: "Create" },
   { href: "/admin/timeline-movie", label: "AI Timeline Movie", icon: Wand2, group: "Create" },
   { href: "/admin/video-editor", label: "Video Editor", icon: Clapperboard, group: "Create" },
   { href: "/admin/domain-search", label: "Domain Search", icon: Globe, group: "Create" },

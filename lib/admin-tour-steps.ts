@@ -67,6 +67,11 @@ export const TOUR_STEP_COPY: Record<string, TourStepCopy> = {
     description:
       "Turn your Gallery and Timeline photos into a downloadable slideshow video, with your own background audio.",
   },
+  "/admin/reels": {
+    title: "Guest Reels",
+    description:
+      "After the event, AI finds each guest in the photos from the day and makes them a personal Instagram-ready reel with the guest of honour.",
+  },
   "/admin/domain-search": {
     title: "Domain Search",
     description: "Check whether a custom domain you'd like for this event is available to register.",

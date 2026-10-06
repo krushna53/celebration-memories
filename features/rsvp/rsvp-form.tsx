@@ -23,6 +23,7 @@ import {
 } from "@/types/rsvp";
 import type { ScheduleItemRecord } from "@/types/content";
 import { StoryShareButton, type StoryCard } from "@/features/share/story-share-button";
+import { ConsentPhotoPicker } from "@/features/reels/consent-photo-picker";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 transition-luxury duration-200 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -41,9 +42,11 @@ interface RsvpFormProps {
   workshopSessions?: ScheduleItemRecord[];
   /** Event details for the "I'm going!" Story card shown after a "coming" RSVP; the link points at the public event page. */
   story?: { card: StoryCard; shareText: string };
+  /** Set when the host has turned on Guest Reels — offers an optional selfie (with consent) so the guest can be found in the event photos. */
+  reelSelfie?: { photoUrl: string | null; honoreeName: string; hostedBy: string };
 }
 
-export function RsvpForm({ token, eventId, inviteeId, defaultValues, guestName, rsvpPrice, workshopSessions, story }: RsvpFormProps) {
+export function RsvpForm({ token, eventId, inviteeId, defaultValues, guestName, rsvpPrice, workshopSessions, story, reelSelfie }: RsvpFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submittedComing, setSubmittedComing] = useState<RsvpFormValues["coming"] | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -286,6 +289,30 @@ export function RsvpForm({ token, eventId, inviteeId, defaultValues, guestName, 
           {...register("comments")}
         />
       </div>
+
+      {reelSelfie && coming !== "not_coming" ? (
+        <div className="rounded-xl border border-gold-500/20 bg-ivory-50 p-4">
+          <p className={labelClasses}>
+            Your personal reel <span className="normal-case tracking-normal text-navy-700/50">(optional)</span>
+          </p>
+          <p className="mt-1.5 text-sm text-navy-700/75">
+            After the celebration we&apos;ll make you a short video of the photos you&apos;re in with{" "}
+            {reelSelfie.honoreeName} — ready to share on Instagram or WhatsApp. Add a clear selfie so we can find you.
+          </p>
+          <div className="mt-3">
+            <ConsentPhotoPicker
+              target={{ kind: "guest", token }}
+              currentPhotoUrl={reelSelfie.photoUrl}
+              consentLabel={
+                <>
+                  I agree that {reelSelfie.hostedBy} may use this photo to recognise my face in this event&apos;s photos and
+                  make a personal reel for me. It&apos;s used only for this event, and I can remove it at any time from this page.
+                </>
+              }
+            />
+          </div>
+        </div>
+      ) : null}
 
       <div
         className={cn(errors.consent && "-m-0.5 rounded-lg border border-red-300 bg-red-50/60 p-2.5")}

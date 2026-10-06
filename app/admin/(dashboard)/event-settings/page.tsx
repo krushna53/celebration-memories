@@ -9,6 +9,8 @@ import { countAiCssGenerations } from "@/services/ai-css-generations";
 import { getEventStorageUsage } from "@/services/storage-usage";
 import { EventSettingsForm } from "@/features/admin/event-settings/event-settings-form";
 import { NoEventState } from "@/features/admin/components/no-event-state";
+import { HonoreeReelPhotoCard } from "@/features/admin/reels/honoree-reel-photo-card";
+import { getReelSettings } from "@/services/guest-reels";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,7 @@ export default async function AdminEventSettingsPage() {
   const aiCssUsed = isClient ? await countAiCssGenerations(event.id) : 0;
   const aiCssLimit = event.aiCssGenerationLimit;
   const storageUsage = await getEventStorageUsage(event);
+  const reelSettings = await getReelSettings(event.id);
 
   return (
     <div>
@@ -50,6 +53,7 @@ export default async function AdminEventSettingsPage() {
           canEditStorageQuota={admin?.role === "owner"}
         />
       </div>
+      <HonoreeReelPhotoCard eventId={event.id} honoreeName={event.honoreeName} photoUrl={reelSettings.honoreePhotoUrl} />
     </div>
   );
 }

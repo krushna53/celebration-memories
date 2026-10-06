@@ -290,6 +290,52 @@ video-upload.tsx`, `audio-upload.tsx`, shared queue UI in
   recording source and server validation, and updating the Storage
   bucket's own `allowed_mime_types`.
 
+### Guest Reels (added 2026-10-06)
+
+After the event every opted-in guest gets a personal 9:16 MP4 (Instagram
+Reels / WhatsApp Status) of the photos they're in with the guest of
+honour. `/admin/reels` walks the host through it; data model + consent
+rules are in `supabase/migrations/20261006140000_guest_reels.sql`.
+
+- **Consent first.** A face photo is only stored together with a consent
+  timestamp: guests add a selfie on the RSVP form or (after the event) on
+  their invite link (`features/reels/consent-photo-picker.tsx`, token-gated
+  `features/reels/actions.ts`); a host adding one for a guest, or the
+  guest-of-honour photo (Event Settings card + `/admin/reels`), must tick
+  "they agreed". Removing a photo clears consent, the file, and every
+  match. Off by default per event (`events.guest_reels_enabled`).
+- **Photo pool** = `event_photos` (host uploads after the event, reels-only,
+  never on the Memory Wall) + approved guest Memory Wall `photos`.
+- **Face matching runs in the host's browser** (`features/admin/reels/
+  face-matcher.ts`, `@vladmandic/face-api` loaded from jsDelivr at runtime —
+  not an npm dependency). Only results are stored (`reel_photo_scans`,
+  `reel_photo_faces` with a normalised face box); no embeddings, no photos
+  sent to an AI API. Threshold 0.5 + ratio test + min face size; the host
+  can tap a wrong name on a photo to remove that match.
+- **Rendering**: `services/guest-reels.ts`'s `queueGuestReel` builds the
+  Shotstack edit server-side (`lib/guest-reel-edit.ts` — face-aware 9:16
+  crop, intro/captions/outro, `lib/reel-music.ts` presets) and stores it on
+  `guest_reels`; the `guest-reel-render` Edge Function only ever submits
+  that stored edit (no caller-supplied slides) and copies the result into
+  the `videos` bucket. Client admins are capped by
+  `events.guest_reel_render_limit` (counts re-renders).
+- **Sharing**: reel on `/invite/[token]#reel` and public
+  `/reels/[shareToken]` (noindex) — native share sheet with the MP4 file
+  (Instagram/WhatsApp on phones), Download, WhatsApp link.
+
+### Invitation card reading cost
+
+Every AI read in the wizard's "Your Card" step records real OpenAI token
+counts in `ai_card_read_requests` (`services/card-read-usage.ts`), shown
+with an estimated cost on the owner-only `/admin/usage` page.
+
+### Birthday decor
+
+`templates/shared/birthday-decor.tsx` — "HAPPY BIRTHDAY" bunting, rising
+balloons (pop on click, tap-through on touch screens) and an opening
+confetti shower, pure CSS, reduced-motion aware. Used by Kids Cartoon and
+Balloon Pop.
+
 ### Business / Marketplace directory
 
 A second, largely independent product living in the same codebase: a
