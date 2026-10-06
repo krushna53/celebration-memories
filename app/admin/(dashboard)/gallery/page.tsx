@@ -33,6 +33,7 @@ export default async function AdminGalleryPage() {
           initialPhotos={photos}
           initialPairs={pairs}
           aiAutoTagAvailable={AI_GALLERY_TAGGER_CONFIGURED}
+          chapterTitles={event.galleryChapterTitles}
         />
       </div>
     </div>

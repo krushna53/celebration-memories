@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Pause, Play } from "lucide-react";
+import { Check, Loader2, Pause, Pencil, Play } from "lucide-react";
 import { PhotoSlider } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 
 import { isVideoMedia } from "@/lib/curated-media";
 import { cn } from "@/lib/utils";
-import type { GalleryCategory } from "@/features/gallery/gallery-data";
+import { CHAPTERS, CHAPTER_TITLE_MAX, type GalleryCategory } from "@/features/gallery/gallery-data";
+import { canEditGalleryAction, renameGalleryChapterAction } from "@/features/gallery/actions";
 import type { GalleryPhotoRecord, GuestGalleryPhoto } from "@/types/content";
 import { MediaShareButtons } from "@/components/media/media-share-buttons";
 
@@ -21,15 +22,6 @@ import { MediaShareButtons } from "@/components/media/media-share-buttons";
 
 export const SLIDESHOW_INTERVAL_MS = 3500;
 
-/** A life story reads oldest → newest: chapter order and titles per category. */
-export const CHAPTERS: { category: GalleryCategory; title: string }[] = [
-  { category: "childhood", title: "The early years" },
-  { category: "wedding", title: "The wedding" },
-  { category: "family", title: "Family" },
-  { category: "travel", title: "Travels" },
-  { category: "friends", title: "Friends" },
-  { category: "grandchildren", title: "The little ones" },
-];
 
 /** "…, 1970s" in a caption (the AI tagger adds these for old prints) → 1970; photos without one sort after dated ones. */
 function decadeOf(caption: string | null): number {
@@ -40,10 +32,132 @@ export function chronological(list: GalleryPhotoRecord[]): GalleryPhotoRecord[] 
   return [...list].sort((a, b) => decadeOf(a.caption) - decadeOf(b.caption) || a.sortOrder - b.sortOrder);
 }
 
+/** A chapter's name for this event — the host's own if they renamed it, otherwise the default. */
+export function chapterTitle(category: GalleryCategory, titles?: Record<string, string> | null): string {
+  return titles?.[category] ?? CHAPTERS.find((c) => c.category === category)?.title ?? category;
+}
+
 /** Photos grouped into chapters, in story order, empty chapters dropped. */
-export function toChapters(photos: GalleryPhotoRecord[]) {
-  return CHAPTERS.map((c) => ({ ...c, photos: chronological(photos.filter((p) => p.category === c.category)) })).filter(
-    (c) => c.photos.length > 0,
+export function toChapters(photos: GalleryPhotoRecord[], titles?: Record<string, string> | null) {
+  return CHAPTERS.map((c) => ({
+    ...c,
+    title: chapterTitle(c.category, titles),
+    photos: chronological(photos.filter((p) => p.category === c.category)),
+  })).filter((c) => c.photos.length > 0);
+}
+
+/**
+ * Whether the signed-in visitor (if any) may rename this event's gallery
+ * chapters — checked from the browser because event pages are cached for
+ * everyone. False for guests, false while checking.
+ */
+export function useCanEditGallery(eventId: string | undefined): boolean {
+  const [canEdit, setCanEdit] = useState(false);
+  useEffect(() => {
+    if (!eventId) return;
+    let cancelled = false;
+    canEditGalleryAction(eventId)
+      .then((ok) => {
+        if (!cancelled) setCanEdit(ok);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
+  return canEdit;
+}
+
+/**
+ * A chapter heading with an inline rename (pencil → field → Save/Cancel)
+ * for hosts. Everyone else just sees the title.
+ */
+export function EditableChapterTitle({
+  eventId,
+  category,
+  title,
+  canEdit,
+  onRenamed,
+  className,
+}: {
+  eventId?: string;
+  category: GalleryCategory;
+  title: string;
+  canEdit: boolean;
+  onRenamed: (category: GalleryCategory, title: string) => void;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(title);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!editing || !eventId) {
+    return (
+      <span className="inline-flex items-center gap-2">
+        <span className={className}>{title}</span>
+        {canEdit && eventId ? (
+          <button
+            type="button"
+            onClick={() => {
+              setValue(title);
+              setError(null);
+              setEditing(true);
+            }}
+            aria-label={`Rename “${title}”`}
+            title="Rename this chapter (only you can see this)"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-navy-700 ring-1 ring-inset ring-navy-950/20 transition-luxury duration-200 hover:text-navy-950 hover:ring-navy-950/50"
+          >
+            <Pencil size={14} />
+          </button>
+        ) : null}
+      </span>
+    );
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    const result = await renameGalleryChapterAction(eventId!, category, value);
+    setSaving(false);
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+    onRenamed(category, result.data.title);
+    setEditing(false);
+  }
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <input
+        autoFocus
+        value={value}
+        maxLength={CHAPTER_TITLE_MAX}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") void save();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        aria-label="Chapter name"
+        placeholder={CHAPTERS.find((c) => c.category === category)?.title}
+        className="w-56 rounded-lg bg-white px-3 py-1.5 text-base text-navy-950 ring-1 ring-inset ring-navy-950/25 focus:outline-none focus:ring-2 focus:ring-gold-500"
+      />
+      <button
+        type="button"
+        onClick={() => void save()}
+        disabled={saving}
+        className="inline-flex items-center gap-1 rounded-full bg-navy-950 px-3 py-1.5 text-xs font-medium text-ivory-50 disabled:opacity-60"
+      >
+        {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save
+      </button>
+      <button type="button" onClick={() => setEditing(false)} className="text-xs text-navy-700/70 hover:text-navy-950">
+        Cancel
+      </button>
+      <span className="w-full text-[11px] text-navy-700/60">
+        {error ?? "Leave empty to go back to the default name."}
+      </span>
+    </span>
   );
 }
 

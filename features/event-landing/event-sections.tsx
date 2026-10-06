@@ -59,7 +59,7 @@ export function EventSections({ event, displayData: data, galleryPhotos, milesto
     invitation: <InvitationSection data={data} />,
     eventDetails: <EventDetailsSection data={data} />,
     liveStream: <LiveStreamSection enabled={event?.liveStreamEnabled ?? false} url={event?.liveStreamUrl ?? null} />,
-    gallery: event ? <GallerySectionServer eventId={event.id} eventSlug={event.slug} photos={galleryPhotos} /> : <GallerySection photos={galleryPhotos} />,
+    gallery: event ? <GallerySectionServer eventId={event.id} eventSlug={event.slug} photos={galleryPhotos} chapterTitles={event.galleryChapterTitles} /> : <GallerySection photos={galleryPhotos} />,
     timeline: <TimelineSection milestones={milestones} />,
     rsvp: (
       <RsvpTeaserSection

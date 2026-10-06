@@ -12,10 +12,12 @@ export async function GallerySectionServer({
   eventId,
   eventSlug,
   photos,
+  chapterTitles = null,
 }: {
   eventId: string;
   eventSlug: string;
   photos: GalleryPhotoRecord[];
+  chapterTitles?: Record<string, string> | null;
 }) {
   const [pairs, guestPhotos] = await Promise.all([
     listGalleryPairs(eventId).catch(() => []),
@@ -27,6 +29,8 @@ export async function GallerySectionServer({
       pairs={pairs}
       guestPhotos={guestPhotos}
       fullGalleryHref={`/events/${encodeURIComponent(eventSlug)}/gallery`}
+      eventId={eventId}
+      chapterTitles={chapterTitles}
     />
   );
 }

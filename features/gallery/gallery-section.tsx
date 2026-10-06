@@ -12,11 +12,13 @@ import { Reveal } from "@/components/motion/reveal";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
 import { ThenNowCard } from "@/features/gallery/then-now-card";
 import {
+  EditableChapterTitle,
   GalleryLightbox,
   MasonryGrid,
   guestToViewer,
   toChapters,
   toViewer,
+  useCanEditGallery,
   useColumnCount,
   type ViewerItem,
 } from "@/features/gallery/gallery-shared";
@@ -33,6 +35,10 @@ interface GallerySectionProps {
    * fit comfortably on the event page.
    */
   fullGalleryHref?: string;
+  /** Enables the hosts-only rename pencil next to chapter titles. */
+  eventId?: string;
+  /** The event's own chapter names (events.gallery_chapter_titles). */
+  chapterTitles?: Record<string, string> | null;
 }
 
 /** Cover + this many more before "See all" when there's only one chapter. */
@@ -50,14 +56,23 @@ const INLINE_EXPAND_LIMIT = 24;
  * approved guest photos from the memory wall. A full-screen lightbox
  * holds share/download buttons and a "Play slideshow" mode.
  */
-export function GallerySection({ photos, pairs = [], guestPhotos = [], fullGalleryHref }: GallerySectionProps) {
+export function GallerySection({
+  photos,
+  pairs = [],
+  guestPhotos = [],
+  fullGalleryHref,
+  eventId,
+  chapterTitles = null,
+}: GallerySectionProps) {
+  const [titles, setTitles] = useState<Record<string, string> | null>(chapterTitles);
+  const canEdit = useCanEditGallery(eventId);
   const [active, setActive] = useState<GalleryCategory | "all" | "guests">("all");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [viewer, setViewer] = useState<{ items: ViewerItem[]; index: number } | null>(null);
   const [playing, setPlaying] = useState(false);
   const columnCount = useColumnCount(2, { 640: 3 });
 
-  const chapters = useMemo(() => toChapters(photos), [photos]);
+  const chapters = useMemo(() => toChapters(photos, titles), [photos, titles]);
   const guestItems = useMemo(() => guestPhotos.map<ViewerItem>(guestToViewer), [guestPhotos]);
 
   const tabs = [
@@ -217,7 +232,16 @@ export function GallerySection({ photos, pairs = [], guestPhotos = [], fullGalle
                 <div key={group.key} className={group.title ? "mt-14" : "mt-4"}>
                   {group.title ? (
                     <div className="mb-5 flex items-baseline justify-between gap-3 border-b border-navy-950/10 pb-3">
-                      <h3 className="font-display text-2xl text-navy-950">{group.title}</h3>
+                      <h3>
+                        <EditableChapterTitle
+                          eventId={eventId}
+                          category={group.key as GalleryCategory}
+                          title={group.title}
+                          canEdit={canEdit}
+                          onRenamed={(category, title) => setTitles((t) => ({ ...(t ?? {}), [category]: title }))}
+                          className="font-display text-2xl text-navy-950"
+                        />
+                      </h3>
                       <span className="text-xs uppercase tracking-[0.15em] text-navy-700/50">
                         {group.items.length} {group.items.length === 1 ? "photo" : "photos"}
                       </span>

@@ -7,12 +7,14 @@ import { ArrowLeft, Grid3x3, ImageOff, LayoutDashboard, Loader2, Play } from "lu
 import { cn } from "@/lib/utils";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
 import {
+  EditableChapterTitle,
   GalleryLightbox,
   MasonryGrid,
   SquareGrid,
   guestToViewer,
   toChapters,
   toViewer,
+  useCanEditGallery,
   useColumnCount,
   type ViewerItem,
 } from "@/features/gallery/gallery-shared";
@@ -43,19 +45,29 @@ interface Section {
  * quick on a phone.
  */
 export function FullGallery({
+  eventId,
   honoreeName,
   eventHref,
   photos,
   guestPhotos,
   initialChapter,
+  chapterTitles = null,
+  invitationCardUrl = null,
 }: {
+  eventId: string;
   honoreeName: string;
   eventHref: string;
   photos: GalleryPhotoRecord[];
   guestPhotos: GuestGalleryPhoto[];
   initialChapter: string | null;
+  /** The event's own chapter names (events.gallery_chapter_titles). */
+  chapterTitles?: Record<string, string> | null;
+  /** The event's invitation card (its link-preview image), shown in the header. */
+  invitationCardUrl?: string | null;
 }) {
-  const chapters = useMemo(() => toChapters(photos), [photos]);
+  const [titles, setTitles] = useState<Record<string, string> | null>(chapterTitles);
+  const canEdit = useCanEditGallery(eventId);
+  const chapters = useMemo(() => toChapters(photos, titles), [photos, titles]);
   const guestItems = useMemo(() => guestPhotos.map(guestToViewer), [guestPhotos]);
 
   const validTabs = useMemo(
@@ -169,12 +181,31 @@ export function FullGallery({
             <ArrowLeft size={15} /> Back to the event
           </Link>
           <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-            <div>
+            <div className="flex items-end gap-4">
+              {invitationCardUrl ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlaying(false);
+                    setViewer({
+                      items: [{ id: "invitation-card", url: invitationCardUrl, caption: "The invitation", shareBase: "invitation-card" }],
+                      index: 0,
+                    });
+                  }}
+                  aria-label="View the invitation card"
+                  className="group shrink-0 overflow-hidden rounded-lg bg-white shadow-md ring-1 ring-navy-950/10 transition-luxury duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={invitationCardUrl} alt="The invitation card" className="h-24 w-auto max-w-[5.5rem] object-cover sm:h-32 sm:max-w-[7.5rem]" />
+                </button>
+              ) : null}
+              <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gold-600">{honoreeName}</p>
               <h1 className="mt-1 font-display text-3xl text-navy-950 sm:text-4xl">Gallery</h1>
               <p className="mt-1 text-sm text-navy-700/60">
                 {photos.length + guestItems.length} photos &amp; videos
               </p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {allItems.length > 1 ? (
@@ -248,7 +279,20 @@ export function FullGallery({
               <div key={section.key} className={section.title ? "mt-10" : "mt-6"}>
                 {section.title ? (
                   <div className="mb-3 flex items-baseline justify-between gap-3 px-1 sm:px-0">
-                    <h2 className="font-display text-xl text-navy-950 sm:text-2xl">{section.title}</h2>
+                    <h2>
+                      {section.key === "guests" ? (
+                        <span className="font-display text-xl text-navy-950 sm:text-2xl">{section.title}</span>
+                      ) : (
+                        <EditableChapterTitle
+                          eventId={eventId}
+                          category={section.key as GalleryCategory}
+                          title={section.title}
+                          canEdit={canEdit}
+                          onRenamed={(category, title) => setTitles((t) => ({ ...(t ?? {}), [category]: title }))}
+                          className="font-display text-xl text-navy-950 sm:text-2xl"
+                        />
+                      )}
+                    </h2>
                     <span className="text-xs uppercase tracking-[0.15em] text-navy-700/50">{section.items.length}</span>
                   </div>
                 ) : null}

@@ -7,6 +7,7 @@ import { EVENT_SLUG } from "@/lib/constants";
 import type { SectionConfigItem } from "@/lib/section-registry";
 import type { EventRecord, ThemeOverrides } from "@/types/event";
 import { sanitizeThemeOverrides } from "@/lib/template-theme-vars";
+import { sanitizeGalleryChapterTitles } from "@/features/gallery/gallery-data";
 
 export interface EventRow {
   id: string;
@@ -49,6 +50,7 @@ export interface EventRow {
   wizard_goals: string[] | null;
   has_end_time: boolean | null;
   theme_overrides: ThemeOverrides | null;
+  gallery_chapter_titles: Record<string, string> | null;
   event_day_mode: "off" | "public" | "private";
   event_day_share_token: string | null;
   menu_style: "buffet" | "a_la_carte";
@@ -114,6 +116,7 @@ export function mapEvent(row: EventRow): EventRecord {
     wizardGoals: row.wizard_goals,
     hasEndTime: row.has_end_time ?? true,
     themeOverrides: row.theme_overrides ?? null,
+    galleryChapterTitles: row.gallery_chapter_titles ?? null,
     eventDayMode: row.event_day_mode ?? "off",
     eventDayShareToken: row.event_day_share_token,
     menuStyle: row.menu_style ?? "buffet",
@@ -308,6 +311,7 @@ export interface EventUpdateInput {
   wizardGoals?: string[] | null;
   hasEndTime?: boolean;
   themeOverrides?: ThemeOverrides | null;
+  galleryChapterTitles?: Record<string, string> | null;
   /**
    * Per-event AI generation caps. Not currently owner-only-editable
    * from any admin UI — the one real setter today is
@@ -426,6 +430,8 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.wizardGoals !== undefined) patch.wizard_goals = input.wizardGoals;
   if (input.hasEndTime !== undefined) patch.has_end_time = input.hasEndTime;
   if (input.themeOverrides !== undefined) patch.theme_overrides = sanitizeThemeOverrides(input.themeOverrides);
+  if (input.galleryChapterTitles !== undefined)
+    patch.gallery_chapter_titles = sanitizeGalleryChapterTitles(input.galleryChapterTitles);
   if (input.aiImageGenerationLimit !== undefined) patch.ai_image_generation_limit = input.aiImageGenerationLimit;
   if (input.aiVideoGenerationLimit !== undefined) patch.ai_video_generation_limit = input.aiVideoGenerationLimit;
   if (input.aiCssGenerationLimit !== undefined) patch.ai_css_generation_limit = input.aiCssGenerationLimit;

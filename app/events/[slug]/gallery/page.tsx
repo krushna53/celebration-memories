@@ -7,7 +7,9 @@ import { CustomCssBlock } from "@/features/event-landing/custom-css-block";
 import { FullGallery } from "@/features/gallery/full-gallery";
 import { TEMPLATE_THEMES } from "@/lib/template-themes";
 import { DEFAULT_TEMPLATE_SLUG } from "@/lib/template-catalog";
+import { buildEventMetadata } from "@/lib/event-metadata";
 import { getEventBySlug } from "@/services/events";
+import { publicMediaUrl } from "@/services/uploads";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listGuestGalleryPhotos } from "@/services/gallery-story";
 import { TemplateThemeWrapper } from "@/templates/shared/template-theme-wrapper";
@@ -39,13 +41,24 @@ const loadEvent = cache(async (slug: string): Promise<EventRecord | null> => {
   }
 });
 
+/**
+ * Same link preview as the event page — the invitation card when one is
+ * set (else the cover photo / EveryMoment card), so a shared gallery link
+ * looks like the event in WhatsApp etc. — with a gallery-specific title.
+ */
 export async function generateMetadata({ params }: GalleryPageProps): Promise<Metadata> {
   const { slug } = await params;
   const event = await loadEvent(slug);
   if (!event) return {};
+  const base = await buildEventMetadata(event);
+  const title = `Gallery — ${event.honoreeName} | ${event.eventTitle}`;
+  const description = `Photos and videos from ${event.honoreeName}'s ${event.eventTitle}.`;
   return {
-    title: `Gallery — ${event.honoreeName}`,
-    description: `Photos and videos from ${event.honoreeName}'s ${event.eventTitle}.`,
+    ...base,
+    title,
+    description,
+    openGraph: { ...base.openGraph, title, description },
+    twitter: { ...base.twitter, title, description },
     robots: event.visibility === "public" ? undefined : { index: false, follow: false },
   };
 }
@@ -82,6 +95,9 @@ export default async function EventGalleryPage({ params, searchParams }: Gallery
           ]}
         >
           <FullGallery
+            eventId={event.id}
+            chapterTitles={event.galleryChapterTitles}
+            invitationCardUrl={event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null}
             honoreeName={event.honoreeName}
             eventHref={eventHref}
             photos={photos}

@@ -146,6 +146,12 @@ export interface EventRecord {
   /** Host-chosen colour tweaks layered on top of the selected template — see lib/template-theme-vars.ts. */
   themeOverrides: ThemeOverrides | null;
   /**
+   * Custom names for the gallery's chapters, keyed by stored category
+   * ("grandchildren" → "Aarav & Myra"). Missing keys use the default
+   * titles in features/gallery/gallery-shared.tsx.
+   */
+  galleryChapterTitles: Record<string, string> | null;
+  /**
    * Controls the event-day Schedule + Menu feature (see services/event-day.ts
    * and features/event-day):
    * - "off": feature unused, nothing shown anywhere.

@@ -9,7 +9,8 @@ import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import { readPhotoMetadata } from "@/lib/photo-metadata";
-import { GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
+import { CHAPTERS, CHAPTER_TITLE_MAX, GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
+import { renameGalleryChapterAction } from "@/features/gallery/actions";
 import type { GalleryPairRecord, GalleryPhotoRecord } from "@/types/content";
 import {
   confirmGalleryUploadAction,
@@ -196,7 +197,11 @@ interface GalleryManagerProps {
   initialPairs?: GalleryPairRecord[];
   /** Whether AI auto-sorting is available (OPENAI_API_KEY set) — shows the "Auto-sort & caption" toggle. */
   aiAutoTagAvailable?: boolean;
+  /** Admin only — this event's own chapter names; enables the "Chapter names" panel. */
+  chapterTitles?: Record<string, string> | null;
 }
+
+type CategoryOption = { value: GalleryCategory; label: string };
 
 const CATEGORY_OPTIONS = GALLERY_CATEGORIES.filter(
   (c): c is { value: GalleryCategory; label: string } => c.value !== "all",
@@ -210,6 +215,7 @@ function CaptionEditor({
   photoId,
   initial,
   initialCategory,
+  options,
   updatePhoto,
   onSaved,
   onCancel,
@@ -217,6 +223,8 @@ function CaptionEditor({
   photoId: string;
   initial: string;
   initialCategory: GalleryCategory;
+  /** Categories with this event's own names (see GalleryManager's chapter names). */
+  options: CategoryOption[];
   updatePhoto: GalleryActions["updatePhoto"];
   onSaved: (caption: string, category: GalleryCategory) => void;
   onCancel: () => void;
@@ -243,7 +251,7 @@ function CaptionEditor({
         aria-label="Category"
         className={inputCls}
       >
-        {CATEGORY_OPTIONS.map((c) => (
+        {options.map((c) => (
           <option key={c.value} value={c.value}>{c.label}</option>
         ))}
       </select>
@@ -291,8 +299,10 @@ function CategoryGrid({
   updatePhoto,
   onUpdated,
   autoTaggedIds,
+  options,
 }: {
   label: string;
+  options: CategoryOption[];
   initialPhotos: GalleryPhotoRecord[];
   busyId: string | null;
   onDelete: (id: string) => void;
@@ -458,6 +468,7 @@ function CategoryGrid({
                 photoId={photo.id}
                 initial={photo.caption ?? ""}
                 initialCategory={photo.category}
+                options={options}
                 updatePhoto={updatePhoto}
                 onSaved={(caption, category) => {
                   setPhotos((prev) => prev.map((p) => (p.id === photo.id ? { ...p, caption } : p)));
@@ -474,13 +485,110 @@ function CategoryGrid({
   );
 }
 
+/**
+ * Rename the gallery's chapters for this event ("The little ones" →
+ * "Aarav & Myra"). Same names show on the event page, the full gallery
+ * page and every category list here; hosts can also rename a chapter
+ * straight from the event page (pencil next to its title).
+ */
+function ChapterNamesPanel({
+  eventId,
+  titles,
+  onSaved,
+}: {
+  eventId: string;
+  titles: Record<string, string> | null;
+  onSaved: (titles: Record<string, string> | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<Record<string, string>>(() => ({ ...(titles ?? {}) }));
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function save() {
+    setSaving(true);
+    setMessage(null);
+    const next: Record<string, string> = {};
+    for (const { category } of CHAPTERS) {
+      const wanted = (draft[category] ?? "").trim();
+      if (wanted === (titles?.[category] ?? "")) {
+        if (wanted) next[category] = wanted;
+        continue;
+      }
+      const result = await renameGalleryChapterAction(eventId, category, wanted);
+      if (!result.success) {
+        setSaving(false);
+        setMessage(result.error);
+        return;
+      }
+      if (wanted) next[category] = result.data.title;
+    }
+    setSaving(false);
+    onSaved(Object.keys(next).length ? next : null);
+    setMessage("Saved — the event page shows the new names within a minute.");
+  }
+
+  return (
+    <div className="mt-4 rounded-xl bg-white p-4 ring-1 ring-inset ring-navy-950/10">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <span>
+          <span className="block font-medium text-navy-950">Chapter names</span>
+          <span className="block text-xs text-navy-700/60">
+            Rename the gallery&rsquo;s sections for this event — e.g. &ldquo;The little ones&rdquo; → &ldquo;Aarav &amp;
+            Myra&rdquo;. You can also tap the pencil next to a chapter on the event page.
+          </span>
+        </span>
+        <Pencil size={15} className="shrink-0 text-navy-700/60" />
+      </button>
+      {open ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {CHAPTERS.map((c) => (
+            <label key={c.category} className="flex flex-col gap-1">
+              <span className="text-[10px] font-medium uppercase tracking-widest text-navy-700/50">
+                {CATEGORY_OPTIONS.find((o) => o.value === c.category)?.label}
+              </span>
+              <input
+                value={draft[c.category] ?? ""}
+                maxLength={CHAPTER_TITLE_MAX}
+                placeholder={c.title}
+                onChange={(e) => setDraft((d) => ({ ...d, [c.category]: e.target.value }))}
+                className="rounded-lg bg-white px-3 py-2 text-sm ring-1 ring-inset ring-navy-950/15 focus:outline-none focus:ring-2 focus:ring-gold-500"
+              />
+            </label>
+          ))}
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+            <button
+              type="button"
+              onClick={() => void save()}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 rounded-full bg-navy-950 px-4 py-2 text-sm font-medium text-ivory-50 disabled:opacity-60"
+            >
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Save names
+            </button>
+            <span className="text-xs text-navy-700/60">{message ?? "Leave a box empty to keep the default name."}</span>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function GalleryManager({
   eventId,
   initialPhotos,
   actions = DEFAULT_ACTIONS,
   initialPairs = [],
   aiAutoTagAvailable = false,
+  chapterTitles,
 }: GalleryManagerProps) {
+  const [titles, setTitles] = useState<Record<string, string> | null>(chapterTitles ?? null);
+  // Categories under this event's own names, everywhere in the manager.
+  const options: CategoryOption[] = CATEGORY_OPTIONS.map((c) => ({ ...c, label: titles?.[c.value] ?? c.label }));
   const router = useRouter();
   const [photos, setPhotos] = useState(initialPhotos);
   const [previousPhotos, setPreviousPhotos] = useState(initialPhotos);
@@ -655,7 +763,7 @@ export function GalleryManager({
             onChange={(e) => setCategory(e.target.value as GalleryCategory)}
             className="rounded-lg border border-navy-950/15 bg-white px-3 py-2 text-sm"
           >
-            {CATEGORY_OPTIONS.map((c) => (
+            {options.map((c) => (
               <option key={c.value} value={c.value}>{c.label}</option>
             ))}
           </select>
@@ -693,7 +801,7 @@ export function GalleryManager({
             ? `Uploading ${Math.min(jobs.filter((j) => j.status === "done" || j.status === "failed").length + 1, jobs.length)} of ${jobs.length}…`
             : autoTag
               ? "Upload photos or videos"
-              : `Upload photos or videos to ${CATEGORY_OPTIONS.find((c) => c.value === category)?.label}`}
+              : `Upload photos or videos to ${options.find((c) => c.value === category)?.label}`}
         </button>
         {/* Imports straight into the selected category — renders nothing without a Google Photos client id. */}
         {!uploading ? <GooglePhotosButton onFiles={handleFiles} label="From Google Photos" className="w-full sm:w-56" /> : null}
@@ -733,6 +841,10 @@ export function GalleryManager({
       </div>
       <PhotoMetadataTip pickHint="tap Upload, then choose Browse / Files / Drive instead of the gallery" />
 
+      {chapterTitles !== undefined ? (
+        <ChapterNamesPanel eventId={eventId} titles={titles} onSaved={setTitles} />
+      ) : null}
+
       {/* Admin only — the /start wizard passes its own token-based actions and has no admin session for the AI actions. */}
       {actions === DEFAULT_ACTIONS && photos.length > 0 ? (
         <>
@@ -750,7 +862,7 @@ export function GalleryManager({
       </p>
 
       {/* Per-category draggable grids */}
-      {CATEGORY_OPTIONS.map((cat) => (
+      {options.map((cat) => (
         <CategoryGrid
           key={`${cat.value}:${photos.filter((p) => p.category === cat.value).map((p) => p.id).join(",")}`}
           label={cat.label}
@@ -758,6 +870,7 @@ export function GalleryManager({
           busyId={busyId}
           onDelete={handleDelete}
           updatePhoto={actions.updatePhoto}
+          options={options}
           onUpdated={handlePhotoUpdated}
           autoTaggedIds={autoTaggedIds}
         />
