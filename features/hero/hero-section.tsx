@@ -139,11 +139,18 @@ export function HeroSection({ data, relive = null }: HeroSectionProps) {
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="mt-6 text-sm tracking-wide text-ivory-100/80 sm:text-base"
+            className="mt-6"
           >
-            {data.dayOfWeek}, {data.date}
-            <br />
-            {data.timeRange}
+            {/* The date is the focal point after the name — big, in the display face. */}
+            <span className="block font-display text-2xl font-semibold leading-snug text-ivory-50 sm:text-3xl">
+              {data.dayOfWeek},{" "}
+              {/* On phones break after the weekday so the year never sits alone on a line. */}
+              <br className="sm:hidden" />
+              <span className="whitespace-nowrap">{data.date}</span>
+            </span>
+            <span className="mt-1.5 block text-lg font-medium tracking-wide text-ivory-100/90 sm:text-xl">
+              {data.timeRange}
+            </span>
           </motion.p>
 
           <motion.div
