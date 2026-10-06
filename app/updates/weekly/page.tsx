@@ -39,6 +39,27 @@ const CHANGES: ChangeGroup[] = [
     date: "Tuesday, October 6",
     items: [
       {
+        title: "Personal Guest Reels — every guest gets an Instagram-ready video",
+        detail:
+          "After the event, each guest who opted in gets their own short 9:16 video (sized for Instagram Reels and WhatsApp Status) of the photos they're in with the guest of honour — set to music, with their name and a thank-you from the host at the end. Guests add a selfie on the RSVP form (or on their invite link after the event) and must tick a consent box first; the host adds the guest of honour's photo in Event Settings with their own confirmation. After the event the host uploads the day's photos on the new Guest Reels page, clicks \"Scan\" — face recognition runs in the host's own browser, no photos go to an outside AI — then \"Create reels\". Guests see their reel on their invite link with \"Share to Instagram / WhatsApp\", Download and a shareable link; the host has a WhatsApp \"Send\" button per guest. A wrong name on a photo can be removed with one tap. Off by default — switch it on per event.",
+        test:
+          "Use the test event \"Asha's 60th\" (Admin > All Events). One teammate plays Asha, 3–4 play guests. Each guest opens their link (/invite/RDM7Q2KA, RDM8P4XB, RDM9W6YC, RDM3H8ZD) and adds a selfie — confirm Save stays disabled until the consent box is ticked. On Guest Reels add Asha's photo, upload 8–10 group photos, click Scan, check the names on each photo, then Create reels. After 1–3 minutes confirm each guest's reel plays on their invite link and the Share button offers Instagram/WhatsApp on a phone. Finally, Remove one guest's selfie and confirm they disappear from the list.",
+      },
+      {
+        title: "Balloons, bunting and confetti on kids' birthday templates",
+        detail:
+          "Kids Cartoon and Balloon Pop event pages now have a swaying \"HAPPY BIRTHDAY\" bunting across the top, colourful balloons floating up the sides and a confetti shower when the page opens. On a laptop you can click a balloon to pop it; on phones taps go straight through so balloons never get in the way of buttons. Visitors who have reduced motion turned on see still balloons instead. Veda's 1st birthday page uses this.",
+        test:
+          "Open Veda's event page on a phone and a laptop: check the bunting under the menu, balloons rising at the edges and the opening confetti. On the laptop click a balloon to pop it; on the phone tap RSVP Now while a balloon passes and confirm it still works.",
+      },
+      {
+        title: "See what reading invitation cards with AI costs",
+        detail:
+          "Every time the wizard's \"Your Card\" step reads an uploaded invitation card with AI, the real token count is now recorded. Admin > Usage has a new \"Invitation Card Reading\" section: estimated cost, cost per card, tokens used, cost by event, the last 14 days and the most recent reads (including reads that found nothing, since those are still billed). Costs are estimates from published prices — check the OpenAI dashboard for exact billing. Reads before today weren't recorded.",
+        test:
+          "Start a new event at /start, upload an invitation card in \"Your Card\", then as owner open Admin > Usage and confirm the read appears with tokens and a cost.",
+      },
+      {
         title: "One login can now manage several events",
         detail:
           "A host can run more than one event from the same account, and someone already helping with one event can be added to another's team (no more \"This person already manages another event\"). People with more than one event see \"Managing X's event — Switch event\" under the dashboard header. Hosts who are signed in can start another event in the Create Your Event wizard and it's added to their account. Removing someone from one team leaves their other events untouched. Also closed a sign-up loophole: new accounts can only be linked to a fresh wizard draft, never to an existing event.",
