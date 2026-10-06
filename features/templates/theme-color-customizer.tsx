@@ -47,7 +47,8 @@ export function ThemeColorCustomizer({
   initialOverrides: ThemeOverrides | null;
   onSave: (overrides: ThemeOverrides | null) => Promise<{ success: true } | { success: false; error: string }>;
 }) {
-  const [open, setOpen] = useState(Boolean(initialOverrides));
+  // Open by default so hosts see the options and live preview straight away; the header still collapses it.
+  const [open, setOpen] = useState(true);
   const [accent, setAccent] = useState<string | null>(initialOverrides?.accentColor ?? null);
   const [choice, setChoice] = useState<HighlightChoice>(initialChoice(initialOverrides));
   const [customColor, setCustomColor] = useState<string>(initialOverrides?.highlightColor ?? theme.colors.navy900);
