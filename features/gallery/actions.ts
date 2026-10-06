@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdminForOrganizerArea } from "@/services/admin-auth";
 import { getEventById, updateEvent } from "@/services/events";
-import { CHAPTERS, CHAPTER_TITLE_MAX, GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
+import { CHAPTERS, CHAPTER_TITLE_MAX, type GalleryCategory } from "@/features/gallery/gallery-data";
 
 /**
  * Gallery chapter renaming, used from the public event page and the full
@@ -30,7 +30,8 @@ export async function renameGalleryChapterAction(
 ): Promise<{ success: true; data: { title: string } } | { success: false; error: string }> {
   try {
     await requireAdminForOrganizerArea(eventId, "gallery");
-    if (!GALLERY_CATEGORIES.some((c) => c.value === category && c.value !== "all")) {
+    // Checked at runtime too — `category` arrives from the browser.
+    if (!CHAPTERS.some((c) => c.category === category)) {
       return { success: false, error: "Unknown chapter." };
     }
     const event = await getEventById(eventId);

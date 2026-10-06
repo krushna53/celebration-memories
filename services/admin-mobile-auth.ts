@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentIpHash, isLockedOut, recordFailure } from "@/services/abuse-guard";
 import { generateInviteToken } from "@/lib/tokens";
-import type { AdminRole, CurrentAdmin } from "@/services/admin-auth";
+import type { AdminRole, CurrentAdmin, EventMembership } from "@/services/admin-auth";
 
 /**
  * Mobile companion-app auth. Deliberately NOT the same email/password as
@@ -26,15 +26,37 @@ interface AdminRow {
   event_id: string | null;
 }
 
-function toCurrentAdmin(row: AdminRow): CurrentAdmin {
-  return {
+/**
+ * Same shape getCurrentAdmin() builds for the web dashboard: a non-owner's
+ * events come from admin_event_memberships, and the app opens their
+ * primary event (else their newest) — so the shared access checks
+ * (adminForEvent) work identically for app sessions.
+ */
+async function toCurrentAdmin(row: AdminRow): Promise<CurrentAdmin> {
+  const base: CurrentAdmin = {
     id: row.id,
     email: row.email,
     name: row.name,
     role: row.role,
     hasSeenTour: true, // the mobile app has its own onboarding; this field is a web-dashboard concept.
     eventId: row.event_id,
+    memberships: [],
   };
+  if (row.role === "owner") return base;
+
+  const { data, error } = await supabaseAdmin()
+    .from("admin_event_memberships")
+    .select("event_id, role")
+    .eq("admin_id", row.id)
+    .order("created_at", { ascending: false });
+  if (error) console.error("mobile auth: failed to load event memberships:", error.message);
+  const memberships = ((data ?? []) as { event_id: string; role: EventMembership["role"] }[]).map((m) => ({
+    eventId: m.event_id,
+    role: m.role,
+  }));
+  if (memberships.length === 0) return { ...base, eventId: null };
+  const active = memberships.find((m) => m.eventId === row.event_id) ?? memberships[0]!;
+  return { ...base, role: active.role, eventId: active.eventId, memberships };
 }
 
 /** 192 bits of entropy — this token alone grants a signed-in admin session, so it needs far more entropy than the human-typed access code below. Never displayed to a person, only stored on-device. */
@@ -133,7 +155,7 @@ export async function loginWithMobileAccessCode(code: string): Promise<MobileLog
     return { success: false, error: "Could not start a session. Please try again." };
   }
 
-  return { success: true, sessionToken, admin: toCurrentAdmin(data) };
+  return { success: true, sessionToken, admin: await toCurrentAdmin(data) };
 }
 
 /** Resolves a mobile session token (the app's `Authorization: Bearer <token>` header) back to an admin, bumping last_used_at. Returns null for a missing/invalid/revoked token. */
@@ -155,7 +177,7 @@ export async function getAdminByMobileSessionToken(token: string): Promise<Curre
     .eq("token", token)
     .then(() => {});
 
-  return toCurrentAdmin(data.admins);
+  return await toCurrentAdmin(data.admins);
 }
 
 /** Extracts and resolves the bearer token from a mobile API route's Authorization header. Throws so callers can short-circuit with a 401 the same way requireOwner/requireAdminForEvent do for the web. */
