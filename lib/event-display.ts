@@ -1,4 +1,5 @@
 import { ACTIVE_EVENT, VENUE } from "@/lib/constants";
+import { resolveVenueMapLinks } from "@/lib/maps";
 import { DEFAULT_EVENT_TIMEZONE, formatCalendarDate, formatEventTime, formatEventTimeRange } from "@/lib/timezone";
 import type { EventRecord, EventCategory } from "@/types/event";
 
@@ -72,6 +73,7 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
   }
 
   const timezone = event.timezone || DEFAULT_EVENT_TIMEZONE;
+  const mapLinks = resolveVenueMapLinks(event.mapsUrl, event.mapsEmbedUrl);
 
   return {
     honoreeName: event.honoreeName,
@@ -89,8 +91,8 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
     isoStart: event.startAt,
     venueName: event.venueName,
     venueAddress: event.venueAddress,
-    mapsUrl: event.mapsUrl,
-    mapsEmbedUrl: event.mapsEmbedUrl,
+    mapsUrl: mapLinks.mapsUrl,
+    mapsEmbedUrl: mapLinks.mapsEmbedUrl,
     parkingInfo: event.parkingInfo,
     dressCode: event.dressCode,
     occasionDate: event.occasionDate ? formatCalendarDate(event.occasionDate) : null,
