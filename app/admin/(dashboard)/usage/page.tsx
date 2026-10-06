@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { getAllEventsUsage } from "@/services/usage-analytics";
 import { getFormAiGenerationUsage, getFormAiUsageByOwner } from "@/services/form-ai-usage";
+import { getCardReadUsage } from "@/services/card-read-usage";
+import { CardReadUsageSection } from "@/features/admin/usage/card-read-usage-section";
 import { formatBytes } from "@/lib/format-bytes";
 import { StatCard } from "@/features/admin/components/stat-card";
 import { BarChart } from "@/features/admin/components/bar-chart";
@@ -57,10 +59,11 @@ export default async function AdminUsagePage() {
   const admin = await getCurrentAdmin();
   if (admin?.role !== "owner") redirect("/admin");
 
-  const [usage, formAiUsage, formAiByOwner] = await Promise.all([
+  const [usage, formAiUsage, formAiByOwner, cardReadUsage] = await Promise.all([
     getAllEventsUsage(),
     getFormAiGenerationUsage(),
     getFormAiUsageByOwner(),
+    getCardReadUsage(),
   ]);
 
   const totals = usage.reduce(
@@ -111,6 +114,8 @@ export default async function AdminUsagePage() {
         <StatCard label="Shotstack API — Slideshow" value={formatUsd(totals.estimatedShotstackSlideshowCostUsd)} />
         <StatCard label="Shotstack API — Video Editor" value={formatUsd(totals.estimatedShotstackVideoEditorCostUsd)} />
       </div>
+
+      <CardReadUsageSection usage={cardReadUsage} />
 
       <div className="mt-8 rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm">
         <h2 className="font-display text-lg text-navy-950">Build RSVP / Form — AI Generation</h2>

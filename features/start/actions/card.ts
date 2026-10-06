@@ -1,11 +1,18 @@
 "use server";
 
 import { requireDraftEvent } from "@/features/start/draft-auth";
-import { AI_CARD_READER_CONFIGURED, readInvitationCard, type InvitationCardDetails } from "@/lib/ai-invitation-card-reader";
+import {
+  AI_CARD_READER_CONFIGURED,
+  AiCardReaderError,
+  readInvitationCard,
+  type CardReadUsage,
+  type InvitationCardDetails,
+} from "@/lib/ai-invitation-card-reader";
 import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
 import { utcIsoToZonedInputValue, zonedInputValueToUtcIso } from "@/lib/timezone";
 import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
 import { countUploadedAiImages } from "@/services/ai-image-jobs";
+import { recordCardRead } from "@/services/card-read-usage";
 import { updateEvent, type EventUpdateInput } from "@/services/events";
 import { externalMediaUrl } from "@/services/external-media";
 
@@ -160,11 +167,19 @@ export async function draftReadInvitationCardAction(
     }
 
     let details: InvitationCardDetails;
+    let usage: CardReadUsage;
+    const startedAt = Date.now();
+    let readMs = 0;
     try {
       const url = await externalMediaUrl("gallery", path, 600);
-      details = await readInvitationCard(url, todayIn(event.timezone));
+      ({ details, usage } = await readInvitationCard(url, todayIn(event.timezone)));
+      readMs = Date.now() - startedAt;
     } catch (err) {
       console.error("draftReadInvitationCardAction read failed:", err);
+      // OpenAI still bills a call whose answer we couldn't use — record it so /admin/usage shows the real spend.
+      if (err instanceof AiCardReaderError && err.usage) {
+        await recordCardRead({ eventId: event.id, usage: err.usage, success: false, fieldsFilled: 0, durationMs: Date.now() - startedAt });
+      }
       return {
         success: true,
         filled: [],
@@ -173,6 +188,13 @@ export async function draftReadInvitationCardAction(
     }
 
     const { input, filled } = await toEventUpdate(details, { timezone: event.timezone, mapsUrl: event.mapsUrl, mapsEmbedUrl: event.mapsEmbedUrl });
+    await recordCardRead({
+      eventId: event.id,
+      usage,
+      success: filled.length > 0,
+      fieldsFilled: filled.length,
+      durationMs: readMs,
+    });
     if (filled.length > 0) await updateEvent(event.id, input);
 
     return {

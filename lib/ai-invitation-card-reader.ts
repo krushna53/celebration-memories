@@ -24,7 +24,24 @@ function getClient(): OpenAI | null {
 
 export const AI_CARD_READER_CONFIGURED = Boolean(process.env.OPENAI_API_KEY);
 
-export class AiCardReaderError extends Error {}
+/** Real token counts from OpenAI's response.usage — the image itself is billed inside inputTokens. */
+export interface CardReadUsage {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  reasoningTokens: number;
+  cachedInputTokens: number;
+}
+
+/** `usage` is set when OpenAI answered (and billed) but the answer was unusable, so the cost is still recorded. */
+export class AiCardReaderError extends Error {
+  constructor(
+    message: string,
+    readonly usage: CardReadUsage | null = null,
+  ) {
+    super(message);
+  }
+}
 
 const optionalText = (max: number) =>
   z
@@ -99,21 +116,24 @@ Rules:
 - If the image is not an invitation card at all, return every field as null and notices as [].`;
 }
 
-function parse(raw: string): InvitationCardDetails {
+function parse(raw: string, usage: CardReadUsage): InvitationCardDetails {
   const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   let json: unknown;
   try {
     json = JSON.parse(cleaned);
   } catch {
-    throw new AiCardReaderError("We couldn't read the details on this card.");
+    throw new AiCardReaderError("We couldn't read the details on this card.", usage);
   }
   const result = CardDetailsSchema.safeParse(json);
-  if (!result.success) throw new AiCardReaderError("We couldn't read the details on this card.");
+  if (!result.success) throw new AiCardReaderError("We couldn't read the details on this card.", usage);
   return result.data;
 }
 
 /** `imageUrl` must be reachable by OpenAI — a signed Storage URL (services/external-media.ts), not a relative /media link. */
-export async function readInvitationCard(imageUrl: string, today: string): Promise<InvitationCardDetails> {
+export async function readInvitationCard(
+  imageUrl: string,
+  today: string,
+): Promise<{ details: InvitationCardDetails; usage: CardReadUsage }> {
   const client = getClient();
   if (!client) throw new AiCardReaderError("Reading cards isn't configured — add OPENAI_API_KEY to enable it.");
 
@@ -140,7 +160,15 @@ export async function readInvitationCard(imageUrl: string, today: string): Promi
     throw new AiCardReaderError(`Couldn't read this card: ${err instanceof Error ? err.message : "Unknown error"}`);
   }
 
+  const usage: CardReadUsage = {
+    model,
+    inputTokens: response.usage?.input_tokens ?? 0,
+    outputTokens: response.usage?.output_tokens ?? 0,
+    reasoningTokens: response.usage?.output_tokens_details?.reasoning_tokens ?? 0,
+    cachedInputTokens: response.usage?.input_tokens_details?.cached_tokens ?? 0,
+  };
+
   const raw = response.output_text?.trim();
-  if (!raw) throw new AiCardReaderError("We couldn't read the details on this card.");
-  return parse(raw);
+  if (!raw) throw new AiCardReaderError("We couldn't read the details on this card.", usage);
+  return { details: parse(raw, usage), usage };
 }

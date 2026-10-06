@@ -85,3 +85,26 @@ export function computeFormAiGenerationCostUsd(model: string, inputTokens: numbe
   const rate = TEXT_MODEL_PRICING_USD_PER_1M_TOKENS[model] ?? FALLBACK_TEXT_MODEL_RATE;
   return (inputTokens / 1_000_000) * rate.input + (outputTokens / 1_000_000) * rate.output;
 }
+
+/**
+ * USD cost for one invitation-card read (lib/ai-invitation-card-reader.ts,
+ * the wizard's "Your Card" step) — same per-token text-model rates as
+ * form generation above. The card image is billed by OpenAI as input
+ * tokens, so it is already inside `inputTokens`; reasoning tokens are
+ * already inside `outputTokens`. Cached input is billed at a tenth of
+ * the input rate.
+ */
+export function computeCardReadCostUsd(
+  model: string,
+  inputTokens: number,
+  outputTokens: number,
+  cachedInputTokens = 0,
+): number {
+  const rate = TEXT_MODEL_PRICING_USD_PER_1M_TOKENS[model] ?? FALLBACK_TEXT_MODEL_RATE;
+  const cached = Math.min(cachedInputTokens, inputTokens);
+  return (
+    ((inputTokens - cached) / 1_000_000) * rate.input +
+    (cached / 1_000_000) * rate.input * 0.1 +
+    (outputTokens / 1_000_000) * rate.output
+  );
+}
