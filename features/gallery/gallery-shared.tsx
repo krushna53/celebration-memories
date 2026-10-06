@@ -294,6 +294,18 @@ export function SquareGrid({
   );
 }
 
+/** Current window size, kept up to date on resize/rotation — sizes the lightbox's video box. */
+function useViewportSize() {
+  const [size, setSize] = useState({ width: 960, height: 540 });
+  useEffect(() => {
+    const update = () => setSize({ width: window.innerWidth, height: window.innerHeight });
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return size;
+}
+
 /** Full-screen viewer with share/download and a Play/Pause slideshow. */
 export function GalleryLightbox({
   viewer,
@@ -309,6 +321,7 @@ export function GalleryLightbox({
   onClose: () => void;
 }) {
   const current = viewer ? viewer.items[viewer.index] : null;
+  const viewport = useViewportSize();
 
   // Auto-advance while playing (videos play out instead of being skipped).
   useEffect(() => {
@@ -323,19 +336,25 @@ export function GalleryLightbox({
         isVideoMedia(item.url)
           ? {
               key: item.id,
-              width: 960,
-              height: 540,
-              render: () =>
+              // The box is the whole screen and the video letterboxes inside it,
+              // so portrait phone clips and landscape videos both show in full.
+              // (A fixed 16:9 box without the library's `attrs` placed portrait
+              // videos off-centre and cropped.)
+              width: viewport.width,
+              height: viewport.height,
+              render: ({ attrs }) =>
                 index === viewer?.index ? (
-                  <video
-                    key={item.id}
-                    src={item.url}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    aria-label={item.caption || "Gallery video"}
-                    className="h-full w-full bg-black object-contain"
-                  />
+                  <div {...attrs}>
+                    <video
+                      key={item.id}
+                      src={item.url}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      aria-label={item.caption || "Gallery video"}
+                      className="h-full w-full bg-black object-contain"
+                    />
+                  </div>
                 ) : null,
             }
           : { key: item.id, src: item.url },
