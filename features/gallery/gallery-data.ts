@@ -16,7 +16,9 @@ export const GALLERY_CATEGORIES: Array<{
   { value: "family", label: "Family" },
   { value: "friends", label: "Friends" },
   { value: "travel", label: "Travel" },
-  { value: "grandchildren", label: "Grandchildren" },
+  // Stored value stays "grandchildren" (existing photos, AI tagger, DB) — only the label changed,
+  // so the category fits every kind of event, not just a grandparent's birthday.
+  { value: "grandchildren", label: "Little Ones" },
 ];
 
 /**

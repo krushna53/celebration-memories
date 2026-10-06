@@ -28,7 +28,7 @@ export const CHAPTERS: { category: GalleryCategory; title: string }[] = [
   { category: "family", title: "Family" },
   { category: "travel", title: "Travels" },
   { category: "friends", title: "Friends" },
-  { category: "grandchildren", title: "The grandchildren" },
+  { category: "grandchildren", title: "The little ones" },
 ];
 
 /** "…, 1970s" in a caption (the AI tagger adds these for old prints) → 1970; photos without one sort after dated ones. */

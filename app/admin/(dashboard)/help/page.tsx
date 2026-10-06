@@ -154,7 +154,7 @@ const SECTIONS: GuideSection[] = [
     items: [
       {
         label: "/admin/gallery",
-        body: "Upload photos into categories (Childhood, Wedding, Family, Friends, Travel, Grandchildren — or whichever apply). Shows up in the public Gallery filters immediately.",
+        body: "Upload photos into categories (Childhood, Wedding, Family, Friends, Travel, Little Ones — or whichever apply). Shows up in the public Gallery filters immediately.",
       },
       {
         label: "/admin/timeline",
