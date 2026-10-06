@@ -87,12 +87,21 @@ touching any feature:
   event's data even by guessing a URL. See `lib/admin-roles.ts`
   (`CLIENT_ALLOWED_PATHS`) and `lib/admin-event.ts`
   (`resolveAdminEvent()`, `requireAdminForEvent()`).
+- **One login can manage several events.** `admin_event_memberships`
+  (admin, event, role) is the source of truth for every non-owner;
+  `admins.event_id` is only their "primary" event (mirrored into
+  memberships by a trigger, so older provisioning paths still work).
+  `getCurrentAdmin()` returns the event being managed — the switcher's
+  choice (cookie, `lib/admin-active-event.ts`), else primary, else
+  newest — plus `memberships`; event-scoped gates call
+  `adminForEvent(admin, eventId)` to re-check membership and role for
+  *that* event. Never authorize with `admin.eventId === eventId` alone.
 - **Which event an admin page shows** is never hardcoded — it resolves
-  through `resolveAdminEvent()`: a client admin always sees their own
-  `admins.event_id`; the owner sees whichever event they last picked
-  from `/admin/events` (a cookie, `lib/admin-active-event.ts`), falling
-  back to the flagship `EVENT_SLUG` event (`lib/constants.ts`) with
-  nothing selected.
+  through `resolveAdminEvent()`: a non-owner sees the event they're
+  currently managing (see above; "Switch event" under the header when
+  they have several); the owner sees whichever event they last picked
+  from `/admin/events` (same cookie), falling back to the flagship
+  `EVENT_SLUG` event (`lib/constants.ts`) with nothing selected.
 - **Uploads go straight from the guest's browser to Supabase Storage**
   via a short-lived signed URL — never through a Next.js Server
   Action/route as a file body (keeps requests small on mobile data and
