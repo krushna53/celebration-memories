@@ -8,7 +8,7 @@ import {
   type CardReadUsage,
   type InvitationCardDetails,
 } from "@/lib/ai-invitation-card-reader";
-import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
+import { buildMapsEmbedUrl, buildMapsSearchUrl, buildVenueQuery } from "@/lib/maps";
 import { utcIsoToZonedInputValue, zonedInputValueToUtcIso } from "@/lib/timezone";
 import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
 import { countUploadedAiImages } from "@/services/ai-image-jobs";
@@ -82,7 +82,7 @@ async function toEventUpdate(
     }
   }
 
-  const place = [details.venueName, details.venueAddress].filter(Boolean).join(", ");
+  const place = buildVenueQuery(details.venueName ?? "", details.venueAddress ?? "");
   if (place && !current.mapsUrl) {
     input.mapsUrl = buildMapsSearchUrl(place);
   }

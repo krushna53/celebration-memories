@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { EVENT_CATEGORY_OPTIONS, getEventFieldCopy } from "@/lib/event-category";
 import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
 import { zonedInputValueToUtcIso, utcIsoToZonedInputValue, listSupportedTimezones } from "@/lib/timezone";
-import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
+import { buildMapsEmbedUrl, buildMapsSearchUrl, buildVenueQuery } from "@/lib/maps";
+import { useAutoVenueMaps } from "@/hooks/use-auto-venue-maps";
 import { placeFullAddress, type PlaceSuggestion } from "@/lib/place-search";
 import { MapEmbedPreview } from "@/components/forms/map-embed-preview";
 import { VenueAutocomplete } from "@/components/forms/venue-autocomplete";
@@ -154,6 +155,17 @@ export function EventBasicsForm({ token, event, updateAction, nextHref, prefille
     setForm((f) => ({ ...f, [key]: value }));
     setSaved(false);
   }
+
+  useAutoVenueMaps({
+    venueName: form.venueName,
+    venueAddress: form.venueAddress,
+    mapsUrl: form.mapsUrl,
+    mapsEmbedUrl: form.mapsEmbedUrl,
+    onChange: (patch) => {
+      setForm((f) => ({ ...f, ...patch }));
+      setSaved(false);
+    },
+  });
 
   /** Fills every Location field from a place picked in the venue search — all still editable afterward. */
   function applyPlace(place: PlaceSuggestion, timezone: string | null) {
@@ -531,16 +543,17 @@ export function EventBasicsForm({ token, event, updateAction, nextHref, prefille
                 className="shrink-0"
                 disabled={!form.venueAddress.trim()}
                 onClick={() => {
-                  const place = [form.venueName, form.venueAddress].filter((v) => v.trim()).join(", ");
-                  setForm((f) => ({ ...f, mapsUrl: f.mapsUrl || buildMapsSearchUrl(place), mapsEmbedUrl: buildMapsEmbedUrl(place) }));
+                  const place = buildVenueQuery(form.venueName, form.venueAddress);
+                  setForm((f) => ({ ...f, mapsUrl: buildMapsSearchUrl(place), mapsEmbedUrl: buildMapsEmbedUrl(place) }));
                   setSaved(false);
                 }}
               >
-                Generate
+                Regenerate
               </Button>
             </div>
             <p className="mt-1.5 text-xs text-navy-700/50">
-              &ldquo;Generate&rdquo; builds the map from the venue and address above — no API key needed.
+              The map and Google Maps link fill in automatically from the venue name and address above — no API key
+              needed. A link you paste yourself is kept; &ldquo;Regenerate&rdquo; replaces both.
             </p>
             {form.mapsEmbedUrl ? (
               <div className="mt-3">
