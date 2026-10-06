@@ -97,12 +97,16 @@ export function EventDetailsSection({ data }: EventDetailsSectionProps) {
           </Reveal>
 
           <Reveal delay={0.2}>
-            <div className="flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-2xl border border-gold-500/15 bg-white shadow-sm lg:aspect-auto lg:h-full lg:min-h-[360px]">
+            <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-2xl border border-gold-500/15 bg-white shadow-sm lg:aspect-auto lg:h-full lg:min-h-[360px]">
               {data.mapsEmbedUrl ? (
+                // Absolutely positioned: on desktop the card's height comes from
+                // stretching to the detail cards, which a plain h-full iframe
+                // can't resolve — it fell back to ~300px with white bands above
+                // and below.
                 <iframe
                   src={data.mapsEmbedUrl}
                   title="Venue location"
-                  className="h-full w-full"
+                  className="absolute inset-0 h-full w-full border-0"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                 />
