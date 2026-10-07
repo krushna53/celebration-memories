@@ -20,10 +20,15 @@ const fadeUp = {
   }),
 };
 
+/** Set once the event has ended — see EventSections. */
+export interface HeroRelive {
+  shareHref: string;
+}
+
 interface HeroSectionProps {
   data: EventDisplayData;
   /** Set once the event has ended ("Relive the day" mode): thank-you copy and an "add your photos" call to action instead of the countdown and RSVP. */
-  relive?: { shareHref: string } | null;
+  relive?: HeroRelive | null;
 }
 
 // CSS custom properties, not hex literals, so the particle colors

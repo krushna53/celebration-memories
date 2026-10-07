@@ -21,6 +21,7 @@ import { neonPartyTheme } from "@/templates/NeonParty/theme";
 import { retroDiscoTheme } from "@/templates/RetroDisco/theme";
 import { royalGoldTheme } from "@/templates/RoyalGold/theme";
 import { vintageKeepsakeTheme } from "@/templates/VintageKeepsake/theme";
+import { whiteCoatReunionTheme } from "@/templates/WhiteCoatReunion/theme";
 
 /**
  * Slug → palette for every built-in template, without pulling in any
@@ -52,4 +53,5 @@ export const TEMPLATE_THEMES: Record<string, TemplateTheme> = {
   "candlelight-tribute": candlelightTributeTheme,
   "boardroom-ivory": boardroomIvoryTheme,
   "momentum": momentumTheme,
+  "white-coat-reunion": whiteCoatReunionTheme,
 };

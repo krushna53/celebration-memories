@@ -22,6 +22,7 @@ export type TemplateAnimationPersonality =
   | "energetic"
   | "dreamy"
   | "minimal"
+  | "gentle"
   | "festive"
   | "jubilant";
 
@@ -383,6 +384,19 @@ export const TEMPLATE_CATALOG: TemplateSummary[] = [
     secondaryColor: "#1a0f1a",
     fontFamily: "Inter",
     occasions: ["corporate", "workshop", "live_stream"],
+  },
+  {
+    id: "tpl-white-coat-reunion",
+    slug: "white-coat-reunion",
+    name: "White Coat Reunion",
+    description: "Warm white, navy and deep teal with fine gold stethoscope and pulse-line accents, a featured batch photo and large, easy-to-read type — built for doctors' and alumni batch reunions.",
+    category: "formal",
+    premium: false,
+    thumbnail: "/templates/white-coat-reunion.svg",
+    primaryColor: "#17665e",
+    secondaryColor: "#17263c",
+    fontFamily: "Playfair Display",
+    occasions: ["reunion"],
   },
 ];
 

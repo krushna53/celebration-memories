@@ -67,6 +67,7 @@ const COMPONENTS: Record<string, ComponentType<BirthdayTemplateProps>> = {
   "candlelight-tribute": dynamic(() => import("@/templates/CandlelightTribute")),
   "boardroom-ivory": dynamic(() => import("@/templates/BoardroomIvory")),
   "momentum": dynamic(() => import("@/templates/Momentum")),
+  "white-coat-reunion": dynamic(() => import("@/templates/WhiteCoatReunion")),
 };
 
 export const ALL_TEMPLATES: TemplateDefinition[] = TEMPLATE_CATALOG.map((summary) => ({

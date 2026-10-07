@@ -10,9 +10,11 @@ interface DetailCardProps {
   icon: React.ReactNode;
   label: string;
   value: string;
+  /** Secondary line under the value, e.g. the venue's full address. */
+  detail?: string | null;
 }
 
-function DetailCard({ icon, label, value }: DetailCardProps) {
+function DetailCard({ icon, label, value, detail }: DetailCardProps) {
   return (
     <div className="flex items-start gap-4 rounded-2xl border border-gold-500/15 bg-white px-5 py-4 shadow-sm sm:px-6 sm:py-5">
       <span className="mt-0.5 shrink-0 text-gold-500">{icon}</span>
@@ -23,6 +25,7 @@ function DetailCard({ icon, label, value }: DetailCardProps) {
         <p className="mt-1 break-words text-sm font-medium text-navy-950 sm:text-base">
           {value}
         </p>
+        {detail ? <p className="mt-1 break-words text-sm text-navy-700/80">{detail}</p> : null}
       </div>
     </div>
   );
@@ -73,6 +76,7 @@ export function EventDetailsSection({ data }: EventDetailsSectionProps) {
               icon={<MapPin size={20} />}
               label="Venue"
               value={data.venueName ?? "To be announced"}
+              detail={data.venueName ? data.venueAddress : null}
             />
             {/* Optional details: no card at all when the host hasn't filled them in. */}
             {data.dressCode?.trim() ? (

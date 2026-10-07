@@ -107,7 +107,17 @@ export function formatEventTimeRange(
   timezone: string = DEFAULT_EVENT_TIMEZONE,
 ): string {
   const start = formatEventTime(event.startAt, timezone);
-  return event.hasEndTime === false ? `${start} onwards` : `${start} – ${formatEventTime(event.endAt, timezone)}`;
+  if (event.hasEndTime === false) return `${start} onwards`;
+  const end = formatEventTime(event.endAt, timezone);
+  // Multi-day events (e.g. an overnight reunion) name the end day too —
+  // otherwise "2:00 PM – 12:00 PM" reads as ending before it starts.
+  const dayKey = (iso: string) =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
+  if (dayKey(event.startAt) === dayKey(event.endAt)) return `${start} – ${end}`;
+  const endDay = new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short", month: "short", day: "numeric" }).format(
+    new Date(event.endAt),
+  );
+  return `${start} – ${endDay}, ${end}`;
 }
 
 /**

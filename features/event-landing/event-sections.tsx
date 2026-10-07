@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 
-import { HeroSection } from "@/features/hero/hero-section";
+import { HeroSection, type HeroRelive } from "@/features/hero/hero-section";
 import { CountdownSection } from "@/features/countdown/countdown-section";
 import { InvitationSection } from "@/features/invitation/invitation-section";
 import { EventDetailsSection } from "@/features/event-details/event-details-section";
@@ -23,6 +23,14 @@ export interface EventSectionsProps {
   displayData: EventDisplayData;
   galleryPhotos: GalleryPhotoRecord[];
   milestones: TimelineMilestoneRecord[];
+  /**
+   * Replaces the shared HeroSection — for templates with their own hero
+   * layout (e.g. templates/WhiteCoatReunion). Receives the same `relive`
+   * state HeroSection gets (non-null once the event has ended).
+   */
+  renderHero?: (relive: HeroRelive | null) => ReactNode;
+  /** Sections this template never shows, whatever the event's section_config says — e.g. "countdown" when the template's own hero already has one. */
+  omitSections?: readonly SectionKey[];
 }
 
 /**
@@ -41,15 +49,24 @@ export interface EventSectionsProps {
 /** After the event: memories first; the invitation-era sections no longer apply. */
 const RELIVE_ORDER: SectionKey[] = ["memoryWall", "gallery", "timeline", "wishMessage"];
 
-export function EventSections({ event, displayData: data, galleryPhotos, milestones }: EventSectionsProps) {
+export function EventSections({
+  event,
+  displayData: data,
+  galleryPhotos,
+  milestones,
+  renderHero,
+  omitSections = [],
+}: EventSectionsProps) {
   // "Relive the day" mode switches on by itself once the event has ended (endAt is an absolute
   // instant, so no timezone maths needed); the page revalidates every minute.
   const ended = Boolean(event?.endAt && Date.parse(event.endAt) < Date.now());
-  const baseConfig = normalizeSectionConfig(event?.sectionConfig);
+  const baseConfig = normalizeSectionConfig(event?.sectionConfig).filter(
+    (item) => !omitSections.includes(item.key),
+  );
   const config = ended
     ? RELIVE_ORDER.flatMap((key) => baseConfig.filter((item) => item.key === key))
     : baseConfig;
-  const relive =
+  const relive: HeroRelive | null =
     ended && event
       ? { shareHref: event.publicMemoriesEnabled ? `/events/${event.slug}/memories` : "#memories" }
       : null;
@@ -82,7 +99,7 @@ export function EventSections({ event, displayData: data, galleryPhotos, milesto
   return (
     <>
       {event ? <PageViewBeacon eventId={event.id} page="landing" /> : null}
-      <HeroSection data={data} relive={relive} />
+      {renderHero ? renderHero(relive) : <HeroSection data={data} relive={relive} />}
       {config
         .filter((item) => item.visible)
         .map((item) => (

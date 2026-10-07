@@ -28,6 +28,8 @@ interface RevealTiming {
 const TIMINGS: Record<string, RevealTiming> = {
   luxury: { duration: 0.8, ease: [0.22, 1, 0.36, 1], y: 28 },
   minimal: { duration: 0.7, ease: [0.22, 1, 0.36, 1], y: 20 },
+  // Short and close to the page — senior-friendly templates (White Coat Reunion).
+  gentle: { duration: 0.42, ease: [0.22, 1, 0.36, 1], y: 12 },
   dreamy: { duration: 1.0, ease: [0.16, 1, 0.3, 1], y: 32 },
   playful: { duration: 0.55, ease: [0.34, 1.56, 0.64, 1], y: 24 },
   energetic: { duration: 0.45, ease: [0.34, 1.56, 0.64, 1], y: 20 },
