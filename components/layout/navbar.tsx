@@ -29,7 +29,8 @@ interface NavbarProps {
    * pointing at /login (the shared admin/business/forms sign-in page)
    * when signed out, or "Hi {email}" + Logout when a session already
    * exists (see features/auth/navbar-auth-status.tsx). Event pages
-   * leave this off since a guest has no reason to see it.
+   * leave this off since a guest has no reason to see it — they only get
+   * a "Dashboard" link, shown solely to a signed-in admin.
    */
   showLogin?: boolean;
   /**
@@ -157,7 +158,11 @@ export function Navbar({
               <li className="flex items-center gap-2 border-l border-ivory-100/15 pl-6">
                 <NavbarAuthStatus variant="desktop" />
               </li>
-            ) : null}
+            ) : (
+              <li className="flex items-center empty:hidden">
+                <NavbarAuthStatus variant="desktop" adminLinkOnly />
+              </li>
+            )}
           </ul>
 
           <button
@@ -204,7 +209,11 @@ export function Navbar({
               <li className="flex flex-col items-stretch pt-2">
                 <NavbarAuthStatus variant="mobile" onNavigate={() => setOpen(false)} />
               </li>
-            ) : null}
+            ) : (
+              <li className="flex flex-col items-stretch pt-3 empty:hidden">
+                <NavbarAuthStatus variant="mobile" adminLinkOnly onNavigate={() => setOpen(false)} />
+              </li>
+            )}
           </ul>
         </div>
       </header>

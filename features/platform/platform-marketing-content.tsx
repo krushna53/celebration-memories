@@ -163,7 +163,7 @@ const FEATURE_GROUPS = [
 
 /**
  * Shared nav for every platform-level (non-event) page — Pricing,
- * Roles, Events directory, Template submission, Contact, Privacy, and
+ * Roles, Template submission, Contact, Privacy, and
  * the Visitor Guide. These pages have no #hero/#details/... sections,
  * so they must never fall back to Navbar's default event-page anchors
  * (see components/layout/navbar.tsx's NAV_LINKS) — that mismatch used
@@ -174,7 +174,6 @@ export const PLATFORM_NAV_LINKS = [
   { label: "AI Image Tool", href: "/ai-invitation-image" },
   { label: "Build RSVP / Form", href: "/forms/new" },
   { label: "Discover", href: "/discover" },
-  { label: "Browse Events", href: "/events" },
   { label: "Templates", href: "/templates/submit" },
   { label: "Who Can Do What", href: "/roles" },
   { label: "Contact", href: "/contact" },
@@ -218,10 +217,6 @@ export async function PlatformMarketingContent() {
               Curious what a guest, host, or admin can each do?{" "}
               <Link href="/roles" className="text-gold-300 underline underline-offset-2 hover:text-gold-200">
                 See who can do what
-              </Link>
-              {" · "}
-              <Link href="/events" className="text-gold-300 underline underline-offset-2 hover:text-gold-200">
-                Browse live events
               </Link>
               {" · "}
               <Link href="/ai-invitation-image" className="text-gold-300 underline underline-offset-2 hover:text-gold-200">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -14,6 +14,13 @@ interface NavbarAuthStatusProps {
   variant: "desktop" | "mobile";
   /** Closes the mobile slide-down sheet on click/sign-out — no-op on desktop. */
   onNavigate?: () => void;
+  /**
+   * Event pages: render only a "Dashboard" link, and only for a signed-in
+   * dashboard admin — nothing at all for guests (no Login, no Logout), so
+   * a host viewing their own event page has a way back into /admin
+   * without the guest-facing nav gaining any login UI.
+   */
+  adminLinkOnly?: boolean;
 }
 
 const LINK_CLASSES: Record<"desktop" | "mobile", string> = {
@@ -43,12 +50,13 @@ const LOGIN_PILL_CLASSES: Record<"desktop" | "mobile", string> = {
  * bigger change for the same result. `onAuthStateChange` keeps this in
  * sync immediately after sign-in/sign-out without a full page reload.
  */
-export function NavbarAuthStatus({ variant, onNavigate }: NavbarAuthStatusProps) {
+export function NavbarAuthStatus({ variant, onNavigate, adminLinkOnly = false }: NavbarAuthStatusProps) {
   const router = useRouter();
   // undefined = still checking (render nothing, avoids a "Login" flash
   // for someone who's actually signed in), null = signed out.
   const [email, setEmail] = useState<string | null | undefined>(undefined);
   const [dashboardPath, setDashboardPath] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,14 +74,18 @@ export function NavbarAuthStatus({ variant, onNavigate }: NavbarAuthStatusProps)
 
         if (!user) {
           setDashboardPath(null);
+          setIsAdmin(false);
           return;
         }
         const destination = await resolveLoginDestinationAction();
-        if (!cancelled) setDashboardPath(destination.kind === "none" ? null : destination.path);
+        if (cancelled) return;
+        setDashboardPath(destination.kind === "none" ? null : destination.path);
+        setIsAdmin(destination.kind === "admin");
       } catch {
         if (!cancelled) {
           setEmail((current) => current ?? null);
           setDashboardPath(null);
+          setIsAdmin(false);
         }
       }
     }
@@ -99,6 +111,21 @@ export function NavbarAuthStatus({ variant, onNavigate }: NavbarAuthStatusProps)
   }
 
   if (email === undefined) return null;
+
+  if (adminLinkOnly) {
+    if (!email || !isAdmin || !dashboardPath) return null;
+    return (
+      <Link
+        href={dashboardPath}
+        onClick={onNavigate}
+        title={`Signed in as ${email}`}
+        className={cn(LOGIN_PILL_CLASSES[variant], "items-center gap-2 whitespace-nowrap", variant === "desktop" && "flex")}
+      >
+        <LayoutDashboard size={variant === "desktop" ? 14 : 16} aria-hidden="true" />
+        {variant === "desktop" ? "Dashboard" : "Go to Dashboard"}
+      </Link>
+    );
+  }
 
   if (!email) {
     return (

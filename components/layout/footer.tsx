@@ -25,8 +25,7 @@ interface FooterProps {
 /**
  * Global footer. Per spec, always credits Krushna Web Works and links
  * out to a pre-filled WhatsApp inquiry, opened in a new tab. Also
- * surfaces the platform-level pages (public events directory, marketing
- * page) that sit alongside any individual event's site — see `variant`
+ * surfaces the platform-level pages (visitor guide, marketing page) that sit alongside any individual event's site — see `variant`
  * above for where that's dialed back.
  */
 const footerLinkClass = "transition-luxury duration-300 hover:text-gold-300";
@@ -35,7 +34,6 @@ const FOOTER_COLUMNS: Array<{ heading: string; links: Array<{ href: string; labe
   {
     heading: "Explore",
     links: [
-      { href: "/events", label: "Explore Public Events" },
       { href: "/guide", label: "Visitor Guide" },
       { href: "/roles", label: "Who Can Do What" },
     ],

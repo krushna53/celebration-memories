@@ -46,6 +46,7 @@ import {
   UserRoundPlus,
   ClipboardCheck,
   ScanFace,
+  LogIn,
 } from "lucide-react";
 
 /*
@@ -76,6 +77,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, group: "Event" },
   { href: "/admin/events", label: "All Events", icon: Building2, group: "Event" },
   { href: "/admin/members", label: "Members", icon: UserCog, group: "Platform" },
+  { href: "/admin/logins", label: "Login Activity", icon: LogIn, group: "Platform" },
   { href: "/admin/event-settings", label: "Event Settings", icon: Settings, group: "Event" },
   { href: "/admin/team", label: "Team", icon: UsersRound, group: "Event" },
   { href: "/admin/templates", label: "Templates", icon: Palette, group: "Event" },

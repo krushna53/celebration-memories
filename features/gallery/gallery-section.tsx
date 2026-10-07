@@ -147,39 +147,41 @@ export function GallerySection({
           />
         </Reveal>
 
-        {photos.length > 0 || guestItems.length > 0 ? (
+        {/* The primary action, right under the title — it used to sit at the end of the chapter pills, styled like one more filter. */}
+        {allViewItems.length > 1 ? (
+          <Reveal delay={0.05}>
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={() => openViewer(allViewItems, 0, true)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold-500 px-7 py-3 text-sm font-medium uppercase tracking-[0.15em] text-navy-950 shadow-[0_8px_24px_-8px_rgba(201,162,39,0.6)] transition-luxury duration-300 hover:bg-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 focus-visible:ring-offset-2"
+              >
+                <Play size={16} fill="currentColor" aria-hidden="true" /> Play Slideshow
+              </button>
+            </div>
+          </Reveal>
+        ) : null}
+
+        {tabs.length > 1 ? (
           <Reveal delay={0.1}>
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
-              {tabs.length > 1 ? (
-                <div className="flex flex-wrap items-center justify-center gap-2" role="tablist" aria-label="Gallery chapters">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.value}
-                      type="button"
-                      role="tab"
-                      aria-selected={active === tab.value}
-                      onClick={() => selectTab(tab.value)}
-                      className={cn(
-                        "rounded-full border px-4 py-1.5 text-xs uppercase tracking-[0.15em] transition-luxury duration-300 sm:text-sm",
-                        active === tab.value
-                          ? "border-navy-950 bg-navy-950 text-ivory-50"
-                          : "border-navy-950/15 text-navy-700/70 hover:border-gold-400 hover:text-navy-950",
-                      )}
-                    >
-                      {tab.label} <span className="opacity-60">{tab.count}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-              {allViewItems.length > 1 ? (
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-2" role="tablist" aria-label="Gallery chapters">
+              {tabs.map((tab) => (
                 <button
+                  key={tab.value}
                   type="button"
-                  onClick={() => openViewer(allViewItems, 0, true)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-navy-950/15 px-4 py-1.5 text-xs uppercase tracking-[0.15em] text-navy-700/80 transition-luxury duration-300 hover:border-gold-400 hover:text-navy-950 sm:text-sm"
+                  role="tab"
+                  aria-selected={active === tab.value}
+                  onClick={() => selectTab(tab.value)}
+                  className={cn(
+                    "rounded-full border px-4 py-1.5 text-xs uppercase tracking-[0.15em] transition-luxury duration-300 sm:text-sm",
+                    active === tab.value
+                      ? "border-navy-950 bg-navy-950 text-ivory-50"
+                      : "border-navy-950/15 text-navy-700/70 hover:border-gold-400 hover:text-navy-950",
+                  )}
                 >
-                  <Play size={13} /> Play slideshow
+                  {tab.label} <span className="opacity-60">{tab.count}</span>
                 </button>
-              ) : null}
+              ))}
             </div>
           </Reveal>
         ) : null}
