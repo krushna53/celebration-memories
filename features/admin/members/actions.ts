@@ -28,7 +28,7 @@ export async function addMemberByInviteAction(
 ): Promise<AddMemberResult> {
   await requireOwner();
   try {
-    await inviteTeamMemberByEmail({ eventId, name, email });
+    await inviteTeamMemberByEmail({ eventId, name, email, canAddExistingAccounts: true });
     revalidatePath("/admin/members");
     revalidatePath("/admin/events");
     revalidatePath("/admin/team");
@@ -47,7 +47,7 @@ export async function addMemberWithPasswordAction(
 ): Promise<AddMemberResult> {
   await requireOwner();
   try {
-    await addTeamMemberWithPassword({ eventId, name, email, password });
+    await addTeamMemberWithPassword({ eventId, name, email, password, canAddExistingAccounts: true });
     revalidatePath("/admin/members");
     revalidatePath("/admin/events");
     revalidatePath("/admin/team");

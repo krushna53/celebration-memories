@@ -19,10 +19,16 @@ export type TeamActionResult = { success: true; member?: TeamMember } | { succes
  * of the feature: a client no longer needs the owner to add someone
  * else to their own event's dashboard.
  */
-export async function inviteTeamMemberAction(eventId: string, name: string, email: string): Promise<TeamActionResult> {
+export async function inviteTeamMemberAction(
+  eventId: string,
+  name: string,
+  email: string,
+  makeEventOwner = false,
+): Promise<TeamActionResult> {
   try {
-    await requireAdminForEvent(eventId);
-    await inviteTeamMemberByEmail({ eventId, name, email });
+    const admin = await requireAdminForEvent(eventId);
+    // makeEventOwner is only honoured for the platform owner — the service ignores it unless canAddExistingAccounts.
+    await inviteTeamMemberByEmail({ eventId, name, email, canAddExistingAccounts: admin.role === "owner", makeEventOwner });
     revalidatePath("/admin/team");
     revalidatePath("/admin/events");
     const member = (await getTeamMembers(eventId)).find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
@@ -37,10 +43,18 @@ export async function addTeamMemberWithPasswordAction(
   name: string,
   email: string,
   password: string,
+  makeEventOwner = false,
 ): Promise<TeamActionResult> {
   try {
-    await requireAdminForEvent(eventId);
-    await addTeamMemberWithPassword({ eventId, name, email, password });
+    const admin = await requireAdminForEvent(eventId);
+    await addTeamMemberWithPassword({
+      eventId,
+      name,
+      email,
+      password,
+      canAddExistingAccounts: admin.role === "owner",
+      makeEventOwner,
+    });
     revalidatePath("/admin/team");
     revalidatePath("/admin/events");
     const member = (await getTeamMembers(eventId)).find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
@@ -58,6 +72,7 @@ export async function removeTeamMemberAction(eventId: string, adminId: string): 
     }
     await removeTeamMember(eventId, adminId);
     revalidatePath("/admin/team");
+    revalidatePath("/admin/events");
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to remove team member." };

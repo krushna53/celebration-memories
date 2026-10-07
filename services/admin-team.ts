@@ -63,6 +63,40 @@ export async function getTeamMembers(eventId: string): Promise<TeamMember[]> {
   return team.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+export interface EventLogin {
+  email: string;
+  /** This is the person's primary event (admins.event_id) — shown as the event's owner on /admin/events. */
+  isOwner: boolean;
+}
+
+/**
+ * Client logins per event for the owner's /admin/events table, keyed by
+ * event id: each event's owner(s) first — accounts whose primary event
+ * it is (`owners`, from listAdmins' resolvedEventId) — then everyone
+ * else on its team with full (client) access.
+ */
+export async function getClientLoginsByEvent(
+  owners: { id: string; email: string; eventId: string }[],
+): Promise<Map<string, EventLogin[]>> {
+  const { data, error } = await supabaseAdmin()
+    .from("admin_event_memberships")
+    .select("event_id, admin_id, admins(email, role)")
+    .eq("role", "client")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(`Failed to load event logins: ${error.message}`);
+
+  const byEvent = new Map<string, EventLogin[]>();
+  for (const owner of owners) {
+    byEvent.set(owner.eventId, [...(byEvent.get(owner.eventId) ?? []), { email: owner.email, isOwner: true }]);
+  }
+  const ownerEventById = new Map(owners.map((o) => [o.id, o.eventId]));
+  for (const row of data as unknown as { event_id: string; admin_id: string; admins: { email: string; role: AdminRole } | null }[]) {
+    if (!row.admins || row.admins.role === "owner" || ownerEventById.get(row.admin_id) === row.event_id) continue;
+    byEvent.set(row.event_id, [...(byEvent.get(row.event_id) ?? []), { email: row.admins.email, isOwner: false }]);
+  }
+  return byEvent;
+}
+
 async function countMembers(eventId: string): Promise<number> {
   const { count, error } = await supabaseAdmin()
     .from("admin_event_memberships")
@@ -78,10 +112,17 @@ async function countMembers(eventId: string): Promise<number> {
  * to this event too — their other events and password are untouched), or
  * nobody yet (null, so a new account is created).
  */
-async function checkRoomAndExisting(eventId: string, email: string): Promise<{ id: string } | null> {
-  if ((await countMembers(eventId)) >= TEAM_MEMBER_CAP) {
-    throw new Error(`This event already has ${TEAM_MEMBER_CAP} team members — remove one before adding another.`);
-  }
+async function checkRoomAndExisting(
+  eventId: string,
+  email: string,
+  canAddExistingAccounts: boolean,
+  makeEventOwner: boolean,
+): Promise<{ id: string; alreadyMember: boolean } | null> {
+  const roomCheck = async () => {
+    if ((await countMembers(eventId)) >= TEAM_MEMBER_CAP) {
+      throw new Error(`This event already has ${TEAM_MEMBER_CAP} team members — remove one before adding another.`);
+    }
+  };
 
   const { data: existing, error: existingError } = await supabaseAdmin()
     .from("admins")
@@ -90,28 +131,61 @@ async function checkRoomAndExisting(eventId: string, email: string): Promise<{ i
     .maybeSingle<{ id: string; role: AdminRole }>();
 
   if (existingError) throw new Error(`Failed to check existing accounts: ${existingError.message}`);
-  if (!existing) return null;
+  if (!existing) {
+    await roomCheck();
+    return null;
+  }
   if (existing.role === "owner") {
     throw new Error("That's the site owner's account — it already has access to every event.");
   }
 
   const { data: membership } = await supabaseAdmin()
     .from("admin_event_memberships")
-    .select("admin_id")
+    .select("role")
     .eq("admin_id", existing.id)
     .eq("event_id", eventId)
-    .maybeSingle();
-  if (membership) throw new Error("This person is already on this event’s team.");
-  return { id: existing.id };
+    .maybeSingle<{ role: AdminRole }>();
+  if (membership) {
+    // Already on the team — the platform owner can still promote a full-access member to event owner.
+    if (canAddExistingAccounts && makeEventOwner && membership.role === "client") {
+      return { id: existing.id, alreadyMember: true };
+    }
+    throw new Error("This person is already on this event’s team.");
+  }
+  await roomCheck();
+  // Linking a login that already runs another event is the platform owner's call, not a host's.
+  if (!canAddExistingAccounts) {
+    throw new Error(
+      "This person already uses EveryMoment for another event. Only the EveryMoment team can add them to yours — please contact us and we'll do it.",
+    );
+  }
+  return { id: existing.id, alreadyMember: false };
 }
 
-/** Gives an existing dashboard account access to one more event, as its host. */
-async function addMembership(adminId: string, eventId: string): Promise<void> {
+/**
+ * Gives an existing dashboard account access to one more event, as its
+ * host (skipped when `alreadyMember`). `makeEventOwner` also makes this
+ * their primary event (admins.event_id) — the one /admin/events lists
+ * them as owner of and the one they land on after signing in.
+ * Platform-owner only (callers gate it on canAddExistingAccounts).
+ */
+async function addMembership(
+  { id: adminId, alreadyMember }: { id: string; alreadyMember: boolean },
+  eventId: string,
+  makeEventOwner: boolean,
+): Promise<void> {
   const client = supabaseAdmin();
-  const { error } = await client
-    .from("admin_event_memberships")
-    .insert({ admin_id: adminId, event_id: eventId, role: "client" });
-  if (error) throw new Error(`Failed to grant dashboard access: ${error.message}`);
+  if (!alreadyMember) {
+    const { error } = await client
+      .from("admin_event_memberships")
+      .insert({ admin_id: adminId, event_id: eventId, role: "client" });
+    if (error) throw new Error(`Failed to grant dashboard access: ${error.message}`);
+  }
+  if (makeEventOwner) {
+    const { error: ownerError } = await client.from("admins").update({ event_id: eventId }).eq("id", adminId);
+    if (ownerError) throw new Error(`Couldn't make them the event owner: ${ownerError.message}`);
+    return;
+  }
   // Someone with no primary event yet (e.g. their only event was deleted) gets this one.
   await client.from("admins").update({ event_id: eventId }).eq("id", adminId).is("event_id", null);
 }
@@ -135,6 +209,10 @@ export interface InviteTeamMemberInput {
   eventId: string;
   name: string;
   email: string;
+  /** Only the platform owner may add someone who already manages another event. */
+  canAddExistingAccounts?: boolean;
+  /** Existing accounts only (new ones always get this event as their primary): make this their primary event — see addMembership. Ignored unless canAddExistingAccounts. */
+  makeEventOwner?: boolean;
 }
 
 /**
@@ -148,16 +226,22 @@ export interface InviteTeamMemberInput {
  * email confirmation) — inviteUserByEmail creates the auth.users row
  * right away, so there's no need to replicate that trigger here.
  */
-export async function inviteTeamMemberByEmail({ eventId, name, email }: InviteTeamMemberInput): Promise<void> {
+export async function inviteTeamMemberByEmail({
+  eventId,
+  name,
+  email,
+  canAddExistingAccounts = false,
+  makeEventOwner = false,
+}: InviteTeamMemberInput): Promise<void> {
   const trimmedEmail = email.trim().toLowerCase();
   const trimmedName = name.trim();
   if (!trimmedName) throw new Error("Please enter a name.");
   if (!trimmedEmail) throw new Error("Please enter an email.");
 
-  const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail);
+  const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail, canAddExistingAccounts, makeEventOwner);
   if (existingAdmin) {
     // Already has a dashboard login (maybe for another event) — just add this event to it.
-    await addMembership(existingAdmin.id, eventId);
+    await addMembership(existingAdmin, eventId, canAddExistingAccounts && makeEventOwner);
     return;
   }
 
@@ -198,6 +282,10 @@ export interface AddTeamMemberWithPasswordInput {
   name: string;
   email: string;
   password: string;
+  /** Only the platform owner may add someone who already manages another event. */
+  canAddExistingAccounts?: boolean;
+  /** Existing accounts only (new ones always get this event as their primary): make this their primary event — see addMembership. Ignored unless canAddExistingAccounts. */
+  makeEventOwner?: boolean;
 }
 
 /**
@@ -212,6 +300,8 @@ export async function addTeamMemberWithPassword({
   name,
   email,
   password,
+  canAddExistingAccounts = false,
+  makeEventOwner = false,
 }: AddTeamMemberWithPasswordInput): Promise<void> {
   const trimmedEmail = email.trim().toLowerCase();
   const trimmedName = name.trim();
@@ -219,10 +309,10 @@ export async function addTeamMemberWithPassword({
   if (!trimmedEmail) throw new Error("Please enter an email.");
   if (password.length < 8) throw new Error("Password must be at least 8 characters.");
 
-  const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail);
+  const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail, canAddExistingAccounts, makeEventOwner);
   if (existingAdmin) {
     // Already has a dashboard login — add this event to it; their password is left exactly as it was.
-    await addMembership(existingAdmin.id, eventId);
+    await addMembership(existingAdmin, eventId, canAddExistingAccounts && makeEventOwner);
     return;
   }
 

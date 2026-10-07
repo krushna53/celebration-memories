@@ -3,6 +3,7 @@ import { CalendarCheck, Eye, Globe, MonitorPlay, Settings, UserPlus } from "luci
 
 import { EVENT_CATEGORY_LABELS } from "@/lib/event-category";
 import type { EventSummary } from "@/services/events";
+import type { EventLogin } from "@/services/admin-team";
 import { setActiveAdminEventAction, viewAsClientAction, manageEventTeamAction } from "@/features/admin/events/actions";
 import { VisibilityToggle } from "@/features/admin/events/visibility-toggle";
 import { DeleteEventButton } from "@/features/admin/events/delete-event-button";
@@ -20,8 +21,8 @@ import { DeleteEventButton } from "@/features/admin/events/delete-event-button";
  */
 interface EventListProps {
   events: EventSummary[];
-  /** Client admin email(s) attached to each event, keyed by event id — see app/admin/(dashboard)/events/page.tsx, which builds this from listAdmins(). */
-  membersByEvent: Map<string, string[]>;
+  /** Client logins per event, owner(s) first — see services/admin-team.ts's getClientLoginsByEvent. */
+  membersByEvent: Map<string, EventLogin[]>;
 }
 
 export function EventList({ events, membersByEvent }: EventListProps) {
@@ -90,11 +91,23 @@ export function EventList({ events, membersByEvent }: EventListProps) {
               <td data-label="Client" className="px-4 py-3 text-navy-700/70">
                 {members.length > 0 ? (
                   <div className="flex flex-col gap-0.5">
-                    {members.map((email) => (
-                      <span key={email} className="text-xs">
-                        {email}
+                    {members.map((member) => (
+                      <span key={member.email} className="flex flex-wrap items-center gap-1.5 text-xs">
+                        {member.email}
+                        {member.isOwner ? (
+                          <span className="rounded-full bg-gold-500/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gold-700">
+                            Owner
+                          </span>
+                        ) : null}
                       </span>
                     ))}
+                    {members.some((member) => member.isOwner) ? null : (
+                      <form action={manageEventTeamAction.bind(null, event.id)}>
+                        <button type="submit" className="inline-flex items-center gap-1 text-xs text-gold-600 hover:text-gold-700">
+                          <UserPlus size={12} /> Assign owner
+                        </button>
+                      </form>
+                    )}
                   </div>
                 ) : (
                   <form action={manageEventTeamAction.bind(null, event.id)}>

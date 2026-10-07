@@ -30,7 +30,7 @@ export default async function AdminTeamPage({ searchParams }: { searchParams: Pr
         directly and share it however works best.
       </p>
       <div className="mt-6">
-        <TeamManager key={event.id} initiallyAdding={add === "1"} eventId={event.id} currentAdminId={admin.id} initialMembers={members} />
+        <TeamManager key={event.id} initiallyAdding={add === "1"} eventId={event.id} currentAdminId={admin.id} initialMembers={members} isOwner={admin.role === "owner"} />
       </div>
     </div>
   );

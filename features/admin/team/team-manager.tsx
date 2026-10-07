@@ -22,6 +22,8 @@ interface TeamManagerProps {
   currentAdminId: string;
   initialMembers: TeamMember[];
   initiallyAdding?: boolean;
+  /** The platform owner can also add people who already manage another event; hosts can't. */
+  isOwner?: boolean;
 }
 
 /**
@@ -33,7 +35,7 @@ interface TeamManagerProps {
  * band. Both land the new person as a full-access "client" admin —
  * there's no lighter/view-only role today.
  */
-export function TeamManager({ eventId, currentAdminId, initialMembers, initiallyAdding = false }: TeamManagerProps) {
+export function TeamManager({ eventId, currentAdminId, initialMembers, initiallyAdding = false, isOwner = false }: TeamManagerProps) {
   const [members, setMembers] = useState(initialMembers);
   const [showAddForm, setShowAddForm] = useState(initiallyAdding);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -127,6 +129,8 @@ export function TeamManager({ eventId, currentAdminId, initialMembers, initially
       {showAddForm ? (
         <AddMemberForm
           eventId={eventId}
+          isOwner={isOwner}
+          defaultMakeEventOwner={initiallyAdding}
           onClose={() => setShowAddForm(false)}
           onAdded={(member) => {
             setMembers((prev) => [...prev, member]);
@@ -150,10 +154,15 @@ export function TeamManager({ eventId, currentAdminId, initialMembers, initially
 
 function AddMemberForm({
   eventId,
+  isOwner,
+  defaultMakeEventOwner,
   onClose,
   onAdded,
 }: {
   eventId: string;
+  isOwner: boolean;
+  /** Pre-ticked when the owner arrived via "Create Login" on /admin/events — that's someone being set up as this event's owner. */
+  defaultMakeEventOwner: boolean;
   onClose: () => void;
   onAdded: (member: TeamMember) => void;
 }) {
@@ -161,6 +170,7 @@ function AddMemberForm({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [makeEventOwner, setMakeEventOwner] = useState(defaultMakeEventOwner);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -171,8 +181,8 @@ function AddMemberForm({
 
     const result =
       method === "invite"
-        ? await inviteTeamMemberAction(eventId, name, email)
-        : await addTeamMemberWithPasswordAction(eventId, name, email, password);
+        ? await inviteTeamMemberAction(eventId, name, email, isOwner && makeEventOwner)
+        : await addTeamMemberWithPasswordAction(eventId, name, email, password, isOwner && makeEventOwner);
 
     setSubmitting(false);
 
@@ -227,8 +237,12 @@ function AddMemberForm({
 
       <p className="mt-3 text-xs text-navy-700/60">
         {method === "invite"
-          ? "New people get an invite email. Anyone who already has a dashboard login (even for another event) is simply given access to this event too — they keep their login and see it under “Switch event”."
-          : "Choose a password for a new account. Anyone who already has a dashboard login keeps their current password and just gets access to this event too."}
+          ? isOwner
+            ? "New people get an invite email. Anyone who already has a dashboard login (even for another event) is simply given access to this event too — they keep their login and see it under “Switch event”."
+            : "New people get an invite email. If they already use EveryMoment for another event, contact us and we’ll add them."
+          : isOwner
+            ? "Choose a password for a new account. Anyone who already has a dashboard login keeps their current password and just gets access to this event too."
+            : "Choose a password for a new account. If they already use EveryMoment for another event, contact us and we’ll add them."}
       </p>
 
       <form onSubmit={onSubmit} className="mt-4 grid gap-3">
@@ -272,6 +286,25 @@ function AddMemberForm({
               className={`${inputClasses} mt-1.5`}
             />
           </div>
+        ) : null}
+
+        {isOwner ? (
+          <label className="flex items-start gap-2.5 rounded-lg border border-navy-950/10 bg-white p-3 text-sm text-navy-950">
+            <input
+              type="checkbox"
+              checked={makeEventOwner}
+              onChange={(e) => setMakeEventOwner(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-gold-500"
+            />
+            <span>
+              Assign as owner of this event
+              <span className="mt-0.5 block text-xs text-navy-700/60">
+                If this email already has a login, this becomes their main event — they&rsquo;re shown as its owner on
+                All Events and land on it when they sign in. Their other events stay under &ldquo;Switch event&rdquo;.
+                New logins are always this event&rsquo;s owner.
+              </span>
+            </span>
+          </label>
         ) : null}
 
         {error ? (

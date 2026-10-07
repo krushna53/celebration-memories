@@ -74,6 +74,13 @@ export function Navbar({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isOnHomeHref = pathname === homeHref;
+  // The default links are same-page anchors (#details, #gallery, ...) that
+  // only exist on the event homepage. On an event sub-page (Memories,
+  // RSVP, invite, Event Day — the ones that pass the event's own
+  // homeHref) a bare "#gallery" went nowhere, so point it back at the
+  // event homepage's section instead.
+  const resolveHref = (href: string) =>
+    href.startsWith("#") && homeHref !== "/" && !isOnHomeHref ? `${homeHref}${href}` : href;
   // Installed app (PWA / Capacitor): phones get a bottom tab bar whose
   // Menu button replaces the top ☰ (see AppTabBar).
   const isApp = useIsInstalledApp();
@@ -147,7 +154,7 @@ export function Navbar({
             {navLinks.map((link) => (
               <li key={link.href}>
                 <Link
-                  href={link.href}
+                  href={resolveHref(link.href)}
                   className="whitespace-nowrap text-sm tracking-wide text-ivory-100/85 transition-luxury duration-300 hover:text-gold-300"
                 >
                   {link.label}
@@ -197,7 +204,7 @@ export function Navbar({
             {navLinks.map((link) => (
               <li key={link.href}>
                 <Link
-                  href={link.href}
+                  href={resolveHref(link.href)}
                   onClick={() => setOpen(false)}
                   className="flex min-h-12 w-full items-center py-3 text-base text-ivory-100/90 hover:text-gold-300 active:text-gold-300"
                 >
@@ -220,7 +227,7 @@ export function Navbar({
       <AppTabBar
         isApp={isApp}
         homeHref={homeHref}
-        navLinks={navLinks}
+        navLinks={navLinks.map((link) => ({ ...link, href: resolveHref(link.href) }))}
         showDashboard={showLogin}
         menuOpen={open}
         onToggleMenu={() => setOpen((v) => !v)}
