@@ -13,7 +13,7 @@ import { SITE_NAME } from "@/lib/constants";
 import { MEDIA_LIBRARY_KIND_LABEL, type MediaLibraryKind } from "@/lib/media-library-kinds";
 import { CollectionShareBar } from "@/features/share-collection/collection-share-bar";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 interface SharePageProps {
   params: Promise<{ token: string }>;

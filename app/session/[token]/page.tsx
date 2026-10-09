@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { getScheduleItemByShareToken } from "@/services/event-day";
-import { getEventById } from "@/services/events";
+import { getPublicEventById as getEventById } from "@/services/events";
 import { SessionShareGate } from "@/features/session-share/session-share-gate";
 
 export const dynamic = "force-dynamic";

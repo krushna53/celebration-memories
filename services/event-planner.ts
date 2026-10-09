@@ -1,3 +1,4 @@
+import { canViewEvent } from "@/services/event-access";
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -85,7 +86,7 @@ export async function getEventByPlannerToken(
     console.error("getEventByPlannerToken failed:", error.message);
     return null;
   }
-  if (!data) return null;
+  if (!data || !await canViewEvent(data.id)) return null;
   return { id: data.id, slug: data.slug, honoreeName: data.honoree_name, eventTitle: data.event_title };
 }
 

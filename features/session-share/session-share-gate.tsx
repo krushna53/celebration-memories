@@ -76,7 +76,7 @@ export function SessionShareGate({ token, honoreeName }: { token: string; honore
 
           <div className="mt-6 rounded-xl border border-gold-500/15 bg-navy-950/40 p-4 text-left">
             <p className="text-xs uppercase tracking-[0.3em] text-gold-300/90">
-              {session.startLabel}
+              {session.dayLabel ? `${session.dayLabel} · ` : ""}{session.startLabel}
               {session.endLabel ? ` – ${session.endLabel}` : ""}
             </p>
             <h2 className="mt-2 font-display text-lg text-ivory-50">{session.title}</h2>

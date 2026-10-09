@@ -26,10 +26,10 @@ export async function GET(request: Request) {
 
   if (admin.role === "owner") {
     const events = await listAllActiveEvents();
-    return NextResponse.json({ role: "owner", events });
+    return NextResponse.json({ role: "owner", events: events.map(e => ({ id: e.id, slug: e.slug, honoreeName: e.honoreeName })) });
   }
 
-  if (!admin.eventId) {
+  if (admin.role !== "client" || !admin.eventId) {
     return NextResponse.json(
       { error: "No event is assigned to this account yet. Contact the site owner to get linked to your event." },
       { status: 404 },

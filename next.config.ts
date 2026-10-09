@@ -27,9 +27,16 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   async headers() {
-    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+    return [{ source: "/:path*", headers: SECURITY_HEADERS },
+      ...["events", "invite", "event-day", "session", "share", "games", "plan", "reels", "p", "media", "event-access", "admin", "api/mobile", "api/support-access"].map(route => ({ source: `/${route}/:path*`, headers: [
+        { key: "Cache-Control", value: "private, no-store" },
+        { key: "Netlify-CDN-Cache-Control", value: "no-store" },
+      ] })),
+    ];
   },
   images: {
+    // Protected images need the viewer session; shared optimization strips it.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",

@@ -1,8 +1,9 @@
 "use client";
 
+import { ScheduleItemEditor } from "@/features/admin/event-day/schedule-item-editor";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Copy, Link2, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Copy, Link2, Loader2, Plus, Pencil, RefreshCw, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { MenuDietaryTag, MenuItemRecord, ScheduleItemRecord } from "@/types/content";
@@ -44,7 +45,7 @@ interface EventDayManagerProps {
   initialMenuItems: MenuItemRecord[];
 }
 
-const EMPTY_SCHEDULE = { startLabel: "", endLabel: "", title: "", description: "" };
+const EMPTY_SCHEDULE = { dayLabel: "", startLabel: "", endLabel: "", title: "", description: "" };
 const EMPTY_MENU = { category: "", name: "", description: "", dietaryTag: "" as MenuDietaryTag | "" };
 
 export function EventDayManager({
@@ -69,6 +70,7 @@ export function EventDayManager({
   const [scheduleItems, setScheduleItems] = useState(
     [...initialScheduleItems].sort((a, b) => a.sortOrder - b.sortOrder),
   );
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
   const [scheduleForm, setScheduleForm] = useState(EMPTY_SCHEDULE);
   const [scheduleBusy, setScheduleBusy] = useState(false);
   const [scheduleBusyId, setScheduleBusyId] = useState<string | null>(null);
@@ -250,6 +252,7 @@ export function EventDayManager({
     setScheduleBusy(true);
     const result = await createScheduleItemAction({
       eventId,
+      dayLabel: scheduleForm.dayLabel || null,
       startLabel: scheduleForm.startLabel,
       endLabel: scheduleForm.endLabel || undefined,
       title: scheduleForm.title,
@@ -417,7 +420,12 @@ export function EventDayManager({
         <p className="mt-1 text-sm text-navy-700/60">The run-of-show, in order — e.g. 11:00 AM–12:00 PM, Cake Cutting.</p>
 
         <div className="mt-4 grid gap-3 rounded-xl border border-gold-500/20 bg-gold-500/5 p-4 sm:grid-cols-4">
+          <label className="grid gap-1 text-sm text-navy-950 sm:col-span-4">
+            Day / date (optional)
+            <input value={scheduleForm.dayLabel} maxLength={120} placeholder="e.g. Saturday, 9 January 2027 or Day 1" onChange={(e) => setScheduleForm((f) => ({ ...f, dayLabel: e.target.value }))} className={inputClasses} />
+          </label>
           <input
+            aria-label="Start time"
             placeholder="Start (e.g. 11:00 AM)"
             value={scheduleForm.startLabel}
             onChange={(e) => setScheduleForm((f) => ({ ...f, startLabel: e.target.value }))}
@@ -455,7 +463,7 @@ export function EventDayManager({
             const expanded = expandedPricingId === item.id;
             return (
               <div key={item.id} className="rounded-xl border border-navy-950/10 bg-white">
-                <div className="flex items-start gap-3 p-4">
+                <div className="flex flex-wrap items-start gap-3 p-4">
                   <div className="flex flex-col gap-1">
                     <button
                       type="button"
@@ -476,7 +484,7 @@ export function EventDayManager({
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs uppercase tracking-wide text-gold-600">
-                      {item.startLabel}
+                      {item.dayLabel ? `${item.dayLabel} · ` : ""}{item.startLabel}
                       {item.endLabel ? ` – ${item.endLabel}` : ""}
                     </p>
                     <p className="font-display text-lg text-navy-950">{item.title}</p>
@@ -487,6 +495,9 @@ export function EventDayManager({
                       </p>
                     ) : null}
                   </div>
+                  <button type="button" onClick={() => setEditingScheduleId(editingScheduleId === item.id ? null : item.id)} aria-expanded={editingScheduleId === item.id} className="tap-target flex items-center gap-1 text-sm text-gold-600">
+                    <Pencil size={14} /> Edit
+                  </button>
                   <button
                     type="button"
                     onClick={() => toggleExpandedPricing(item)}
@@ -504,6 +515,10 @@ export function EventDayManager({
                   </button>
                 </div>
 
+                {editingScheduleId === item.id ? <ScheduleItemEditor item={item} onCancel={() => setEditingScheduleId(null)} onSaved={(details) => {
+                  setScheduleItems((current) => current.map((row) => row.id === item.id ? { ...row, ...details } : row));
+                  setEditingScheduleId(null);
+                }} /> : null}
                 {expanded ? (
                   <div className="border-t border-navy-950/10 bg-navy-950/[0.02] p-4">
                     <label className="flex items-center gap-2 text-sm text-navy-950">

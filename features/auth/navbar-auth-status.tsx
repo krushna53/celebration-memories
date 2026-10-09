@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut } from "lucide-react";
+import { DashboardMenu } from "@/features/auth/dashboard-menu";
+import type { DashboardLink } from "@/lib/dashboard-links";
+import { LogOut } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -57,6 +59,7 @@ export function NavbarAuthStatus({ variant, onNavigate, adminLinkOnly = false }:
   const [email, setEmail] = useState<string | null | undefined>(undefined);
   const [dashboardPath, setDashboardPath] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [menuItems, setMenuItems] = useState<DashboardLink[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +84,7 @@ export function NavbarAuthStatus({ variant, onNavigate, adminLinkOnly = false }:
         if (cancelled) return;
         setDashboardPath(destination.kind === "none" ? null : destination.path);
         setIsAdmin(destination.kind === "admin");
+        setMenuItems(destination.kind === "admin" ? destination.menuItems : []);
       } catch {
         if (!cancelled) {
           setEmail((current) => current ?? null);
@@ -112,88 +116,21 @@ export function NavbarAuthStatus({ variant, onNavigate, adminLinkOnly = false }:
 
   if (email === undefined) return null;
 
-  if (adminLinkOnly) {
-    if (!email || !isAdmin || !dashboardPath) return null;
-    return (
-      <Link
-        href={dashboardPath}
-        onClick={onNavigate}
-        title={`Signed in as ${email}`}
-        className={cn(LOGIN_PILL_CLASSES[variant], "items-center gap-2 whitespace-nowrap", variant === "desktop" && "flex")}
-      >
-        <LayoutDashboard size={variant === "desktop" ? 14 : 16} aria-hidden="true" />
-        {variant === "desktop" ? "Dashboard" : "Go to Dashboard"}
-      </Link>
-    );
-  }
+  if (adminLinkOnly && (!email || !isAdmin || !dashboardPath)) return null;
 
   if (!email) {
-    return (
-      <Link href="/login" onClick={onNavigate} className={LOGIN_PILL_CLASSES[variant]}>
-        Login
-      </Link>
-    );
+    return <Link href="/login" onClick={onNavigate} className={LOGIN_PILL_CLASSES[variant]}>Login</Link>;
   }
-
-  if (variant === "mobile") {
-    // Explicit, full-width rows on mobile — the bare "Hi {email}" text
-    // alone gave no visible way into the dashboard from the app.
-    return (
-      <>
-        <span className="truncate py-2 text-sm text-ivory-100/60" title={email}>
-          Signed in as {email}
-        </span>
-        {dashboardPath ? (
-          <Link href={dashboardPath} onClick={onNavigate} className={LOGIN_PILL_CLASSES.mobile}>
-            Go to Dashboard
-          </Link>
-        ) : null}
-        <button type="button" onClick={handleSignOut} className={cn(LINK_CLASSES.mobile, "gap-2")}>
-          <LogOut size={16} /> Logout
-        </button>
-      </>
-    );
-  }
-
-  // Desktop: a compact Dashboard pill + icon-only Logout. The full
-  // "Hi {email}" greeting was the widest item in the header and pushed
-  // it off the edge on laptop screens; the email is still one hover
-  // away (title) and announced to screen readers.
-  const initial = email.charAt(0).toUpperCase();
 
   return (
     <>
       {dashboardPath ? (
-        <Link
-          href={dashboardPath}
-          onClick={onNavigate}
-          title={`Signed in as ${email}`}
-          aria-label={`Dashboard (signed in as ${email})`}
-          className={cn(LOGIN_PILL_CLASSES.desktop, "flex items-center gap-2 whitespace-nowrap pl-1.5")}
-        >
-          <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center rounded-full bg-gold-500 text-xs font-semibold text-navy-950">
-            {initial}
-          </span>
-          Dashboard
-        </Link>
-      ) : (
-        <span
-          title={`Signed in as ${email}`}
-          aria-label={`Signed in as ${email}`}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-500 text-sm font-semibold text-navy-950"
-        >
-          {initial}
-        </span>
-      )}
-      <button
-        type="button"
-        onClick={handleSignOut}
-        title="Logout"
-        aria-label="Logout"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ivory-100/70 transition-luxury duration-300 hover:bg-white/10 hover:text-gold-300"
-      >
-        <LogOut size={16} />
-      </button>
+        isAdmin ? <DashboardMenu path={dashboardPath} items={menuItems} mobile={variant === "mobile"} onNavigate={onNavigate} /> :
+        <Link href={dashboardPath} onClick={onNavigate} className={LOGIN_PILL_CLASSES[variant]}>Dashboard</Link>
+      ) : <span className="text-sm text-ivory-100/70">Signed in as {email}</span>}
+      {!adminLinkOnly ? <button type="button" onClick={handleSignOut} title="Logout" aria-label="Logout" className={cn(LINK_CLASSES[variant], "tap-target flex items-center gap-2")}>
+        <LogOut size={16} /> {variant === "mobile" ? "Logout" : null}
+      </button> : null}
     </>
   );
 }

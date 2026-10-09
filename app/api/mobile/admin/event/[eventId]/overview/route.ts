@@ -25,7 +25,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ even
     return NextResponse.json({ error: err instanceof Error ? err.message : "Not authorized." }, { status: 401 });
   }
 
-  if (admin.role !== "owner" && admin.eventId !== eventId) {
+  if (admin.role === "owner" || !admin.memberships.some(m => m.eventId === eventId && m.role === "client")) {
     return NextResponse.json({ error: "You don't have access to this event." }, { status: 403 });
   }
 

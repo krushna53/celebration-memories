@@ -60,6 +60,8 @@ export interface TimelineMilestoneRecord {
 
 /** One time-blocked segment of the event-day run-of-show (see services/event-day.ts). */
 export interface ScheduleItemRecord {
+  /** Optional display day/date for multi-day events. */
+  dayLabel?: string | null;
   id: string;
   eventId: string;
   /** Free-text display time, e.g. "11:00 AM" — not parsed/computed against, just shown in order. */

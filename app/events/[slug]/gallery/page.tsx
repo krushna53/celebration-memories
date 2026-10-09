@@ -22,7 +22,7 @@ import type { EventRecord } from "@/types/event";
  * Gallery section links here once there are more photos than fit there.
  * Same access model as /events/[slug]: anyone with the link.
  */
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 /** Guest photos fetched for this page — the event page's section only needs a handful. */
 const GUEST_PHOTO_LIMIT = 500;

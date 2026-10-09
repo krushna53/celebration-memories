@@ -7,14 +7,9 @@ import { SITE_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
-const DEFAULT_NEXT = "/admin?from=login";
+import { safeAuthNext } from "@/lib/auth-redirect";
 
 /** Only ever follow a same-site relative path — `next` arrives as a URL query param, so treat it as untrusted rather than passing it straight to redirect(). */
-function safeNextPath(raw: string | null): string {
-  if (!raw) return DEFAULT_NEXT;
-  if (!raw.startsWith("/") || raw.startsWith("//")) return DEFAULT_NEXT;
-  return raw;
-}
 
 /**
  * The public origin to send the browser back to. On Netlify, `request.url`
@@ -23,13 +18,9 @@ function safeNextPath(raw: string | null): string {
  * visitor actually used — so prefer the forwarded host, and never hand a
  * deploy permalink back to a real visitor (fall back to SITE_URL).
  */
-function publicOrigin(request: Request, url: URL): string {
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
-  const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : url.origin;
-  const host = new URL(origin).hostname;
-  if (/^[0-9a-f]{24}--.+\.netlify\.app$/.test(host)) return SITE_URL;
-  return origin;
+function publicOrigin(_request: Request, url: URL): string {
+  if (process.env.NODE_ENV === "development" && ["localhost", "127.0.0.1"].includes(url.hostname)) return url.origin;
+  return SITE_URL;
 }
 
 /**
@@ -97,7 +88,8 @@ function publicOrigin(request: Request, url: URL): string {
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = safeNextPath(url.searchParams.get("next"));
+  let failed = !code || !!url.searchParams.get("error");
+  const next = safeAuthNext(url.searchParams.get("next"));
   const linkEventId = url.searchParams.get("link_event_id");
   const isBusinessFlow = url.searchParams.get("business") === "1";
   const formToken = url.searchParams.get("form_token");
@@ -105,6 +97,7 @@ export async function GET(request: Request): Promise<Response> {
   if (code) {
     const supabase = await supabaseServer();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    failed = !!error;
 
     if (!error && data.user && linkEventId) {
       const meta = data.user.user_metadata as { full_name?: string; name?: string } | null;
@@ -181,5 +174,7 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
 
-  return NextResponse.redirect(new URL(next, publicOrigin(request, url)));
+  const destination = new URL(next, publicOrigin(request, url));
+  if (failed) destination.searchParams.set("auth_error", "1");
+  return NextResponse.redirect(destination);
 }

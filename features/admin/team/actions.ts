@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdminForEvent } from "@/services/admin-auth";
+import { getCurrentAdmin, requireAdminForEvent } from "@/services/admin-auth";
 import {
   addTeamMemberWithPassword,
   inviteTeamMemberByEmail,
@@ -11,6 +11,16 @@ import {
   type TeamMember,
 } from "@/services/admin-team";
 
+import { getEventAccess } from "@/services/event-access";
+async function requireTeamProvisioning(eventId: string) {
+  const admin = await getCurrentAdmin();
+  if (admin?.role === "owner") {
+    const event = await getEventAccess(eventId);
+    if (!event || event.owner_user_id) throw new Error("Only the customer owner can change this event's team.");
+    return admin;
+  }
+  return requireAdminForEvent(eventId);
+}
 export type TeamActionResult = { success: true; member?: TeamMember } | { success: false; error: string };
 
 /**
@@ -26,7 +36,7 @@ export async function inviteTeamMemberAction(
   makeEventOwner = false,
 ): Promise<TeamActionResult> {
   try {
-    const admin = await requireAdminForEvent(eventId);
+    const admin = await requireTeamProvisioning(eventId);
     // makeEventOwner is only honoured for the platform owner — the service ignores it unless canAddExistingAccounts.
     await inviteTeamMemberByEmail({ eventId, name, email, canAddExistingAccounts: admin.role === "owner", makeEventOwner });
     revalidatePath("/admin/team");
@@ -46,7 +56,7 @@ export async function addTeamMemberWithPasswordAction(
   makeEventOwner = false,
 ): Promise<TeamActionResult> {
   try {
-    const admin = await requireAdminForEvent(eventId);
+    const admin = await requireTeamProvisioning(eventId);
     await addTeamMemberWithPassword({
       eventId,
       name,

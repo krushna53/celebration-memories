@@ -1,3 +1,4 @@
+import { canViewEvent } from "@/services/event-access";
 import "server-only";
 
 import { randomBytes, randomUUID } from "node:crypto";
@@ -791,7 +792,7 @@ async function loadReel(column: "invitee_id" | "share_token", value: string): Pr
       updated_at: string;
       invitees: { name: string } | null;
     }>();
-  if (!data) return null;
+  if (!data || !await canViewEvent(data.event_id)) return null;
   return {
     reelId: data.id,
     status: data.status,

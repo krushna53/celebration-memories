@@ -1,3 +1,4 @@
+import { isEventClient } from "../_shared/event-member.ts";
 // Supabase Edge Function — polled by the browser every few seconds
 // after generate-timeline-movie submits a render. Checks HeyGen's video
 // status; once it reports "completed", downloads the finished MP4
@@ -80,12 +81,13 @@ Deno.serve(async (req: Request) => {
   if (!job) {
     return jsonResponse({ success: false, error: "Job not found" }, 404);
   }
+  if (!await isEventClient(req, job.event_id)) return jsonResponse({ success: false, error: "Event team access required" }, 403);
 
   // Already finished (from an earlier poll) — return the cached result
   // instead of hitting HeyGen again.
   if (job.status === "done" && job.result_path) {
     // Signed, not public — the bucket is private (lib/media-url.ts in the web app).
-    const { data: pub } = await supabase.storage.from("videos").createSignedUrl(job.result_path, 7 * 24 * 60 * 60);
+    const { data: pub } = await supabase.storage.from("videos").createSignedUrl(job.result_path, 60);
     return jsonResponse({ success: true, status: "done", resultPath: job.result_path, resultUrl: pub?.signedUrl ?? null }, 200);
   }
   if (job.status === "error") {
@@ -156,7 +158,7 @@ Deno.serve(async (req: Request) => {
     });
 
     // Signed, not public — the bucket is private (lib/media-url.ts in the web app).
-    const { data: pub } = await supabase.storage.from("videos").createSignedUrl(path, 7 * 24 * 60 * 60);
+    const { data: pub } = await supabase.storage.from("videos").createSignedUrl(path, 60);
     return jsonResponse({ success: true, status: "done", resultPath: path, resultUrl: pub?.signedUrl ?? null }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error saving the rendered video.";

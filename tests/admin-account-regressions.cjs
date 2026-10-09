@@ -29,15 +29,15 @@ function events(override) {
   });
 }
 
-test('owner selection overrides their assigned event', async () => {
-  assert.equal((await events('veda').resolveAdminEvent({ role: 'owner', eventId: 'mgm' })).id, 'veda');
+test('platform selection never grants customer management', async () => {
+  assert.equal(await events('veda').resolveAdminEvent({ role: 'owner', eventId: 'mgm' }), null);
 });
 test('clients cannot use the owner event override', async () => {
   assert.equal((await events('veda').resolveAdminEvent({ role: 'client', eventId: 'mgm' })).id, 'mgm');
   assert.equal(await events('veda').resolveAdminEvent({ role: 'client', eventId: null }), null);
 });
-test('exit restores owner assigned event; deleted selection cannot edit a different event', async () => {
-  assert.equal((await events(null).resolveAdminEvent({ role: 'owner', eventId: 'mgm' })).id, 'mgm');
+test('platform has no implicit default event and deleted selection stays denied', async () => {
+  assert.equal(await events(null).resolveAdminEvent({ role: 'owner', eventId: 'mgm' }), null);
   assert.equal(await events('deleted').resolveAdminEvent({ role: 'owner', eventId: 'mgm' }), null);
 });
 
@@ -125,15 +125,23 @@ test('new user assignment failure cleans up only the newly created login', async
   await assert.rejects(service.addTeamMemberWithPassword(input), /conflict/);
   assert.deepEqual(calls.deletes, ['new']);
 });
-test('someone already hosting another event is added to this one, keeping their login and other events', async () => {
+test('the owner can add someone already hosting another event, keeping their login and other events', async () => {
   for (const add of ['inviteTeamMemberByEmail', 'addTeamMemberWithPassword']) {
     const { service, calls } = team({ existingAdmin: { id: 'existing', role: 'client' } });
-    await service[add](input);
+    await service[add]({ ...input, canAddExistingAccounts: true });
     assert.deepEqual(calls.inserts, [{ table: 'admin_event_memberships', admin_id: 'existing', event_id: 'veda', role: 'client' }]);
     assert.deepEqual(calls.resets, [], 'no password email for an existing dashboard login');
     assert.deepEqual(calls.deletes, []);
     // Only a missing primary event is ever filled in — an existing one is never overwritten.
     for (const update of calls.updates) assert.ok(update.filters.some(([op, col, val]) => op === 'is' && col === 'event_id' && val === null));
+  }
+});
+test('a host cannot add someone who already manages another event — only the owner can', async () => {
+  for (const add of ['inviteTeamMemberByEmail', 'addTeamMemberWithPassword']) {
+    const { service, calls } = team({ existingAdmin: { id: 'existing', role: 'client' } });
+    await assert.rejects(service[add](input), /Only the EveryMoment team can add them/);
+    assert.equal(calls.inserts.length, 0);
+    assert.deepEqual(calls.resets, []);
   }
 });
 test('the same person cannot be added to one event twice, and the owner account is never added', async () => {
@@ -191,6 +199,7 @@ test('signed-in account without a dashboard does not see sign-in controls', asyn
 
 function auth() {
   return load('services/admin-auth.ts', {
+    '@/services/event-access': { requireEventMember: async () => {} },
     '@/lib/supabase/server': { supabaseServer: async () => ({}) },
     '@/lib/supabase/admin': { supabaseAdmin: () => ({}) },
     '@/services/session-organizers': { getAssignedSessionIds: async () => [] },
@@ -209,5 +218,5 @@ test('multi-event access is checked per event, with that event\'s own role', () 
   assert.equal(onMgm.eventId, 'mgm');
   assert.equal(adminForEvent(person, 'someone-else'), null, 'no access to events they are not a member of');
   const owner = { id: 'o', role: 'owner', eventId: 'flagship', memberships: [] };
-  assert.equal(adminForEvent(owner, 'anything'), owner);
+  assert.equal(adminForEvent(owner, 'anything'), null);
 });

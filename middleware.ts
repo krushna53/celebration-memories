@@ -64,7 +64,15 @@ function withRefCookie(response: NextResponse, refCode: string | null): NextResp
  *    header is read.
  */
 export async function middleware(request: NextRequest) {
+  // Overwrite rather than trust a caller's header. Used only as a safe local
+  // post-login destination, never as an authorization credential.
+  request.headers.set("x-event-request-path", request.nextUrl.pathname + request.nextUrl.search);
   const refCode = sanitizeRefCode(request.nextUrl.searchParams.get("ref"));
+  const capability = request.nextUrl.pathname.match(/^\/(start|invite)\/([A-Za-z0-9_-]{8,100})(?:\/|$)/);
+  function finish(response: NextResponse) {
+    if (capability) response.cookies.set(capability[1] === "start" ? "em_draft_preview" : "em_guest_preview", capability[2]!, { httpOnly: true, secure: request.nextUrl.protocol === "https:", sameSite: "lax", path: "/", maxAge: 3600 });
+    return withRefCookie(response, refCode);
+  }
 
   if (request.nextUrl.pathname.startsWith("/pricing")) {
     const geo = (request as unknown as NetlifyGeoRequest).geo;
@@ -76,9 +84,9 @@ export async function middleware(request: NextRequest) {
     return withRefCookie(NextResponse.next({ request: { headers: requestHeaders } }), refCode);
   }
 
-  if (!request.nextUrl.pathname.startsWith("/admin") && request.nextUrl.pathname !== "/login") {
+  if (!request.nextUrl.pathname.startsWith("/admin") && request.nextUrl.pathname !== "/login" && !/^\/(events|invite|event-access|event-day|session|share|reels|games|plan|p|media|api)($|\/)/.test(request.nextUrl.pathname)) {
     // Every other route: no session to refresh, just carry the referral cookie forward.
-    return withRefCookie(NextResponse.next({ request }), refCode);
+    return finish(NextResponse.next({ request }));
   }
 
   let response = NextResponse.next({ request });
@@ -104,7 +112,7 @@ export async function middleware(request: NextRequest) {
 
   await supabase.auth.getUser();
 
-  return withRefCookie(response, refCode);
+  return finish(response);
 }
 
 export const config = {

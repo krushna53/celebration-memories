@@ -14,7 +14,7 @@ import { DeleteEventButton } from "@/features/admin/events/delete-event-button";
  * button posts to setActiveAdminEventAction, which sets the
  * cm_admin_active_event cookie and sends the owner into the normal
  * (full, tab-heavy) admin dashboard now scoped to that event (see
- * lib/admin-event.ts). "View as Client" does the same but lands on
+ * lib/admin-event.ts). "Support access" does the same but lands on
  * /admin/simple instead — the exact page that client's own login sends
  * them to. No client-side JS needed for either — plain form posts, same
  * as the sign-out button in the dashboard layout.
@@ -132,7 +132,7 @@ export function EventList({ events, membersByEvent }: EventListProps) {
                       title="See exactly what this client sees — the simplified single-page view"
                       className="inline-flex items-center gap-1 rounded-full border border-navy-950/15 px-3 py-1.5 text-xs font-medium text-navy-700 hover:border-navy-950/30 hover:text-navy-950"
                     >
-                      <Eye size={13} /> View as Client
+                      <Eye size={13} /> Support access
                     </button>
                   </form>
                   <form action={setActiveAdminEventAction.bind(null, event.id)}>

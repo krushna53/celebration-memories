@@ -1,4 +1,5 @@
 import "server-only";
+import { requireEventMember } from "@/services/event-access";
 
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -145,7 +146,7 @@ async function listMemberships(adminId: string): Promise<EventMembership[]> {
  * currently selected event.
  */
 export function adminForEvent(admin: CurrentAdmin, eventId: string): CurrentAdmin | null {
-  if (admin.role === "owner") return admin;
+  if (admin.role === "owner") return null;
   const membership = admin.memberships.find((m) => m.eventId === eventId);
   return membership ? { ...admin, role: membership.role, eventId } : null;
 }
@@ -200,6 +201,7 @@ export async function requireOwner(): Promise<CurrentAdmin> {
  * a future action forgetting to special-case it.
  */
 export async function requireAdminForEvent(eventId: string): Promise<CurrentAdmin> {
+  await requireEventMember(eventId);
   const signedIn = await getCurrentAdmin();
   if (!signedIn) throw new Error("Not authorized.");
   const admin = adminForEvent(signedIn, eventId);
@@ -236,6 +238,7 @@ export type OrganizerArea = "invitees" | "gallery" | "timeline" | "checkin";
  * plus organizer.
  */
 export async function requireAdminForOrganizerArea(eventId: string, area: OrganizerArea): Promise<CurrentAdmin> {
+  await requireEventMember(eventId);
   const signedIn = await getCurrentAdmin();
   if (!signedIn) throw new Error("Not authorized.");
   const admin = adminForEvent(signedIn, eventId);
@@ -285,7 +288,7 @@ export async function requireSessionOrganizerForSession(scheduleItemId: string):
 export async function requireCheckInAccessForSession(eventId: string, scheduleItemId: string): Promise<CurrentAdmin> {
   const admin = await getCurrentAdmin();
   if (!admin) throw new Error("Not authorized.");
-  if (admin.role === "owner") return admin;
+  if (admin.role === "owner") throw new Error("Customer team access required.");
   const onEvent = adminForEvent(admin, eventId);
   if (onEvent?.role === "client") return onEvent;
   if (admin.role === "session_organizer") {

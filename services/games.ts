@@ -1,3 +1,4 @@
+import { canViewEvent } from "@/services/event-access";
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -262,7 +263,7 @@ export async function getGameByShareToken(token: string): Promise<GameRecord | n
     console.error("getGameByShareToken failed:", error.message);
     return null;
   }
-  return data ? mapGame(data) : null;
+  return data && await canViewEvent(data.event_id) ? mapGame(data) : null;
 }
 
 export async function getGameById(eventId: string, gameId: string): Promise<GameRecord | null> {
@@ -359,6 +360,8 @@ export async function completeGameAttempt(
   attemptId: string,
   input: { foundWords: string[]; durationSeconds: number },
 ): Promise<void> {
+  const { data: attempt } = await supabaseAdmin().from("game_attempts").select("event_id").eq("id", attemptId).maybeSingle();
+  if (!attempt || !await canViewEvent(attempt.event_id)) throw new Error("This event requires access.");
   const { error } = await supabaseAdmin()
     .from("game_attempts")
     .update({

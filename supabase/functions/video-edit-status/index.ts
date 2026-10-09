@@ -1,3 +1,4 @@
+import { isEventClient } from "../_shared/event-member.ts";
 // Supabase Edge Function — polled by the browser every few seconds after
 // render-video-edit submits a render. Same shape as
 // slideshow-video-status/index.ts (see that file's comment for the full
@@ -80,10 +81,11 @@ Deno.serve(async (req: Request) => {
   if (!job) {
     return jsonResponse({ success: false, error: "Job not found" }, 404);
   }
+  if (!await isEventClient(req, job.event_id)) return jsonResponse({ success: false, error: "Event team access required" }, 403);
 
   if (job.status === "done" && job.result_path) {
     // Signed, not public — the bucket is private (lib/media-url.ts in the web app).
-    const { data: pub } = await supabase.storage.from("gallery").createSignedUrl(job.result_path, 7 * 24 * 60 * 60);
+    const { data: pub } = await supabase.storage.from("gallery").createSignedUrl(job.result_path, 60);
     return jsonResponse({ success: true, status: "done", resultPath: job.result_path, resultUrl: pub?.signedUrl ?? null }, 200);
   }
   if (job.status === "error") {
@@ -147,7 +149,7 @@ Deno.serve(async (req: Request) => {
     });
 
     // Signed, not public — the bucket is private (lib/media-url.ts in the web app).
-    const { data: pub } = await supabase.storage.from("gallery").createSignedUrl(path, 7 * 24 * 60 * 60);
+    const { data: pub } = await supabase.storage.from("gallery").createSignedUrl(path, 60);
     return jsonResponse({ success: true, status: "done", resultPath: path, resultUrl: pub?.signedUrl ?? null }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error saving the rendered video.";

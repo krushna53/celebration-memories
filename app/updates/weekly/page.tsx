@@ -36,6 +36,15 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Friday, October 9",
+    items: [
+      { title: "Public links and event privacy", detail: "The three ongoing events remain public by link: Mahesh Shah’s 75th birthday, Veda’s first birthday and the MGM reunion. Platform administrators can manage these exceptions under Admin → Public Event Links. Removing an exception does not automatically make an event private; its host chooses the viewing setting under Event Privacy.", test: "Open /admin/public-event-links as the platform administrator. Confirm the three events say Keep public, then check their shared links in a signed-out browser. Test restrictions on a new event first." },
+      { title: "Cashfree credentials: where to add them", detail: "Sign in with the platform administrator account, open Dashboard → Billing → Cashfree setup, or visit /admin/billing/cashfree directly. In the Cashfree merchant dashboard open Payment Gateway → Developers → API Keys. Copy the Sandbox App ID and Secret Key, select Sandbox on EveryMoment, and click Save credentials. Secrets are hidden after saving. Saving keys does not activate checkout or charge customers; merchant approval and payment/webhook tests are still required.", test: "Visit /admin/billing/cashfree. Save sandbox credentials and reload: the App ID remains visible, the Secret Key stays blank, and a saved status appears. Never paste credentials into this public weekly update." },
+      { title: "Clear event and monthly pricing", detail: "The Pricing page shows Free, Celebration and Studio in rupees and US dollars, with separate per-event and monthly options. Per-event pricing is a single payment for one event; monthly pricing lists both the new-event allowance and active-event limit. Paid plans currently use an enquiry link.", test: "Open /pricing and switch between Per event and Monthly. Confirm both currencies, event allowances and access periods are clearly shown." },
+      { title: "Tour, dashboard shortcuts and schedule editing", detail: "The tour can continue when a target is missing. Signed-in hosts have dashboard shortcuts, and schedule items can be edited with an optional day label while retaining registration and pricing settings.", test: "Run the tour on mobile, open the dashboard menu, and edit a schedule item’s day, time and title. Confirm its registration settings stay unchanged." },
+    ],
+  },
+  {
     date: "Tuesday, October 6",
     items: [
       {

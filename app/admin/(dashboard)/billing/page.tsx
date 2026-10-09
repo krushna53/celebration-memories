@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -47,6 +48,7 @@ export default async function AdminBillingPage() {
   return (
     <div>
       <h1 className="font-display text-2xl text-navy-950">Billing</h1>
+      <Link href="/admin/billing/cashfree" className="mt-3 inline-block underline">Cashfree setup — add App ID and Secret Key</Link>
       <p className="mt-1 text-sm text-navy-700/60">
         Revenue from the self-serve wizard (<code className="rounded bg-navy-950/5 px-1 py-0.5">/start</code>) —
         separate from the guest-facing manual UPI/QR flow under Payments.

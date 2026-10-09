@@ -1,3 +1,4 @@
+import { isEventClient } from "../_shared/event-member.ts";
 // Supabase Edge Function — generates an AI image and stores it, entirely
 // within one synchronous request/response.
 //
@@ -104,6 +105,7 @@ Deno.serve(async (req: Request) => {
   if (!job) {
     return jsonResponse({ success: false, error: "Job not found" }, 404);
   }
+  if (!await isEventClient(req, job.event_id)) return jsonResponse({ success: false, error: "Event team access required" }, 403);
   if (job.event_id !== eventId) {
     return jsonResponse({ success: false, error: "Job/event mismatch" }, 400);
   }
@@ -176,7 +178,7 @@ Deno.serve(async (req: Request) => {
     });
 
     // Signed, not public — the bucket is private (lib/media-url.ts in the web app).
-    const { data: pub } = await supabase.storage.from("gallery").createSignedUrl(path, 7 * 24 * 60 * 60);
+    const { data: pub } = await supabase.storage.from("gallery").createSignedUrl(path, 60);
 
     return jsonResponse({ success: true, resultPath: path, resultUrl: pub?.signedUrl ?? null }, 200);
   } catch (err) {

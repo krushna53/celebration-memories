@@ -93,7 +93,7 @@ export function EventDaySection({
               <li className="relative pb-10 last:pb-0">
                 <span className="absolute -start-[calc(2rem+5px)] top-1 h-2.5 w-2.5 rounded-full bg-gold-400 ring-4 ring-navy-950 sm:-start-[calc(2.5rem+5px)]" />
                 <p className="text-xs uppercase tracking-[0.3em] text-gold-300/90">
-                  {item.startLabel}
+                  {item.dayLabel ? `${item.dayLabel} · ` : ""}{item.startLabel}
                   {item.endLabel ? ` – ${item.endLabel}` : ""}
                 </p>
                 <h3 className="mt-2 font-display text-xl text-ivory-50 sm:text-2xl">{item.title}</h3>

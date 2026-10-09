@@ -1,6 +1,6 @@
 "use server";
 
-import { getEventById } from "@/services/events";
+import { getPublicEventById as getEventById } from "@/services/events";
 import { listEventGames } from "@/services/games";
 import { countTodayAvatarMessages, recordAvatarMessage } from "@/services/ai-avatar-messages";
 import { generateAvatarReply, type AvatarChatMessage } from "@/lib/ai-avatar-chat";

@@ -1,4 +1,5 @@
 import "server-only";
+import { canViewEvent } from "@/services/event-access";
 import { randomBytes } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -165,7 +166,7 @@ export async function getEventBySlug(slug: string): Promise<EventRecord | null> 
   if (error) {
     throw new Error(`Failed to look up event: ${error.message}`);
   }
-  return data ? mapEvent(data) : null;
+  return data && await canViewEvent(data.id) ? mapEvent(data) : null;
 }
 
 /**
@@ -178,6 +179,9 @@ export async function listPublicEvents(): Promise<EventRecord[]> {
     .from("events")
     .select("*")
     .eq("visibility", "public")
+    .eq("viewing_access", "public")
+    .eq("status", "active")
+    .eq("page_status", "published")
     .order("start_at", { ascending: true });
 
   if (error) throw new Error(`Failed to list public events: ${error.message}`);
@@ -467,4 +471,9 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
 
   const { error } = await supabaseAdmin().from("events").update(patch).eq("id", id);
   if (error) throw new Error(`Failed to update event: ${error.message}`);
+}
+
+export async function getPublicEventById(id: string): Promise<EventRecord | null> {
+  if (!await canViewEvent(id)) return null;
+  return getEventById(id);
 }

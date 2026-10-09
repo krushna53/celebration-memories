@@ -74,6 +74,9 @@ export type NavGroup = "Event" | "Guests" | "Create" | "Payments" | "Account" | 
  * passes `allowedHrefs`) — this list is presentation only.
  */
 export const ADMIN_NAV: readonly NavItem[] = [
+  { href: "/admin/privacy", label: "Privacy", icon: Settings, group: "Event" },
+  { href: "/admin/public-event-links", label: "Public Event Links", icon: Globe, group: "Platform" },
+  { href: "/admin/support-access", label: "Support Access", icon: HelpCircle, group: "Platform" },
   { href: "/admin", label: "Overview", icon: LayoutDashboard, group: "Event" },
   { href: "/admin/events", label: "All Events", icon: Building2, group: "Event" },
   { href: "/admin/members", label: "Members", icon: UserCog, group: "Platform" },

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { getEventAccess } from "@/services/event-access";
 import { requireOwner } from "@/services/admin-auth";
 import { deleteAdminAccess, getAdminEmailById } from "@/services/admin-users";
 import { deleteAdminAccountAndAssets } from "@/services/admin-danger-zone";
@@ -28,6 +29,8 @@ export async function addMemberByInviteAction(
 ): Promise<AddMemberResult> {
   await requireOwner();
   try {
+    const event = await getEventAccess(eventId);
+    if (!event || event.owner_user_id) throw new Error("Only the customer owner can add members to this event. Platform provisioning is limited to unassigned events.");
     await inviteTeamMemberByEmail({ eventId, name, email, canAddExistingAccounts: true });
     revalidatePath("/admin/members");
     revalidatePath("/admin/events");
@@ -47,6 +50,8 @@ export async function addMemberWithPasswordAction(
 ): Promise<AddMemberResult> {
   await requireOwner();
   try {
+    const event = await getEventAccess(eventId);
+    if (!event || event.owner_user_id) throw new Error("Only the customer owner can add members to this event. Platform provisioning is limited to unassigned events.");
     await addTeamMemberWithPassword({ eventId, name, email, password, canAddExistingAccounts: true });
     revalidatePath("/admin/members");
     revalidatePath("/admin/events");

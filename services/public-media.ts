@@ -2,7 +2,7 @@ import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { publicMediaUrl } from "@/services/uploads";
-import { getEventById } from "@/services/events";
+import { getPublicEventById as getEventById } from "@/services/events";
 import { getGalleryPhotoById } from "@/services/gallery-photos";
 import type { EventRecord } from "@/types/event";
 

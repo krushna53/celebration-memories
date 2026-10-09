@@ -60,9 +60,7 @@ export async function toggleEventVisibilityAction(
  */
 export async function setActiveAdminEventAction(eventId: string): Promise<void> {
   await requireOwner();
-  await setActiveEventOverrideId(eventId);
-  revalidatePath("/admin", "layout");
-  redirect("/admin");
+  redirect(`/admin/support-access?event=${encodeURIComponent(eventId)}`);
 }
 
 /**
@@ -74,7 +72,8 @@ export async function setActiveAdminEventAction(eventId: string): Promise<void> 
 export async function switchMyEventAction(eventId: string): Promise<void> {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/login");
-  if (admin.role !== "owner" && !admin.memberships.some((m) => m.eventId === eventId)) {
+  if (admin.role === "owner") redirect(`/admin/support-access?event=${encodeURIComponent(eventId)}`);
+  if (!admin.memberships.some((m) => m.eventId === eventId)) {
     redirect("/admin");
   }
   await setActiveEventOverrideId(eventId);
@@ -94,10 +93,7 @@ export async function switchMyEventAction(eventId: string): Promise<void> {
  */
 export async function viewAsClientAction(eventId: string): Promise<void> {
   await requireOwner();
-  await setActiveEventOverrideId(eventId);
-  revalidatePath("/admin", "layout");
-  revalidatePath("/admin/simple");
-  redirect("/admin/simple");
+  redirect(`/admin/support-access?event=${encodeURIComponent(eventId)}`);
 }
 
 /** Owner-only — stops managing a specific client's event, back to the owner's own default (flagship) event. See setActiveAdminEventAction's comment for why revalidatePath is needed here too. */
@@ -172,7 +168,7 @@ export async function createOwnerEventAction(): Promise<void> {
   const event = await createOwnerEvent();
   await setActiveEventOverrideId(event.id);
   revalidatePath("/admin", "layout");
-  redirect("/admin/event-settings");
+  redirect(`/admin/team?add=1&event=${encodeURIComponent(event.id)}`);
 }
 
 /** Opens account provisioning for the selected event without changing the owner's login. */
@@ -181,5 +177,5 @@ export async function manageEventTeamAction(eventId: string): Promise<void> {
   if (!await getEventById(eventId)) throw new Error("Event not found.");
   await setActiveEventOverrideId(eventId);
   revalidatePath("/admin", "layout");
-  redirect("/admin/team?add=1");
+  redirect(`/admin/team?add=1&event=${encodeURIComponent(eventId)}`);
 }

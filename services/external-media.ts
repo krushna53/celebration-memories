@@ -1,5 +1,7 @@
 import "server-only";
 
+import { eventPermissions } from "@/services/event-access";
+import { authorizeMedia } from "@/services/media-access";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { isPrivateMediaBucket, parseMediaLink } from "@/lib/media-url";
 
@@ -14,7 +16,13 @@ export async function externalMediaUrl(bucket: string, path: string, ttlSeconds 
   const client = supabaseAdmin().storage.from(bucket);
   if (!isPrivateMediaBucket(bucket)) return client.getPublicUrl(path).data.publicUrl;
 
-  const { data, error } = await client.createSignedUrl(path, ttlSeconds);
+  const permission = await authorizeMedia(bucket, path);
+  if (!permission || permission.support) throw new Error("Only the event team can send media to an external renderer.");
+  const access = permission.eventId ? await eventPermissions(permission.eventId) : null;
+  // Render inputs need time for the provider queue. Only customer team members
+  // can authorize that disclosure; visitor/mobile links remain short-lived.
+  const ttl = access?.manage ? Math.min(ttlSeconds, 3600) : Math.min(ttlSeconds, 60);
+  const { data, error } = await client.createSignedUrl(path, ttl);
   if (error || !data) throw new Error(`Couldn't create a link for that file: ${error?.message ?? "unknown error"}`);
   return data.signedUrl;
 }

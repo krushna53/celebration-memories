@@ -11,7 +11,7 @@ import { EVENT_CATEGORY_LABELS as CATEGORY_LABELS } from "@/lib/event-category";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 import { SITE_NAME } from "@/lib/constants";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: `Browse Celebrations | ${SITE_NAME}`,

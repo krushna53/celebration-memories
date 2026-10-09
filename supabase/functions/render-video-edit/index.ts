@@ -1,3 +1,4 @@
+import { isEventClient } from "../_shared/event-member.ts";
 // Supabase Edge Function — submits a Video Editor render request to
 // Shotstack (https://shotstack.io).
 //
@@ -83,6 +84,7 @@ Deno.serve(async (req: Request) => {
   if (!job) {
     return jsonResponse({ success: false, error: "Job not found" }, 404);
   }
+  if (!await isEventClient(req, job.event_id)) return jsonResponse({ success: false, error: "Event team access required" }, 403);
   if (job.event_id !== eventId) {
     return jsonResponse({ success: false, error: "Job/event mismatch" }, 400);
   }

@@ -13,7 +13,7 @@ import { toEventDisplayData } from "@/lib/event-display";
 import { SITE_NAME } from "@/lib/constants";
 import { MediaShareButtons } from "@/components/media/media-share-buttons";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 interface PublicMediaPageProps {
   params: Promise<{ kind: string; id: string }>;

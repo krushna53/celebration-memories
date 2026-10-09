@@ -25,6 +25,9 @@ import type { MenuDietaryTag } from "@/types/content";
 function revalidateEventDayPaths() {
   revalidatePath("/admin/event-day");
   revalidatePath("/");
+  revalidatePath("/events/[slug]", "page");
+  revalidatePath("/event-day/[token]", "page");
+  revalidatePath("/session/[token]", "page");
 }
 
 /** Looks up which event a schedule item belongs to and confirms the caller may manage it — same guard as timeline's requireAdminForMilestone. */
@@ -87,6 +90,7 @@ export async function regenerateEventDayShareLinkAction(eventId: string) {
 
 export async function createScheduleItemAction(input: {
   eventId: string;
+  dayLabel?: string | null;
   startLabel: string;
   endLabel?: string;
   title: string;
@@ -106,6 +110,7 @@ export async function createScheduleItemAction(input: {
 export async function updateScheduleItemAction(
   id: string,
   input: {
+    dayLabel?: string | null;
     startLabel?: string;
     endLabel?: string | null;
     title?: string;

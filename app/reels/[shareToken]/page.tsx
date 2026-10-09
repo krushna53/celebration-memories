@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 import { SITE_URL } from "@/lib/constants";
 import { buildEventMetadata } from "@/lib/event-metadata";
-import { getEventById } from "@/services/events";
+import { getPublicEventById as getEventById } from "@/services/events";
 import { getGuestReelByShareToken } from "@/services/guest-reels";
 import { ReelSharePanel } from "@/features/reels/reel-share-panel";
 import { SiteShell } from "@/components/layout/site-shell";

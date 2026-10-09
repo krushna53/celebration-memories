@@ -5,16 +5,19 @@ import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { getTeamMembers, TEAM_MEMBER_CAP } from "@/services/admin-team";
 import { TeamManager } from "@/features/admin/team/team-manager";
+import { getEventById } from "@/services/events";
+import { getEventAccess } from "@/services/event-access";
 import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminTeamPage({ searchParams }: { searchParams: Promise<{ add?: string }> }) {
-  const { add } = await searchParams;
+export default async function AdminTeamPage({ searchParams }: { searchParams: Promise<{ add?: string; event?: string }> }) {
+  const { add, event: provisionId } = await searchParams;
   const admin = await getCurrentAdmin();
   if (admin && shouldRedirectSessionOrganizerAway(admin.role)) redirect("/admin/my-sessions");
   if (admin && shouldRedirectOrganizerAway(admin.role)) redirect("/admin/invitees");
-  const event = admin ? await resolveAdminEvent(admin) : null;
+  const canProvision = admin?.role === "owner" && provisionId && !(await getEventAccess(provisionId))?.owner_user_id;
+  const event = canProvision ? await getEventById(provisionId) : admin ? await resolveAdminEvent(admin) : null;
   if (!admin || !event) {
     return <NoEventState />;
   }

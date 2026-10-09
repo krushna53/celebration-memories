@@ -41,6 +41,7 @@ const FOOTER_COLUMNS: Array<{ heading: string; links: Array<{ href: string; labe
   {
     heading: "Get Started",
     links: [
+      { href: "/pricing", label: "Pricing" },
       { href: "/", label: "Build Your Own Celebration Site" },
       { href: "/templates/submit", label: "Submit a Template" },
     ],

@@ -1,4 +1,5 @@
 "use server";
+import { dashboardLinksForRole, type DashboardLink } from "@/lib/dashboard-links";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { getCurrentBusinessAccount } from "@/services/business-auth";
@@ -19,14 +20,14 @@ import { supabaseServer } from "@/lib/supabase/server";
  * always outranks client/organizer).
  */
 export type LoginDestination =
-  | { kind: "admin"; path: string }
+  | { kind: "admin"; path: string; menuItems: DashboardLink[] }
   | { kind: "business"; path: string }
   | { kind: "forms"; path: string }
   | { kind: "none" };
 
 export async function resolveLoginDestinationAction(): Promise<LoginDestination> {
   const admin = await getCurrentAdmin();
-  if (admin) return { kind: "admin", path: "/admin?from=login" };
+  if (admin) return { kind: "admin", path: "/admin?from=login", menuItems: dashboardLinksForRole(admin.role) };
 
   const business = await getCurrentBusinessAccount();
   if (business) return { kind: "business", path: "/business/dashboard" };

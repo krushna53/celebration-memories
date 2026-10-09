@@ -17,7 +17,7 @@ import type { EventRecord } from "@/types/event";
  * in the /events directory, not whether the page itself is reachable —
  * same trust model as a per-guest invite link.
  */
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 interface PublicEventPageProps {
   params: Promise<{ slug: string }>;

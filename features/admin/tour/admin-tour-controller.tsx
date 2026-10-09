@@ -1,5 +1,7 @@
 "use client";
 
+import { createPortal } from "react-dom";
+import { tourPosition } from "@/lib/tour-position";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Compass, X } from "lucide-react";
 
@@ -58,18 +60,23 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [viewport, setViewport] = useState({ width: 360, height: 640, cardHeight: 280 });
   const nextButtonRef = useRef<HTMLButtonElement>(null);
   const startedAuto = useRef(false);
 
   const measure = useCallback(() => {
+    setViewport({ width: window.innerWidth, height: window.innerHeight, cardHeight: dialogRef.current?.offsetHeight ?? 280 });
     const step = steps[stepIndex];
-    if (!step) return;
+    if (!step) { setRect(null); return; }
     const el = findTourTarget(step.href);
     if (!el) {
       setRect(null);
       return;
     }
     const r = el.getBoundingClientRect();
+    if (r.bottom <= 0 || r.top >= window.innerHeight || r.right <= 0 || r.left >= window.innerWidth) { setRect(null); return; }
     setRect({
       top: r.top - PADDING,
       left: r.left - PADDING,
@@ -96,18 +103,34 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
 
     measure();
     const t = setTimeout(measure, 350); // re-measure once the smooth scroll above has settled
-    nextButtonRef.current?.focus();
+    nextButtonRef.current?.focus({ preventScroll: true });
 
     window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    const observer = new ResizeObserver(measure);
+    if (dialogRef.current) observer.observe(dialogRef.current);
+    if (el) observer.observe(el);
     return () => {
       clearTimeout(t);
       window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+      observer.disconnect();
     };
   }, [open, stepIndex, measure, steps]);
 
   useEffect(() => {
     if (!open) return;
     function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Tab") {
+        const controls = dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not([disabled])");
+        if (controls?.length) {
+          const first = controls[0]!;
+          const last = controls[controls.length - 1]!;
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+      if (["Escape", "ArrowRight", "ArrowLeft"].includes(e.key)) e.preventDefault();
       if (e.key === "Escape") finish();
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft") back();
@@ -124,7 +147,7 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
 
   function next() {
     if (stepIndex < steps.length - 1) {
-      setStepIndex((i) => i + 1);
+      setStepIndex((i) => Math.min(steps.length - 1, i + 1));
     } else {
       finish();
     }
@@ -136,6 +159,7 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
 
   function finish() {
     setOpen(false);
+    triggerRef.current?.focus({ preventScroll: true });
     if (autoStart) {
       void markTourSeenAction();
     }
@@ -144,8 +168,7 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
   const step = steps[stepIndex];
   const isLast = stepIndex === steps.length - 1;
 
-  // Tooltip position: below the target by default, flipped above if there's not enough room.
-  const tooltipBelow = rect ? rect.top + rect.height + 240 < window.innerHeight : true;
+  const position = tourPosition(rect, viewport.width, viewport.height, viewport.cardHeight);
 
   if (steps.length === 0) return null;
 
@@ -153,6 +176,7 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
     <>
       <button
         type="button"
+        ref={triggerRef}
         onClick={startTour}
         aria-label="Take the Tour"
         title="Take the Tour"
@@ -161,24 +185,23 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
         <Compass size={16} /> <span className="hidden sm:inline">Take the Tour</span>
       </button>
 
-      {open && step && rect ? (
+      {open && step ? createPortal(
         <div className="fixed inset-0 z-[999]" role="presentation">
+          {!rect ? <div className="absolute inset-0 bg-black/65" /> : null}
           {/* Spotlight: dims everything except the target rect via a giant box-shadow. */}
-          <div
+          {rect ? <div
             className="pointer-events-none fixed rounded-lg border-2 border-gold-400 shadow-[0_0_0_9999px_rgba(10,15,30,0.65)] transition-all duration-300 ease-out"
             style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }}
-          />
+          /> : null}
 
           <div
+            ref={dialogRef}
             role="dialog"
+            aria-label={step.title}
             aria-modal="true"
             aria-live="polite"
-            className="fixed w-[min(360px,calc(100vw-2rem))] rounded-xl border border-navy-950/10 bg-white p-5 shadow-2xl transition-all duration-300 ease-out"
-            style={{
-              left: Math.min(Math.max(rect.left, 16), window.innerWidth - 376),
-              top: tooltipBelow ? rect.top + rect.height + 12 : undefined,
-              bottom: tooltipBelow ? undefined : window.innerHeight - rect.top + 12,
-            }}
+            className="fixed overflow-y-auto rounded-xl border border-navy-950/10 bg-white p-5 shadow-2xl transition-all duration-300 ease-out"
+            style={position}
           >
             <div className="flex items-start justify-between gap-3">
               <h2 className="font-display text-base text-navy-950">{step.title}</h2>
@@ -225,7 +248,7 @@ export function AdminTourController({ steps, autoStart }: AdminTourControllerPro
               Skip tour
             </button>
           </div>
-        </div>
+        </div>, document.body
       ) : null}
     </>
   );

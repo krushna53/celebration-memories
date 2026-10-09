@@ -1,4 +1,6 @@
+import { canViewEvent } from "@/services/event-access";
 import "server-only";
+import { normalizeScheduleDetails } from "@/lib/schedule-fields";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { guardedLookup } from "@/services/abuse-guard";
@@ -20,6 +22,7 @@ import type { MenuDietaryTag, MenuItemRecord, ScheduleItemRecord } from "@/types
  */
 
 interface ScheduleItemRow {
+  day_label: string | null;
   id: string;
   event_id: string;
   start_label: string;
@@ -53,6 +56,7 @@ function mapScheduleItem(row: ScheduleItemRow): ScheduleItemRecord {
   return {
     id: row.id,
     eventId: row.event_id,
+    dayLabel: row.day_label ?? null,
     startLabel: row.start_label,
     endLabel: row.end_label,
     title: row.title,
@@ -112,18 +116,21 @@ export async function getScheduleItemById(id: string): Promise<ScheduleItemRecor
 
 export async function createScheduleItem(input: {
   eventId: string;
+  dayLabel?: string | null;
   startLabel: string;
   endLabel?: string | null;
   title: string;
   description?: string | null;
   sortOrder?: number;
 }): Promise<void> {
+  const details = normalizeScheduleDetails(input);
   const { error } = await supabaseAdmin().from("event_schedule_items").insert({
     event_id: input.eventId,
-    start_label: input.startLabel,
-    end_label: input.endLabel ?? null,
-    title: input.title,
-    description: input.description ?? null,
+    day_label: details.dayLabel ?? null,
+    start_label: details.startLabel,
+    end_label: details.endLabel ?? null,
+    title: details.title,
+    description: details.description ?? null,
     sort_order: input.sortOrder ?? 0,
   });
   if (error) throw new Error(`Failed to add schedule item: ${error.message}`);
@@ -132,6 +139,7 @@ export async function createScheduleItem(input: {
 export async function updateScheduleItem(
   id: string,
   input: {
+    dayLabel?: string | null;
     startLabel?: string;
     endLabel?: string | null;
     title?: string;
@@ -145,7 +153,9 @@ export async function updateScheduleItem(
     currency?: string;
   },
 ): Promise<void> {
+  input = { ...input, ...normalizeScheduleDetails(input) };
   const patch: Record<string, unknown> = {};
+  if (input.dayLabel !== undefined) patch.day_label = input.dayLabel;
   if (input.startLabel !== undefined) patch.start_label = input.startLabel;
   if (input.endLabel !== undefined) patch.end_label = input.endLabel;
   if (input.title !== undefined) patch.title = input.title;
@@ -288,7 +298,7 @@ export async function getEventByEventDayToken(
     console.error("getEventByEventDayToken failed:", error.message);
     return null;
   }
-  if (!data) return null;
+  if (!data || !await canViewEvent(data.id)) return null;
   return {
     id: data.id,
     slug: data.slug,
@@ -352,7 +362,7 @@ export async function getScheduleItemByShareToken(token: string): Promise<Schedu
     console.error("getScheduleItemByShareToken failed:", error.message);
     return null;
   }
-  return data ? mapScheduleItem(data) : null;
+  return data && await canViewEvent(data.event_id) ? mapScheduleItem(data) : null;
 }
 
 /** Attaches (or clears, with customFormId null) a Custom Form Builder form to a session for extra registration questions — see the doc comment on ScheduleItemRecord.customFormId. */

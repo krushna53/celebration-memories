@@ -1,3 +1,4 @@
+import { canViewEvent } from "@/services/event-access";
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -102,7 +103,7 @@ async function lookupInviteeByToken(token: string): Promise<InviteeWithEvent | n
   if (error) {
     throw new Error(`Failed to look up invitee: ${error.message}`);
   }
-  if (!data) return null;
+  if (!data || !await canViewEvent(data.events.id)) return null;
 
   const { data: rsvpRow, error: rsvpError } = await client
     .from("rsvps")

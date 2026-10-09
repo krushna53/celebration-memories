@@ -1,3 +1,4 @@
+import { isEventClient } from "../_shared/event-member.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import OpenAI from "npm:openai@6";
@@ -28,6 +29,7 @@ Deno.serve(async (req) => {
     .eq("id", body.jobId)
     .maybeSingle<{ status: string; event_id: string; prompt: string }>();
   if (error || !job) return respond({ success: false, error: "Job not found" }, 404);
+  if (!await isEventClient(req, job.event_id)) return respond({ success: false, error: "Event team access required" }, 403);
   if (job.event_id !== body.eventId || job.status !== "queued") return respond({ success: false, error: "Job already submitted or mismatched" }, 409);
 
   try {
