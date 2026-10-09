@@ -67,6 +67,11 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ success: false, error: "Reel rendering isn't configured (SHOTSTACK_API_KEY)." }, 500);
   }
 
+  // This worker is invoked only by the authenticated Next.js server actions.
+  // A public/ordinary user JWT plus a known reel ID must never start a job.
+  if (req.headers.get("authorization") !== `Bearer ${serviceRoleKey}`) {
+    return jsonResponse({ success: false, error: "Server authorization required" }, 401);
+  }
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const { data: reel, error: lookupError } = await supabase
     .from("guest_reels")
