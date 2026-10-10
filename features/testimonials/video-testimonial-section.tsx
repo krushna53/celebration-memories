@@ -30,7 +30,7 @@ export async function VideoTestimonialSection() {
 
   return (
     <section aria-labelledby="video-testimonial-heading" className="bg-white py-16 sm:py-24">
-      <div className="mx-auto grid max-w-5xl items-center gap-10 px-4 sm:px-6 md:grid-cols-[300px_1fr] md:gap-14">
+      <div className="mx-auto grid max-w-5xl grid-cols-1 items-center gap-10 px-4 sm:px-6 md:grid-cols-[300px_minmax(0,1fr)] md:gap-14">
         <Reveal>
           <VideoTestimonialPlayer testimonial={testimonial} />
         </Reveal>
@@ -77,7 +77,7 @@ export async function VideoTestimonialSection() {
             ) : null}
 
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:justify-start">
-              <StartBuildingButton size="lg">Build Your Event Page — Free to Try</StartBuildingButton>
+              <StartBuildingButton size="lg" formClassName="w-full min-w-0 sm:w-auto" className="h-auto min-h-13 w-full whitespace-normal px-4 py-3 sm:px-8">Build Your Event Page — Free to Try</StartBuildingButton>
             </div>
             <p className="mt-4 text-xs text-navy-700/60">
               Hosted an event with us?{" "}
