@@ -34,6 +34,7 @@ export default async function WizardTemplatePage({ params }: { params: Promise<{
       <TemplatePicker
         eventId={event.id}
         eventSlug={event.slug}
+        draftToken={token}
         currentTemplateSlug={event.templateSlug}
         templates={templates}
         updateAction={draftUpdateEventAction.bind(null, token)}

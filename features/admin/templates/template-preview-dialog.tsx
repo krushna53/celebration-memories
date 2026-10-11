@@ -16,6 +16,7 @@ const DESKTOP_WIDTH = 1280;
  */
 export function TemplatePreviewDialog({
   eventSlug,
+  draftToken,
   template,
   isSelected,
   pending,
@@ -23,6 +24,7 @@ export function TemplatePreviewDialog({
   onClose,
 }: {
   eventSlug: string;
+  draftToken?: string;
   template: { slug: string; name: string; premium?: boolean; price?: number };
   isSelected: boolean;
   pending: boolean;
@@ -57,7 +59,9 @@ export function TemplatePreviewDialog({
     return () => observer.disconnect();
   }, []);
 
-  const src = `/events/${encodeURIComponent(eventSlug)}/preview/${encodeURIComponent(template.slug)}`;
+  const src = draftToken
+    ? `/start/${encodeURIComponent(draftToken)}/preview/${encodeURIComponent(template.slug)}`
+    : `/events/${encodeURIComponent(eventSlug)}/preview/${encodeURIComponent(template.slug)}`;
   // Scale the real-size page down to fit the popup, so it shows exactly as it would on that device.
   // The phone frame's 10px bezel sits outside the 390px screen.
   const frameWidth = device === "phone" ? PHONE.width + 20 : DESKTOP_WIDTH;

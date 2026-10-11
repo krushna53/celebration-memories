@@ -51,6 +51,7 @@ interface TemplatePickerProps {
   occasion?: EventCategory | null;
   /** The event's slug — enables each card's "Preview" popup (the event's own page in that template). */
   eventSlug?: string;
+  draftToken?: string;
   /** The event's saved colour tweaks (events.theme_overrides) — enables the "Customise colours" panel. */
   currentThemeOverrides?: ThemeOverrides | null;
 }
@@ -70,6 +71,7 @@ export function TemplatePicker({
   updateAction = updateEventAction,
   occasion,
   eventSlug,
+  draftToken,
   currentThemeOverrides = null,
 }: TemplatePickerProps) {
   const [themeOverrides, setThemeOverrides] = useState<ThemeOverrides | null>(currentThemeOverrides);
@@ -351,6 +353,7 @@ export function TemplatePicker({
       {previewing && eventSlug ? (
         <TemplatePreviewDialog
           eventSlug={eventSlug}
+          draftToken={draftToken}
           template={previewing}
           isSelected={previewing.slug === selected}
           pending={pending}
