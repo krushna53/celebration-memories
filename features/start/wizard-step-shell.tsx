@@ -53,10 +53,10 @@ export function WizardStepShell({
   return (
     <div>
       <WizardNav token={token} currentSlug={slug} goals={goals} />
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:py-10 lg:grid-cols-[1fr_280px]">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0">
-          <div className="flex items-start justify-between gap-4">
-            <div>
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:gap-4">
+            <div className="min-w-0">
               <h1 className="font-display text-2xl text-navy-950">{title}</h1>
               <p className="mt-1 text-sm text-navy-700/60">{description}</p>
             </div>
@@ -65,7 +65,7 @@ export function WizardStepShell({
           <div className="mt-6">{children}</div>
 
           {!hideFooter ? (
-            <div className="mt-10 flex items-center justify-between border-t border-navy-950/10 pt-6">
+            <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-navy-950/10 pt-6">
               {prev ? (
                 <Link
                   href={wizardStepHref(token, prev.slug)}
@@ -88,7 +88,7 @@ export function WizardStepShell({
           ) : null}
         </div>
 
-        <aside className="lg:pt-1">
+        <aside className="min-w-0 lg:pt-1">
           <WizardSidebar token={token} currentSlug={slug} goals={goals} />
         </aside>
       </div>

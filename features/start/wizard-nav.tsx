@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { Check, X } from "lucide-react";
 
@@ -30,12 +33,20 @@ export function WizardNav({
   currentSlug: string;
   goals?: string[] | null;
 }) {
+  const currentStep = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    const link = currentStep.current;
+    const list = link?.closest("ol");
+    if (link && list && list.scrollWidth > list.clientWidth) {
+      list.scrollLeft = Math.max(0, link.offsetLeft - list.offsetLeft - (list.clientWidth - link.offsetWidth) / 2);
+    }
+  }, [currentSlug, goals]);
   const steps = resolveWizardSteps(goals);
   const currentIndex = steps.findIndex((s) => s.slug === currentSlug);
 
   return (
-    <nav className="border-b border-white/10 bg-navy-950">
-      <div className="mx-auto flex max-w-4xl items-center justify-between px-4 pt-3">
+    <nav aria-label="Event setup steps" className="min-w-0 border-b border-white/10 bg-navy-950">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 pt-3">
         <Link href="/" className="flex items-center gap-2 font-display text-sm tracking-wide text-gold-300">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-5 w-5 shrink-0" />
@@ -48,13 +59,15 @@ export function WizardNav({
           <X size={13} /> Exit
         </Link>
       </div>
-      <ol className="mx-auto flex max-w-4xl gap-1 overflow-x-auto px-4 py-3 sm:gap-2">
+      <ol className="relative mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 py-3 sm:gap-2 lg:flex-wrap">
         {steps.map((step, i) => {
           const isCurrent = step.slug === currentSlug;
           const isDone = i < currentIndex;
           return (
             <li key={step.slug} className="shrink-0">
               <Link
+                ref={isCurrent ? currentStep : undefined}
+                aria-current={isCurrent ? "step" : undefined}
                 href={wizardStepHref(token, step.slug)}
                 className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium tracking-wide transition-luxury duration-300 ${
                   isCurrent
