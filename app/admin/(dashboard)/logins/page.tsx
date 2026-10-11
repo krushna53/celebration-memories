@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -54,7 +55,19 @@ export default async function AdminLoginsPage() {
   const admin = await getCurrentAdmin();
   if (admin?.role !== "owner") redirect("/admin");
 
-  const rows = await listLoginActivity();
+  let rows: LoginActivityRow[];
+  try {
+    rows = await listLoginActivity();
+  } catch (error) {
+    console.error("Login activity could not be loaded", error);
+    return (
+      <div>
+        <h1 className="font-display text-2xl text-navy-950">Login Activity</h1>
+        <p className="mt-4">We couldn’t load the latest sign-in times. Please try again.</p>
+        <Link href="/admin/logins" className="mt-4 inline-block underline">Reload login activity</Link>
+      </div>
+    );
+  }
   const now = Date.now();
   const signedInWithin = (days: number) =>
     rows.filter((r) => r.lastSignInAt && now - new Date(r.lastSignInAt).getTime() < days * DAY_MS).length;
@@ -69,7 +82,7 @@ export default async function AdminLoginsPage() {
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Total logins" value={rows.length} />
+        <StatCard label="Total accounts" value={rows.length} />
         <StatCard label="Last 24 hours" value={signedInWithin(1)} />
         <StatCard label="Last 7 days" value={signedInWithin(7)} />
         <StatCard label="Never signed in" value={rows.filter((r) => !r.lastSignInAt).length} />
