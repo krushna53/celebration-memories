@@ -11,15 +11,6 @@ export interface CashfreeOrder {
   payment_session_id: string;
 }
 
-function cashfreeConfig() {
-  const appId = process.env.CASHFREE_APP_ID;
-  const secretKey = process.env.CASHFREE_SECRET_KEY;
-  const environment = process.env.CASHFREE_ENVIRONMENT || "sandbox";
-  if (!appId || !secretKey) throw new Error("Cashfree is not configured. Add its App ID and Secret Key on the server.");
-  if (environment !== "sandbox" && environment !== "production") throw new Error("Invalid Cashfree environment.");
-  return { appId, secretKey, baseUrl: environment === "production" ? "https://api.cashfree.com/pg" : "https://sandbox.cashfree.com/pg" };
-}
-
 async function orderRequest(path: string, input?: object, idempotencyKey?: string): Promise<CashfreeOrder> {
   const { appId, secretKey, environment } = await cashfreeSettings();
   if (!appId || !secretKey) throw new Error("Cashfree is not configured.");
@@ -29,7 +20,7 @@ async function orderRequest(path: string, input?: object, idempotencyKey?: strin
     method: input ? "POST" : "GET",
     headers: {
       "Content-Type": "application/json",
-      "x-api-version": "2026-01-01",
+      "x-api-version": "2025-01-01",
       "x-client-id": appId,
       "x-client-secret": secretKey,
       ...(idempotencyKey ? { "x-idempotency-key": idempotencyKey } : {}),
@@ -51,7 +42,7 @@ async function orderRequest(path: string, input?: object, idempotencyKey?: strin
  */
 export async function createCashfreeOrder(input: {
   orderId: string; idempotencyKey: string; amount: number; currency: string;
-  customerId: string; customerPhone: string; customerEmail?: string; returnUrl: string;
+  customerId: string; customerPhone: string; customerEmail?: string; returnUrl: string; notifyUrl?: string;
 }): Promise<CashfreeOrder> {
   if (!/^[A-Za-z0-9_-]{3,45}$/.test(input.orderId)) throw new Error("Invalid Cashfree order ID.");
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.idempotencyKey)) throw new Error("A stable UUID idempotency key is required.");
@@ -64,7 +55,7 @@ export async function createCashfreeOrder(input: {
   const order = await orderRequest("/orders", {
     order_id: input.orderId, order_amount: input.amount, order_currency: input.currency,
     customer_details: { customer_id: input.customerId, customer_phone: input.customerPhone, customer_email: input.customerEmail },
-    order_meta: { return_url: returnUrl.toString() },
+    order_meta: { return_url: returnUrl.toString(), ...(input.notifyUrl ? { notify_url: input.notifyUrl } : {}) },
   }, input.idempotencyKey);
   if (!order.payment_session_id || order.order_id !== input.orderId) throw new Error("Cashfree did not return the expected checkout session.");
   return order;
@@ -84,9 +75,10 @@ export function isCashfreeOrderPaid(order: CashfreeOrder, expected: { orderId: s
 /** Verify the original body before parsing JSON. The consuming webhook must also
  * deduplicate payment IDs and apply paid-state changes transactionally.
  */
-export function verifyCashfreeWebhook(rawBody: string, timestamp: string | null, signature: string | null): boolean {
+export async function verifyCashfreeWebhook(rawBody: string, timestamp: string | null, signature: string | null): Promise<boolean> {
   if (!timestamp || !signature || !/^\d+$/.test(timestamp)) return false;
-  const { secretKey } = cashfreeConfig();
+  const { secretKey } = await cashfreeSettings();
+  if (!secretKey) return false;
   const expected = createHmac("sha256", secretKey).update(timestamp + rawBody).digest("base64");
   const received = Buffer.from(signature);
   const calculated = Buffer.from(expected);

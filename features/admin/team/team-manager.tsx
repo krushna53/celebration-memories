@@ -11,13 +11,13 @@ import {
   removeTeamMemberAction,
 } from "@/features/admin/team/actions";
 
-const TEAM_MEMBER_CAP = 4;
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70";
 
 interface TeamManagerProps {
+  memberCap: number;
   eventId: string;
   currentAdminId: string;
   initialMembers: TeamMember[];
@@ -35,14 +35,14 @@ interface TeamManagerProps {
  * band. Both land the new person as a full-access "client" admin —
  * there's no lighter/view-only role today.
  */
-export function TeamManager({ eventId, currentAdminId, initialMembers, initiallyAdding = false, isOwner = false }: TeamManagerProps) {
+export function TeamManager({ memberCap, eventId, currentAdminId, initialMembers, initiallyAdding = false, isOwner = false }: TeamManagerProps) {
   const [members, setMembers] = useState(initialMembers);
   const [showAddForm, setShowAddForm] = useState(initiallyAdding);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  const atCap = members.length >= TEAM_MEMBER_CAP;
+  const atCap = members.length >= memberCap;
 
   function handleRemove(member: TeamMember) {
     if (!confirm(`Remove dashboard access for ${member.name || member.email}? They'll lose access to this event.`)) {
@@ -123,7 +123,7 @@ export function TeamManager({ eventId, currentAdminId, initialMembers, initially
       ) : null}
 
       <p className="mt-3 text-xs text-navy-700/50">
-        {members.length} of {TEAM_MEMBER_CAP} team members
+        {members.length} of {memberCap} team members
       </p>
 
       {showAddForm ? (

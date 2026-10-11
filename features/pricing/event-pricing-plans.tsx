@@ -63,20 +63,20 @@ export function EventPricingPlans() {
               <ul className="mb-7 space-y-3 text-sm text-navy-700">
                 {plan.features.map((feature) => <li key={feature} className="flex gap-2"><Check size={17} aria-hidden="true" className="shrink-0 text-gold-600" />{feature}</li>)}
               </ul>
-              <Link href={free ? "/start" : "/contact"} className={cn("mt-auto rounded-full px-5 py-3 text-center text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-600", index === 1 ? "bg-gold-500 text-navy-950 hover:bg-gold-400" : "bg-navy-950 text-white hover:bg-navy-800")}>
-                {free ? "Start building" : `Enquire about ${plan.name}`}
+              <Link href={free ? "/start" : mode === "event" ? `/account/billing?plan=${index === 1 ? "celebration" : "studio"}` : "/contact"} className={cn("mt-auto rounded-full px-5 py-3 text-center text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-600", index === 1 ? "bg-gold-500 text-navy-950 hover:bg-gold-400" : "bg-navy-950 text-white hover:bg-navy-800")}>
+                {free ? "Start building" : mode === "event" ? `Buy ${plan.name}` : "Enquire about monthly plans"}
               </Link>
             </article>
           );
         })}
       </div>
       <p className="mt-6 text-center text-sm text-navy-700">Storage is shared across your account. Team limits are per event. AI video and reels are paid add-ons.</p>
-      <p className="mt-2 text-center text-sm text-navy-700">Paid plans are available by enquiry. Guest payment collection is coming soon.</p>
+      <p className="mt-2 text-center text-sm text-navy-700">Per-event checkout is available in INR. USD checkout and monthly subscriptions are available by enquiry. Guest payment collection is coming soon.</p>
 
       <section aria-labelledby="pricing-explained" className="mt-14 rounded-2xl border border-navy-950/10 bg-white p-6 sm:p-8">
         <h2 id="pricing-explained" className="font-display text-2xl text-navy-950">How per-event pricing works</h2>
         <div className="mt-6 grid gap-7 text-sm text-navy-700 md:grid-cols-2">
-          <div><h3 className="font-semibold text-navy-950">Pay once for one occasion</h3><p className="mt-2">Celebration costs ₹999 / $15 per event. Studio costs ₹2,499 / $35 per event. Each purchase covers one event for 12 months from publication, with no monthly subscription.</p></div>
+          <div><h3 className="font-semibold text-navy-950">Pay once for one occasion</h3><p className="mt-2">Celebration costs ₹999 / $15 per event. Studio costs ₹2,499 / $35 per event. Each purchase covers one event for 12 months from applying the purchase to your event, with no monthly subscription.</p></div>
           <div><h3 className="font-semibold text-navy-950">One celebration can span several days</h3><p className="mt-2">A wedding with several functions or a weekend reunion counts as one event. A separate celebration needs its own event purchase.</p></div>
           <div><h3 className="font-semibold text-navy-950">Subscriptions include new events each month</h3><p className="mt-2">Celebration includes 2 new events and Studio includes 10 per billing month. An event counts when first published. Drafts and edits do not use the allowance; unused events do not roll over.</p></div>
           <div><h3 className="font-semibold text-navy-950">Choose the access period that suits you</h3><p className="mt-2">A per-event purchase includes 12 months of access. Monthly subscriptions provide paid access while subscribed; they do not include 12 months for a single monthly payment.</p></div>

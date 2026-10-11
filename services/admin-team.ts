@@ -8,10 +8,17 @@ import type { AdminRole } from "@/services/admin-auth";
  * Total admins allowed on one event, INCLUDING the original client
  * (i.e. the client who already has a login can invite up to 3 more
  * people — a family member helping plan, say). Deliberately small and
- * fixed rather than plan-based for now; revisit if a paid tier ever
- * wants a higher cap.
+ * for existing events. A paid Studio event gets 11 total members.
  */
 export const TEAM_MEMBER_CAP = 4;
+
+export async function getTeamMemberCap(eventId: string): Promise<number> {
+  const { data, error } = await supabaseAdmin().from("plan_orders")
+    .select("plan").eq("event_id", eventId).eq("status", "paid")
+    .eq("environment", "production").gt("access_until", new Date().toISOString()).maybeSingle();
+  if (error) throw new Error("Could not check the event’s team allowance.");
+  return data?.plan === "studio" ? 11 : TEAM_MEMBER_CAP;
+}
 
 export interface TeamMember {
   id: string;
@@ -119,8 +126,9 @@ async function checkRoomAndExisting(
   makeEventOwner: boolean,
 ): Promise<{ id: string; alreadyMember: boolean } | null> {
   const roomCheck = async () => {
-    if ((await countMembers(eventId)) >= TEAM_MEMBER_CAP) {
-      throw new Error(`This event already has ${TEAM_MEMBER_CAP} team members — remove one before adding another.`);
+    const cap = await getTeamMemberCap(eventId);
+    if ((await countMembers(eventId)) >= cap) {
+      throw new Error(`This event already has ${cap} team members — remove one before adding another.`);
     }
   };
 

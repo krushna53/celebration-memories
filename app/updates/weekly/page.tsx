@@ -36,6 +36,12 @@ interface ChangeGroup {
  */
 const CHANGES: ChangeGroup[] = [
   {
+    date: "Sunday, October 11",
+    items: [
+      { title: "Cashfree per-event checkout and customer billing", detail: "Choose Celebration or Studio on Pricing, sign in, and pay the displayed INR amount through Cashfree. My account & billing shows pending and paid purchases. A paid purchase can be applied once to an event you own; it does not create a new event page. Studio supports the owner plus ten team members. Monthly auto-renewal, USD checkout and guest payment collection are not enabled.", test: "Whitelist everymoment.in in Cashfree and configure https://everymoment.in/api/webhooks/cashfree. Visit /pricing, choose a per-event plan, and check /account/billing. Use a controlled payment to verify checkout, return status and delivery of the payment webhook before inviting customers. Cancelled or unverified payments must stay unpaid." },
+    ],
+  },
+  {
     date: "Friday, October 9",
     items: [
       { title: "Public links and event privacy", detail: "The three ongoing events remain public by link: Mahesh Shah’s 75th birthday, Veda’s first birthday and the MGM reunion. Platform administrators can manage these exceptions under Admin → Public Event Links. Removing an exception does not automatically make an event private; its host chooses the viewing setting under Event Privacy.", test: "Open /admin/public-event-links as the platform administrator. Confirm the three events say Keep public, then check their shared links in a signed-out browser. Test restrictions on a new event first." },

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
-import { getTeamMembers, TEAM_MEMBER_CAP } from "@/services/admin-team";
+import { getTeamMembers, getTeamMemberCap } from "@/services/admin-team";
 import { TeamManager } from "@/features/admin/team/team-manager";
 import { getEventById } from "@/services/events";
 import { getEventAccess } from "@/services/event-access";
@@ -22,18 +22,18 @@ export default async function AdminTeamPage({ searchParams }: { searchParams: Pr
     return <NoEventState />;
   }
 
-  const members = await getTeamMembers(event.id);
+  const [members, memberCap] = await Promise.all([getTeamMembers(event.id), getTeamMemberCap(event.id)]);
 
   return (
     <div>
       <h1 className="font-display text-2xl text-navy-950">Team</h1>
       <p className="mt-1 text-sm text-navy-700/60">
-        Give up to {TEAM_MEMBER_CAP} people full dashboard access to {event.honoreeName}&rsquo;s event — a spouse, a
+        Give up to {memberCap} people full dashboard access to {event.honoreeName}&rsquo;s event — a spouse, a
         sibling, anyone helping plan. Send an invite email they complete themselves, or set a password for them
         directly and share it however works best.
       </p>
       <div className="mt-6">
-        <TeamManager key={event.id} initiallyAdding={add === "1"} eventId={event.id} currentAdminId={admin.id} initialMembers={members} isOwner={admin.role === "owner"} />
+        <TeamManager memberCap={memberCap} key={event.id} initiallyAdding={add === "1"} eventId={event.id} currentAdminId={admin.id} initialMembers={members} isOwner={admin.role === "owner"} />
       </div>
     </div>
   );

@@ -70,13 +70,13 @@ function cashfree(fetch = async () => { throw new Error('Unexpected network'); }
 }
 const rawBody = '{"amount":10.00,"status":"SUCCESS"}';
 const timestamp = '1791496800000';
-test('Cashfree signatures authenticate the original payload, not reserialized JSON', () => {
+test('Cashfree signatures authenticate the original payload, not reserialized JSON', async () => {
   const { verifyCashfreeWebhook } = cashfree();
   const signature = crypto.createHmac('sha256', env.CASHFREE_SECRET_KEY).update(timestamp + rawBody).digest('base64');
-  assert.equal(verifyCashfreeWebhook(rawBody, timestamp, signature), true);
-  assert.equal(verifyCashfreeWebhook(JSON.stringify(JSON.parse(rawBody)), timestamp, signature), false);
-  assert.equal(verifyCashfreeWebhook(rawBody, timestamp, 'forged'), false);
-  assert.equal(verifyCashfreeWebhook(rawBody, null, signature), false);
+  assert.equal(await verifyCashfreeWebhook(rawBody, timestamp, signature), true);
+  assert.equal(await verifyCashfreeWebhook(JSON.stringify(JSON.parse(rawBody)), timestamp, signature), false);
+  assert.equal(await verifyCashfreeWebhook(rawBody, timestamp, 'forged'), false);
+  assert.equal(await verifyCashfreeWebhook(rawBody, null, signature), false);
 });
 test('Cashfree requires matching order, amount, currency and paid status', () => {
   const { isCashfreeOrderPaid } = cashfree();

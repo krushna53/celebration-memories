@@ -23,6 +23,7 @@ export type LoginDestination =
   | { kind: "admin"; path: string; menuItems: DashboardLink[] }
   | { kind: "business"; path: string }
   | { kind: "forms"; path: string }
+  | { kind: "account"; path: string }
   | { kind: "none" };
 
 export async function resolveLoginDestinationAction(): Promise<LoginDestination> {
@@ -35,6 +36,8 @@ export async function resolveLoginDestinationAction(): Promise<LoginDestination>
   const formOwner = await getCurrentFormOwner();
   if (formOwner) return { kind: "forms", path: "/forms/dashboard" };
 
+  const user = await getCurrentSupabaseUser();
+  if (user) return { kind: "account", path: "/account/billing" };
   return { kind: "none" };
 }
 

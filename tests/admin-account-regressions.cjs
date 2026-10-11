@@ -48,7 +48,7 @@ test('platform has no implicit default event and deleted selection stays denied'
  * `membership`, head counts return `memberCount`, and every write is
  * recorded in `calls` (with its table) for assertions.
  */
-function team({ existingAdmin = null, duplicate = true, insertError = null, authCode = 'email_exists', membership = null, memberCount = 1, remaining = [] } = {}) {
+function team({ purchase = null, existingAdmin = null, duplicate = true, insertError = null, authCode = 'email_exists', membership = null, memberCount = 1, remaining = [] } = {}) {
   const calls = { inserts: [], deletes: [], resets: [], pages: [], updates: [], rowDeletes: [] };
   const authResult = async () => duplicate
     ? { data: { user: null }, error: { code: authCode, message: authCode } }
@@ -69,12 +69,13 @@ function team({ existingAdmin = null, duplicate = true, insertError = null, auth
       update: (row) => { state.op = 'update'; state.row = row; return b; },
       delete: () => { state.op = 'delete'; return b; },
       eq: (col, val) => { state.filters.push(['eq', col, val]); return b; },
+      gt: (col, val) => { state.filters.push(['gt', col, val]); return b; },
       neq: (col, val) => { state.filters.push(['neq', col, val]); return b; },
       is: (col, val) => { state.filters.push(['is', col, val]); return b; },
       ilike: () => b,
       order: () => b,
       limit: () => b,
-      maybeSingle: async () => ({ data: table === 'admins' ? existingAdmin : membership, error: null }),
+      maybeSingle: async () => ({ data: table === 'admins' ? existingAdmin : table === 'plan_orders' ? purchase : membership, error: null }),
       then: (resolve, reject) => Promise.resolve(result()).then(resolve, reject),
     };
     return b;
@@ -219,4 +220,12 @@ test('multi-event access is checked per event, with that event\'s own role', () 
   assert.equal(adminForEvent(person, 'someone-else'), null, 'no access to events they are not a member of');
   const owner = { id: 'o', role: 'owner', eventId: 'flagship', memberships: [] };
   assert.equal(adminForEvent(owner, 'anything'), null);
+});
+
+test('paid Studio allows eleven total members and rejects the twelfth', async () => {
+  const open = team({ purchase: { plan: 'studio' }, memberCount: 4 });
+  await open.service.inviteTeamMemberByEmail(input);
+  assert.ok(open.calls.inserts.length > 0);
+  const full = team({ purchase: { plan: 'studio' }, memberCount: 11 });
+  await assert.rejects(full.service.inviteTeamMemberByEmail(input), /already has 11 team members/);
 });

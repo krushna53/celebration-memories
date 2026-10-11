@@ -1,6 +1,6 @@
 # Cashfree setup for EveryMoment
 
-Status: server adapter and verification helpers are prepared in `lib/cashfree.ts`. Cashfree is not active in checkout yet. Provider selection, order persistence, checkout, and webhook handling depend on the payment scope below. Existing gateways remain unchanged.
+Status: pricing-page per-event INR purchases now use Cashfree hosted checkout. Customers sign in at `/account/billing`, pay ₹999 for Celebration or ₹2,499 for Studio, review payment history, and apply each purchase once to an event they own. Payment does not create an event. Existing wizard gateways remain unchanged; its payment step links to the billing page for purchased plans. Monthly auto-renewal, USD checkout, and guest-fee collection are not enabled.
 
 ## Information needed
 
@@ -24,7 +24,7 @@ CASHFREE_SECRET_KEY=
 2. Generate sandbox Payment Gateway App ID and Secret Key, and save them securely as above. Production uses separate credentials and requires merchant activation.
 3. Whitelist `https://everymoment.in` for web checkout; add the chosen test domain if testing on a preview domain.
 4. Confirm the payment scope and settlement account. Then connect the adapter to the corresponding existing payment records and pricing rules.
-5. Implement and deploy the webhook before registering its URL. Planned endpoint: `https://everymoment.in/api/webhooks/cashfree` (not implemented or active yet). Verify signatures using the raw request body and the matching Cashfree Secret Key. Process successful payments idempotently; never mark a payment paid solely from the return URL.
+5. Implement and deploy the webhook before registering its URL. Endpoint: `https://everymoment.in/api/webhooks/cashfree`. The order also supplies this notify URL. Verify signatures using the raw request body and the matching Cashfree Secret Key. Process successful payments idempotently; never mark a payment paid solely from the return URL.
 6. Test success, failure, cancellation, retries, duplicate webhooks, mismatched amounts/currencies, and forged signatures. Verify the event/session or plan updates exactly once.
 7. After sandbox tests pass, set the production keys/environment, register the production webhook, redeploy, and complete a controlled live payment check.
 
@@ -42,4 +42,4 @@ References:
 ## Admin setup
 Sign in as platform administrator → Dashboard → Billing → Cashfree setup (`/admin/billing/cashfree`). Copy Sandbox App ID and Secret Key from Cashfree Payment Gateway → Developers → API Keys, choose Sandbox and save. The secret is encrypted at rest and never sent back to the form. Blank preserves it; changing environments requires the corresponding secret.
 
-Apply the Cashfree credentials migration first. Set `CASHFREE_CREDENTIAL_ENCRYPTION_KEY` to a stable server-only random secret before saving, or retain the service-role key used for fallback encryption. Rotating that fallback key requires re-entering credentials. Saving keys does not enable checkout. Merchant approval, allowed domain, order/webhook integration and sandbox testing must precede live activation.
+Apply the Cashfree credentials migration first. Set `CASHFREE_CREDENTIAL_ENCRYPTION_KEY` to a stable server-only random secret before saving, or retain the service-role key used for fallback encryption. Rotating that fallback key requires re-entering credentials. Saved keys power the pricing-page checkout and webhook signature verification. Whitelist `https://everymoment.in` and register the webhook with payment success/failure/user-dropped events in Cashfree. Verify a controlled live payment, redirect and webhook before inviting customers. Payment history is protected by buyer-only RLS; server-only functions handle idempotent confirmation and applying purchases. Test purchases cannot activate real event entitlements.

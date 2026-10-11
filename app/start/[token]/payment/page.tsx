@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getDraftEventByToken } from "@/services/event-drafts";
@@ -25,6 +26,7 @@ export default async function WizardPaymentPage({ params }: { params: Promise<{ 
       <p className="mt-1 text-center text-sm text-navy-700/60">
         One last step to take {event.honoreeName}&rsquo;s site live.
       </p>
+      <p className="mt-6 rounded-xl border bg-white p-4 text-sm text-navy-950">Purchased a plan from our pricing page? <Link href="/account/billing" className="underline">Open My account &amp; billing</Link> to apply it to this event without paying again.</p>
       <div className="mt-8">
         <PaymentPanel
           token={token}

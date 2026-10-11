@@ -1,0 +1,38 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Script from "next/script";
+import { startPlanCheckout, refreshPlanPayment, applyPlanPurchase } from "./actions";
+import { EVENT_PLANS, type EventPlan } from "@/lib/event-plans";
+
+type CashfreeWindow = Window & { Cashfree?: (options:{mode:string}) => {checkout:(options:{paymentSessionId:string;redirectTarget:string})=>Promise<{error?:{message?:string}}>}};
+export function CheckoutForm({plan}:{plan:EventPlan}) {
+ const [phone,setPhone]=useState(""); const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [ready,setReady]=useState(false);
+ return <><Script src="https://sdk.cashfree.com/js/v3/cashfree.js" onReady={()=>setReady(true)} onError={()=>setError("Checkout could not load. Refresh or try another browser.")} />
+ <form className="space-y-4 rounded-xl border bg-white p-6" onSubmit={async e=>{
+  e.preventDefault();setBusy(true);setError("");
+  try {
+   const result=await startPlanCheckout(plan,phone);
+   if(result.error || !result.sessionId) throw new Error(result.error || "Could not start checkout.");
+   const sdk=(window as CashfreeWindow).Cashfree;
+   if(!sdk) throw new Error("Checkout is still loading. Please try again.");
+   const response=await sdk({mode:result.environment}).checkout({paymentSessionId:result.sessionId,redirectTarget:"_self"});
+   if(response?.error) throw new Error(response.error.message || "Payment was not completed. You can retry from your purchases below.");
+  } catch(err) {setError(err instanceof Error?err.message:"Could not open checkout.");} finally {setBusy(false);}
+ }}>
+ <h2 className="font-display text-xl">{EVENT_PLANS[plan].name} — ₹{(EVENT_PLANS[plan].amountPaise/100).toLocaleString("en-IN")}</h2>
+ <p className="text-sm">One payment for one event. No automatic renewal. Apply your purchase to an event from this page after payment; 12 months of access starts when applied.</p>
+ <label className="block text-sm">Phone number with country code<input required type="tel" autoComplete="tel" placeholder="+91…" value={phone} onChange={e=>setPhone(e.target.value)} className="mt-2 w-full rounded-lg border p-3" maxLength={25}/></label>
+ <button disabled={busy||!ready} className="rounded-full bg-gold-500 px-6 py-3 font-semibold disabled:opacity-50">{busy?"Opening checkout…":!ready?"Loading checkout…":`Pay ₹${(EVENT_PLANS[plan].amountPaise/100).toLocaleString("en-IN")}`}</button>
+ <p className="text-xs">Charged in INR through Cashfree. A cancelled payment does not activate a plan.</p>
+ {error&&<p role="alert" className="text-sm text-red-700">{error}</p>}
+ </form></>;
+}
+export function PurchaseControls({id,paid,canApply,events}:{id:string;paid:boolean;canApply:boolean;events:{id:string;honoree_name:string}[]}) {
+ const router=useRouter();const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
+ async function run(task:()=>Promise<{error?:string}>) {setBusy(true);setMessage("");try{const r=await task();if(r.error)setMessage(r.error);else router.refresh();}catch{setMessage("Please try again.");}finally{setBusy(false);}}
+ return <div className="mt-3 space-y-3">{!paid&&<button disabled={busy} onClick={()=>run(()=>refreshPlanPayment(id))} className="rounded-lg border px-4 py-2">{busy?"Checking…":"Check payment status"}</button>}
+ {canApply&&events.length>0&&<form className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();const form=new FormData(e.currentTarget);void run(()=>applyPlanPurchase(form));}}><input type="hidden" name="order" value={id}/><select required name="event" aria-label="Choose your event" className="min-w-0 max-w-full rounded-lg border p-2"><option value="">Choose your event</option>{events.map(event=><option key={event.id} value={event.id}>{event.honoree_name}</option>)}</select><button disabled={busy} className="rounded-lg bg-navy-950 px-4 py-2 text-white">{busy?"Applying…":"Apply to event"}</button></form>}
+ {canApply&&events.length===0&&<p className="text-sm">Your purchase is ready. Create an event in the builder and link it to this account to apply your purchase here.</p>}
+ {message&&<p role="status" className="text-sm text-red-700">{message}</p>}</div>;
+}
