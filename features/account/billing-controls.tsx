@@ -30,7 +30,7 @@ export function CheckoutForm({plan,initialCountry="IN"}:{plan:EventPlan;initialC
  <p className="text-sm">1 event · 12 months · One-time payment</p>
  <div><label htmlFor="checkout-phone" className="block text-sm">Mobile number</label>
  <div className="mt-2 flex min-w-0 gap-2">
- <select aria-label="Country and calling code" autoComplete="country" value={country} onChange={e=>setCountry(e.target.value)} className="w-32 min-w-0 rounded-lg border bg-white p-3 sm:w-48">{countries.map(code=><option key={code} value={code}>{countryFlag(code)} {regionNames.of(code)} +{CALLING_CODES[code]}</option>)}</select>
+ <select aria-label="Country and calling code" autoComplete="country" value={country} onChange={e=>setCountry(e.target.value)} className="w-32 min-w-0 rounded-lg border bg-white p-3 sm:w-48">{countries.map(code=><option key={code} value={code}>{countryFlag(code)} +{CALLING_CODES[code]} · {regionNames.of(code)}</option>)}</select>
  <input id="checkout-phone" required type="tel" inputMode="tel" autoComplete="tel-national" placeholder="Mobile number" value={phone} onChange={e=>setPhone(e.target.value)} className="min-w-0 flex-1 rounded-lg border p-3" maxLength={25}/>
  </div></div>
  <p className="text-sm text-navy-700">After payment, choose the event you want to upgrade.</p>
