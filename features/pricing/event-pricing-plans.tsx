@@ -25,7 +25,7 @@ export function EventPricingPlans() {
         <Link href={index ? `/account/billing?plan=${index === 1 ? "celebration" : "studio"}` : "/start"} className={cn("mt-auto rounded-full px-4 py-3 text-center text-sm font-semibold", index === 1 ? "bg-gold-500 text-navy-950" : "bg-navy-950 text-white")}>{index ? `Choose ${plan.name}` : "Start free"}</Link>
       </article>)}
     </div>
-    <p className="mt-6 text-center text-sm text-navy-700">Every plan includes an event website, RSVP, schedule and photo memories.</p>
+    <p className="mt-6 text-center text-sm text-navy-700">Every plan includes an event page, RSVP, schedule and photo memories.</p>
     <p className="mt-2 text-center text-xs text-navy-700">Checkout charges INR. <Link href="/contact" className="underline">Contact us for USD pricing.</Link> AI video and reels cost extra.</p>
     <details className="mt-8 rounded-xl border border-navy-950/10 bg-white p-5 text-sm text-navy-700">
       <summary className="cursor-pointer font-semibold text-navy-950">Host regularly? View monthly plans</summary>
