@@ -254,12 +254,12 @@ export function EventBasicsForm({ token, event, updateAction, nextHref, prefille
         </div>
       ) : null}
 
-      <details className="sticky top-2 z-20 rounded-xl border border-gold-500/25 bg-ivory-50/95 p-4 shadow-md backdrop-blur" open>
-        <summary className="cursor-pointer font-display text-sm font-medium text-navy-950">
+      <details className="sticky top-2 z-20 max-h-[65vh] overflow-y-auto overscroll-y-contain rounded-xl border border-gold-500/25 bg-ivory-50/95 p-4 shadow-md backdrop-blur" open>
+        <summary className="sticky -top-4 z-10 cursor-pointer bg-ivory-50 py-2 font-display text-sm font-medium text-navy-950">
           Live Preview
         </summary>
-        <div className="mt-4 max-h-[60vh] max-w-sm overflow-y-auto">
-          <EventSettingsPreview data={previewData} />
+        <div className="mx-auto mt-4 max-w-sm">
+          <EventSettingsPreview data={previewData} scrollable={false} />
         </div>
       </details>
 

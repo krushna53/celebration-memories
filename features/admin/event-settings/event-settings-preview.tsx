@@ -86,7 +86,7 @@ function PreviewSectionShell({
  * shell, so an admin gets instant feedback on both content and
  * structure while editing.
  */
-export function EventSettingsPreview({ data }: { data: EventSettingsPreviewData }) {
+export function EventSettingsPreview({ data, scrollable = true }: { data: EventSettingsPreviewData; scrollable?: boolean }) {
   const wishCopy = getWishSectionCopy(data.category);
   const dateLabel = formatPreviewDate(data.startAt);
   const trimmedWish = data.wishMessage.trim();
@@ -246,7 +246,7 @@ export function EventSettingsPreview({ data }: { data: EventSettingsPreviewData 
         {data.occasion ? <p className="mt-2 text-xs text-ivory-50/70">{data.occasion}</p> : null}
       </div>
 
-      <div className="max-h-[70vh] overflow-y-auto">
+      <div className={scrollable ? "max-h-[70vh] overflow-y-auto overscroll-y-contain" : undefined}>
         {config
           .filter((item) => item.visible)
           .map((item) => (
