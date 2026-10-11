@@ -16,8 +16,8 @@ export default function PricingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-xs uppercase tracking-[0.3em] text-gold-600">Simple pricing</p>
-            <h1 className="mt-3 font-display text-3xl text-navy-950 sm:text-5xl">One occasion or many. Your choice.</h1>
-            <p className="mt-5 text-navy-700">Pay once for a single event, or subscribe when you host regularly. Prices shown in Indian rupees and US dollars.</p>
+            <h1 className="mt-3 font-display text-3xl text-navy-950 sm:text-5xl">Choose your event plan.</h1>
+            <p className="mt-5 text-navy-700">Start free. Upgrade when you need more.</p>
           </div>
           <div className="mt-10"><EventPricingPlans /></div>
         </div>
