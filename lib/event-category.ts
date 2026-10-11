@@ -132,7 +132,7 @@ export interface EventFieldCopy {
 }
 
 const DEFAULT_FIELD_COPY: EventFieldCopy = {
-  honoreeLabel: "Honoree / Guest of Honor",
+  honoreeLabel: "Who is this event for?",
   hostedByLabel: "Hosted By",
 };
 
