@@ -6,7 +6,14 @@ import { useCountdown } from "@/hooks/use-countdown";
  * Compact countdown used inside the hero glass card. The full dedicated
  * countdown section (larger digits) lives in features/countdown.
  */
-export function CountdownBadge({ isoStart }: { isoStart: string }) {
+export function CountdownBadge({
+  isoStart,
+  label = "Countdown to the celebration",
+}: {
+  isoStart: string;
+  /** Screen-reader name for the timer — segment-specific (lib/event-segment.ts). */
+  label?: string;
+}) {
   const remaining = useCountdown(isoStart);
 
   const units: Array<{ label: string; value: number | null }> = [
@@ -21,7 +28,7 @@ export function CountdownBadge({ isoStart }: { isoStart: string }) {
       className="grid grid-cols-4 gap-3 sm:gap-4"
       role="timer"
       aria-live="polite"
-      aria-label="Countdown to the celebration"
+      aria-label={label}
     >
       {units.map((unit) => (
         <div

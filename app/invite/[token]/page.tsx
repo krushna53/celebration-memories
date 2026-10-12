@@ -18,6 +18,7 @@ import { areGuestReelsEnabled, getInviteeReelOptIn } from "@/services/guest-reel
 import { Reveal } from "@/components/motion/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SiteShell } from "@/components/layout/site-shell";
+import { getSegmentCopy } from "@/lib/event-segment";
 
 // Always dynamic: every request must re-check the token and re-log a
 // visit, so this route is never statically generated or cached.
@@ -66,6 +67,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
     referral: requestHeaders.get("referer"),
   });
 
+  const guestCopy = getSegmentCopy(event.category).guest;
+
   return (
     <SiteShell
       honoreeName={event.honoreeName}
@@ -78,7 +81,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
           <Reveal>
             <p className="text-xs uppercase tracking-[0.35em] text-gold-500">
               {ended
-                ? "Thank you for celebrating with us"
+                ? guestCopy.thankYou
                 : `${event.hostedBy} warmly invites`}
             </p>
             <h1 className="mt-4 font-display text-3xl text-navy-950 sm:text-4xl">
@@ -86,8 +89,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
             </h1>
             <p className="mt-3 text-sm text-navy-700/80 sm:text-base">
               {ended
-                ? `Thank you for being part of ${event.honoreeName}'s ${event.eventTitle}. Add the photos and videos you took below.`
-                : `to celebrate ${event.honoreeName}'s ${event.eventTitle}`}
+                ? guestCopy.endedInviteLine(event.honoreeName, event.eventTitle)
+                : guestCopy.inviteLine(event.honoreeName, event.eventTitle)}
             </p>
             <div className="divider-gold mx-auto mt-6 w-20" />
             <p className="mt-6 text-sm tracking-wide text-navy-700/70">
@@ -108,6 +111,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 guestName={invitee.name}
                 rsvpPrice={rsvpPrice}
                 workshopSessions={workshopSessions}
+                reminderMessage={guestCopy.rsvpReminder}
                 reelSelfie={
                   reelOptIn
                     ? {
@@ -128,7 +132,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                       ...(event.venueName ? [event.venueName] : []),
                     ],
                   },
-                  shareText: `I'm celebrating ${event.honoreeName}'s ${event.eventTitle} 🎉 ${SITE_URL}/events/${event.slug}`,
+                  shareText: `${guestCopy.shareText(event.honoreeName, event.eventTitle)} ${SITE_URL}/events/${event.slug}`,
                 }}
                 defaultValues={
                   existingRsvp
@@ -172,13 +176,13 @@ export default async function InvitePage({ params }: InvitePageProps) {
           <Reveal>
             <SectionHeading
               eyebrow={
-                ended ? "After The Celebration" : "Add To The Celebration"
+                ended ? guestCopy.uploadsEyebrowAfter : guestCopy.uploadsEyebrow
               }
-              title={ended ? "Add Your Photos & Videos" : "Share Your Memories"}
+              title={ended ? "Add Your Photos & Videos" : guestCopy.uploadsTitle}
               description={
                 ended
                   ? "Photos from your phone or Google Photos, videos, a voice message, or a note — everything you captured on the day."
-                  : "Photos, videos, a voice message, or a written note — however you'd like to celebrate."
+                  : guestCopy.uploadsDescription
               }
             />
           </Reveal>

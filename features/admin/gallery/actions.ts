@@ -17,6 +17,8 @@ import type { GalleryCategory } from "@/features/gallery/gallery-data";
 import { suggestGalleryTags, type GalleryTagSuggestion } from "@/lib/ai-gallery-tagger";
 import { externalizeMediaLink } from "@/services/external-media";
 import { resolveGalleryUpload, type GalleryUploadOptions } from "@/services/gallery-auto-tag";
+import { getEventById } from "@/services/events";
+import { getEventSegment } from "@/lib/event-segment";
 
 function revalidateGalleryPaths() {
   revalidatePath("/admin/gallery");
@@ -54,7 +56,8 @@ export async function confirmGalleryUploadAction(
     // Best-effort — never let a snapshot failure block the actual save.
     await snapshotGallery(eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
     assertEventMediaPath(eventId, path);
-    const resolved = await resolveGalleryUpload({ path, category, caption, options });
+    const segment = getEventSegment((await getEventById(eventId))?.category);
+    const resolved = await resolveGalleryUpload({ path, category, caption, options, segment });
     const id = await createGalleryPhoto({ eventId, category: resolved.category, storagePath: path, caption: resolved.caption });
     revalidateGalleryPaths();
     return { success: true as const, data: { id, ...resolved } };
@@ -131,7 +134,8 @@ export async function suggestGalleryTagsAction(id: string) {
     const { photo } = await requireAdminForPhoto(id);
     // OpenAI fetches the image itself, so it needs a link it can reach.
     if (isVideoMedia(photo.url)) throw new Error("Auto-tagging is available for photos only.");
-    const suggestion = await suggestGalleryTags(await externalizeMediaLink(photo.url, { ttlSeconds: 600 }));
+    const segment = getEventSegment((await getEventById(photo.eventId))?.category);
+    const suggestion = await suggestGalleryTags(await externalizeMediaLink(photo.url, { ttlSeconds: 600 }), { segment });
     return { success: true as const, data: suggestion };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };

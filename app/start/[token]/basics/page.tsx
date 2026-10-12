@@ -27,6 +27,7 @@ export default async function WizardBasicsPage({
       token={token}
       slug="basics"
       goals={event.wizardGoals}
+      category={event.category}
       title="Event Details"
       description="These details appear across your public site — hero, event details, and invite pages."
       hideFooter

@@ -13,6 +13,8 @@ import { StorageQuotaBanner } from "@/features/admin/storage/storage-quota-banne
 import { NotificationBell } from "@/features/admin/notifications/notification-bell";
 import { AdminNav } from "@/features/admin/components/admin-nav";
 import { ADMIN_NAV } from "@/lib/admin-nav";
+import { resolveAdminEvent } from "@/lib/admin-event";
+import { getEventSegment } from "@/lib/event-segment";
 
 
 export default async function AdminDashboardLayout({
@@ -26,6 +28,7 @@ export default async function AdminDashboardLayout({
   }
 
   const visibleNav = ADMIN_NAV.filter((item) => isPathAllowedForRole(item.href, admin.role));
+  const segment = getEventSegment((await resolveAdminEvent(admin))?.category);
 
   const tourSteps: TourStep[] = visibleNav
     .map((item) => {
@@ -85,7 +88,7 @@ export default async function AdminDashboardLayout({
             </form>
           </div>
         </div>
-        <AdminNav allowedHrefs={visibleNav.map((item) => item.href)} />
+        <AdminNav allowedHrefs={visibleNav.map((item) => item.href)} segment={segment} />
       </header>
 
       <ActiveEventBanner admin={admin} />

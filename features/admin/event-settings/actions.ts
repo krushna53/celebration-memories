@@ -12,6 +12,7 @@ import {
   createSignedShareVideoUpload,
 } from "@/services/uploads";
 import { validateCustomCss } from "@/lib/custom-css";
+import { galleryTitlesForCategory } from "@/lib/event-segment";
 import { AiCssError, generateCustomCssFromPrompt } from "@/lib/ai-css";
 import { countAiCssGenerations, recordAiCssGeneration } from "@/services/ai-css-generations";
 import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
@@ -158,6 +159,14 @@ export async function updateEventAction(
   try {
     // Best-effort — never let a snapshot failure block the actual save.
     await snapshotEventSettings(eventId, admin.id).catch((err) => console.error("snapshotEventSettings failed:", err));
+    // Moving between family and corporate also swaps the default gallery chapter names (lib/event-segment.ts).
+    if (input.category && input.galleryChapterTitles === undefined) {
+      const current = await getEventById(eventId);
+      if (current && current.category !== input.category) {
+        const titles = galleryTitlesForCategory(input.category, current.galleryChapterTitles);
+        if (titles !== undefined) input = { ...input, galleryChapterTitles: titles };
+      }
+    }
     await updateEvent(eventId, input);
     revalidatePath("/admin/event-settings");
     revalidatePath("/admin");

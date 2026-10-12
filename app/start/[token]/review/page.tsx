@@ -38,6 +38,7 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
         token={token}
         slug="review"
         goals={event.wizardGoals}
+        category={event.category}
         title="Here's what you made"
         description="No account needed for this — download anything below, or come back anytime using this same link."
         hideFooter
@@ -122,6 +123,7 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
       token={token}
       slug="review"
       goals={event.wizardGoals}
+      category={event.category}
       title="Review Your Event Page"
       description="Check your event page, then continue to your account and choose a plan to publish it."
       hideFooter

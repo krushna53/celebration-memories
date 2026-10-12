@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
+import type { EventSegment } from "@/lib/event-segment";
 
 /**
  * Suggests a gallery category + a short caption for one photo, via
@@ -55,6 +56,31 @@ Caption rules:
 - Black-and-white, sepia or faded prints: add an approximate decade at the end when you can reasonably judge it, e.g. "Brothers in matching shirts, 1960s".
 - If the photo shows a printed photo lying on a table (a photo of a photo), caption the printed photo itself.`;
 
+/**
+ * Corporate events store photos under the same six category keys, shown
+ * with corporate chapter names (lib/event-segment.ts →
+ * CORPORATE_GALLERY_CHAPTER_TITLES). Only the guide changes; the caption
+ * rules are shared.
+ */
+const CORPORATE_INSTRUCTIONS = `You help companies organise a photo gallery for a corporate event website (conferences, offsites, annual days, product launches, team events). Look at one photo and suggest where it belongs and a short caption.
+
+Output ONLY a single raw JSON object — no markdown fences, no text before or after:
+{ "category": one of ${CATEGORIES.map((c) => `"${c}"`).join(" | ")}, "caption": string }
+
+The category keys are fixed internal names — use this guide, not their literal meaning. Prefer the most specific fit; use "family" only when none of the others do:
+- "childhood" = Arrivals: registration desks, badges, welcome boards, people arriving.
+- "wedding" = Keynotes & Sessions: speakers on stage, panels, presentations, audiences facing a stage or screen, workshops in progress.
+- "family" = The Team: team photos, group portraits, people posing together, award winners with trophies.
+- "travel" = Venue & Experiences: the venue, decor, stage setup, food, outdoor activities, scenery.
+- "friends" = Networking: small groups chatting, handshakes, people mingling with drinks or coffee.
+- "grandchildren" = Behind the Scenes: crew, setup, AV equipment, candid moments off stage.
+
+Caption rules:
+- 3 to 8 words, sentence case, no quotes, no emoji, no hashtags.
+- Be concrete: name what is actually visible — the setting, activity or objects (e.g. "Panel discussion on the main stage", "Team lunch on the lawn", "Award handover under stage lights").
+- Never use these stock words: warm, cherished, joyful, lovely, beautiful, memories, moments, special.
+- Describe the moment, not identities. NEVER guess anyone's name, job title or company beyond what is clearly printed (e.g. on a banner).`;
+
 function promptWithContext({ taken, place }: GalleryPhotoContext): string {
   const facts = [taken ? `taken ${taken}` : null, place ? `in ${place}` : null].filter(Boolean).join(", ");
   if (!facts) return "Suggest a category and caption for this photo.";
@@ -80,6 +106,8 @@ export interface GalleryPhotoContext {
   taken?: string | null;
   /** e.g. "Lonavala, Maharashtra". */
   place?: string | null;
+  /** Corporate events get the corporate category guide; omitted = family. */
+  segment?: EventSegment;
 }
 
 /** `imageUrl` is the photo's public Storage URL — low detail is plenty to tell a wedding from a trip, and keeps each call cheap. */
@@ -92,7 +120,7 @@ export async function suggestGalleryTags(imageUrl: string, context: GalleryPhoto
   try {
     response = await client.responses.create({
       model,
-      instructions: INSTRUCTIONS,
+      instructions: context.segment === "corporate" ? CORPORATE_INSTRUCTIONS : INSTRUCTIONS,
       input: [
         {
           role: "user",

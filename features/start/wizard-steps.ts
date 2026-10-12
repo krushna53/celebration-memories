@@ -1,3 +1,4 @@
+import { getEventSegment, type EventSegment } from "@/lib/event-segment";
 import type { EventCategory } from "@/types/event";
 
 /**
@@ -197,8 +198,48 @@ const STEP_REGISTRY = {
   },
 };
 
-/** Computes the actual step list for a draft based on its chosen goals — see this file's top doc comment for the exact rules. */
-export function resolveWizardSteps(goals: string[] | null | undefined): WizardStep[] {
+/**
+ * Per-segment wording for steps whose default copy assumes a family
+ * celebration (lib/event-segment.ts). Only description/tips change —
+ * slugs and order never depend on the segment.
+ */
+const STEP_COPY_BY_SEGMENT: Partial<Record<EventSegment, Partial<Record<string, Pick<WizardStep, "description" | "tips">>>>> = {
+  corporate: {
+    occasion: {
+      description: "What kind of event is it?",
+      tips: ["Pick whichever is closest — conference, offsite, annual day… you can fine-tune the wording on the next steps."],
+    },
+    timeline: {
+      description: "Add company milestones",
+      tips: [
+        "A handful of milestones goes a long way — founding, big launches, awards, this year's wins.",
+        "Add a photo to a milestone and it becomes eligible for your Slideshow automatically.",
+      ],
+    },
+    gallery: {
+      description: "Upload event photos",
+      tips: [
+        "Sort photos into sections like Keynotes, The Team and Networking — attendees browse the Gallery by section on the live site.",
+        "Higher-resolution photos look sharper both in the Gallery and if you use them in your Slideshow.",
+      ],
+    },
+  },
+};
+
+function withSegmentCopy(step: WizardStep, segment: EventSegment): WizardStep {
+  const override = STEP_COPY_BY_SEGMENT[segment]?.[step.slug];
+  return override ? { ...step, ...override } : step;
+}
+
+/** Computes the actual step list for a draft based on its chosen goals — see this file's top doc comment for the exact rules. `category` only changes step wording (family vs. corporate), never which steps appear. */
+export function resolveWizardSteps(
+  goals: string[] | null | undefined,
+  category?: EventCategory | null,
+): WizardStep[] {
+  return resolveWizardStepList(goals).map((step) => withSegmentCopy(step, getEventSegment(category)));
+}
+
+function resolveWizardStepList(goals: string[] | null | undefined): WizardStep[] {
   const steps: WizardStep[] = [STEP_REGISTRY.occasion, STEP_REGISTRY.goals];
 
   const hasGoals = Array.isArray(goals) && goals.length > 0;

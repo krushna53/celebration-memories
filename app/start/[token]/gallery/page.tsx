@@ -28,6 +28,7 @@ export default async function WizardGalleryPage({ params }: { params: Promise<{ 
       token={token}
       slug="gallery"
       goals={event.wizardGoals}
+      category={event.category}
       title="Gallery"
       description={getSegmentCopy(event.category).galleryStepDescription}
       headerAction={<SkipStepLink token={token} slug="gallery" goals={event.wizardGoals} />}

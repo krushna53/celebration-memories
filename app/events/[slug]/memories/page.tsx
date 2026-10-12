@@ -9,6 +9,7 @@ import { PublicMemoryUploader } from "@/features/uploads/public-memory-uploader"
 import { PageViewBeacon } from "@/features/analytics/page-view-beacon";
 import { Reveal } from "@/components/motion/reveal";
 import { SiteShell } from "@/components/layout/site-shell";
+import { getSegmentCopy } from "@/lib/event-segment";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: PublicMemoriesPageProps): Pro
   const base = await buildEventMetadata(event);
   return {
     ...base,
-    title: event ? `Share a Memory — ${event.honoreeName}` : "Share a Memory",
+    title: event ? `${getSegmentCopy(event.category).guest.publicUploadTitle} — ${event.honoreeName}` : "Share a Memory",
   };
 }
 
@@ -48,6 +49,7 @@ export default async function PublicMemoriesPage({ params }: PublicMemoriesPageP
   if (!event) {
     notFound();
   }
+  const guestCopy = getSegmentCopy(event.category).guest;
 
   return (
     <SiteShell honoreeName={event.honoreeName} footerVariant="minimal" hideChatWidget homeHref={`/events/${event.slug}`}>
@@ -55,7 +57,7 @@ export default async function PublicMemoriesPage({ params }: PublicMemoriesPageP
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
           <Reveal>
-            <p className="text-xs uppercase tracking-[0.35em] text-gold-500">Share a memory of</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-gold-500">{guestCopy.publicUploadEyebrow}</p>
             <h1 className="mt-4 font-display text-3xl text-navy-950 sm:text-4xl">
               {event.honoreeName}
             </h1>
@@ -81,7 +83,7 @@ export default async function PublicMemoriesPage({ params }: PublicMemoriesPageP
                 </h3>
                 <p className="max-w-sm text-sm text-navy-700/75">
                   If you have a personal invitation link from {event.hostedBy}, you
-                  can upload memories from there instead.
+                  can {guestCopy.publicUploadClosed} from there instead.
                 </p>
               </div>
             </Reveal>
@@ -105,7 +107,7 @@ export default async function PublicMemoriesPage({ params }: PublicMemoriesPageP
       >
         <span className="absolute inset-0 -z-10 animate-ping rounded-full bg-gold-500/50" />
         <Images size={18} />
-        <span>See memories shared by others</span>
+        <span>{guestCopy.seeOthers}</span>
       </a>
     </SiteShell>
   );

@@ -1,0 +1,151 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import {
+  BarChart3,
+  CalendarClock,
+  CheckCircle2,
+  Clapperboard,
+  Gamepad2,
+  Images,
+  Layers,
+  Send,
+  type LucideIcon,
+} from "lucide-react";
+
+import { SiteShell } from "@/components/layout/site-shell";
+import { Button } from "@/components/ui/button";
+import { beginDraftAction } from "@/features/start/actions/begin";
+import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
+import { SEGMENT_OCCASIONS } from "@/lib/event-segment";
+
+export const metadata: Metadata = {
+  title: "Corporate Event Websites, RSVP & Check-In | EveryMoment",
+  description:
+    "Personal invite links, RSVP tracking, desk check-in, team games, a moderated event wall and a post-event report — for conferences, offsites, annual days and launches.",
+};
+
+const STAGES: { icon: LucideIcon; title: string; body: string }[] = [
+  {
+    icon: Send,
+    title: "Invite",
+    body: "A branded event site and a personal link for every attendee. Import a CSV, send over WhatsApp, and see who opened and who RSVP'd.",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Check in",
+    body: "Search a name, tap to check in, undo if needed — with live attendance as people arrive.",
+  },
+  {
+    icon: CalendarClock,
+    title: "Run the day",
+    body: "A time-blocked agenda and menu page on every phone, open to all or verified against the attendee list.",
+  },
+  {
+    icon: Gamepad2,
+    title: "Engage",
+    body: "Housie and Word Search on attendees' own phones, plus an event wall and a big-screen slideshow.",
+  },
+  {
+    icon: Clapperboard,
+    title: "Recap",
+    body: "Opt-in personal video reels, a slideshow video and a one-click export of every approved photo and video.",
+  },
+  {
+    icon: BarChart3,
+    title: "Report",
+    body: "A one-page report — opens, RSVP rate, attendance, uploads, most active attendees — to send to your client.",
+  },
+];
+
+/**
+ * Marketing entry point for corporate hosts and event agencies. Same
+ * platform and wizard as family events — the CTA just starts the draft
+ * in the corporate segment (lib/event-segment.ts).
+ */
+export default function CorporatePage() {
+  return (
+    <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
+      <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-xs uppercase tracking-[0.3em] text-gold-600">For corporate events &amp; agencies</p>
+            <h1 className="mt-3 font-display text-3xl text-navy-950 sm:text-5xl">
+              Every attendee. Every moment. One link.
+            </h1>
+            <p className="mt-5 text-navy-700">
+              Invitations, RSVPs, check-in, engagement and a post-event report for conferences, offsites, annual
+              days and launches. Attendees never install an app or create an account.
+            </p>
+            <form action={beginDraftAction} className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <input type="hidden" name="segment" value="corporate" />
+              <Button type="submit" size="lg">
+                Create a corporate event — free to try
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/pricing">See pricing</Link>
+              </Button>
+            </form>
+          </div>
+
+          <ul className="mx-auto mt-10 flex max-w-3xl flex-wrap justify-center gap-2" aria-label="Event types">
+            {SEGMENT_OCCASIONS.corporate.map((o) => (
+              <li key={o.id} className="rounded-full border border-navy-950/10 bg-white px-3 py-1 text-xs text-navy-700">
+                {o.label}
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {STAGES.map(({ icon: Icon, title, body }) => (
+              <div key={title} className="rounded-2xl border border-navy-950/10 bg-white p-6 shadow-sm">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-500/15 text-gold-700">
+                  <Icon size={20} aria-hidden="true" />
+                </span>
+                <h2 className="mt-4 font-display text-xl text-navy-950">{title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-navy-700/80">{body}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-16 grid gap-8 rounded-3xl bg-navy-950 p-8 text-ivory-50 sm:p-12 lg:grid-cols-[1.2fr_1fr]">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gold-300">Built for agencies</p>
+              <h2 className="mt-3 font-display text-2xl sm:text-3xl">Run many client events from one login</h2>
+              <p className="mt-4 text-sm leading-relaxed text-ivory-100/75">
+                Switch between client events from one dashboard, give each client a login that only sees their own
+                event, match their brand with a template and custom styling, and keep AI costs capped per event.
+              </p>
+            </div>
+            <ul className="grid gap-3 text-sm text-ivory-100/85">
+              {[
+                "Uploads are moderated before anything goes public",
+                "Face-matched reels only for attendees who opt in",
+                "Every date and time in the event's own timezone",
+                "Works on any phone, no app download",
+              ].map((line) => (
+                <li key={line} className="flex items-start gap-2">
+                  <Layers size={16} className="mt-0.5 shrink-0 text-gold-300" aria-hidden="true" />
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="mt-16 text-center">
+            <Images className="mx-auto text-gold-500" size={28} aria-hidden="true" />
+            <h2 className="mt-3 font-display text-2xl text-navy-950">Planning an event for a client?</h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm text-navy-700/80">
+              Build a draft in minutes and see the full attendee experience before you pay anything.
+            </p>
+            <form action={beginDraftAction} className="mt-6">
+              <input type="hidden" name="segment" value="corporate" />
+              <Button type="submit" size="lg">
+                Start building
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </SiteShell>
+  );
+}

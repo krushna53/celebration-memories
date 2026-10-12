@@ -13,6 +13,8 @@ interface BulkSendPanelProps {
   hostedBy: string;
   honoreeName: string;
   messageTemplate: string | null;
+  /** "Thank you" mode's message — defaults to the family wording. */
+  thankYouTemplate?: string;
   /** True once the event is over — the panel then defaults to the "Thank you + share your photos" message. */
   eventEnded?: boolean;
   onOpen: (inviteeId: string) => void;
@@ -38,6 +40,7 @@ export function BulkSendPanel({
   hostedBy,
   honoreeName,
   messageTemplate,
+  thankYouTemplate = THANK_YOU_MESSAGE_TEMPLATE,
   eventEnded = false,
   onOpen,
   onClose,
@@ -67,7 +70,7 @@ export function BulkSendPanel({
       inviteUrl: mode === "thanks" ? `${origin}/invite/${inv.token}#share` : `${origin}/invite/${inv.token}`,
       hostedBy,
       honoreeName,
-      messageTemplate: mode === "thanks" ? THANK_YOU_MESSAGE_TEMPLATE : messageTemplate,
+      messageTemplate: mode === "thanks" ? thankYouTemplate : messageTemplate,
     });
   }
 

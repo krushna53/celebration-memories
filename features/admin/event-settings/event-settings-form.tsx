@@ -40,11 +40,12 @@ import { SectionOrderManager } from "@/features/admin/event-settings/section-ord
 import { EventSettingsPreview } from "@/features/admin/event-settings/event-settings-preview";
 import { normalizeSectionConfig, type SectionConfigItem } from "@/lib/section-registry";
 import {
-  DEFAULT_INVITE_MESSAGE_TEMPLATE,
+  defaultMessageTemplates,
   INVITE_TEMPLATE_PLACEHOLDERS,
   previewInviteMessage,
 } from "@/lib/whatsapp";
-import { EVENT_CATEGORY_OPTIONS, getEventFieldCopy, getWishSectionCopy } from "@/lib/event-category";
+import { EVENT_CATEGORY_LABELS, getEventFieldCopy, getWishSectionCopy } from "@/lib/event-category";
+import { categoryOptionsBySegment, getEventSegment } from "@/lib/event-segment";
 import { formatBytes } from "@/lib/format-bytes";
 import { validateCustomCss } from "@/lib/custom-css";
 import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
@@ -567,14 +568,19 @@ export function EventSettingsForm({
                 setSaved(false);
               }}
             >
-              {EVENT_CATEGORY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+              {categoryOptionsBySegment(EVENT_CATEGORY_LABELS).map((group) => (
+                <optgroup key={group.segment} label={group.label}>
+                  {group.options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
             <p className="mt-1.5 text-xs text-navy-700/50">
-              Changes the wording used for the Wish Message section and Event Details notices below.
+              Changes the wording used for the Wish Message section and Event Details notices below. Corporate
+              types also switch guest-facing wording (e.g. &ldquo;Event Wall&rdquo; instead of &ldquo;Memory Wall&rdquo;).
             </p>
           </div>
           <div>
@@ -1020,7 +1026,7 @@ export function EventSettingsForm({
           <label className={labelClasses}>Message Template (optional)</label>
           <textarea
             className={`${inputClasses} mt-1.5 min-h-[110px] resize-y font-mono text-xs`}
-            placeholder={DEFAULT_INVITE_MESSAGE_TEMPLATE}
+            placeholder={defaultMessageTemplates(getEventSegment(form.category)).invite}
             value={form.inviteMessageTemplate}
             onChange={(e) => set("inviteMessageTemplate", e.target.value)}
           />
@@ -1028,7 +1034,11 @@ export function EventSettingsForm({
         <div>
           <span className={labelClasses}>Preview</span>
           <div className="mt-1.5 whitespace-pre-wrap rounded-lg border border-dashed border-navy-950/15 bg-navy-950/[0.02] p-3 text-xs text-navy-700">
-            {previewInviteMessage(form.inviteMessageTemplate, form.hostedBy, form.honoreeName)}
+            {previewInviteMessage(
+              form.inviteMessageTemplate || defaultMessageTemplates(getEventSegment(form.category)).invite,
+              form.hostedBy,
+              form.honoreeName,
+            )}
           </div>
         </div>
       </section>

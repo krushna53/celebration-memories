@@ -2,6 +2,8 @@ import "server-only";
 import OpenAI from "openai";
 
 import { formatEventDate, formatEventTimeRange } from "@/lib/timezone";
+import { getEventSegment } from "@/lib/event-segment";
+import type { EventCategory } from "@/types/event";
 
 /**
  * Guest-facing "AI Avatar" chat host — a virtual stand-in for the event
@@ -83,7 +85,13 @@ function buildSystemInstructions(event: AvatarEventContext, games: AvatarGameLin
       : null,
   ].filter(Boolean);
 
-  return `You are a warm, friendly virtual host greeting guests on ${event.honoreeName}'s celebration website, on behalf of ${event.hostedBy}. You are NOT a general assistant — you only help with questions about this specific event.
+  const corporate = getEventSegment(event.category as EventCategory) === "corporate";
+  const intro = corporate
+    ? `You are a friendly, professional virtual host greeting attendees on the website for ${event.honoreeName} (${event.eventTitle}), on behalf of ${event.hostedBy}.`
+    : `You are a warm, friendly virtual host greeting guests on ${event.honoreeName}'s celebration website, on behalf of ${event.hostedBy}.`;
+  const topic = corporate ? "the event" : "the celebration";
+
+  return `${intro} You are NOT a general assistant — you only help with questions about this specific event.
 
 Known facts about this event:
 ${facts.join("\n")}
@@ -93,7 +101,7 @@ Rules:
 - Keep replies short and warm — 1-3 sentences, no markdown, no headings, no bullet lists.
 - If it fits naturally, you may mention RSVPing or playing one of the games listed above, but don't force it into every reply.
 - Never invent facts (guest counts, other guests' names, gift registries, prices) that weren't given to you.
-- Never discuss anything unrelated to this event — no general knowledge questions, no coding help, no other topics. Politely redirect back to the celebration.
+- Never discuss anything unrelated to this event — no general knowledge questions, no coding help, no other topics. Politely redirect back to ${topic}.
 - You cannot take real actions (you cannot RSVP for someone, send messages, or change any settings) — only talk.`;
 }
 

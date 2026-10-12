@@ -43,6 +43,7 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
       token={token}
       slug="ai-image"
       goals={event.wizardGoals}
+      category={event.category}
       title="Invitation Card"
       description={event.shareImagePath ? "Your invitation card is saved. Continue with it, or replace it below." : "Upload your invitation card or create one with AI. This step is optional."}
       headerAction={<SkipStepLink token={token} slug="ai-image" goals={event.wizardGoals} />}

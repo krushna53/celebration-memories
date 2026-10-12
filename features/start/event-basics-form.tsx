@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Loader2, Save, ScanText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { EVENT_CATEGORY_OPTIONS, getEventFieldCopy } from "@/lib/event-category";
+import { EVENT_CATEGORY_LABELS, getEventFieldCopy } from "@/lib/event-category";
+import { categoryOptionsBySegment } from "@/lib/event-segment";
 import { buildEventSlugSuggestion, isValidSlug } from "@/lib/slug";
 import { zonedInputValueToUtcIso, utcIsoToZonedInputValue, listSupportedTimezones } from "@/lib/timezone";
 import { buildMapsEmbedUrl, buildMapsSearchUrl } from "@/lib/maps";
@@ -273,10 +274,14 @@ export function EventBasicsForm({ token, event, updateAction, nextHref, prefille
               value={form.category}
               onChange={(e) => set("category", e.target.value as EventRecord["category"])}
             >
-              {EVENT_CATEGORY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+              {categoryOptionsBySegment(EVENT_CATEGORY_LABELS).map((group) => (
+                <optgroup key={group.segment} label={group.label}>
+                  {group.options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>

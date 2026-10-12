@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarCheck, Globe, LayoutGrid, MonitorPlay } from "lucide-react";
+import { CalendarCheck, FileText, Globe, LayoutGrid, MonitorPlay } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
@@ -88,6 +88,12 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
             <CalendarCheck size={15} /> RSVP Link
           </Link>
           <Link
+            href="/admin/report"
+            className="inline-flex shrink-0 items-center gap-2 rounded-full border border-navy-950/15 px-4 py-2 text-sm font-medium text-navy-700 transition-luxury duration-300 hover:border-navy-950/30 hover:text-navy-950"
+          >
+            <FileText size={15} /> Event Report
+          </Link>
+          <Link
             href={`/events/${event.slug}/display`}
             target="_blank"
             className="inline-flex shrink-0 items-center gap-2 rounded-full border border-gold-500/30 bg-navy-950 px-4 py-2 text-sm font-medium text-gold-300 transition-luxury duration-300 hover:brightness-125"
@@ -98,8 +104,8 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
       </div>
       <p className="-mt-4 text-xs text-navy-700/50">
         Web Page is the full site; RSVP Link opens the shared RSVP form if you&rsquo;ve turned it
-        on (Event Settings); Big Screen Display is the chrome-free slideshow for a TV or projector
-        at the venue.
+        on (Event Settings); Event Report is a one-page summary to print or save as PDF; Big Screen
+        Display is the chrome-free slideshow for a TV or projector at the venue.
       </p>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

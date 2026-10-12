@@ -132,6 +132,10 @@ interface InviteeManagerProps {
   hostedBy: string;
   honoreeName: string;
   inviteMessageTemplate: string | null;
+  /** Label for the free-text `relationship` column — "Company / Team" for corporate events; omitted = "Relationship". */
+  relationshipLabel?: string;
+  /** Bulk Send's after-the-event message — segment default from lib/whatsapp.ts; omitted = family wording. */
+  thankYouMessageTemplate?: string;
   /** Past the event's end — Bulk Send then defaults to the thank-you + share-your-photos message. */
   eventEnded?: boolean;
 }
@@ -143,6 +147,8 @@ export function InviteeManager({
   hostedBy,
   honoreeName,
   inviteMessageTemplate,
+  thankYouMessageTemplate,
+  relationshipLabel = "Relationship",
   eventEnded = false,
 }: InviteeManagerProps) {
   const [invitees, setInvitees] = useState(initialInvitees);
@@ -314,7 +320,7 @@ export function InviteeManager({
           name: row.name ?? row.Name ?? "",
           phone: row.phone ?? row.Phone ?? "",
           email: row.email ?? row.Email ?? "",
-          relationship: row.relationship ?? row.Relationship ?? "",
+          relationship: row.relationship ?? row.Relationship ?? row.company ?? row.Company ?? "",
         }));
         setBusy(true);
         const result = await bulkImportInviteesAction(eventId, rows);
@@ -368,7 +374,7 @@ export function InviteeManager({
         <p className="mt-2 text-xs text-navy-700/60">{importSummary}</p>
       ) : null}
       <p className="mt-1 text-xs text-navy-700/40">
-        CSV columns: name, phone, email, relationship
+        CSV columns: name, phone, email, {relationshipLabel === "Relationship" ? "relationship" : "company (or relationship)"}
       </p>
 
       {showBulkSend ? (
@@ -378,6 +384,7 @@ export function InviteeManager({
           hostedBy={hostedBy}
           honoreeName={honoreeName}
           messageTemplate={inviteMessageTemplate}
+          thankYouTemplate={thankYouMessageTemplate}
           eventEnded={eventEnded}
           onOpen={markSent}
           onClose={() => setShowBulkSend(false)}
@@ -405,7 +412,7 @@ export function InviteeManager({
             className={inputClasses}
           />
           <input
-            placeholder="Relationship (optional)"
+            placeholder={`${relationshipLabel} (optional)`}
             value={createForm.relationship}
             onChange={(e) => setCreateForm((f) => ({ ...f, relationship: e.target.value }))}
             className={inputClasses}
@@ -448,7 +455,7 @@ export function InviteeManager({
               <SortableTh label="Name" sortKey="name" sort={sort} onSort={toggleSort} />
               <SortableTh label="Phone" sortKey="phone" sort={sort} onSort={toggleSort} />
               <SortableTh label="Email" sortKey="email" sort={sort} onSort={toggleSort} />
-              <SortableTh label="Relationship" sortKey="relationship" sort={sort} onSort={toggleSort} />
+              <SortableTh label={relationshipLabel} sortKey="relationship" sort={sort} onSort={toggleSort} />
               <SortableTh label="RSVP" sortKey="rsvp" sort={sort} onSort={toggleSort} />
               <SortableTh label="Party" sortKey="party" sort={sort} onSort={toggleSort} />
               <SortableTh label="Meal" sortKey="meal" sort={sort} onSort={toggleSort} />
@@ -490,7 +497,7 @@ export function InviteeManager({
                           setEditForm((f) => ({ ...f, relationship: e.target.value }))
                         }
                         className={inputClasses}
-                        placeholder="Relationship"
+                        placeholder={relationshipLabel}
                       />
                       <select
                         value={editForm.inviteChannel}
@@ -528,7 +535,7 @@ export function InviteeManager({
                     <td data-label="Email" className="max-w-[180px] truncate px-4 py-3 text-navy-700/70" title={inv.email ?? undefined}>
                       {inv.email || "—"}
                     </td>
-                    <td data-label="Relationship" data-mobile-hidden className="px-4 py-3 text-navy-700/70">{inv.relationship || "—"}</td>
+                    <td data-label={relationshipLabel} data-mobile-hidden className="px-4 py-3 text-navy-700/70">{inv.relationship || "—"}</td>
                     <td data-label="RSVP" className="px-4 py-3">
                       <span
                         className={cn(

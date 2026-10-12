@@ -47,37 +47,50 @@ in `lib/event-category.ts`; segment-level wording lives in
   Wall", "Share a Moment") take segment copy.
 - Wizard Timeline/Gallery step descriptions are segment-aware.
 
-## Phase 2 — corporate wording everywhere
+## Phase 2 — corporate wording everywhere ✅
 
-- Wizard sidebar/step registry descriptions ("Add life milestones",
-  "What are you celebrating?") → resolve with the segment.
-- Admin: "Guests" → "Attendees", "Memories" → "Event Wall" etc. via a
-  segment label map used by `lib/admin-nav.ts` and page headings.
-- Guest-facing invite page, RSVP form, uploads page, WhatsApp invite
-  default template, AI avatar system prompt: segment copy.
-- Event Settings category `<select>`: group options by segment and
-  apply `occasionSelectionPatch` when the category changes there too.
-- AI gallery tagger: corporate category descriptions so auto-sorting
-  maps to Keynotes / Team / Networking instead of Childhood / Wedding.
-- Recommend Corporate Slate / Live Signal first for corporate drafts.
+- Wizard sidebar/step copy resolves with the segment
+  (`resolveWizardSteps(goals, category)`; `WizardStepShell` takes
+  `category`).
+- Guest pages: invite page (invite line, thank-you, share text, uploads
+  heading, RSVP reminder), public upload page, hero relive buttons and
+  countdown label — all from `SEGMENT_COPY[segment].guest`.
+- Admin: nav labels (Invitees → Attendees, Memories → Event Wall,
+  Timeline → Our Journey, Guest Reels → Attendee Reels) via
+  `navLabelsForSegment()`; Invitees page heading; the free-text
+  `relationship` column shows as "Company / Team" (CSV also accepts a
+  `company` column).
+- WhatsApp: corporate default invite + thank-you templates
+  (`defaultMessageTemplates()`), used by Invitees/Bulk Send and the
+  Event Settings preview. Family defaults unchanged.
+- AI avatar: professional host intro for corporate events.
+- AI gallery tagger: corporate category guide (Arrivals, Keynotes, Team,
+  Venue, Networking, Behind the Scenes) for admin + wizard uploads.
+- Category `<select>`s (wizard + Event Settings) grouped by segment;
+  changing category in Event Settings seeds/removes the corporate
+  gallery chapter names like the wizard does.
 
-## Phase 3 — corporate-only additions (reusing existing pieces)
+## Phase 3 — corporate additions
 
-- Attendee fields: company + designation on invitees/RSVP (CSV import
-  columns, RSVP form, check-in search).
-- Agenda: Event Day schedule promoted to a homepage section for
-  corporate (multi-track sessions later), speakers block reusing the
-  timeline milestone model (photo, name, title).
-- Sponsors / partner logos section (gallery-style grid).
-- QR code per invite token for desk check-in (lib/qr.ts exists).
-- Client report: one-page export of the analytics dashboard (opens,
-  RSVP rate, attendance, uploads, most active) for the agency to send.
-- Agency accounts: one owner managing many client events already works
-  via `admin_event_memberships`; add agency branding ("Powered by
-  <agency>") on event footers.
+Done:
+- `/admin/report` — one-page printable event report (opens, RSVP rate,
+  attendance, uploads, most active attendees), linked from Overview.
+
+Still open (each needs a decision first):
+- **QR check-in** — needs a self-hosted QR generator (new npm
+  dependency): the existing `lib/qr.ts` sends the encoded URL to a
+  third-party service, which is fine for game links but would leak a
+  guest's invite token.
+- **Company + designation as real columns**, **speakers** and
+  **sponsors** sections — need additive migrations on the shared
+  production database (apply before deploying the code that reads them).
+- Agency branding ("Powered by <agency>") on event footers.
+- Multi-track agenda in Event Day.
 
 ## Phase 4 — go to market
 
-- `/corporate` landing page + pricing for agencies (per-event /
-  annual / co-branded).
-- Corporate demo event seeded for sales demos.
+Done: `/corporate` landing page (in the marketing nav and sitemap),
+CTA starts a corporate draft.
+
+Still open: agency pricing (per-event / annual / co-branded) and a
+seeded corporate demo event for sales demos.

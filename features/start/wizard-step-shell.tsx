@@ -5,6 +5,7 @@ import { WizardNav } from "@/features/start/wizard-nav";
 import { WizardSidebar } from "@/features/start/wizard-sidebar";
 import { nextWizardStep, prevWizardStep, wizardStepHref } from "@/features/start/wizard-steps";
 import { Footer } from "@/components/layout/footer";
+import type { EventCategory } from "@/types/event";
 
 /**
  * Common chrome (step nav + heading + prev/next footer + sidebar) shared
@@ -25,6 +26,7 @@ export function WizardStepShell({
   token,
   slug,
   goals,
+  category,
   title,
   description,
   children,
@@ -34,6 +36,8 @@ export function WizardStepShell({
   token: string;
   slug: string;
   goals?: string[] | null;
+  /** The draft's category — only changes sidebar wording for corporate events (see resolveWizardSteps). */
+  category?: EventCategory | null;
   title: string;
   description: string;
   children: React.ReactNode;
@@ -89,7 +93,7 @@ export function WizardStepShell({
         </div>
 
         <aside className="min-w-0 lg:pt-1">
-          <WizardSidebar token={token} currentSlug={slug} goals={goals} />
+          <WizardSidebar token={token} currentSlug={slug} goals={goals} category={category} />
         </aside>
       </div>
 

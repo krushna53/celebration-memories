@@ -172,6 +172,7 @@ const FEATURE_GROUPS = [
  */
 export const PLATFORM_NAV_LINKS = [
   { label: "Pricing", href: "/pricing" },
+  { label: "Corporate", href: "/corporate" },
   { label: "AI Image Tool", href: "/ai-invitation-image" },
   { label: "Build RSVP / Form", href: "/forms/new" },
   { label: "Discover", href: "/discover" },

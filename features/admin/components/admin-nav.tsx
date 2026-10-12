@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import { LayoutGrid, Menu, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { ADMIN_NAV, GROUP_LABELS, GROUP_ORDER, type NavItem } from "@/lib/admin-nav";
+import { ADMIN_NAV, GROUP_ORDER, navLabelsForSegment, type NavItem } from "@/lib/admin-nav";
+import type { EventSegment } from "@/lib/event-segment";
 
 /** The phone bottom bar's fixed tabs, in priority order — the first four this admin is allowed to see are shown. */
 const PRIMARY_TAB_PREFERENCE = ["/admin", "/admin/invitees", "/admin/memories", "/admin/checkin", "/admin/event-settings", "/admin/session-attendees", "/admin/my-sessions"];
@@ -25,6 +26,8 @@ function isActive(pathname: string, href: string): boolean {
 interface AdminNavProps {
   /** Hrefs this admin's role may open — computed server-side. */
   allowedHrefs: string[];
+  /** Segment of the event being managed — corporate swaps a few labels ("Invitees" → "Attendees"). */
+  segment?: EventSegment;
 }
 
 /**
@@ -43,12 +46,15 @@ interface AdminNavProps {
  * (features/admin/tour/admin-tour-controller.tsx) can find whichever
  * copy is visible.
  */
-export function AdminNav({ allowedHrefs }: AdminNavProps) {
+export function AdminNav({ allowedHrefs, segment = "family" }: AdminNavProps) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
   const allowed = new Set(allowedHrefs);
-  const items = ADMIN_NAV.filter((item) => allowed.has(item.href));
+  const { itemLabels, groupLabels } = navLabelsForSegment(segment);
+  const items = ADMIN_NAV.filter((item) => allowed.has(item.href)).map((item) =>
+    itemLabels[item.href] ? { ...item, label: itemLabels[item.href]! } : item,
+  );
 
   const primary = PRIMARY_TAB_PREFERENCE.map((href) => items.find((i) => i.href === href))
     .filter((i): i is NavItem => Boolean(i))
@@ -168,7 +174,7 @@ export function AdminNav({ allowedHrefs }: AdminNavProps) {
               if (groupItems.length === 0) return null;
               return (
                 <section key={group} className="mb-5">
-                  <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.15em] text-navy-700/60">{GROUP_LABELS[group]}</h2>
+                  <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.15em] text-navy-700/60">{groupLabels[group]}</h2>
                   <ul className="divide-y divide-navy-950/5 overflow-hidden rounded-xl border border-navy-950/10 bg-white">
                     {groupItems.map(({ href, label, icon: Icon }) => {
                       const active = isActive(pathname, href);

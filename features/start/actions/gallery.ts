@@ -6,6 +6,7 @@ import { createSignedGalleryUpload } from "@/services/uploads";
 import { countGalleryPhotos, createGalleryPhoto, deleteGalleryPhoto, getGalleryPhotoById, updateGalleryPhoto } from "@/services/gallery-photos";
 import { resolveGalleryUpload, type GalleryUploadOptions } from "@/services/gallery-auto-tag";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
+import { getEventSegment } from "@/lib/event-segment";
 
 /** AI auto-sorting costs a real API call per photo and a draft has no account to bill — cap it per draft. */
 const DRAFT_GALLERY_AUTO_TAG_LIMIT = 60;
@@ -42,7 +43,13 @@ export async function draftConfirmGalleryUploadAction(
     if (event.id !== eventId) return { success: false as const, error: "This link doesn't match that event." };
     assertEventMediaPath(eventId, path);
     const autoTag = Boolean(options?.autoTag) && (await countGalleryPhotos(event.id)) < DRAFT_GALLERY_AUTO_TAG_LIMIT;
-    const resolved = await resolveGalleryUpload({ path, category, caption, options: { ...options, autoTag } });
+    const resolved = await resolveGalleryUpload({
+      path,
+      category,
+      caption,
+      options: { ...options, autoTag },
+      segment: getEventSegment(event.category),
+    });
     const id = await createGalleryPhoto({ eventId: event.id, category: resolved.category, storagePath: path, caption: resolved.caption });
     return { success: true as const, data: { id, ...resolved } };
   } catch (err) {

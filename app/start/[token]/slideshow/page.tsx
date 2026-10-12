@@ -73,6 +73,7 @@ export default async function WizardSlideshowPage({ params }: { params: Promise<
       token={token}
       slug="slideshow"
       goals={event.wizardGoals}
+      category={event.category}
       title="Slideshow"
       description={
         shareImageUrl

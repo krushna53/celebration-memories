@@ -40,13 +40,26 @@ interface RsvpFormProps {
   rsvpPrice?: RsvpPrice | null;
   /** Schedule items that require registration (#106) — shown as an optional "join a session" step after a "coming" RSVP. Empty/omitted for events with no such sessions (the common case). */
   workshopSessions?: ScheduleItemRecord[];
+  /** Push-reminder prompt after a yes/maybe — segment-specific copy (lib/event-segment.ts). */
+  reminderMessage?: string;
   /** Event details for the "I'm going!" Story card shown after a "coming" RSVP; the link points at the public event page. */
   story?: { card: StoryCard; shareText: string };
   /** Set when the host has turned on Guest Reels — offers an optional selfie (with consent) so the guest can be found in the event photos. */
   reelSelfie?: { photoUrl: string | null; honoreeName: string; hostedBy: string };
 }
 
-export function RsvpForm({ token, eventId, inviteeId, defaultValues, guestName, rsvpPrice, workshopSessions, story, reelSelfie }: RsvpFormProps) {
+export function RsvpForm({
+  token,
+  eventId,
+  inviteeId,
+  defaultValues,
+  guestName,
+  rsvpPrice,
+  workshopSessions,
+  reminderMessage = "Get a reminder to share a photo or video memory before the big day?",
+  story,
+  reelSelfie,
+}: RsvpFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submittedComing, setSubmittedComing] = useState<RsvpFormValues["coming"] | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -119,7 +132,7 @@ export function RsvpForm({ token, eventId, inviteeId, defaultValues, guestName, 
           <div className="w-full text-left">
             <NotificationPrompt
               token={token}
-              message="Get a reminder to share a photo or video memory before the big day?"
+              message={reminderMessage}
               buttonLabel="Notify me"
             />
           </div>

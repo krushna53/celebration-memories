@@ -48,6 +48,7 @@ import {
   ScanFace,
   LogIn,
 } from "lucide-react";
+import type { EventSegment } from "@/lib/event-segment";
 
 /*
  * Plain shared module (no "use client") on purpose: the admin layout is
@@ -140,4 +141,28 @@ export const GROUP_LABELS: Record<NavGroup, string> = {
   Account: "Account & Help",
   Platform: "Platform (Owner)",
 };
+
+/**
+ * Corporate wording for the nav (lib/event-segment.ts) — applied only
+ * when the event being managed is corporate; family/none keeps the
+ * labels above unchanged. Hrefs, roles and grouping never change.
+ */
+export const CORPORATE_NAV_LABELS: Readonly<Record<string, string>> = {
+  "/admin/invitees": "Attendees",
+  "/admin/memories": "Event Wall",
+  "/admin/timeline": "Our Journey",
+  "/admin/reels": "Attendee Reels",
+};
+
+export const CORPORATE_GROUP_LABELS: Readonly<Partial<Record<NavGroup, string>>> = {
+  Guests: "Attendees & Event Wall",
+};
+
+export function navLabelsForSegment(segment: EventSegment): {
+  itemLabels: Readonly<Record<string, string>>;
+  groupLabels: Readonly<Record<NavGroup, string>>;
+} {
+  if (segment !== "corporate") return { itemLabels: {}, groupLabels: GROUP_LABELS };
+  return { itemLabels: CORPORATE_NAV_LABELS, groupLabels: { ...GROUP_LABELS, ...CORPORATE_GROUP_LABELS } };
+}
 

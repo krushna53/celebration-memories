@@ -5,6 +5,8 @@ import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { InviteeManager } from "@/features/admin/invitees/invitee-manager";
+import { defaultMessageTemplates } from "@/lib/whatsapp";
+import { getEventSegment } from "@/lib/event-segment";
 import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
@@ -25,10 +27,12 @@ export default async function AdminInviteesPage() {
   }
 
   const invitees = await listInviteesWithRsvp(event.id);
+  const segment = getEventSegment(event.category);
+  const messageDefaults = defaultMessageTemplates(segment);
 
   return (
     <div>
-      <h1 className="font-display text-2xl text-navy-950">Invitees</h1>
+      <h1 className="font-display text-2xl text-navy-950">{segment === "corporate" ? "Attendees" : "Invitees"}</h1>
       <p className="mt-1 text-sm text-navy-700/60">
         Create invitations, generate unique links, and reach out over WhatsApp.
       </p>
@@ -39,7 +43,9 @@ export default async function AdminInviteesPage() {
           initialInvitees={invitees}
           hostedBy={event.hostedBy}
           honoreeName={event.honoreeName}
-          inviteMessageTemplate={event.inviteMessageTemplate}
+          inviteMessageTemplate={event.inviteMessageTemplate?.trim() || messageDefaults.invite}
+          thankYouMessageTemplate={messageDefaults.thankYou}
+          relationshipLabel={segment === "corporate" ? "Company / Team" : undefined}
           eventEnded={Date.parse(event.endAt) < Date.now()}
         />
       </div>

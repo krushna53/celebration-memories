@@ -1,4 +1,5 @@
 import { ACTIVE_EVENT, BUILDER } from "@/lib/constants";
+import type { EventSegment } from "@/lib/event-segment";
 
 /**
  * Default WhatsApp invite wording, used whenever an event doesn't have a
@@ -12,6 +13,20 @@ export const DEFAULT_INVITE_MESSAGE_TEMPLATE =
 /** After the event: thank guests and ask for their photos/videos (Bulk Send's "Thank you" mode — links go straight to the guest's upload section). */
 export const THANK_YOU_MESSAGE_TEMPLATE =
   "Hello {{name}} 🙏\nThank you for celebrating {{honoreeName}} with us — it meant so much to have you there!\nIf you took any photos or videos, we'd love to see them. Add them here (from your phone or Google Photos):\n{{link}}\nWith love,\n{{hostedBy}}";
+
+/** Corporate defaults (lib/event-segment.ts) — {{honoreeName}} holds the event/team name for corporate events. */
+export const CORPORATE_INVITE_MESSAGE_TEMPLATE =
+  "Hello {{name}}\n{{hostedBy}} invites you to {{honoreeName}}.\nPlease RSVP using your personal invitation link\n{{link}}";
+
+export const CORPORATE_THANK_YOU_MESSAGE_TEMPLATE =
+  "Hello {{name}}\nThank you for joining {{honoreeName}}!\nIf you took any photos or videos, please add them here (from your phone or Google Photos):\n{{link}}\nRegards,\n{{hostedBy}}";
+
+/** The invite/thank-you wording to fall back on when the host hasn't written their own — family keeps the original defaults above. */
+export function defaultMessageTemplates(segment: EventSegment): { invite: string; thankYou: string } {
+  return segment === "corporate"
+    ? { invite: CORPORATE_INVITE_MESSAGE_TEMPLATE, thankYou: CORPORATE_THANK_YOU_MESSAGE_TEMPLATE }
+    : { invite: DEFAULT_INVITE_MESSAGE_TEMPLATE, thankYou: THANK_YOU_MESSAGE_TEMPLATE };
+}
 
 /** Placeholders an admin can use in a custom invite message template. */
 export const INVITE_TEMPLATE_PLACEHOLDERS = [

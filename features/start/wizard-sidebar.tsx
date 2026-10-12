@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Check, Lightbulb } from "lucide-react";
 
 import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
+import type { EventCategory } from "@/types/event";
 
 const RING_RADIUS = 28;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -61,12 +62,14 @@ export function WizardSidebar({
   token,
   currentSlug,
   goals,
+  category,
 }: {
   token: string;
   currentSlug: string;
   goals?: string[] | null;
+  category?: EventCategory | null;
 }) {
-  const steps = resolveWizardSteps(goals);
+  const steps = resolveWizardSteps(goals, category);
   const currentIndex = steps.findIndex((s) => s.slug === currentSlug);
   const current = steps[currentIndex];
 

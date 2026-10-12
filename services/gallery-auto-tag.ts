@@ -5,6 +5,7 @@ import { AI_GALLERY_TAGGER_CONFIGURED, suggestGalleryTags } from "@/lib/ai-galle
 import { reverseGeocode } from "@/lib/reverse-geocode";
 import { externalMediaUrl } from "@/services/external-media";
 import type { GalleryCategory } from "@/features/gallery/gallery-data";
+import type { EventSegment } from "@/lib/event-segment";
 
 /** What the browser read from the original file before upload (lib/photo-metadata.ts) plus the host's choice. */
 export interface GalleryUploadOptions {
@@ -40,6 +41,8 @@ export async function resolveGalleryUpload(params: {
   category: GalleryCategory;
   caption: string;
   options?: GalleryUploadOptions;
+  /** The event's segment — picks the corporate or family AI category guide. */
+  segment?: EventSegment;
 }): Promise<{ category: GalleryCategory; caption: string; autoTagged: boolean }> {
   const { path, options = {} } = params;
   const typed = params.caption.trim();
@@ -54,7 +57,7 @@ export async function resolveGalleryUpload(params: {
   if (options.autoTag && AI_GALLERY_TAGGER_CONFIGURED && !isVideoMedia(path)) {
     try {
       const url = await externalMediaUrl("gallery", path, 600);
-      const suggestion = await suggestGalleryTags(url, { taken, place });
+      const suggestion = await suggestGalleryTags(url, { taken, place, segment: params.segment });
       return { category: suggestion.category, caption: typed || suggestion.caption, autoTagged: true };
     } catch (err) {
       console.error("resolveGalleryUpload auto-tag failed:", err);

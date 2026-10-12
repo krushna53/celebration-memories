@@ -10,6 +10,7 @@ import { GoldParticles } from "@/features/hero/components/gold-particles";
 import { ConfettiParticles } from "@/features/hero/components/confetti-particles";
 import { BalloonRise } from "@/features/hero/components/balloon-rise";
 import { useTemplateAnimation } from "@/templates/shared/template-animation-context";
+import { getSegmentCopy } from "@/lib/event-segment";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -55,6 +56,7 @@ const THEME_PARTICLE_COLORS = [
  */
 export function HeroSection({ data, relive = null }: HeroSectionProps) {
   const personality = useTemplateAnimation();
+  const guestCopy = getSegmentCopy(data.category).guest;
   // No real family video has been uploaded to /public/hero/family.mp4 yet,
   // so this renders a static ornamental background (/hero/poster.jpg)
   // instead of trying (and failing) to play a video. Once a real family
@@ -108,7 +110,7 @@ export function HeroSection({ data, relive = null }: HeroSectionProps) {
             animate="show"
             className="text-xs uppercase tracking-[0.35em] text-gold-300/90"
           >
-            {relive ? "Thank you for celebrating with us" : `${data.occasion ? `${data.occasion} · ` : ""}Hosted by ${data.hostedBy}`}
+            {relive ? guestCopy.thankYou : `${data.occasion ? `${data.occasion} · ` : ""}Hosted by ${data.hostedBy}`}
           </motion.p>
 
           <motion.h1
@@ -170,7 +172,7 @@ export function HeroSection({ data, relive = null }: HeroSectionProps) {
                 Relive the day — add the photos and videos you took, and see everyone else&rsquo;s.
               </p>
             ) : (
-              <CountdownBadge isoStart={data.isoStart} />
+              <CountdownBadge isoStart={data.isoStart} label={guestCopy.countdownLabel} />
             )}
           </motion.div>
 
@@ -187,7 +189,7 @@ export function HeroSection({ data, relive = null }: HeroSectionProps) {
                   <a href={relive.shareHref}>Add your photos &amp; videos</a>
                 </Button>
                 <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
-                  <a href="#memories">See the memories</a>
+                  <a href="#memories">{guestCopy.seeWall}</a>
                 </Button>
               </>
             ) : (

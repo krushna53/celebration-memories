@@ -121,15 +121,27 @@ export function occasionSelectionPatch(
     patch.occasion = null;
   }
 
-  const segment = getEventSegment(option.category);
-  const hasCustomTitles = Boolean(current.galleryChapterTitles && Object.keys(current.galleryChapterTitles).length > 0);
-  if (segment === "corporate" && !hasCustomTitles) {
-    patch.galleryChapterTitles = { ...CORPORATE_GALLERY_CHAPTER_TITLES };
-  } else if (segment === "family" && isCorporateChapterDefaults(current.galleryChapterTitles)) {
-    patch.galleryChapterTitles = null;
-  }
+  const titles = galleryTitlesForCategory(option.category, current.galleryChapterTitles);
+  if (titles !== undefined) patch.galleryChapterTitles = titles;
 
   return patch;
+}
+
+/**
+ * Gallery chapter names to save when an event moves to `category`, or
+ * `undefined` when nothing should change: corporate gets the corporate
+ * defaults only if the host hasn't named any chapters; family drops them
+ * only if they're still exactly the untouched corporate defaults.
+ */
+export function galleryTitlesForCategory(
+  category: EventCategory,
+  current: Record<string, string> | null | undefined,
+): Record<string, string> | null | undefined {
+  const hasCustomTitles = Boolean(current && Object.keys(current).length > 0);
+  const segment = getEventSegment(category);
+  if (segment === "corporate" && !hasCustomTitles) return { ...CORPORATE_GALLERY_CHAPTER_TITLES };
+  if (segment === "family" && isCorporateChapterDefaults(current)) return null;
+  return undefined;
 }
 
 export interface SectionHeadingCopy {
@@ -149,6 +161,30 @@ export interface SegmentCopy {
   galleryStepDescription: string;
   timeline: SectionHeadingCopy;
   memoryWall: SectionHeadingCopy & { cta: string };
+  guest: GuestCopy;
+}
+
+/**
+ * Guest-facing wording on the invite page, public upload page and hero.
+ * `h` = events.honoree_name, `t` = events.event_title. Family strings are
+ * the original hardcoded copy, word for word.
+ */
+export interface GuestCopy {
+  thankYou: string;
+  inviteLine: (h: string, t: string) => string;
+  endedInviteLine: (h: string, t: string) => string;
+  shareText: (h: string, t: string) => string;
+  uploadsEyebrow: string;
+  uploadsEyebrowAfter: string;
+  uploadsTitle: string;
+  uploadsDescription: string;
+  publicUploadTitle: string;
+  publicUploadEyebrow: string;
+  publicUploadClosed: string;
+  seeOthers: string;
+  seeWall: string;
+  countdownLabel: string;
+  rsvpReminder: string;
 }
 
 export const SEGMENT_COPY: Record<EventSegment, SegmentCopy> = {
@@ -171,6 +207,23 @@ export const SEGMENT_COPY: Record<EventSegment, SegmentCopy> = {
       description: "Photos, videos, voice messages, and notes from everyone celebrating with us.",
       cta: "Share Your Memory",
     },
+    guest: {
+      thankYou: "Thank you for celebrating with us",
+      inviteLine: (h, t) => `to celebrate ${h}'s ${t}`,
+      endedInviteLine: (h, t) => `Thank you for being part of ${h}'s ${t}. Add the photos and videos you took below.`,
+      shareText: (h, t) => `I'm celebrating ${h}'s ${t} 🎉`,
+      uploadsEyebrow: "Add To The Celebration",
+      uploadsEyebrowAfter: "After The Celebration",
+      uploadsTitle: "Share Your Memories",
+      uploadsDescription: "Photos, videos, a voice message, or a written note — however you'd like to celebrate.",
+      publicUploadTitle: "Share a Memory",
+      publicUploadEyebrow: "Share a memory of",
+      publicUploadClosed: "upload memories",
+      seeOthers: "See memories shared by others",
+      seeWall: "See the memories",
+      countdownLabel: "Countdown to the celebration",
+      rsvpReminder: "Get a reminder to share a photo or video memory before the big day?",
+    },
   },
   corporate: {
     label: "Corporate & Professional",
@@ -191,11 +244,40 @@ export const SEGMENT_COPY: Record<EventSegment, SegmentCopy> = {
       description: "Photos, videos, voice notes, and messages shared by attendees.",
       cta: "Share a Moment",
     },
+    guest: {
+      thankYou: "Thank you for joining us",
+      inviteLine: (h, t) => `to join ${h} — ${t}`,
+      endedInviteLine: (h, t) => `Thank you for being part of ${h} — ${t}. Add the photos and videos you took below.`,
+      shareText: (h, t) => `I'm attending ${h} — ${t}`,
+      uploadsEyebrow: "Add To The Event",
+      uploadsEyebrowAfter: "After The Event",
+      uploadsTitle: "Share Your Moments",
+      uploadsDescription: "Photos, videos, a voice message, or a written note from the event.",
+      publicUploadTitle: "Share a Moment",
+      publicUploadEyebrow: "Share a moment from",
+      publicUploadClosed: "upload photos and videos",
+      seeOthers: "See moments shared by others",
+      seeWall: "See the event wall",
+      countdownLabel: "Countdown to the event",
+      rsvpReminder: "Get a reminder to share your photos and videos from the event?",
+    },
   },
 };
 
 export function getSegmentCopy(category: EventCategory | null | undefined): SegmentCopy {
   return SEGMENT_COPY[getEventSegment(category)];
+}
+
+/** Every category grouped by segment, for plain `<select>` pickers (`<optgroup>` per segment). */
+export function categoryOptionsBySegment(
+  labels: Record<EventCategory, string>,
+): { segment: EventSegment; label: string; options: { value: EventCategory; label: string }[] }[] {
+  const all = Object.keys(labels) as EventCategory[];
+  return (Object.keys(SEGMENT_COPY) as EventSegment[]).map((segment) => ({
+    segment,
+    label: SEGMENT_COPY[segment].label,
+    options: all.filter((c) => getEventSegment(c) === segment).map((value) => ({ value, label: labels[value] })),
+  }));
 }
 
 export function parseEventSegment(value: unknown): EventSegment {

@@ -19,6 +19,7 @@ export default async function WizardOccasionPage({ params }: { params: Promise<{
       token={token}
       slug="occasion"
       goals={event.wizardGoals}
+      category={event.category}
       title={copy.occasionStepTitle}
       description={copy.occasionStepDescription}
       hideFooter

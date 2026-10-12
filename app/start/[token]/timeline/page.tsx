@@ -30,6 +30,7 @@ export default async function WizardTimelinePage({ params }: { params: Promise<{
       token={token}
       slug="timeline"
       goals={event.wizardGoals}
+      category={event.category}
       title="Timeline"
       description={getSegmentCopy(event.category).timelineStepDescription}
       headerAction={<SkipStepLink token={token} slug="timeline" goals={event.wizardGoals} />}

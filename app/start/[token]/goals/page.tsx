@@ -17,6 +17,7 @@ export default async function WizardGoalsPage({ params }: { params: Promise<{ to
       token={token}
       slug="goals"
       goals={event.wizardGoals}
+      category={event.category}
       title="What would you like to build?"
       description="Pick as many as you'd like — this decides which steps you'll see next. Just want a quick invitation card or video? Those don't need an account or payment at all."
       hideFooter
