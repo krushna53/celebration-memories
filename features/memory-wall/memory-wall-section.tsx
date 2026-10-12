@@ -5,12 +5,16 @@ import { getMemoryWallItems } from "@/services/memory-wall";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { MemoryCard } from "@/features/memory-wall/components/memory-card";
+import { getSegmentCopy } from "@/lib/event-segment";
+import type { EventCategory } from "@/types/event";
 
 interface MemoryWallSectionProps {
   eventId: string;
   eventSlug: string;
   /** Only link to the public "share a memory" page when the host has actually turned it on — otherwise a guest lands on that page's "This link isn't open right now" fallback instead of somewhere useful. */
   publicMemoriesEnabled: boolean;
+  /** Picks family vs. corporate heading copy (lib/event-segment.ts); omitted = family. */
+  category?: EventCategory | null;
 }
 
 /**
@@ -20,7 +24,8 @@ interface MemoryWallSectionProps {
  * degrades to a friendly empty state if Supabase isn't reachable/
  * configured instead of breaking the whole homepage build.
  */
-export async function MemoryWallSection({ eventId, eventSlug, publicMemoriesEnabled }: MemoryWallSectionProps) {
+export async function MemoryWallSection({ eventId, eventSlug, publicMemoriesEnabled, category }: MemoryWallSectionProps) {
+  const heading = getSegmentCopy(category).memoryWall;
   let items: Awaited<ReturnType<typeof getMemoryWallItems>> = [];
 
   try {
@@ -33,9 +38,9 @@ export async function MemoryWallSection({ eventId, eventSlug, publicMemoriesEnab
     <section id="memories" className="bg-white py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <SectionHeading
-          eyebrow="Shared With Love"
-          title="Memory Wall"
-          description="Photos, videos, voice messages, and notes from everyone celebrating with us."
+          eyebrow={heading.eyebrow}
+          title={heading.title}
+          description={heading.description}
         />
 
         {publicMemoriesEnabled ? (
@@ -43,7 +48,7 @@ export async function MemoryWallSection({ eventId, eventSlug, publicMemoriesEnab
             <Button asChild>
               <Link href={`/events/${eventSlug}/memories`}>
                 <Upload size={16} />
-                Share Your Memory
+                {heading.cta}
               </Link>
             </Button>
           </div>

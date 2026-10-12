@@ -1,10 +1,14 @@
 import { isVideoMedia } from "@/lib/curated-media";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
+import { getSegmentCopy } from "@/lib/event-segment";
 import type { TimelineMilestoneRecord } from "@/types/content";
+import type { EventCategory } from "@/types/event";
 
 interface TimelineSectionProps {
   milestones: TimelineMilestoneRecord[];
+  /** Picks family vs. corporate heading copy (lib/event-segment.ts); omitted = family. */
+  category?: EventCategory | null;
 }
 
 /**
@@ -13,8 +17,9 @@ interface TimelineSectionProps {
  * mirror the Hero/Countdown treatment and let the gold line + dots
  * stand out. Renders nothing if no milestones have been added yet.
  */
-export function TimelineSection({ milestones }: TimelineSectionProps) {
+export function TimelineSection({ milestones, category }: TimelineSectionProps) {
   if (milestones.length === 0) return null;
+  const heading = getSegmentCopy(category).timeline;
 
   return (
     <section id="timeline" className="surface-feature bg-navy-950 py-20 sm:py-28">
@@ -22,9 +27,9 @@ export function TimelineSection({ milestones }: TimelineSectionProps) {
         <Reveal>
           <SectionHeading
             tone="dark"
-            eyebrow="A Journey Through Time"
-            title="Life Timeline"
-            description="A look back at the chapters that shaped this story."
+            eyebrow={heading.eyebrow}
+            title={heading.title}
+            description={heading.description}
           />
         </Reveal>
 

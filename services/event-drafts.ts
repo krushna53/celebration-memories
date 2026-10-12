@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateDraftToken } from "@/lib/tokens";
+import { CORPORATE_GALLERY_CHAPTER_TITLES, SEGMENT_COPY, type EventSegment } from "@/lib/event-segment";
 import { mapEvent, type EventRow } from "@/services/events";
 import type { EventRecord } from "@/types/event";
 
@@ -33,8 +34,16 @@ function randomSlugSuffix(): string {
  * plain service function with no request context. Stamped once at
  * creation and never overwritten; see services/referrals.ts for how the
  * admin Referrals dashboard surfaces events attributed this way.
+ *
+ * `segment` is the family/corporate choice from /start (lib/event-segment.ts)
+ * — it only picks the starting category, placeholder title and (for
+ * corporate) the default gallery chapter names; the Occasion step can
+ * still switch either way.
  */
-export async function createDraftEvent(referredByCode?: string | null): Promise<{ id: string; token: string; slug: string }> {
+export async function createDraftEvent(
+  referredByCode?: string | null,
+  segment: EventSegment = "family",
+): Promise<{ id: string; token: string; slug: string }> {
   const token = generateDraftToken();
   const slug = `draft-${randomSlugSuffix()}`;
   const now = new Date();
@@ -47,9 +56,10 @@ export async function createDraftEvent(referredByCode?: string | null): Promise<
       slug,
       status: "draft",
       draft_token: token,
-      category: "birthday",
+      category: segment === "corporate" ? "corporate" : "birthday",
       honoree_name: "New Event",
-      event_title: "My Celebration",
+      event_title: SEGMENT_COPY[segment].draftEventTitle,
+      gallery_chapter_titles: segment === "corporate" ? CORPORATE_GALLERY_CHAPTER_TITLES : null,
       hosted_by: "",
       start_at: startAt.toISOString(),
       end_at: endAt.toISOString(),

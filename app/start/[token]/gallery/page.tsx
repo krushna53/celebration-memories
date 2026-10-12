@@ -12,6 +12,7 @@ import {
   draftUpdateGalleryPhotoAction,
 } from "@/features/start/actions/gallery";
 import { AI_GALLERY_TAGGER_CONFIGURED } from "@/lib/ai-gallery-tagger";
+import { getSegmentCopy } from "@/lib/event-segment";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function WizardGalleryPage({ params }: { params: Promise<{ 
       slug="gallery"
       goals={event.wizardGoals}
       title="Gallery"
-      description="Optional — upload the photos shown in your public Gallery section, by category."
+      description={getSegmentCopy(event.category).galleryStepDescription}
       headerAction={<SkipStepLink token={token} slug="gallery" goals={event.wizardGoals} />}
     >
       <GalleryManager
@@ -41,6 +42,7 @@ export default async function WizardGalleryPage({ params }: { params: Promise<{ 
           updatePhoto: draftUpdateGalleryPhotoAction.bind(null, token),
         }}
         aiAutoTagAvailable={AI_GALLERY_TAGGER_CONFIGURED}
+        chapterLabels={event.galleryChapterTitles}
       />
     </WizardStepShell>
   );

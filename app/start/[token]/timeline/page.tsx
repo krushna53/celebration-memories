@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getDraftEventByToken } from "@/services/event-drafts";
+import { getSegmentCopy } from "@/lib/event-segment";
 import { listMilestones } from "@/services/timeline";
 import { TimelineManager } from "@/features/admin/timeline/timeline-manager";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
@@ -30,7 +31,7 @@ export default async function WizardTimelinePage({ params }: { params: Promise<{
       slug="timeline"
       goals={event.wizardGoals}
       title="Timeline"
-      description="Optional — add the life milestones shown in your public Timeline section, in order."
+      description={getSegmentCopy(event.category).timelineStepDescription}
       headerAction={<SkipStepLink token={token} slug="timeline" goals={event.wizardGoals} />}
     >
       <TimelineManager

@@ -199,6 +199,8 @@ interface GalleryManagerProps {
   aiAutoTagAvailable?: boolean;
   /** Admin only — this event's own chapter names; enables the "Chapter names" panel. */
   chapterTitles?: Record<string, string> | null;
+  /** Same names as `chapterTitles`, used only as labels (no rename panel) — for the /start wizard, e.g. a corporate draft's "Keynotes & Sessions". */
+  chapterLabels?: Record<string, string> | null;
 }
 
 type CategoryOption = { value: GalleryCategory; label: string };
@@ -585,8 +587,9 @@ export function GalleryManager({
   initialPairs = [],
   aiAutoTagAvailable = false,
   chapterTitles,
+  chapterLabels,
 }: GalleryManagerProps) {
-  const [titles, setTitles] = useState<Record<string, string> | null>(chapterTitles ?? null);
+  const [titles, setTitles] = useState<Record<string, string> | null>(chapterTitles ?? chapterLabels ?? null);
   // Categories under this event's own names, everywhere in the manager.
   const options: CategoryOption[] = CATEGORY_OPTIONS.map((c) => ({ ...c, label: titles?.[c.value] ?? c.label }));
   const router = useRouter();

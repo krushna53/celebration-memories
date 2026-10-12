@@ -77,7 +77,7 @@ export function EventSections({
     eventDetails: <EventDetailsSection data={data} />,
     liveStream: <LiveStreamSection enabled={event?.liveStreamEnabled ?? false} url={event?.liveStreamUrl ?? null} />,
     gallery: event ? <GallerySectionServer eventId={event.id} eventSlug={event.slug} photos={galleryPhotos} chapterTitles={event.galleryChapterTitles} /> : <GallerySection photos={galleryPhotos} />,
-    timeline: <TimelineSection milestones={milestones} />,
+    timeline: <TimelineSection milestones={milestones} category={event?.category} />,
     rsvp: (
       <RsvpTeaserSection
         eventId={event?.id}
@@ -92,6 +92,7 @@ export function EventSections({
         eventId={event.id}
         eventSlug={event.slug}
         publicMemoriesEnabled={event.publicMemoriesEnabled}
+        category={event.category}
       />
     ) : null,
   };

@@ -1,0 +1,203 @@
+import { CHAPTERS, type GalleryCategory } from "@/features/gallery/gallery-data";
+import type { EventCategory } from "@/types/event";
+
+/**
+ * The top-level split the wizard asks about first: is this a family /
+ * personal celebration, or a corporate / professional event?
+ *
+ * A segment is NOT stored — it's derived from `events.category`, so
+ * every existing event keeps working unchanged and there's no new
+ * column to keep in sync. The segment only decides:
+ *
+ *   - which occasions the wizard's Occasion step offers (SEGMENT_OCCASIONS),
+ *   - the wording of the shared homepage sections (SEGMENT_COPY),
+ *   - the default gallery chapter names a new corporate event starts
+ *     with (seeded into the existing events.gallery_chapter_titles, so
+ *     the gallery itself needs no corporate-specific code).
+ *
+ * Every feature (RSVP, check-in, uploads, games, Event Day, reels,
+ * analytics…) is the same code for both segments — only copy and
+ * defaults differ. Adding a segment-specific wording is one entry here,
+ * never an `if (corporate)` inside a component.
+ */
+export type EventSegment = "family" | "corporate";
+
+const CORPORATE_CATEGORIES: ReadonlySet<EventCategory> = new Set<EventCategory>(["corporate", "workshop"]);
+
+export function getEventSegment(category: EventCategory | null | undefined): EventSegment {
+  return category && CORPORATE_CATEGORIES.has(category) ? "corporate" : "family";
+}
+
+/**
+ * One tile on the Occasion step. Several corporate tiles share the
+ * stored `corporate` category and differ only by the free-text
+ * `occasion` label they prefill ("Annual Day", "Conference"…) — that
+ * gives corporate hosts specific choices without adding enum values.
+ */
+export interface OccasionOption {
+  /** Stable id, also the icon key in features/start/occasion-picker.tsx. */
+  id: string;
+  label: string;
+  category: EventCategory;
+  /** Prefilled into events.occasion when picked; null leaves the host's own text alone. */
+  occasion: string | null;
+}
+
+export const SEGMENT_OCCASIONS: Record<EventSegment, OccasionOption[]> = {
+  family: [
+    { id: "birthday", label: "Birthday", category: "birthday", occasion: null },
+    { id: "wedding", label: "Wedding", category: "wedding", occasion: null },
+    { id: "anniversary", label: "Anniversary", category: "anniversary", occasion: null },
+    { id: "retirement", label: "Retirement", category: "retirement", occasion: null },
+    { id: "baby_shower", label: "Baby Shower", category: "baby_shower", occasion: null },
+    { id: "reunion", label: "Reunion", category: "reunion", occasion: null },
+    { id: "education", label: "Educational Event", category: "education", occasion: null },
+    { id: "live_stream", label: "Live Streamed Event", category: "live_stream", occasion: null },
+    { id: "obituary", label: "Memorial / Obituary", category: "obituary", occasion: null },
+  ],
+  corporate: [
+    { id: "conference", label: "Conference / Summit", category: "corporate", occasion: "Conference" },
+    { id: "offsite", label: "Offsite / Retreat", category: "corporate", occasion: "Team Offsite" },
+    { id: "annual_day", label: "Annual Day", category: "corporate", occasion: "Annual Day" },
+    { id: "awards", label: "Awards Night", category: "corporate", occasion: "Awards Night" },
+    { id: "product_launch", label: "Product Launch", category: "corporate", occasion: "Product Launch" },
+    { id: "team_building", label: "Team Building", category: "corporate", occasion: "Team Building Day" },
+    { id: "workshop", label: "Workshop / Training", category: "workshop", occasion: null },
+    { id: "corporate", label: "Other Corporate Event", category: "corporate", occasion: null },
+  ],
+};
+
+const PRESET_OCCASIONS: ReadonlySet<string> = new Set(
+  SEGMENT_OCCASIONS.corporate.flatMap((o) => (o.occasion ? [o.occasion] : [])),
+);
+
+/** Which tile is currently selected — the exact preset if the occasion text still matches one, else the category's plain tile. */
+export function findSelectedOccasion(
+  category: EventCategory,
+  occasion: string | null,
+): OccasionOption | undefined {
+  const all = [...SEGMENT_OCCASIONS.family, ...SEGMENT_OCCASIONS.corporate];
+  return (
+    all.find((o) => o.category === category && o.occasion !== null && o.occasion === occasion) ??
+    all.find((o) => o.category === category && o.occasion === null)
+  );
+}
+
+/** Default gallery chapter names for a corporate event, keyed by the stored gallery category (same order as CHAPTERS). */
+export const CORPORATE_GALLERY_CHAPTER_TITLES: Record<GalleryCategory, string> = {
+  childhood: "Arrivals",
+  wedding: "Keynotes & Sessions",
+  family: "The Team",
+  travel: "Venue & Experiences",
+  friends: "Networking",
+  grandchildren: "Behind the Scenes",
+};
+
+function isCorporateChapterDefaults(titles: Record<string, string> | null | undefined): boolean {
+  if (!titles) return false;
+  return CHAPTERS.every((c) => titles[c.category] === CORPORATE_GALLERY_CHAPTER_TITLES[c.category]);
+}
+
+/**
+ * The event fields to save when a host picks an occasion tile. Only
+ * touches what the tile owns:
+ *
+ *   - `occasion`: set to the preset label; cleared when moving away from
+ *     a preset, but never clears text the host typed themselves.
+ *   - `galleryChapterTitles`: seeded with the corporate defaults when
+ *     moving into the corporate segment (only if the host hasn't named
+ *     any chapters), and removed again when moving back to family
+ *     (only if they're still exactly the untouched defaults).
+ */
+export function occasionSelectionPatch(
+  option: OccasionOption,
+  current: { occasion: string | null; galleryChapterTitles: Record<string, string> | null },
+): { category: EventCategory; occasion?: string | null; galleryChapterTitles?: Record<string, string> | null } {
+  const patch: ReturnType<typeof occasionSelectionPatch> = { category: option.category };
+
+  if (option.occasion) {
+    patch.occasion = option.occasion;
+  } else if (current.occasion && PRESET_OCCASIONS.has(current.occasion)) {
+    patch.occasion = null;
+  }
+
+  const segment = getEventSegment(option.category);
+  const hasCustomTitles = Boolean(current.galleryChapterTitles && Object.keys(current.galleryChapterTitles).length > 0);
+  if (segment === "corporate" && !hasCustomTitles) {
+    patch.galleryChapterTitles = { ...CORPORATE_GALLERY_CHAPTER_TITLES };
+  } else if (segment === "family" && isCorporateChapterDefaults(current.galleryChapterTitles)) {
+    patch.galleryChapterTitles = null;
+  }
+
+  return patch;
+}
+
+export interface SectionHeadingCopy {
+  eyebrow: string;
+  title: string;
+  description: string;
+}
+
+/** Segment-level wording for the shared pages. Category-level wording (wish message, honoree field) stays in lib/event-category.ts. */
+export interface SegmentCopy {
+  label: string;
+  tagline: string;
+  occasionStepTitle: string;
+  occasionStepDescription: string;
+  draftEventTitle: string;
+  timelineStepDescription: string;
+  galleryStepDescription: string;
+  timeline: SectionHeadingCopy;
+  memoryWall: SectionHeadingCopy & { cta: string };
+}
+
+export const SEGMENT_COPY: Record<EventSegment, SegmentCopy> = {
+  family: {
+    label: "Family & Personal",
+    tagline: "Birthdays, weddings, anniversaries, reunions and more",
+    occasionStepTitle: "What are you celebrating?",
+    occasionStepDescription: "This shapes the wording and suggestions throughout the rest of the wizard.",
+    draftEventTitle: "My Celebration",
+    timelineStepDescription: "Optional — add the life milestones shown in your public Timeline section, in order.",
+    galleryStepDescription: "Optional — upload the photos shown in your public Gallery section, by category.",
+    timeline: {
+      eyebrow: "A Journey Through Time",
+      title: "Life Timeline",
+      description: "A look back at the chapters that shaped this story.",
+    },
+    memoryWall: {
+      eyebrow: "Shared With Love",
+      title: "Memory Wall",
+      description: "Photos, videos, voice messages, and notes from everyone celebrating with us.",
+      cta: "Share Your Memory",
+    },
+  },
+  corporate: {
+    label: "Corporate & Professional",
+    tagline: "Conferences, offsites, annual days, launches and team events",
+    occasionStepTitle: "What kind of event is it?",
+    occasionStepDescription: "This shapes the wording, templates and suggestions for your attendees.",
+    draftEventTitle: "Our Event",
+    timelineStepDescription: "Optional — add company or team milestones shown in your public Our Journey section, in order.",
+    galleryStepDescription: "Optional — upload photos for your public Gallery, sorted into sections like Keynotes, The Team and Networking.",
+    timeline: {
+      eyebrow: "How We Got Here",
+      title: "Our Journey",
+      description: "The milestones behind this moment.",
+    },
+    memoryWall: {
+      eyebrow: "Captured Together",
+      title: "Event Wall",
+      description: "Photos, videos, voice notes, and messages shared by attendees.",
+      cta: "Share a Moment",
+    },
+  },
+};
+
+export function getSegmentCopy(category: EventCategory | null | undefined): SegmentCopy {
+  return SEGMENT_COPY[getEventSegment(category)];
+}
+
+export function parseEventSegment(value: unknown): EventSegment {
+  return value === "corporate" ? "corporate" : "family";
+}

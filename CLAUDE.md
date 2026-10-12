@@ -156,6 +156,19 @@ Minimal White, Kids Cartoon, Neon Party) share the exact same section
 stack and only swap CSS custom properties + a named animation
 personality — see `templates/`.
 
+### Family vs. corporate segment (added 2026-10-12)
+
+The wizard's first question (`/start`, then the Occasion step) is family
+or corporate. The segment is **derived from `events.category`** (only
+`corporate` and `workshop` are corporate) via `lib/event-segment.ts` —
+no column, so existing events are unaffected. All features are shared;
+only copy/defaults differ, looked up from `SEGMENT_COPY` /
+`SEGMENT_OCCASIONS`. Corporate occasion tiles (Conference, Annual Day…)
+reuse the `corporate` category and prefill `events.occasion`; corporate
+gallery chapter names are seeded into `events.gallery_chapter_titles`.
+Pass `category` to a shared section to get segment copy (see
+TimelineSection, MemoryWallSection). Roadmap: `docs/corporate-events-plan.md`.
+
 ### Guest experience
 
 - **RSVP** — personal `/invite/[token]` link with automatic
