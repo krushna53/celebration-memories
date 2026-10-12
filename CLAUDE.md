@@ -168,6 +168,9 @@ reuse the `corporate` category and prefill `events.occasion`; corporate
 gallery chapter names are seeded into `events.gallery_chapter_titles`.
 Pass `category` to a shared section to get segment copy (see
 TimelineSection, MemoryWallSection). Roadmap: `docs/corporate-events-plan.md`.
+Agencies brand their events from `/admin/branding` (`services/host-brands.ts`,
+keyed by the owning account `events.owner_user_id`); a per-event override
+lives in `events.cobrand_name/url` (`services/event-cobrand.ts`).
 
 ### Guest experience
 

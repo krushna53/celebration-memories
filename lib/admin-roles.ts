@@ -37,6 +37,7 @@ export const CLIENT_ALLOWED_PATHS: readonly string[] = [
   "/admin/rsvp-payments",
   "/admin/session-organizers",
   "/admin/organizers",
+  "/admin/branding",
   "/admin/backups",
   "/admin/recycle-bin",
   "/admin/delete-account",

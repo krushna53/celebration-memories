@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,10 +18,13 @@ export function CobrandCard({
   eventId,
   initialName,
   initialUrl,
+  inheritedBrandName,
 }: {
   eventId: string;
   initialName: string;
   initialUrl: string;
+  /** The owner's agency brand (/admin/branding) shown when this event has no co-brand of its own. */
+  inheritedBrandName: string | null;
 }) {
   const [name, setName] = useState(initialName);
   const [url, setUrl] = useState(initialUrl);
@@ -40,7 +44,14 @@ export function CobrandCard({
       <h2 className="font-display text-lg text-navy-950">Co-branding</h2>
       <p className="mt-1 max-w-2xl text-sm text-navy-700/65">
         Running this event for a client? Show &ldquo;Powered by your agency&rdquo; on the event site and every invite page.
-        Leave the name empty to hide it.
+        {inheritedBrandName
+          ? ` Leave it empty to use your agency brand (${inheritedBrandName}), or fill it in to show a different name on this event.`
+          : " Leave the name empty to hide it."}{" "}
+        Set your logo and default branding for all your events on{" "}
+        <Link href="/admin/branding" className="text-gold-600 underline underline-offset-2">
+          Branding
+        </Link>
+        .
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1.5 text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70">

@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BadgeCheck,
   Building2,
   CalendarCheck,
   Image as ImageIcon,
@@ -116,6 +117,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/backups", label: "Backups", icon: History, group: "Account" },
   { href: "/admin/recycle-bin", label: "Recycle Bin", icon: RotateCcw, group: "Account" },
   { href: "/admin/delete-account", label: "Delete Account", icon: Trash2, group: "Account" },
+  { href: "/admin/branding", label: "Branding", icon: BadgeCheck, group: "Account" },
   { href: "/admin/referrals", label: "Referrals", icon: Gift, group: "Account" },
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox, group: "Platform" },
   { href: "/admin/payment-settings", label: "Payment Settings", icon: QrCode, group: "Payments" },

@@ -85,8 +85,13 @@ Done:
   wording from `SEGMENT_COPY[segment].reels`.
 - Co-branding: "Event powered by <agency>" on the event site and invite
   pages, set from an Event Settings card (`services/event-cobrand.ts`).
-  **Needs migration `20261012120000_event_cobranding.sql`** — until it
-  runs, nothing is shown and saving the card explains why.
+  Migration `20261012120000_event_cobranding.sql` applied 2026-10-12.
+- Agency branding (`/admin/branding`, `services/host-brands.ts`, table
+  `host_brands`, applied 2026-10-12): a host account (e.g. CorpCrew) sets
+  its name, website and logo once; every event it owns
+  (`events.owner_user_id`) shows "Event powered by <brand>" with the logo,
+  and the dashboard header shows the brand to everyone on that event's
+  team. An event's own Co-branding card overrides the name per event.
 
 Still open (each needs a decision first):
 - **QR check-in** — needs a self-hosted QR generator (new npm

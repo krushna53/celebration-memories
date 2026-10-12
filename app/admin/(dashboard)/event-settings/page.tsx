@@ -12,7 +12,8 @@ import { NoEventState } from "@/features/admin/components/no-event-state";
 import { HonoreeReelPhotoCard } from "@/features/admin/reels/honoree-reel-photo-card";
 import { getReelSettings } from "@/services/guest-reels";
 import { CobrandCard } from "@/features/admin/event-settings/cobrand-card";
-import { getEventCobrand } from "@/services/event-cobrand";
+import { getEventOwnCobrand } from "@/services/event-cobrand";
+import { getBrandForEvent } from "@/services/host-brands";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function AdminEventSettingsPage() {
     return <NoEventState />;
   }
 
-  const cobrand = await getEventCobrand(event.id);
+  const [cobrand, hostBrand] = await Promise.all([getEventOwnCobrand(event.id), getBrandForEvent(event.id)]);
   const shareImageUrl = event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null;
   const shareVideoUrl = event.shareVideoPath ? publicMediaUrl("gallery", event.shareVideoPath) : null;
   const highlightReelUrl = event.highlightReelPath
@@ -62,7 +63,12 @@ export default async function AdminEventSettingsPage() {
         photoUrl={reelSettings.honoreePhotoUrl}
         category={event.category}
       />
-      <CobrandCard eventId={event.id} initialName={cobrand?.name ?? ""} initialUrl={cobrand?.url ?? ""} />
+      <CobrandCard
+        eventId={event.id}
+        initialName={cobrand?.name ?? ""}
+        initialUrl={cobrand?.url ?? ""}
+        inheritedBrandName={hostBrand?.displayName ?? null}
+      />
     </div>
   );
 }

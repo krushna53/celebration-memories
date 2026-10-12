@@ -1,7 +1,7 @@
 import { getEventCobrand } from "@/services/event-cobrand";
 
 /**
- * "Powered by <agency>" line for agency-run events (services/event-cobrand.ts).
+ * "Powered by <agency>" line (with logo when the agency has one) for agency-run events (services/event-cobrand.ts).
  * Renders nothing when the host hasn't set one — the default for every
  * event — so existing sites are unchanged.
  */
@@ -10,7 +10,12 @@ export async function PoweredByBand({ eventId }: { eventId: string }) {
   if (!cobrand) return null;
 
   return (
-    <div className="surface-feature bg-navy-950 py-5 text-center text-xs tracking-wide text-ivory-100/60">
+    <div className="surface-feature flex items-center justify-center gap-2.5 bg-navy-950 py-5 text-center text-xs tracking-wide text-ivory-100/60">
+      {cobrand.logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={cobrand.logoUrl} alt="" className="h-7 w-auto max-w-[120px] rounded bg-white/90 object-contain p-0.5" />
+      ) : null}
+      <span>
       Event powered by{" "}
       {cobrand.url ? (
         <a
@@ -24,6 +29,7 @@ export async function PoweredByBand({ eventId }: { eventId: string }) {
       ) : (
         <span className="font-medium text-gold-300">{cobrand.name}</span>
       )}
+      </span>
     </div>
   );
 }

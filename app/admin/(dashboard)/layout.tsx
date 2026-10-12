@@ -15,6 +15,7 @@ import { AdminNav } from "@/features/admin/components/admin-nav";
 import { ADMIN_NAV } from "@/lib/admin-nav";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { getEventSegment } from "@/lib/event-segment";
+import { getBrandForEvent } from "@/services/host-brands";
 
 
 export default async function AdminDashboardLayout({
@@ -27,7 +28,10 @@ export default async function AdminDashboardLayout({
     redirect("/login");
   }
 
-  const segment = getEventSegment((await resolveAdminEvent(admin))?.category);
+  const managedEvent = await resolveAdminEvent(admin);
+  const segment = getEventSegment(managedEvent?.category);
+  // Agency branding (services/host-brands.ts): the managed event's owner brand, shown to everyone on that event's team.
+  const brand = managedEvent ? await getBrandForEvent(managedEvent.id) : null;
   const visibleNav = ADMIN_NAV.filter(
     (item) =>
       isPathAllowedForRole(item.href, admin.role) ||
@@ -47,14 +51,25 @@ export default async function AdminDashboardLayout({
     <div className="min-h-screen bg-ivory-100">
       <header className="border-b border-navy-950/10 bg-navy-950">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:gap-4 sm:px-6 sm:py-4">
-          <Link href="/admin" className="flex min-w-0 items-center gap-2 font-display text-lg text-gold-300">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-6 w-6 shrink-0" />
-            {/* "· Admin" drops on phones so the header stays on one line. */}
-            <span className="truncate">
-              EveryMoment<span className="hidden sm:inline"> · Admin</span>
-            </span>
-          </Link>
+          {brand ? (
+            <Link href="/admin" className="flex min-w-0 items-center gap-2.5 font-display text-lg text-gold-300">
+              {brand.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={brand.logoUrl} alt="" aria-hidden="true" className="h-7 w-auto max-w-[96px] shrink-0 rounded bg-white/90 object-contain p-0.5" />
+              ) : null}
+              <span className="truncate">{brand.displayName}</span>
+              <span className="hidden shrink-0 font-sans text-xs text-ivory-100/50 sm:inline">on EveryMoment</span>
+            </Link>
+          ) : (
+            <Link href="/admin" className="flex min-w-0 items-center gap-2 font-display text-lg text-gold-300">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/everymoment-logo-icon.svg" alt="" aria-hidden="true" className="h-6 w-6 shrink-0" />
+              {/* "· Admin" drops on phones so the header stays on one line. */}
+              <span className="truncate">
+                EveryMoment<span className="hidden sm:inline"> · Admin</span>
+              </span>
+            </Link>
+          )}
           <div className="flex shrink-0 items-center gap-1 sm:gap-4">
             {admin.role === "client" ? (
               <span className="hidden rounded-full border border-gold-500/30 px-2.5 py-1 text-xs text-gold-300 sm:inline">
