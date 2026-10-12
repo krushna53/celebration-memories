@@ -52,6 +52,12 @@ export interface GuestReelInput {
   theme: ReelTheme;
   /** Shown small on the outro, e.g. "everymoment.app". */
   siteLabel: string;
+  /**
+   * "and" (default) pairs the guest with the guest of honour ("Priya &
+   * Mahesh"); "at" is for corporate events, where honoreeName is the
+   * event/team name ("Priya at Acme Annual Day").
+   */
+  pairing?: "and" | "at";
 }
 
 export const REEL_WIDTH = 1080;
@@ -205,7 +211,7 @@ export function buildGuestReelEdit(input: GuestReelInput): { edit: Record<string
   }
   textClips.push(
     htmlClip({
-      html: `<p class="eyebrow">${escapeHtml(input.occasionLine.toUpperCase())}</p><p class="name">${honoree}</p><p class="and">&amp; ${guest}</p>`,
+      html: `<p class="eyebrow">${escapeHtml(input.occasionLine.toUpperCase())}</p><p class="name">${honoree}</p><p class="and">${input.pairing === "at" ? "with" : "&amp;"} ${guest}</p>`,
       css: [
         `p{margin:0;text-align:center;}`,
         `.eyebrow{font-family:${SANS};font-size:34px;letter-spacing:10px;color:#ffffff;opacity:.9;}`,
@@ -244,7 +250,7 @@ export function buildGuestReelEdit(input: GuestReelInput): { edit: Record<string
   const captionAt = (index: number) => photosStart + index * perPhoto;
   const captions: { at: number; html: string }[] = [];
   if (firstTogether >= 0) {
-    captions.push({ at: captionAt(firstTogether), html: `<p class="script">${guest} &amp; ${honoree}</p>` });
+    captions.push({ at: captionAt(firstTogether), html: `<p class="script">${guest} ${input.pairing === "at" ? "at" : "&amp;"} ${honoree}</p>` });
   } else if (photos.length > 0) {
     captions.push({ at: captionAt(0), html: `<p class="script">${guest}</p>` });
   }

@@ -4,7 +4,7 @@ import { LayoutGrid, LogOut } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { signOutAction } from "@/features/admin/auth-actions";
-import { isPathAllowedForRole } from "@/lib/admin-roles";
+import { clientMayCheckIn, isPathAllowedForRole } from "@/lib/admin-roles";
 import { TOUR_STEP_COPY } from "@/lib/admin-tour-steps";
 import { AdminTourController, type TourStep } from "@/features/admin/tour/admin-tour-controller";
 import { FaqChatbot } from "@/features/admin/support/faq-chatbot";
@@ -27,8 +27,12 @@ export default async function AdminDashboardLayout({
     redirect("/login");
   }
 
-  const visibleNav = ADMIN_NAV.filter((item) => isPathAllowedForRole(item.href, admin.role));
   const segment = getEventSegment((await resolveAdminEvent(admin))?.category);
+  const visibleNav = ADMIN_NAV.filter(
+    (item) =>
+      isPathAllowedForRole(item.href, admin.role) ||
+      (item.href === "/admin/checkin" && clientMayCheckIn(admin.role, segment)),
+  );
 
   const tourSteps: TourStep[] = visibleNav
     .map((item) => {

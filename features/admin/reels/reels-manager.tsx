@@ -35,10 +35,14 @@ import {
   updateReelSettingsAction,
 } from "@/features/admin/reels/actions";
 import { buildReference, loadFaceApi, scanPhoto, type Reference } from "@/features/admin/reels/face-matcher";
+import { getSegmentCopy } from "@/lib/event-segment";
+import type { EventCategory } from "@/types/event";
 
 interface ReelsManagerProps {
   eventId: string;
   honoreeName: string;
+  /** Family vs. corporate reel wording (lib/event-segment.ts). */
+  category?: EventCategory | null;
   hostedBy: string;
   eventEnded: boolean;
   siteUrl: string;
@@ -78,6 +82,7 @@ const STATUS_LABEL: Record<string, string> = {
 export function ReelsManager({
   eventId,
   honoreeName,
+  category,
   hostedBy,
   eventEnded,
   siteUrl,
@@ -87,6 +92,7 @@ export function ReelsManager({
   pool,
   references,
 }: ReelsManagerProps) {
+  const reelsCopy = getSegmentCopy(category).reels;
   const router = useRouter();
   const [enabled, setEnabled] = useState(settings.enabled);
   const [music, setMusic] = useState<ReelMusicKey>(settings.music);
@@ -270,7 +276,7 @@ export function ReelsManager({
 
   function whatsappFor(g: ReelGuest) {
     const first = g.name.split(" ")[0];
-    const text = `Hi ${first}! ${hostedBy} made you a personal reel from ${honoreeName}'s celebration 🎉 Watch it and share it to your Instagram or WhatsApp Status: ${siteUrl}/invite/${g.token}#reel`;
+    const text = reelsCopy.whatsapp(first ?? g.name, hostedBy, honoreeName, `${siteUrl}/invite/${g.token}#reel`);
     const digits = (g.phone ?? "").replace(/\D/g, "");
     return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
   }
@@ -351,20 +357,12 @@ export function ReelsManager({
         </div>
       </Step>
 
-      <Step n={2} title={`Photo of ${honoreeName}`} done={honoreeRef}>
-        <p className="mb-3 text-sm text-navy-700/70">
-          A clear, front-facing photo of the guest of honour — used to find them in the event photos so every reel features
-          them with the guest.
-        </p>
+      <Step n={2} title={reelsCopy.photoStepTitle(honoreeName)} done={honoreeRef}>
+        <p className="mb-3 text-sm text-navy-700/70">{reelsCopy.photoDescription(honoreeName)}</p>
         <ConsentPhotoPicker
           target={{ kind: "honoree", eventId }}
           currentPhotoUrl={settings.honoreePhotoUrl}
-          consentLabel={
-            <>
-              {honoreeName} has agreed that this photo may be used to recognise them in this event&apos;s photos and to create
-              personalised reels for guests.
-            </>
-          }
+          consentLabel={<>{reelsCopy.consent(honoreeName)}</>}
         />
       </Step>
 
@@ -391,7 +389,7 @@ export function ReelsManager({
                     {g.photoUrl
                       ? `${g.consentSource === "host" ? "Added by host" : "Opted in"} · in ${g.togetherCount} photo${
                           g.togetherCount === 1 ? "" : "s"
-                        } with ${honoreeName}, ${g.soloCount} without`
+                        } ${reelsCopy.togetherWith(honoreeName)}, ${g.soloCount} without`
                       : "No photo yet"}
                   </p>
                 </div>

@@ -7,6 +7,7 @@ import { SITE_URL } from "@/lib/constants";
 import { getReelSettings, listReelGuests, listReelPool, listReelReferences } from "@/services/guest-reels";
 import { ReelsManager } from "@/features/admin/reels/reels-manager";
 import { NoEventState } from "@/features/admin/components/no-event-state";
+import { getSegmentCopy } from "@/lib/event-segment";
 
 export const dynamic = "force-dynamic";
 
@@ -30,18 +31,17 @@ export default async function AdminReelsPage() {
     listReelReferences(event.id, event.honoreeName),
   ]);
 
+  const reelsCopy = getSegmentCopy(event.category).reels;
+
   return (
     <div>
-      <h1 className="font-display text-2xl text-navy-950">Guest Reels</h1>
-      <p className="mt-1 max-w-2xl text-sm text-navy-700/60">
-        After the celebration, give every guest a personal Instagram-ready reel of the moments they shared with{" "}
-        {event.honoreeName}. AI recognises each guest (only those who agreed) in the photos from the day and builds their
-        reel automatically.
-      </p>
+      <h1 className="font-display text-2xl text-navy-950">{reelsCopy.pageTitle}</h1>
+      <p className="mt-1 max-w-2xl text-sm text-navy-700/60">{reelsCopy.pageIntro(event.honoreeName)}</p>
       <div className="mt-6">
         <ReelsManager
           eventId={event.id}
           honoreeName={event.honoreeName}
+          category={event.category}
           hostedBy={event.hostedBy}
           eventEnded={Date.parse(event.endAt) < Date.now()}
           siteUrl={SITE_URL}

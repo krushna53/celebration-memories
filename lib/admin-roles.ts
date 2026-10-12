@@ -1,4 +1,5 @@
 import type { AdminRole } from "@/services/admin-auth";
+import type { EventSegment } from "@/lib/event-segment";
 
 /**
  * Single source of truth for what a "client" admin (the event host) can
@@ -79,6 +80,17 @@ export const ORGANIZER_ALLOWED_PATHS: readonly string[] = [
   "/admin/checkin",
   "/admin/help",
 ];
+
+/**
+ * Event-day Check-In for a client host on a corporate event — the host is
+ * usually the agency running the registration desk itself, so Check-In
+ * opens up for them there. Family events keep Check-In for owner +
+ * organizer only. Used by the nav, the page guard and the Server Action
+ * gate (services/admin-auth.ts) so all three layers agree.
+ */
+export function clientMayCheckIn(role: AdminRole, segment: EventSegment): boolean {
+  return role === "client" && segment === "corporate";
+}
 
 export function isPathAllowedForRole(path: string, role: AdminRole): boolean {
   if (role === "owner") return true;

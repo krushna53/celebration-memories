@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { ConsentPhotoPicker } from "@/features/reels/consent-photo-picker";
+import { getEventSegment, getSegmentCopy } from "@/lib/event-segment";
+import type { EventCategory } from "@/types/event";
 
 /**
  * Event Settings card for the guest-of-honour photo used by Guest Reels
@@ -10,11 +12,35 @@ export function HonoreeReelPhotoCard({
   eventId,
   honoreeName,
   photoUrl,
+  category,
 }: {
   eventId: string;
   honoreeName: string;
   photoUrl: string | null;
+  /** Corporate events ask for a "featured person" instead of a guest of honour (lib/event-segment.ts). */
+  category?: EventCategory | null;
 }) {
+  const copy = getSegmentCopy(category).reels;
+  if (getEventSegment(category) === "corporate") {
+    return (
+      <section className="mt-8 rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm">
+        <h2 className="font-display text-lg text-navy-950">{copy.photoCardTitle}</h2>
+        <p className="mt-1 mb-4 max-w-2xl text-sm text-navy-700/65">
+          {copy.photoDescription(honoreeName)} Set up the rest on{" "}
+          <Link href="/admin/reels" className="text-gold-600 underline underline-offset-2">
+            {copy.pageTitle}
+          </Link>
+          .
+        </p>
+        <ConsentPhotoPicker
+          target={{ kind: "honoree", eventId }}
+          currentPhotoUrl={photoUrl}
+          consentLabel={<>{copy.consent(honoreeName)}</>}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="mt-8 rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm">
       <h2 className="font-display text-lg text-navy-950">Guest of honour photo — for personal reels</h2>

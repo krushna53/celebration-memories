@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search, UserCheck, UserX } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -9,10 +10,28 @@ import type { InviteeRecord } from "@/types/event";
 
 interface CheckinManagerProps {
   initialInvitees: InviteeRecord[];
+  searchPlaceholder?: string;
 }
 
-export function CheckinManager({ initialInvitees }: CheckinManagerProps) {
+/** How often the list re-syncs, so several desks (or the dashboard) see each other's check-ins. */
+const REFRESH_MS = 15_000;
+
+export function CheckinManager({ initialInvitees, searchPlaceholder = "Search guest name..." }: CheckinManagerProps) {
+  const router = useRouter();
   const [invitees, setInvitees] = useState(initialInvitees);
+  const [previousInitial, setPreviousInitial] = useState(initialInvitees);
+  if (previousInitial !== initialInvitees) {
+    setPreviousInitial(initialInvitees);
+    setInvitees(initialInvitees);
+  }
+
+  // Live attendance: re-fetch the server-rendered list while the tab is visible.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") router.refresh();
+    }, REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [router]);
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -21,7 +40,13 @@ export function CheckinManager({ initialInvitees }: CheckinManagerProps) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return invitees;
-    return invitees.filter((inv) => inv.name.toLowerCase().includes(q));
+    const digits = q.replace(/\D/g, "");
+    return invitees.filter(
+      (inv) =>
+        inv.name.toLowerCase().includes(q) ||
+        (inv.relationship?.toLowerCase().includes(q) ?? false) ||
+        (digits.length >= 3 && (inv.phone?.replace(/\D/g, "").includes(digits) ?? false)),
+    );
   }, [invitees, search]);
 
   async function toggle(id: string, next: boolean) {
@@ -49,7 +74,7 @@ export function CheckinManager({ initialInvitees }: CheckinManagerProps) {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search guest name..."
+          placeholder={searchPlaceholder}
           className="w-full rounded-lg border border-navy-950/15 bg-white py-2.5 pl-9 pr-3 text-sm focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30"
         />
       </div>

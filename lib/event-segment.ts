@@ -162,6 +162,29 @@ export interface SegmentCopy {
   timeline: SectionHeadingCopy;
   memoryWall: SectionHeadingCopy & { cta: string };
   guest: GuestCopy;
+  reels: ReelsCopy;
+}
+
+/**
+ * Guest Reels wording. Family reels pair each guest with the guest of
+ * honour (`h` = honoree name); corporate reels pair attendees with a
+ * "featured person" (CEO, keynote speaker…) whose name isn't stored, so
+ * corporate copy never names them and refers to the event (`h` = the
+ * event/team name) instead.
+ */
+export interface ReelsCopy {
+  pageTitle: string;
+  pageIntro: (h: string) => string;
+  photoCardTitle: string;
+  photoStepTitle: (h: string) => string;
+  photoDescription: (h: string) => string;
+  consent: (h: string) => string;
+  togetherWith: (h: string) => string;
+  whatsapp: (first: string, hostedBy: string, h: string, url: string) => string;
+  readyDescription: (h: string) => string;
+  shareText: (h: string) => string;
+  waiting: (hostedBy: string, h: string) => string;
+  invite: (h: string) => string;
 }
 
 /**
@@ -224,6 +247,27 @@ export const SEGMENT_COPY: Record<EventSegment, SegmentCopy> = {
       countdownLabel: "Countdown to the celebration",
       rsvpReminder: "Get a reminder to share a photo or video memory before the big day?",
     },
+    reels: {
+      pageTitle: "Guest Reels",
+      pageIntro: (h) =>
+        `After the celebration, give every guest a personal Instagram-ready reel of the moments they shared with ${h}. AI recognises each guest (only those who agreed) in the photos from the day and builds their reel automatically.`,
+      photoCardTitle: "Guest of honour photo — for personal reels",
+      photoStepTitle: (h) => `Photo of ${h}`,
+      photoDescription: () =>
+        "A clear, front-facing photo of the guest of honour — used to find them in the event photos so every reel features them with the guest.",
+      consent: (h) =>
+        `${h} has agreed that this photo may be used to recognise them in this event's photos and to create personalised reels for guests.`,
+      togetherWith: (h) => `with ${h}`,
+      whatsapp: (first, hostedBy, h, url) =>
+        `Hi ${first}! ${hostedBy} made you a personal reel from ${h}'s celebration 🎉 Watch it and share it to your Instagram or WhatsApp Status: ${url}`,
+      readyDescription: (h) =>
+        `The moments you shared with ${h}, set to music. Post it to your Instagram Reels, Story or WhatsApp Status.`,
+      shareText: (h) => `Celebrating ${h} 🎉`,
+      waiting: (hostedBy, h) =>
+        `You're in! Once ${hostedBy} has added the photos from the day, your reel of you with ${h} will appear right here.`,
+      invite: (h) =>
+        `Want a short video of the photos you're in with ${h}? Add a clear selfie so we can find you in the event photos.`,
+    },
   },
   corporate: {
     label: "Corporate & Professional",
@@ -260,6 +304,27 @@ export const SEGMENT_COPY: Record<EventSegment, SegmentCopy> = {
       seeWall: "See the event wall",
       countdownLabel: "Countdown to the event",
       rsvpReminder: "Get a reminder to share your photos and videos from the event?",
+    },
+    reels: {
+      pageTitle: "Attendee Reels",
+      pageIntro: (h) =>
+        `After ${h}, give every attendee a personal reel of their moments — ready for LinkedIn, Instagram and WhatsApp Status. AI recognises each attendee (only those who agreed) in the event photos and builds their reel automatically.`,
+      photoCardTitle: "Featured person photo — for personal reels",
+      photoStepTitle: () => "Photo of your featured person",
+      photoDescription: () =>
+        "A clear, front-facing photo of the person attendees will want to be seen with — your CEO, keynote speaker or award presenter. It's used to find them in the event photos so each reel features them with the attendee.",
+      consent: () =>
+        "The person in this photo has agreed that it may be used to recognise them in this event's photos and to create personalised reels for attendees.",
+      togetherWith: () => "with the featured person",
+      whatsapp: (first, hostedBy, h, url) =>
+        `Hi ${first}! ${hostedBy} made you a personal reel from ${h} 🎬 Watch it and share it on LinkedIn, Instagram or WhatsApp Status: ${url}`,
+      readyDescription: (h) =>
+        `Your moments from ${h}, set to music. Share it on LinkedIn, Instagram Reels or WhatsApp Status.`,
+      shareText: (h) => `My highlights from ${h}`,
+      waiting: (hostedBy, h) =>
+        `You're in! Once ${hostedBy} has added the photos from ${h}, your personal reel will appear right here.`,
+      invite: (h) =>
+        `Want a short video of the photos you're in at ${h}? Add a clear selfie so we can find you in the event photos.`,
     },
   },
 };

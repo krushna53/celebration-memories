@@ -18,6 +18,31 @@ import { beginDraftAction } from "@/features/start/actions/begin";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 import { SEGMENT_OCCASIONS } from "@/lib/event-segment";
 
+/** Click-to-chat for agencies — same number as BUILDER, agency-specific opener. */
+const AGENCY_WHATSAPP_URL =
+  "https://wa.me/919987982969?text=" +
+  encodeURIComponent("Hi Harshal, I run corporate events and would like a 30-minute EveryMoment demo for my agency.");
+
+const PARTNER_OPTIONS: { title: string; body: string; highlight?: boolean }[] = [
+  { title: "Per event", body: "Pay per client event. Ideal for a pilot or occasional use." },
+  {
+    title: "Agency plan",
+    body: "A set number of events a year at a fixed price, with client logins included.",
+    highlight: true,
+  },
+  {
+    title: "Co-branded",
+    body: "\"Powered by your agency\" on every event site and invite page, bundled into your own packages.",
+  },
+];
+
+const PILOT_STEPS = [
+  "A 30-minute live demo",
+  "Pick one of your upcoming events",
+  "We set it up together with you",
+  "Review the event report with your client",
+];
+
 export const metadata: Metadata = {
   title: "Corporate Event Websites, RSVP & Check-In | EveryMoment",
   description:
@@ -130,6 +155,72 @@ export default function CorporatePage() {
               ))}
             </ul>
           </div>
+
+          <section className="mt-16" aria-labelledby="partner-heading">
+            <div className="text-center">
+              <p className="text-xs uppercase tracking-[0.3em] text-gold-600">Working together</p>
+              <h2 id="partner-heading" className="mt-3 font-display text-2xl text-navy-950 sm:text-3xl">
+                Partnership options for agencies
+              </h2>
+            </div>
+            <div className="mt-8 grid gap-5 md:grid-cols-3">
+              {PARTNER_OPTIONS.map((option) => (
+                <div
+                  key={option.title}
+                  className={
+                    option.highlight
+                      ? "rounded-2xl bg-navy-950 p-6 text-ivory-50 shadow-sm"
+                      : "rounded-2xl border border-navy-950/10 bg-white p-6 shadow-sm"
+                  }
+                >
+                  <h3 className={option.highlight ? "font-display text-xl text-gold-300" : "font-display text-xl text-navy-950"}>
+                    {option.title}
+                  </h3>
+                  <p className={option.highlight ? "mt-2 text-sm text-ivory-100/75" : "mt-2 text-sm text-navy-700/80"}>
+                    {option.body}
+                  </p>
+                  <a
+                    href={AGENCY_WHATSAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={
+                      option.highlight
+                        ? "mt-4 inline-block text-sm font-medium text-gold-300 underline underline-offset-4"
+                        : "mt-4 inline-block text-sm font-medium text-gold-700 underline underline-offset-4"
+                    }
+                  >
+                    Talk to us about pricing
+                  </a>
+                </div>
+              ))}
+            </div>
+            <p className="mt-6 text-center text-sm text-navy-700/80">
+              Bonus: list your agency for free in the{" "}
+              <Link href="/business" className="font-medium text-gold-700 underline underline-offset-4">
+                EveryMoment vendor directory
+              </Link>
+              .
+            </p>
+          </section>
+
+          <section className="mt-16 rounded-3xl border border-gold-500/20 bg-white p-8 sm:p-10" aria-labelledby="pilot-heading">
+            <h2 id="pilot-heading" className="font-display text-2xl text-navy-950">
+              Pilot it on your next event
+            </h2>
+            <ol className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {PILOT_STEPS.map((step, i) => (
+                <li key={step} className="border-t-2 border-gold-500 pt-4">
+                  <span className="font-display text-2xl text-gold-600">{i + 1}</span>
+                  <p className="mt-1 text-sm text-navy-950">{step}</p>
+                </li>
+              ))}
+            </ol>
+            <Button asChild size="lg" className="mt-8">
+              <a href={AGENCY_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                Book a demo on WhatsApp
+              </a>
+            </Button>
+          </section>
 
           <div className="mt-16 text-center">
             <Images className="mx-auto text-gold-500" size={28} aria-hidden="true" />

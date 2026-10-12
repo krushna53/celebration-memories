@@ -14,6 +14,7 @@ import { externalMediaUrl } from "@/services/external-media";
 import { assertEventStorageAvailable, StorageQuotaError } from "@/services/storage-quota";
 import { UploadValidationError } from "@/services/uploads";
 import type { EventRecord } from "@/types/event";
+import { getEventSegment } from "@/lib/event-segment";
 
 /**
  * Personalised Guest Reels — see supabase/migrations/20261006140000_guest_reels.sql
@@ -705,6 +706,7 @@ export async function queueGuestReel(event: EventRecord, inviteeId: string, admi
     honoreeName: event.honoreeName,
     hostedBy: event.hostedBy || null,
     occasionLine: event.occasion || event.eventTitle,
+    pairing: getEventSegment(event.category) === "corporate" ? "at" : "and",
     dateLine: formatEventDate(event.startAt, event.timezone),
     honoreePhoto,
     photos,

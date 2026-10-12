@@ -6,12 +6,16 @@ import { Reveal } from "@/components/motion/reveal";
 import { ConsentPhotoPicker } from "@/features/reels/consent-photo-picker";
 import { ReelSharePanel } from "@/features/reels/reel-share-panel";
 import { getGuestReelForInvitee, getInviteeReelOptIn } from "@/services/guest-reels";
+import { getSegmentCopy } from "@/lib/event-segment";
+import type { EventCategory } from "@/types/event";
 
 interface GuestReelSectionProps {
   token: string;
   inviteeId: string;
   guestName: string;
   honoreeName: string;
+  /** Family vs. corporate reel wording (lib/event-segment.ts). */
+  category?: EventCategory | null;
   hostedBy: string;
 }
 
@@ -21,7 +25,8 @@ interface GuestReelSectionProps {
  * never added a selfie — a last chance to opt in. Only rendered when the
  * host has turned Guest Reels on (see app/invite/[token]/page.tsx).
  */
-export async function GuestReelSection({ token, inviteeId, guestName, honoreeName, hostedBy }: GuestReelSectionProps) {
+export async function GuestReelSection({ token, inviteeId, guestName, honoreeName, hostedBy, category }: GuestReelSectionProps) {
+  const reelsCopy = getSegmentCopy(category).reels;
   const [reel, optIn] = await Promise.all([getGuestReelForInvitee(inviteeId), getInviteeReelOptIn(inviteeId)]);
   const first = guestName.trim().split(/\s+/)[0] ?? guestName;
 
@@ -32,14 +37,14 @@ export async function GuestReelSection({ token, inviteeId, guestName, honoreeNam
           <SectionHeading
             eyebrow="Made just for you"
             title={`${first}, your reel is ready`}
-            description={`The moments you shared with ${honoreeName}, set to music. Post it to your Instagram Reels, Story or WhatsApp Status.`}
+            description={reelsCopy.readyDescription(honoreeName)}
           />
         </Reveal>
         <Reveal delay={0.1} className="mt-8">
           <ReelSharePanel
             videoUrl={reel.videoUrl}
             shareUrl={`${SITE_URL}/reels/${reel.shareToken}`}
-            shareText={`Celebrating ${honoreeName} 🎉`}
+            shareText={reelsCopy.shareText(honoreeName)}
             fileName={`${first.toLowerCase()}-reel`}
           />
         </Reveal>
@@ -58,12 +63,11 @@ export async function GuestReelSection({ token, inviteeId, guestName, honoreeNam
           <p className="mt-2 text-sm text-navy-700/80">
             {reel && (reel.status === "queued" || reel.status === "rendering")
               ? "Your reel is being made right now — check back in a few minutes."
-              : `You're in! Once ${hostedBy} has added the photos from the day, your reel of you with ${honoreeName} will appear right here.`}
+              : reelsCopy.waiting(hostedBy, honoreeName)}
           </p>
         ) : (
           <p className="mt-2 text-sm text-navy-700/80">
-            Want a short video of the photos you&apos;re in with {honoreeName}? Add a clear selfie so we can find you in the
-            event photos.
+            {reelsCopy.invite(honoreeName)}
           </p>
         )}
         <div className="mt-4">

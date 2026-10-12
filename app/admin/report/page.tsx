@@ -5,6 +5,8 @@ import { ArrowLeft } from "lucide-react";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { getDashboardStats } from "@/services/admin-stats";
+import { getFirstOpensByDay } from "@/services/event-report";
+import { formatCalendarDate } from "@/lib/timezone";
 import { getEventSegment } from "@/lib/event-segment";
 import { formatEventDate, formatEventTimeRange } from "@/lib/timezone";
 import { PrintButton } from "@/features/admin/report/print-button";
@@ -36,7 +38,12 @@ export default async function AdminReportPage() {
   const event = await resolveAdminEvent(admin);
   if (!event) redirect("/admin");
 
-  const stats = await getDashboardStats(event.id);
+  const [stats, opensByDay] = await Promise.all([
+    getDashboardStats(event.id),
+    getFirstOpensByDay(event.id, event.timezone),
+  ]);
+  const recentOpens = opensByDay.slice(-10);
+  const maxOpens = Math.max(1, ...recentOpens.map((d) => d.count));
   const { invitations: inv, uploads } = stats;
   const corporate = getEventSegment(event.category) === "corporate";
   const people = corporate ? "Attendees" : "Guests";
@@ -119,6 +126,24 @@ export default async function AdminReportPage() {
               </section>
             ))}
           </div>
+
+          {recentOpens.length > 0 ? (
+            <section className="mt-8 break-inside-avoid">
+              <h2 className="font-display text-lg text-navy-950">When invites were first opened</h2>
+              <p className="mt-1 text-xs text-navy-700/50">
+                {opensByDay.length > recentOpens.length ? `Last ${recentOpens.length} days with opens` : "Each day with opens"}
+              </p>
+              <ul className="mt-3 grid gap-1.5">
+                {recentOpens.map((d) => (
+                  <li key={d.day} className="grid grid-cols-[9.5rem_1fr_2.5rem] items-center gap-3 text-sm">
+                    <span className="text-navy-700/80">{formatCalendarDate(d.day)}</span>
+                    <span className="h-2.5 rounded-full bg-gold-500/80 print:bg-gold-500" style={{ width: `${(d.count / maxOpens) * 100}%` }} />
+                    <span className="text-right tabular-nums text-navy-950">{d.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           <section className="mt-8 break-inside-avoid">
             <h2 className="font-display text-lg text-navy-950">Most Active {people}</h2>

@@ -17,6 +17,7 @@ import { normalizeSectionConfig, type SectionKey } from "@/lib/section-registry"
 import type { EventDisplayData } from "@/lib/event-display";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
+import { PoweredByBand } from "@/features/event-landing/powered-by-band";
 
 export interface EventSectionsProps {
   event: EventRecord | null;
@@ -118,6 +119,7 @@ export function EventSections({
       {event && event.eventDayMode === "public" && !ended ? (
         <EventDayHomepageSection eventId={event.id} menuStyle={event.menuStyle} />
       ) : null}
+      {event ? <PoweredByBand eventId={event.id} /> : null}
     </>
   );
 }

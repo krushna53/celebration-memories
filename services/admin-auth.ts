@@ -5,6 +5,9 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getAssignedSessionIds } from "@/services/session-organizers";
 import { getActiveEventOverrideId } from "@/lib/admin-active-event";
+import { getEventById } from "@/services/events";
+import { getEventSegment } from "@/lib/event-segment";
+import { clientMayCheckIn } from "@/lib/admin-roles";
 
 /**
  * "session_organizer" (added for #63) is a much narrower role than
@@ -246,6 +249,9 @@ export async function requireAdminForOrganizerArea(eventId: string, area: Organi
   if (admin.role === "owner") return admin;
   if (admin.role === "organizer") return admin;
   if (admin.role === "client" && area !== "checkin") return admin;
+  if (area === "checkin" && clientMayCheckIn(admin.role, getEventSegment((await getEventById(eventId))?.category))) {
+    return admin;
+  }
   throw new Error("You don't have access to this feature.");
 }
 

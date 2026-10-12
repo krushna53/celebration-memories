@@ -74,7 +74,19 @@ in `lib/event-category.ts`; segment-level wording lives in
 
 Done:
 - `/admin/report` — one-page printable event report (opens, RSVP rate,
-  attendance, uploads, most active attendees), linked from Overview.
+  attendance, uploads, most active attendees, first opens by day),
+  linked from Overview.
+- Check-In for agencies: on corporate events a client-role host can run
+  the desk (`clientMayCheckIn` — nav, page guard and Server Action gate);
+  family events keep owner + organizer only. The desk re-syncs every 15s
+  (live attendance across devices) and searches name, phone or company.
+- Attendee Reels: corporate reels pair attendees with a "featured
+  person" (CEO / keynote speaker) and caption "Priya at <event>";
+  wording from `SEGMENT_COPY[segment].reels`.
+- Co-branding: "Event powered by <agency>" on the event site and invite
+  pages, set from an Event Settings card (`services/event-cobrand.ts`).
+  **Needs migration `20261012120000_event_cobranding.sql`** — until it
+  runs, nothing is shown and saving the card explains why.
 
 Still open (each needs a decision first):
 - **QR check-in** — needs a self-hosted QR generator (new npm
@@ -84,13 +96,14 @@ Still open (each needs a decision first):
 - **Company + designation as real columns**, **speakers** and
   **sponsors** sections — need additive migrations on the shared
   production database (apply before deploying the code that reads them).
-- Agency branding ("Powered by <agency>") on event footers.
 - Multi-track agenda in Event Day.
 
 ## Phase 4 — go to market
 
-Done: `/corporate` landing page (in the marketing nav and sitemap),
-CTA starts a corporate draft.
+Done: `/corporate` landing page (in the marketing nav and sitemap) —
+lifecycle, agency features, partnership options (per event / agency plan
+/ co-branded, "talk to us" until prices are set), the 4-step pilot with
+a WhatsApp demo link, and the free vendor-directory listing.
 
-Still open: agency pricing (per-event / annual / co-branded) and a
-seeded corporate demo event for sales demos.
+Still open: real agency prices in `lib/event-plans.ts` once decided, and
+a seeded corporate demo event for sales demos.

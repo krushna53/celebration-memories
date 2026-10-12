@@ -19,6 +19,7 @@ import { Reveal } from "@/components/motion/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SiteShell } from "@/components/layout/site-shell";
 import { getSegmentCopy } from "@/lib/event-segment";
+import { PoweredByBand } from "@/features/event-landing/powered-by-band";
 
 // Always dynamic: every request must re-check the token and re-log a
 // visit, so this route is never statically generated or cached.
@@ -162,6 +163,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
             guestName={invitee.name}
             honoreeName={event.honoreeName}
             hostedBy={event.hostedBy}
+            category={event.category}
           />
         ) : null}
 
@@ -191,6 +193,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
           </Reveal>
         </div>
       </div>
+      <PoweredByBand eventId={event.id} />
     </SiteShell>
   );
 }
