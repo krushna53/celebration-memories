@@ -85,16 +85,16 @@ export default async function WizardAccountPage({ params, searchParams }: Wizard
     return (
       <div className="mx-auto max-w-sm px-4 py-16">
         <div className="rounded-2xl border border-navy-950/10 bg-white p-8 text-center">
-          <h1 className="font-display text-2xl text-navy-950">Already Signed In</h1>
+          <h1 className="font-display text-2xl text-navy-950">Platform Admin Account</h1>
           <p className="mt-2 text-sm text-navy-700/60">
             You&rsquo;re signed in as <strong className="text-navy-950">{admin.email}</strong>, the site owner&rsquo;s
-            account. Sign out first to set this event up under the host&rsquo;s own account.
+            account. This draft is not published or paid for. Sign out and use the host&rsquo;s account to choose a plan and publish it.
           </p>
           <Link
             href="/admin"
             className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:brightness-110"
           >
-            Go to Your Dashboard
+            Return to Platform Dashboard
           </Link>
           <form action={signOutAction} className="mt-3">
             <button type="submit" className="text-sm text-navy-700/60 underline underline-offset-4 hover:text-navy-950">

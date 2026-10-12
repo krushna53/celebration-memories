@@ -25,8 +25,8 @@ export default async function WizardCardPage({ params }: { params: Promise<{ tok
       token={token}
       slug="card"
       goals={event.wizardGoals}
-      title="Do you already have an invitation card?"
-      description="If you've already designed one, upload it — we'll read the details off it and fill in your event for you."
+      title={initialCardUrl ? "Your Invitation Card" : "Do you already have an invitation card?"}
+      description={initialCardUrl ? "Your uploaded card is saved. Continue with it or upload a replacement." : "Upload your card and we’ll use it to fill in your event details."}
       hideFooter
     >
       <CardUploadStep

@@ -144,7 +144,7 @@ export function AiImageGenerator({
   actions = DEFAULT_ACTIONS,
   anonAuthKey,
 }: AiImageGeneratorProps) {
-  const [mode, setMode] = useState<"generate" | "upload">("generate");
+  const [mode, setMode] = useState<"generate" | "upload">(initialUploadedResult ? "upload" : "generate");
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -401,9 +401,9 @@ export function AiImageGenerator({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <div className="grid gap-4">
-        <div className="inline-flex w-fit rounded-full border border-navy-950/10 bg-navy-950/[0.03] p-1">
+    <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid min-w-0 content-start gap-4">
+        <div className="inline-flex h-fit w-fit max-w-full flex-wrap self-start rounded-full border border-navy-950/10 bg-navy-950/[0.03] p-1">
           <button
             type="button"
             onClick={() => setMode("generate")}
@@ -541,7 +541,7 @@ export function AiImageGenerator({
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid min-w-0 content-start gap-6">
         {/*
           Both panels can show at once once they each have a real result
           (that's the point of "alongside any AI-generated image below"

@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { requireDraftEvent } from "@/features/start/draft-auth";
 import { getAdminByEventId } from "@/services/admin-auth";
 import { getBillingProvider, type BillingProvider } from "@/services/billing-settings";
-import { claimDraftEvent } from "@/services/event-drafts";
 import { recordWizardPayment } from "@/services/wizard-payments";
+import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireStripeClient, isStripeConfigured, getStripePlansConfigured, StripeNotConfiguredError } from "@/lib/stripe";
 import { requireRazorpayClient, isRazorpayConfigured, getRazorpayPlansConfigured, RazorpayNotConfiguredError } from "@/lib/razorpay";
 import {
@@ -17,7 +18,6 @@ import {
   encryptCCAvenue,
 } from "@/lib/ccavenue";
 import { getStripeSettings, getRazorpaySettings, getCCAvenueSettings } from "@/services/payment-settings";
-import { getPaymentSettings } from "@/services/payments";
 import { SITE_URL } from "@/lib/constants";
 import { wizardStepHref } from "@/features/start/wizard-steps";
 
@@ -61,37 +61,10 @@ export async function getCheckoutPrereqs(token: string, eventId: string): Promis
   };
 }
 
-/** Shared by getCheckoutPrereqs (client-facing) and claimFreeAccessAction (server-side re-check) below. */
-async function isCardCheckoutConfigured(): Promise<boolean> {
-  const provider = await getBillingProvider();
-  if (provider === "stripe") {
-    const [plans, configured] = await Promise.all([getStripePlansConfigured(), isStripeConfigured()]);
-    return configured && (plans.oneTime || plans.subscription);
-  }
-  if (provider === "razorpay") {
-    const [plans, configured] = await Promise.all([getRazorpayPlansConfigured(), isRazorpayConfigured()]);
-    return configured && (plans.oneTime || plans.subscription);
-  }
-  const [oneTime, configured] = await Promise.all([isCCAvenueOneTimeConfigured(), isCCAvenueConfigured()]);
-  return configured && oneTime;
-}
 
 export type ClaimFreeAccessResult = { success: false; error: string };
 
-/**
- * Lets a host go live for free when this site currently has no way to
- * actually charge them — neither a card processor (Stripe/Razorpay/
- * CCAvenue) nor manual UPI/QR/bank transfer details are configured
- * (see services/payments.ts's getPaymentSettings). Same shape as
- * redeemPromoCodeAction in features/start/actions/promo.ts (claim the
- * draft + record a zero-amount wizard_payments row + redirect), but
- * with no code to enter — this re-verifies the "nothing is configured"
- * condition server-side rather than trusting the client's rendering
- * decision in payment-panel.tsx, since an owner could configure a
- * processor in another tab while this page sits open. The 'free'
- * provider value (distinct from 'promo') lets /admin/billing tell the
- * two apart at a glance.
- */
+/** Publish the verified customer’s single free event; the database enforces the allowance atomically. */
 export async function claimFreeAccessAction(token: string, eventId: string): Promise<ClaimFreeAccessResult> {
   let event;
   try {
@@ -101,29 +74,13 @@ export async function claimFreeAccessAction(token: string, eventId: string): Pro
   }
   if (event.id !== eventId) return { success: false, error: "This link doesn't match that event." };
 
-  const admin = await getAdminByEventId(event.id);
-  if (!admin) {
-    return {
-      success: false,
-      error: "Please verify your email first — check your inbox for the confirmation link, then come back here.",
-    };
+  const client = await supabaseServer();
+  const { data: { user } } = await client.auth.getUser();
+  if (!user || user.is_anonymous || !user.email_confirmed_at) {
+    return { success: false, error: "Sign in and verify your email before publishing." };
   }
-
-  const [cardConfigured, manualSettings] = await Promise.all([isCardCheckoutConfigured(), getPaymentSettings()]);
-  const manualConfigured = Boolean(manualSettings.qrImagePath || manualSettings.upiId || manualSettings.bankDetails);
-  if (cardConfigured || manualConfigured) {
-    return { success: false, error: "Payment is now available on this site — please choose a plan above." };
-  }
-
-  await claimDraftEvent(event.id);
-  await recordWizardPayment({
-    eventId: event.id,
-    adminId: admin.id,
-    provider: "free",
-    plan: "one_time",
-    amount: 0,
-    currency: "usd",
-  });
+  const { error } = await supabaseAdmin().rpc("activate_free_event", { eid: event.id, buyer: user.id });
+  if (error) return { success: false, error: error.message };
 
   redirect(`/start/success?slug=${encodeURIComponent(event.slug)}`);
 }
@@ -381,3 +338,8 @@ async function createCCAvenueCheckout(params: {
 
 /** Re-exported for the webhook route, which records the payment after actually confirming it. */
 export { recordWizardPayment };
+
+export async function publishFreeEventFormAction(token: string, eventId: string): Promise<void> {
+  const result = await claimFreeAccessAction(token, eventId);
+  redirect(`/start/${token}/payment?error=${encodeURIComponent(result.error)}`);
+}

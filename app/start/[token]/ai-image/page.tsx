@@ -44,9 +44,18 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
       slug="ai-image"
       goals={event.wizardGoals}
       title="Invitation Card"
-      description="Optional — describe an image and generate it with AI to use as your invitation card and link preview image. If you save it as your Link Preview Image, it'll also lead off your Slideshow. Skip it if you'd rather not, or come back to it later."
+      description={event.shareImagePath ? "Your invitation card is saved. Continue with it, or replace it below." : "Upload your invitation card or create one with AI. This step is optional."}
       headerAction={<SkipStepLink token={token} slug="ai-image" goals={event.wizardGoals} />}
     >
+      {event.shareImagePath && (
+        <div className="mb-6 rounded-xl border bg-white p-4">
+          <p className="mb-3 font-medium">Your saved invitation card</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={publicMediaUrl("gallery", event.shareImagePath)} alt="Saved invitation card" className="max-h-80 w-full object-contain" />
+        </div>
+      )}
+      <details open={!event.shareImagePath}>
+        <summary className="mb-4 cursor-pointer font-medium">{event.shareImagePath ? "Replace or redesign card" : "Add an invitation card"}</summary>
       <AiImageGenerator
         eventId={event.id}
         defaultPrompt={defaultPrompt}
@@ -65,6 +74,7 @@ export default async function WizardAiImagePage({ params }: { params: Promise<{ 
         }}
         anonAuthKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}
       />
+      </details>
     </WizardStepShell>
   );
 }
