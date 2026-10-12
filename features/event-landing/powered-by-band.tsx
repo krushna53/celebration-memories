@@ -1,7 +1,7 @@
 import { getEventCobrand } from "@/services/event-cobrand";
 
 /**
- * "Powered by <agency>" line (with logo when the agency has one) for agency-run events (services/event-cobrand.ts).
+ * "Powered by <organiser>" line (with logo when they have one) for events run by a planner or agency (services/event-cobrand.ts).
  * Renders nothing when the host hasn't set one — the default for every
  * event — so existing sites are unchanged.
  */

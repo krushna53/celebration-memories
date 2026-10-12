@@ -4,10 +4,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getBrandForEvent } from "@/services/host-brands";
 
 /**
- * "Powered by <agency>" co-branding for an event (events.cobrand_name /
+ * "Powered by <organiser>" co-branding for an event (events.cobrand_name /
  * cobrand_url, migration 20261012120000_event_cobranding.sql).
  *
- * Falls back to the owner's agency brand (services/host-brands.ts) when
+ * Falls back to the owner's organiser brand (services/host-brands.ts) when
  * the event has none of its own.
  *
  * Kept out of EventRecord on purpose: it's read only where it's shown,
@@ -18,7 +18,7 @@ export interface EventCobrand {
   name: string;
   url: string | null;
   logoUrl: string | null;
-  /** "event" = set on this event; "host" = inherited from the owner's agency brand (services/host-brands.ts). */
+  /** "event" = set on this event; "host" = inherited from the owner's organiser brand (services/host-brands.ts). */
   source: "event" | "host";
 }
 
@@ -40,7 +40,7 @@ export async function getEventOwnCobrand(eventId: string): Promise<EventCobrand 
   }
 }
 
-/** What the event site shows: the event's own co-brand, else its owner's agency brand, else nothing. */
+/** What the event site shows: the event's own co-brand, else its owner's organiser brand, else nothing. */
 export async function getEventCobrand(eventId: string): Promise<EventCobrand | null> {
   const own = await getEventOwnCobrand(eventId);
   if (own) return own;

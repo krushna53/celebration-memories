@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminForEvent } from "@/services/admin-auth";
 import { parseCobrandInput, saveEventCobrand } from "@/services/event-cobrand";
 
-/** Saves the "Powered by <agency>" line for one event. Empty name clears it. */
+/** Saves the "Powered by <organiser>" line for one event. Empty name clears it. */
 export async function updateEventCobrandAction(
   eventId: string,
   name: string,

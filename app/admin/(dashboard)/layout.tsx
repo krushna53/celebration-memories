@@ -30,7 +30,7 @@ export default async function AdminDashboardLayout({
 
   const managedEvent = await resolveAdminEvent(admin);
   const segment = getEventSegment(managedEvent?.category);
-  // Agency branding (services/host-brands.ts): the managed event's owner brand, shown to everyone on that event's team.
+  // Organiser branding (services/host-brands.ts): the managed event's owner brand, shown to everyone on that event's team.
   const brand = managedEvent ? await getBrandForEvent(managedEvent.id) : null;
   const visibleNav = ADMIN_NAV.filter(
     (item) =>

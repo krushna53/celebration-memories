@@ -7,7 +7,7 @@ import { BrandForm } from "@/features/admin/branding/brand-form";
 export const dynamic = "force-dynamic";
 
 /**
- * Agency branding (services/host-brands.ts) — set once per host account
+ * Organiser branding (services/host-brands.ts) — set once per host account
  * and shown on every event it owns. Only the host's own account (client
  * role, or the platform owner) can open it.
  */
@@ -22,8 +22,9 @@ export default async function AdminBrandingPage() {
     <div>
       <h1 className="font-display text-2xl text-navy-950">Branding</h1>
       <p className="mt-1 max-w-2xl text-sm text-navy-700/60">
-        Running events for clients? Add your agency&rsquo;s name, website and logo once — they appear as &ldquo;Event
-        powered by&rdquo; on every event site and invite page you own, and in the dashboard header for your clients.
+        Organise events for others — weddings, corporate events, parties? Add your business name, website and logo
+        once. They appear as &ldquo;Event powered by&rdquo; on every event site and invite page you own, and in the
+        dashboard header for everyone you add to your events.
       </p>
       <div className="mt-6">
         <BrandForm

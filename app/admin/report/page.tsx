@@ -25,7 +25,7 @@ function percent(part: number, whole: number): string {
 /**
  * One-page, print-ready summary of an event's numbers — the same data as
  * the admin Overview (services/admin-stats.ts), laid out for a host or
- * agency to save as PDF and send to their client after the event.
+ * organiser to save as PDF and send to whoever they ran the event for.
  * Deliberately outside the (dashboard) layout so nothing but the report
  * prints. Same access rule as Overview: the event the admin is managing,
  * never a session organizer.

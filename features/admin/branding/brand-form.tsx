@@ -22,7 +22,7 @@ export interface BrandFormValues {
   applyToEvents: boolean;
 }
 
-/** Agency branding editor for /admin/branding — name, website, logo and whether it shows on every event this account owns. */
+/** Organiser branding editor for /admin/branding — name, website, logo and whether it shows on every event this account owns. */
 export function BrandForm({ initial, exists }: { initial: BrandFormValues; exists: boolean }) {
   const [values, setValues] = useState(initial);
   const [saved, setSaved] = useState(exists);
@@ -95,12 +95,12 @@ export function BrandForm({ initial, exists }: { initial: BrandFormValues; exist
       <section className="rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className={labelClasses}>
-            Agency / company name
+            Business / organiser name
             <input
               className={inputClasses}
               value={values.displayName}
               maxLength={60}
-              placeholder="e.g. CorpCrew"
+              placeholder="e.g. Bright Events Co."
               onChange={(e) => setValues((v) => ({ ...v, displayName: e.target.value }))}
             />
           </label>
@@ -126,7 +126,7 @@ export function BrandForm({ initial, exists }: { initial: BrandFormValues; exist
             onChange={(e) => setValues((v) => ({ ...v, applyToEvents: e.target.checked }))}
           />
           <span>
-            Show &ldquo;Event powered by {values.displayName.trim() || "your agency"}&rdquo; on every event I own
+            Show &ldquo;Event powered by {values.displayName.trim() || "your business"}&rdquo; on every event I own
             <span className="block text-xs text-navy-700/60">
               An event can still show a different name from its own Event Settings → Co-branding card.
             </span>
@@ -198,12 +198,12 @@ export function BrandForm({ initial, exists }: { initial: BrandFormValues; exist
           ) : null}
           <span>
             Event powered by{" "}
-            <span className="font-medium text-gold-300">{values.displayName.trim() || "Your agency"}</span>
+            <span className="font-medium text-gold-300">{values.displayName.trim() || "Your business"}</span>
           </span>
         </div>
         <p className="mt-3 text-xs text-navy-700/60">
-          Your logo and name also appear in the dashboard header for everyone you add to your events — your clients
-          see your brand while they manage their event.
+          Your logo and name also appear in the dashboard header for everyone you add to your events — so the people
+          you organise for see your brand while they manage their event.
         </p>
       </aside>
     </div>

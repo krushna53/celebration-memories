@@ -1,4 +1,4 @@
--- Co-branding for agency-run events ("Powered by CorpCrew"), shown as a
+-- Per-event co-branding ("Powered by <organiser>") for events run by a planner or agency, shown as a
 -- small line on the event site and invite page. Both optional; null =
 -- nothing shown. Written only by services/event-cobrand.ts (validated
 -- there), so no RLS change: events already has no public policies.

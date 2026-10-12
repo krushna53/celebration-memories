@@ -18,21 +18,21 @@ import { beginDraftAction } from "@/features/start/actions/begin";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 import { SEGMENT_OCCASIONS } from "@/lib/event-segment";
 
-/** Click-to-chat for agencies — same number as BUILDER, agency-specific opener. */
-const AGENCY_WHATSAPP_URL =
+/** Click-to-chat for organisers — same number as BUILDER, organiser-specific opener. */
+const ORGANISER_WHATSAPP_URL =
   "https://wa.me/919987982969?text=" +
-  encodeURIComponent("Hi Harshal, I run corporate events and would like a 30-minute EveryMoment demo for my agency.");
+  encodeURIComponent("Hi, I organise events and would like a 30-minute EveryMoment demo.");
 
 const PARTNER_OPTIONS: { title: string; body: string; highlight?: boolean }[] = [
   { title: "Per event", body: "Pay per client event. Ideal for a pilot or occasional use." },
   {
-    title: "Agency plan",
+    title: "Organiser plan",
     body: "A set number of events a year at a fixed price, with client logins included.",
     highlight: true,
   },
   {
     title: "Co-branded",
-    body: "\"Powered by your agency\" on every event site and invite page, bundled into your own packages.",
+    body: "\"Powered by\" your business, with your logo, on every event site and invite page — bundled into your own packages.",
   },
 ];
 
@@ -83,7 +83,7 @@ const STAGES: { icon: LucideIcon; title: string; body: string }[] = [
 ];
 
 /**
- * Marketing entry point for corporate hosts and event agencies. Same
+ * Marketing entry point for corporate hosts and event organisers. Same
  * platform and wizard as family events — the CTA just starts the draft
  * in the corporate segment (lib/event-segment.ts).
  */
@@ -93,7 +93,7 @@ export default function CorporatePage() {
       <div className="bg-ivory-50 pb-24 pt-28 sm:pt-32">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="text-xs uppercase tracking-[0.3em] text-gold-600">For corporate events &amp; agencies</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gold-600">For corporate events &amp; event organisers</p>
             <h1 className="mt-3 font-display text-3xl text-navy-950 sm:text-5xl">
               Every attendee. Every moment. One link.
             </h1>
@@ -134,7 +134,7 @@ export default function CorporatePage() {
 
           <div className="mt-16 grid gap-8 rounded-3xl bg-navy-950 p-8 text-ivory-50 sm:p-12 lg:grid-cols-[1.2fr_1fr]">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gold-300">Built for agencies</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gold-300">Built for event organisers</p>
               <h2 className="mt-3 font-display text-2xl sm:text-3xl">Run many client events from one login</h2>
               <p className="mt-4 text-sm leading-relaxed text-ivory-100/75">
                 Switch between client events from one dashboard, give each client a login that only sees their own
@@ -160,7 +160,7 @@ export default function CorporatePage() {
             <div className="text-center">
               <p className="text-xs uppercase tracking-[0.3em] text-gold-600">Working together</p>
               <h2 id="partner-heading" className="mt-3 font-display text-2xl text-navy-950 sm:text-3xl">
-                Partnership options for agencies
+                Plans for event organisers
               </h2>
             </div>
             <div className="mt-8 grid gap-5 md:grid-cols-3">
@@ -180,7 +180,7 @@ export default function CorporatePage() {
                     {option.body}
                   </p>
                   <a
-                    href={AGENCY_WHATSAPP_URL}
+                    href={ORGANISER_WHATSAPP_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={
@@ -195,7 +195,7 @@ export default function CorporatePage() {
               ))}
             </div>
             <p className="mt-6 text-center text-sm text-navy-700/80">
-              Bonus: list your agency for free in the{" "}
+              Bonus: list your business for free in the{" "}
               <Link href="/business" className="font-medium text-gold-700 underline underline-offset-4">
                 EveryMoment vendor directory
               </Link>
@@ -216,7 +216,7 @@ export default function CorporatePage() {
               ))}
             </ol>
             <Button asChild size="lg" className="mt-8">
-              <a href={AGENCY_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+              <a href={ORGANISER_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
                 Book a demo on WhatsApp
               </a>
             </Button>

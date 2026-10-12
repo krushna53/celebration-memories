@@ -1,4 +1,4 @@
--- Agency / host branding: one brand per host account (the login that owns
+-- Organiser / host branding: one brand per host account (the login that owns
 -- events — events.owner_user_id). Shown as "Event powered by <brand>"
 -- (with logo) on every event that account owns, unless the event sets its
 -- own events.cobrand_name, and in the admin header for that event's team.

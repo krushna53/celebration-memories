@@ -4,11 +4,12 @@ import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 /**
- * Agency / host branding (table host_brands, migration
+ * Organiser / host branding (table host_brands, migration
  * 20261012140000_host_brands.sql). One brand per host account — the
- * login that owns events (events.owner_user_id). An agency like CorpCrew
- * sets it once on /admin/branding and every event it owns shows
- * "Event powered by CorpCrew" with its logo, unless that event sets its
+ * login that owns events (events.owner_user_id). Any organiser — a
+ * wedding planner, an event agency, a corporate events team — sets it
+ * once on /admin/branding and every event it owns shows
+ * "Event powered by <name>" with its logo, unless that event sets its
  * own co-brand (services/event-cobrand.ts).
  *
  * Every read degrades to null on any error, so pages never break if the

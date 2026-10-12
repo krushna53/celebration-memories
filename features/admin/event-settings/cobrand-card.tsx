@@ -11,7 +11,7 @@ const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 
 /**
- * "Powered by <agency>" for agency-run events — a small credit line on
+ * "Powered by <organiser>" for events run by a planner or agency — a small credit line on
  * the event site and invite page (services/event-cobrand.ts).
  */
 export function CobrandCard({
@@ -23,7 +23,7 @@ export function CobrandCard({
   eventId: string;
   initialName: string;
   initialUrl: string;
-  /** The owner's agency brand (/admin/branding) shown when this event has no co-brand of its own. */
+  /** The owner's organiser brand (/admin/branding) shown when this event has no co-brand of its own. */
   inheritedBrandName: string | null;
 }) {
   const [name, setName] = useState(initialName);
@@ -43,9 +43,9 @@ export function CobrandCard({
     <section className="mt-8 rounded-xl border border-navy-950/10 bg-white p-5 shadow-sm">
       <h2 className="font-display text-lg text-navy-950">Co-branding</h2>
       <p className="mt-1 max-w-2xl text-sm text-navy-700/65">
-        Running this event for a client? Show &ldquo;Powered by your agency&rdquo; on the event site and every invite page.
+        Organising this event for someone else? Show &ldquo;Powered by&rdquo; your business on the event site and every invite page.
         {inheritedBrandName
-          ? ` Leave it empty to use your agency brand (${inheritedBrandName}), or fill it in to show a different name on this event.`
+          ? ` Leave it empty to use your brand (${inheritedBrandName}), or fill it in to show a different name on this event.`
           : " Leave the name empty to hide it."}{" "}
         Set your logo and default branding for all your events on{" "}
         <Link href="/admin/branding" className="text-gold-600 underline underline-offset-2">
@@ -55,12 +55,12 @@ export function CobrandCard({
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1.5 text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70">
-          Agency / partner name
+          Organiser / partner name
           <input
             className={inputClasses}
             value={name}
             maxLength={60}
-            placeholder="e.g. CorpCrew"
+            placeholder="e.g. Bright Events Co."
             onChange={(e) => setName(e.target.value)}
           />
         </label>

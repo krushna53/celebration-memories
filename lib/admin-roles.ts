@@ -84,7 +84,7 @@ export const ORGANIZER_ALLOWED_PATHS: readonly string[] = [
 
 /**
  * Event-day Check-In for a client host on a corporate event — the host is
- * usually the agency running the registration desk itself, so Check-In
+ * usually the organiser running the registration desk itself, so Check-In
  * opens up for them there. Family events keep Check-In for owner +
  * organizer only. Used by the nav, the page guard and the Server Action
  * gate (services/admin-auth.ts) so all three layers agree.

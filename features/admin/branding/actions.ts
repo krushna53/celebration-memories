@@ -16,7 +16,7 @@ type Result<T = undefined> = T extends undefined ? { success: true } | { success
 /**
  * A brand always belongs to the signed-in account itself (host_brands.user_id
  * = admins.id), never to an id the browser sends — so there's nothing to
- * tamper with. Client hosts (agencies) and the platform owner may brand;
+ * tamper with. Client hosts (any organiser) and the platform owner may brand;
  * organizers and session organizers work inside someone else's event.
  */
 async function requireBrandOwner(): Promise<CurrentAdmin> {

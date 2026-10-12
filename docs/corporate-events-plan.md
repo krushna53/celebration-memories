@@ -1,7 +1,8 @@
 # Corporate events — plan
 
 Goal: serve corporate clients (conferences, offsites, annual days,
-launches, team-building — e.g. event agencies like CorpCrew) with the
+launches, team-building — and the event organisers and agencies who run
+them for others) with the
 **same features** the family side already has, without forking pages
 or breaking any existing event.
 
@@ -87,7 +88,8 @@ Done:
   pages, set from an Event Settings card (`services/event-cobrand.ts`).
   Migration `20261012120000_event_cobranding.sql` applied 2026-10-12.
 - Agency branding (`/admin/branding`, `services/host-brands.ts`, table
-  `host_brands`, applied 2026-10-12): a host account (e.g. CorpCrew) sets
+  `host_brands`, applied 2026-10-12): any host account (a wedding planner,
+  an event agency, a corporate events team) sets
   its name, website and logo once; every event it owns
   (`events.owner_user_id`) shows "Event powered by <brand>" with the logo,
   and the dashboard header shows the brand to everyone on that event's
