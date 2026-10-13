@@ -107,6 +107,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
         {!ended ? (
           <div className="mx-auto mt-12 max-w-xl px-4 sm:px-6">
+            <WhatsAppContactButton eventId={event.id} eventName={event.eventTitle || event.honoreeName} variant="inline" />
             <Reveal delay={0.1}>
               <RsvpForm
                 token={token}
@@ -158,7 +159,6 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 }
               />
             </Reveal>
-            <WhatsAppContactButton eventId={event.id} eventName={event.eventTitle || event.honoreeName} variant="inline" />
           </div>
         ) : null}
 

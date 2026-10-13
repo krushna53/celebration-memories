@@ -35,6 +35,13 @@ interface EventDetailsSectionProps {
   data: EventDisplayData;
 }
 
+/** "Online", "Zoom", "Google Meet", "Virtual"… — no map or directions make sense for these. */
+const ONLINE_VENUE = /\b(online|virtual|zoom|google meet|meet\.google|ms teams|microsoft teams|webinar|live ?stream(ed)?|remote)\b/i;
+
+export function isOnlineVenue(data: Pick<EventDisplayData, "venueName" | "venueAddress">): boolean {
+  return ONLINE_VENUE.test(data.venueName ?? "") || (!data.venueName && ONLINE_VENUE.test(data.venueAddress ?? ""));
+}
+
 /**
  * Date / time / venue / parking / dress code, with an embedded map when
  * `data.mapsEmbedUrl` is configured. Falls back to "to be announced"
@@ -42,6 +49,8 @@ interface EventDetailsSectionProps {
  * filled in via /admin/event-settings.
  */
 export function EventDetailsSection({ data }: EventDetailsSectionProps) {
+  // Online events get no map box or "Get Directions" — the details cards take the full width instead.
+  const online = isOnlineVenue(data);
   return (
     <section id="details" className="bg-ivory-100 py-20 sm:py-28">
       <div className="mx-auto max-w-5xl px-6">
@@ -53,7 +62,7 @@ export function EventDetailsSection({ data }: EventDetailsSectionProps) {
           />
         </Reveal>
 
-        <div className="mt-14 grid gap-10 lg:grid-cols-2 lg:items-start">
+        <div className={online ? "mt-14 grid gap-10" : "mt-14 grid gap-10 lg:grid-cols-2 lg:items-start"}>
           <Reveal delay={0.1} className="grid gap-4 sm:grid-cols-2">
             <DetailCard
               icon={<CalendarDays size={20} />}
@@ -86,7 +95,7 @@ export function EventDetailsSection({ data }: EventDetailsSectionProps) {
               <DetailCard icon={<Car size={20} />} label="Parking" value={data.parkingInfo} />
             ) : null}
 
-            {data.mapsUrl ? (
+            {data.mapsUrl && !online ? (
               <div className="sm:col-span-2">
                 <Button asChild variant="outline" className="w-full sm:w-auto">
                   <a href={data.mapsUrl} target="_blank" rel="noopener noreferrer">
@@ -97,6 +106,7 @@ export function EventDetailsSection({ data }: EventDetailsSectionProps) {
             ) : null}
           </Reveal>
 
+          {online ? null : (
           <Reveal delay={0.2}>
             <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-2xl border border-gold-500/15 bg-white shadow-sm lg:aspect-auto lg:h-full lg:min-h-[360px]">
               {data.mapsEmbedUrl ? (
@@ -121,6 +131,7 @@ export function EventDetailsSection({ data }: EventDetailsSectionProps) {
               )}
             </div>
           </Reveal>
+          )}
         </div>
 
         {data.additionalNotes?.trim() ? (

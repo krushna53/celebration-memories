@@ -83,13 +83,13 @@ export function EventSections({
     timeline: <TimelineSection milestones={milestones} category={event?.category} />,
     rsvp: (
       <>
+        {event ? <WhatsAppContactButton eventId={event.id} eventName={event.eventTitle || event.honoreeName} /> : null}
         <RsvpTeaserSection
           eventId={event?.id}
           eventSlug={event?.slug}
           publicRsvpEnabled={event?.publicRsvpEnabled}
           honoreeName={event?.honoreeName}
         />
-        {event ? <WhatsAppContactButton eventId={event.id} eventName={event.eventTitle || event.honoreeName} /> : null}
       </>
     ),
     wishMessage: <WishMessageSection data={data} />,

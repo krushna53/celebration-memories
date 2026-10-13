@@ -9,6 +9,7 @@ import { ACTIVE_EVENT, NAV_LINKS, SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { NavbarAuthStatus } from "@/features/auth/navbar-auth-status";
 import { AppTabBar, useIsInstalledApp } from "@/components/layout/app-tab-bar";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 /**
  * Sticky, translucent site navigation. Collapses into a slide-down sheet
@@ -85,6 +86,50 @@ export function Navbar({
   // Menu button replaces the top ☰ (see AppTabBar).
   const isApp = useIsInstalledApp();
 
+  // Event pages (the default links): only list sections that are actually
+  // on the page — ones the host hid in Event Settings, or that have no
+  // content yet (e.g. an empty Timeline), render nothing, so their links
+  // would go nowhere. Checked on the page itself, so it's the same for every
+  // template. Off the event homepage (invite, RSVP pages) the sections
+  // can't be seen from here, so the links stay as they are.
+  const isEventNav = navLinks === NAV_LINKS;
+  // Anchors point at this very page unless resolveHref sends them to a separate event homepage.
+  const anchorsOnThisPage = homeHref === "/" || isOnHomeHref;
+  const [presentIds, setPresentIds] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    if (!isEventNav || !anchorsOnThisPage) {
+      setPresentIds(null);
+      return;
+    }
+    const anchorIds = navLinks.filter((l) => l.href.startsWith("#")).map((l) => l.href.slice(1));
+    const check = () => setPresentIds(new Set(anchorIds.filter((id) => document.getElementById(id))));
+    check();
+    // Some sections stream in after the first paint — keep checking briefly.
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { childList: true, subtree: true });
+    const stop = window.setTimeout(() => observer.disconnect(), 10_000);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(stop);
+    };
+  }, [isEventNav, anchorsOnThisPage, navLinks, pathname]);
+
+  // "Build RSVP / Form" is a platform tool, not part of the event — only for signed-in users on event pages.
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    if (!isEventNav) return;
+    supabaseBrowser()
+      .auth.getSession()
+      .then(({ data }) => setSignedIn(Boolean(data.session)))
+      .catch(() => setSignedIn(false));
+  }, [isEventNav]);
+
+  const visibleLinks = isEventNav
+    ? navLinks.filter((link) =>
+        link.href.startsWith("#") ? (presentIds ? presentIds.has(link.href.slice(1)) : true) : signedIn,
+      )
+    : navLinks;
+
   // Close the menu after any navigation (bottom-tab taps included).
   useEffect(() => setOpen(false), [pathname]);
 
@@ -115,7 +160,7 @@ export function Navbar({
   // labels onto two lines, and pushed "Hi {email}" off the edge. Short
   // lists (share pages' single link) keep the md switch. Static class
   // strings on purpose so Tailwind's scanner picks them up.
-  const wideNav = navLinks.length + (showLogin ? 1 : 0) > 3;
+  const wideNav = visibleLinks.length + (showLogin ? 1 : 0) > 3;
   const desktopOnly = wideNav ? "hidden xl:flex" : "hidden md:flex";
   const mobileOnly = wideNav ? "xl:hidden" : "md:hidden";
 
@@ -151,7 +196,7 @@ export function Navbar({
           </Link>
 
           <ul className={cn("shrink-0 items-center gap-6", desktopOnly)}>
-            {navLinks.map((link) => (
+            {visibleLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={resolveHref(link.href)}
@@ -201,7 +246,7 @@ export function Navbar({
           )}
         >
           <ul className="flex flex-col divide-y divide-ivory-100/10 bg-navy-950/95 px-4 pb-4 sm:px-6 sm:pb-6">
-            {navLinks.map((link) => (
+            {visibleLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={resolveHref(link.href)}
@@ -227,7 +272,7 @@ export function Navbar({
       <AppTabBar
         isApp={isApp}
         homeHref={homeHref}
-        navLinks={navLinks.map((link) => ({ ...link, href: resolveHref(link.href) }))}
+        navLinks={visibleLinks.map((link) => ({ ...link, href: resolveHref(link.href) }))}
         showDashboard={showLogin}
         menuOpen={open}
         onToggleMenu={() => setOpen((v) => !v)}

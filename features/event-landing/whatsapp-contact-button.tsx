@@ -3,8 +3,8 @@ import { MessageCircle } from "lucide-react";
 import { getEventWhatsAppContact } from "@/services/event-extras";
 
 /**
- * "Message us on WhatsApp" — a wa.me link to the host's number, shown next
- * to RSVP (event page and invite page) when the event has one
+ * "Message us on WhatsApp" — a wa.me link to the host's number, shown just
+ * above RSVP (event page and invite page) when the event has one
  * (services/event-extras.ts). Renders nothing otherwise, so existing
  * events are unchanged.
  */
@@ -33,10 +33,10 @@ export async function WhatsAppContactButton({
     </a>
   );
 
-  if (variant === "inline") return <div className="mt-4 flex justify-center">{link}</div>;
+  if (variant === "inline") return <div className="mb-6 flex justify-center">{link}</div>;
 
   return (
-    <div className="bg-ivory-50 pb-12 text-center">
+    <div className="bg-ivory-50 pt-16 text-center sm:pt-20">
       <p className="text-sm text-navy-700/70">Have a question before the event?</p>
       <div className="mt-3 flex justify-center">{link}</div>
     </div>
