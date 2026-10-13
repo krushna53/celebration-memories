@@ -6,7 +6,8 @@ import { getEventSegment } from "@/lib/event-segment";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
 import { SkipStepLink } from "@/features/start/skip-step-link";
 import { RsvpFormBuilder } from "@/features/admin/rsvp-form/rsvp-form-builder";
-import { draftSaveRsvpConfigAction } from "@/features/start/actions/rsvp-form";
+import { draftGenerateRsvpConfigAction, draftSaveRsvpConfigAction } from "@/features/start/actions/rsvp-form";
+import { AI_RSVP_GENERATOR_CONFIGURED } from "@/lib/ai-rsvp-config";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export default async function WizardRsvpFormPage({ params }: { params: Promise<{
         initialConfig={config}
         corporate={getEventSegment(event.category) === "corporate"}
         saveAction={draftSaveRsvpConfigAction.bind(null, token, event.id)}
+        generateAction={AI_RSVP_GENERATOR_CONFIGURED ? draftGenerateRsvpConfigAction.bind(null, token, event.id) : undefined}
       />
     </WizardStepShell>
   );

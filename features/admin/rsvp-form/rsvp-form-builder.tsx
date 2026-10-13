@@ -18,7 +18,8 @@ import {
   type QuestionType,
   type RsvpConfig,
 } from "@/lib/rsvp-config";
-import type { SaveRsvpConfigResult } from "@/features/admin/rsvp-form/actions";
+import type { GenerateRsvpConfigResult, SaveRsvpConfigResult } from "@/features/admin/rsvp-form/actions";
+import { RsvpAiAssist } from "@/features/admin/rsvp-form/rsvp-ai-assist";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -42,11 +43,14 @@ export function RsvpFormBuilder({
   saveAction,
   corporate = false,
   onSaved,
+  generateAction,
 }: {
   initialConfig: RsvpConfig;
   saveAction: (config: RsvpConfig) => Promise<SaveRsvpConfigResult>;
   corporate?: boolean;
   onSaved?: () => void;
+  /** Enables the "Generate with AI" panel; omitted = no AI (e.g. AI not configured). */
+  generateAction?: (input: { prompt?: string; imageDataUrl?: string }) => Promise<GenerateRsvpConfigResult>;
 }) {
   const [config, setConfig] = useState<RsvpConfig>(initialConfig);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -93,6 +97,15 @@ export function RsvpFormBuilder({
 
   return (
     <div className="grid gap-6">
+      {generateAction ? (
+        <RsvpAiAssist
+          generateAction={generateAction}
+          onGenerated={(generated) => {
+            setConfig(generated);
+            setMessage({ ok: true, text: "AI suggestion loaded — not saved yet. Review it, then click Save RSVP form." });
+          }}
+        />
+      ) : null}
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="text-navy-700/70">Start from:</span>
         <button type="button" className="rounded-full border border-navy-950/15 px-3 py-1 hover:border-gold-500" onClick={() => setConfig(DEFAULT_RSVP_CONFIG)}>

@@ -8,6 +8,7 @@ import { getEventSegment } from "@/lib/event-segment";
 import { ATTENDANCE_LABELS, type AttendanceOption } from "@/types/rsvp";
 import { AdminRsvpFormBuilder } from "@/features/admin/rsvp-form/admin-rsvp-form-builder";
 import { NoEventState } from "@/features/admin/components/no-event-state";
+import { AI_RSVP_GENERATOR_CONFIGURED } from "@/lib/ai-rsvp-config";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,12 @@ export default async function AdminRsvpFormPage() {
         apply straight away; answers already given are kept.
       </p>
       <div className="mt-6">
-        <AdminRsvpFormBuilder eventId={event.id} initialConfig={config} corporate={getEventSegment(event.category) === "corporate"} />
+        <AdminRsvpFormBuilder
+          eventId={event.id}
+          initialConfig={config}
+          corporate={getEventSegment(event.category) === "corporate"}
+          aiEnabled={AI_RSVP_GENERATOR_CONFIGURED}
+        />
       </div>
 
       {questions.length > 0 ? (
