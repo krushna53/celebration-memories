@@ -18,6 +18,7 @@ import type { EventDisplayData } from "@/lib/event-display";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 import { PoweredByBand } from "@/features/event-landing/powered-by-band";
+import { CardArtworkBand } from "@/features/event-landing/card-artwork-band";
 import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
 
 export interface EventSectionsProps {
@@ -106,6 +107,7 @@ export function EventSections({
     <>
       {event ? <PageViewBeacon eventId={event.id} page="landing" /> : null}
       {renderHero ? renderHero(relive) : <HeroSection data={data} relive={relive} />}
+      {event ? <CardArtworkBand eventId={event.id} alt={`Illustration from the ${event.eventTitle || event.honoreeName} invitation`} /> : null}
       {config
         .filter((item) => item.visible)
         .map((item) => (

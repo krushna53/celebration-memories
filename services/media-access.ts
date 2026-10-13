@@ -45,7 +45,8 @@ export async function authorizeMedia(bucket: string, path: string, support = fal
     const results = await Promise.all([
       db.from("gallery_photos").select("id").eq("event_id", eventId).eq("storage_path", path).is("deleted_at", null).limit(1),
       db.from("timeline_milestones").select("id").eq("event_id", eventId).eq("image_path", path).limit(1),
-      db.from("events").select("share_image_path,share_video_path,highlight_reel_path").eq("id", eventId).single(),
+      // card_artwork_path: the illustration cropped off the invitation card, shown under the hero (services/card-artwork.ts).
+      db.from("events").select("share_image_path,share_video_path,highlight_reel_path,card_artwork_path").eq("id", eventId).single(),
     ]);
     if (results.some(r => r.error)) return null;
     const assets = results[2].data;

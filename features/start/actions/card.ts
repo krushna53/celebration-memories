@@ -198,7 +198,7 @@ export async function draftReadInvitationCardAction(
     });
     if (filled.length > 0) await updateEvent(event.id, input);
     // WhatsApp contact + the card's colours ("Matched to your card" template) — saved separately, see services/card-extras.ts.
-    filled.push(...(await applyCardExtras(event.id, details, event.templateSlug).catch((err) => {
+    filled.push(...(await applyCardExtras(event.id, details, event.templateSlug, { cardPath: path }).catch((err) => {
       console.error("draftReadInvitationCardAction extras failed:", err);
       return [] as string[];
     })));

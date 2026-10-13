@@ -15,6 +15,8 @@ import { CobrandCard } from "@/features/admin/event-settings/cobrand-card";
 import { getEventOwnCobrand } from "@/services/event-cobrand";
 import { getBrandForEvent } from "@/services/host-brands";
 import { WhatsAppContactCard } from "@/features/admin/event-settings/whatsapp-contact-card";
+import { CardArtworkCard } from "@/features/admin/event-settings/card-artwork-card";
+import { getCardArtworkUrl } from "@/services/card-artwork";
 import { getEventWhatsAppContact } from "@/services/event-extras";
 import { getEventSegment } from "@/lib/event-segment";
 
@@ -29,10 +31,11 @@ export default async function AdminEventSettingsPage() {
     return <NoEventState />;
   }
 
-  const [cobrand, hostBrand, whatsapp] = await Promise.all([
+  const [cobrand, hostBrand, whatsapp, artworkUrl] = await Promise.all([
     getEventOwnCobrand(event.id),
     getBrandForEvent(event.id),
     getEventWhatsAppContact(event.id),
+    getCardArtworkUrl(event.id),
   ]);
   const shareImageUrl = event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null;
   const shareVideoUrl = event.shareVideoPath ? publicMediaUrl("gallery", event.shareVideoPath) : null;
@@ -70,6 +73,7 @@ export default async function AdminEventSettingsPage() {
         photoUrl={reelSettings.honoreePhotoUrl}
         category={event.category}
       />
+      <CardArtworkCard eventId={event.id} artworkUrl={artworkUrl} hasCard={Boolean(event.shareImagePath)} />
       <WhatsAppContactCard
         eventId={event.id}
         initialNumber={whatsapp?.number ?? ""}

@@ -95,6 +95,12 @@ const CardDetailsSchema = z.object({
     .nullable()
     .optional()
     .transform((v) => v ?? null),
+  /** Where the card's main illustration/photo sits (0–1 fractions of the image), for lib/card-artwork crop. */
+  artwork: z
+    .object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() })
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
 });
 
 export type InvitationCardDetails = z.infer<typeof CardDetailsSchema>;
@@ -104,8 +110,8 @@ function buildInstructions(today: string): string {
 
 Output ONLY a single raw JSON object — no markdown fences, no text before or after — with exactly these keys:
 {
-  "honoreeName": string | null,   // who the event is for, e.g. "Mahesh J. Shah", or "Priya & Rahul" for a wedding
-  "eventTitle": string | null,    // a short tagline/headline from the card, e.g. "75 Years of Love", "Together Forever"
+  "honoreeName": string | null,   // who the event is for, e.g. "Mahesh J. Shah", or "Priya & Rahul" for a wedding. For events NOT about a person (workshops, talks, corporate or community sessions) use the event's own name as printed most prominently, e.g. "Circle of Insight"
+  "eventTitle": string | null,    // a short tagline/headline from the card, e.g. "75 Years of Love", "Together Forever", or a session's theme like "Blaming vs Understanding" — never the same text as honoreeName
   "occasion": string | null,      // e.g. "75th Birthday", "Wedding Reception", "Silver Jubilee Anniversary"
   "hostedBy": string | null,      // who is inviting, e.g. "Jagruti Shah", "The Shah Family"
   "startDate": "YYYY-MM-DD" | null,
@@ -124,7 +130,9 @@ Output ONLY a single raw JSON object — no markdown fences, no text before or a
     "text": "#rrggbb",            // the main heading/text colour
     "accent": "#rrggbb",          // the most distinctive brand/accent colour (a rule, a logo dot, a highlight) — not the background or text colour
     "font": "serif" | "sans" | "rounded" | "script"  // the style of the main heading typeface
-  } | null
+  } | null,
+  "artwork": { "x": number, "y": number, "width": number, "height": number } | null
+                                  // the card's main illustration or photo (not text, not a logo, not a plain border), as fractions 0–1 of the image width/height, from the top-left corner; null if the card has none
 }
 
 Rules:

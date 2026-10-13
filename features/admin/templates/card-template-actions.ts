@@ -8,6 +8,7 @@ import { externalMediaUrl } from "@/services/external-media";
 import { recordCardRead } from "@/services/card-read-usage";
 import { applyCardExtras } from "@/services/card-extras";
 import { getEventWhatsAppContact } from "@/services/event-extras";
+import { removeCardArtwork } from "@/services/card-artwork";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   AI_CARD_READER_CONFIGURED,
@@ -60,7 +61,11 @@ export async function buildTemplateFromCardAction(
     const url = await externalMediaUrl("gallery", event.shareImagePath, 600);
     const { details, usage } = await readInvitationCard(url, todayIn(event.timezone));
     const hasWhatsApp = Boolean(await getEventWhatsAppContact(eventId));
-    const filled = await applyCardExtras(eventId, details, event.templateSlug, { switchTemplate: true, hasWhatsApp });
+    const filled = await applyCardExtras(eventId, details, event.templateSlug, {
+      switchTemplate: true,
+      hasWhatsApp,
+      cardPath: event.shareImagePath,
+    });
     await recordCardRead({ eventId, usage, success: filled.length > 0, fieldsFilled: filled.length, durationMs: Date.now() - startedAt });
     if (!filled.some((f) => f.startsWith("Colours"))) {
       return { success: false, error: "We couldn't read the colours on this card — try a clearer image of the card itself." };
@@ -73,5 +78,72 @@ export async function buildTemplateFromCardAction(
       await recordCardRead({ eventId, usage: err.usage, success: false, fieldsFilled: 0, durationMs: Date.now() - startedAt });
     }
     return { success: false, error: "We couldn't read this card — please try again." };
+  }
+}
+
+/**
+ * Re-reads the invitation card and crops out only its illustration
+ * (services/card-artwork.ts) — leaves the event's template and colours
+ * alone. Also fills a WhatsApp number from the card if the event has none.
+ */
+export async function extractCardArtworkAction(
+  eventId: string,
+): Promise<{ success: true; filled: string[] } | { success: false; error: string }> {
+  let admin;
+  try {
+    admin = await requireAdminForEvent(eventId);
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Not authorized." };
+  }
+  const event = await getEventById(eventId);
+  if (!event) return { success: false, error: "Event not found." };
+  if (!event.shareImagePath) return { success: false, error: "Upload your invitation card first (it's your link preview image)." };
+  if (!AI_CARD_READER_CONFIGURED) return { success: false, error: "Automatic card reading isn't configured right now." };
+
+  if (admin.role !== "owner") {
+    const { count } = await supabaseAdmin()
+      .from("ai_card_read_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", eventId);
+    if ((count ?? 0) >= CARD_TEMPLATE_READ_LIMIT) {
+      return { success: false, error: `You've reached the ${CARD_TEMPLATE_READ_LIMIT}-card reading limit for this event.` };
+    }
+  }
+
+  const startedAt = Date.now();
+  try {
+    const url = await externalMediaUrl("gallery", event.shareImagePath, 600);
+    const { details, usage } = await readInvitationCard(url, todayIn(event.timezone));
+    const hasWhatsApp = Boolean(await getEventWhatsAppContact(eventId));
+    const filled = await applyCardExtras(eventId, details, event.templateSlug, {
+      hasWhatsApp,
+      cardPath: event.shareImagePath,
+      applyTheme: false,
+    });
+    await recordCardRead({ eventId, usage, success: filled.length > 0, fieldsFilled: filled.length, durationMs: Date.now() - startedAt });
+    if (!filled.includes("Card illustration")) {
+      return { success: false, error: "We couldn't find an illustration on this card to use." };
+    }
+    revalidatePath("/admin/event-settings");
+    revalidatePath("/events/[slug]", "page");
+    return { success: true, filled };
+  } catch (err) {
+    if (err instanceof AiCardReaderError && err.usage) {
+      await recordCardRead({ eventId, usage: err.usage, success: false, fieldsFilled: 0, durationMs: Date.now() - startedAt });
+    }
+    return { success: false, error: "We couldn't read this card — please try again." };
+  }
+}
+
+/** Removes the card illustration from the event page (and storage). */
+export async function removeCardArtworkAction(eventId: string): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    await requireAdminForEvent(eventId);
+    await removeCardArtwork(eventId);
+    revalidatePath("/admin/event-settings");
+    revalidatePath("/events/[slug]", "page");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to remove." };
   }
 }

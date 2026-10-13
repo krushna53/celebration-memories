@@ -5,6 +5,7 @@ import { DEFAULT_TEMPLATE_SLUG } from "@/lib/template-catalog";
 import type { InvitationCardDetails } from "@/lib/ai-invitation-card-reader";
 import { updateEvent } from "@/services/events";
 import { normaliseWhatsAppNumber, saveEventCardTheme, saveEventWhatsAppContact } from "@/services/event-extras";
+import { saveCardArtworkFromCard } from "@/services/card-artwork";
 
 /**
  * The parts of an invitation-card read that go beyond the event's text
@@ -18,11 +19,27 @@ import { normaliseWhatsAppNumber, saveEventCardTheme, saveEventWhatsAppContact }
  */
 export async function applyCardExtras(
   eventId: string,
-  details: Pick<InvitationCardDetails, "whatsappNumber" | "theme">,
+  details: Pick<InvitationCardDetails, "whatsappNumber" | "theme" | "artwork">,
   currentTemplateSlug: string,
-  options: { switchTemplate?: boolean; overwriteWhatsApp?: boolean; hasWhatsApp?: boolean } = {},
+  options: {
+    switchTemplate?: boolean;
+    overwriteWhatsApp?: boolean;
+    hasWhatsApp?: boolean;
+    /** The card image the details were read from — needed to crop out its illustration. */
+    cardPath?: string;
+    /** false = don't touch colours/template (e.g. "extract illustration only"). */
+    applyTheme?: boolean;
+  } = {},
 ): Promise<string[]> {
   const filled: string[] = [];
+
+  if (details.artwork && options.cardPath) {
+    try {
+      if (await saveCardArtworkFromCard(eventId, options.cardPath, details.artwork)) filled.push("Card illustration");
+    } catch (err) {
+      console.error("applyCardExtras artwork failed:", err);
+    }
+  }
 
   const number = details.whatsappNumber ? normaliseWhatsAppNumber(details.whatsappNumber) : null;
   if (number && (options.overwriteWhatsApp || !options.hasWhatsApp)) {
@@ -30,7 +47,7 @@ export async function applyCardExtras(
     filled.push("WhatsApp contact");
   }
 
-  const theme = sanitizeCardTheme(details.theme);
+  const theme = options.applyTheme === false ? null : sanitizeCardTheme(details.theme);
   if (theme) {
     await saveEventCardTheme(eventId, theme);
     filled.push("Colours & fonts (Matched to your card template)");
