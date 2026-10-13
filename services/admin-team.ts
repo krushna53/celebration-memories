@@ -8,7 +8,8 @@ import type { AdminRole } from "@/services/admin-auth";
  * Total admins allowed on one event, INCLUDING the original client
  * (i.e. the client who already has a login can invite up to 3 more
  * people — a family member helping plan, say). Deliberately small and
- * for existing events. A paid Studio event gets 11 total members.
+ * for existing events. A paid Studio event gets 11 total members, a
+ * Corporate Event 21 (registration desk staff, the client's HR team…).
  */
 export const TEAM_MEMBER_CAP = 4;
 
@@ -17,6 +18,7 @@ export async function getTeamMemberCap(eventId: string): Promise<number> {
     .select("plan").eq("event_id", eventId).eq("status", "paid")
     .eq("environment", "production").gt("access_until", new Date().toISOString()).maybeSingle();
   if (error) throw new Error("Could not check the event’s team allowance.");
+  if (data?.plan === "corporate") return 21;
   return data?.plan === "studio" ? 11 : TEAM_MEMBER_CAP;
 }
 

@@ -112,5 +112,18 @@ lifecycle, agency features, partnership options (per event / agency plan
 / co-branded, "talk to us" until prices are set), the 4-step pilot with
 a WhatsApp demo link, and the free vendor-directory listing.
 
-Still open: real agency prices in `lib/event-plans.ts` once decided, and
-a seeded corporate demo event for sales demos.
+Pricing (2026-10-13):
+- **Corporate Event** ₹4,999 / $69 per event — self-serve Cashfree
+  checkout (`EVENT_PLANS.corporate`), 12 months, 2,000 attendees, 50 GB
+  (set in `apply_plan_order`, migration `20261013090000`), 21 team
+  members (`services/admin-team.ts`). Offered on the wizard payment step
+  for corporate drafts only; family drafts see the original two plans.
+- **Organiser Starter** ₹1,999/mo (₹19,999/yr), **Organiser Pro**
+  ₹4,999/mo (₹49,999/yr), **White-label** from ₹1,50,000/yr — shown on
+  `/pricing#organisers` and `/corporate`, sold by enquiry until
+  subscription checkout exists. Branding is not plan-gated yet.
+- **Add-ons** (by enquiry): reels ₹49 each / 100 for ₹3,999, extra
+  slideshow renders ₹199, AI host ₹999 per event, storage ₹99 per 10 GB/mo.
+
+Still open: self-serve organiser subscriptions (and plan-gating branding /
+active-event limits behind them), and a seeded corporate demo event.

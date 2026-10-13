@@ -4,7 +4,8 @@ import { getDraftEventByToken } from "@/services/event-drafts";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { publishFreeEventFormAction } from "@/features/start/actions/payment";
-import { EVENT_PLANS } from "@/lib/event-plans";
+import { EVENT_PLANS, eventPlansForSegment } from "@/lib/event-plans";
+import { getEventSegment } from "@/lib/event-segment";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function WizardPaymentPage({ params, searchParams }: {
   if (free.error || orders.error) throw new Error("Could not load your plans. Please try again.");
   const error = (await searchParams).error;
   const button = "mt-5 inline-block rounded-full bg-gold-500 px-5 py-3 font-medium text-navy-950";
+  const planKeys = eventPlansForSegment(getEventSegment(event.category));
   return <div className="mx-auto max-w-4xl px-4 py-12 text-navy-950">
     <h1 className="font-display text-3xl">Publish your event page</h1>
     <p className="mt-2">{event.honoreeName} · Your draft is saved. Choose how to publish it.</p>
@@ -35,12 +37,12 @@ export default async function WizardPaymentPage({ params, searchParams }: {
       <p>You have {orders.data.length} unused paid {orders.data.length === 1 ? "purchase" : "purchases"}. Apply one to this event without paying again.</p>
       <Link href="/account/billing" className={button}>Use an existing purchase</Link>
     </div>}
-    <div className="mt-6 grid gap-4 md:grid-cols-3">
+    <div className={planKeys.length > 2 ? "mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4" : "mt-6 grid gap-4 md:grid-cols-3"}>
       <section className="rounded-xl border bg-white p-5"><h2 className="font-display text-xl">Free</h2><p className="mt-2 text-2xl">₹0</p>
         <p className="mt-3 text-sm">1 event per account · No payment needed</p>
         {free.data ? <p className="mt-5 text-sm">Your free event has been used. Choose a paid plan for this event.</p> : <form action={publishFreeEventFormAction.bind(null, token, event.id)}><button className={button}>Publish for free</button></form>}
       </section>
-      {Object.entries(EVENT_PLANS).map(([key, plan]) => <section key={key} className="rounded-xl border bg-white p-5"><h2 className="font-display text-xl">{plan.name}</h2><p className="mt-2 text-2xl">₹{(plan.amountPaise / 100).toLocaleString("en-IN")}</p><p className="mt-3 text-sm">1 event · 12 months · One-time payment</p><Link href={`/account/billing?plan=${key}`} className={button}>Choose {plan.name}</Link></section>)}
+      {planKeys.map((key) => { const plan = EVENT_PLANS[key]; return <section key={key} className="rounded-xl border bg-white p-5"><h2 className="font-display text-xl">{plan.name}</h2><p className="mt-2 text-2xl">₹{(plan.amountPaise / 100).toLocaleString("en-IN")}</p><p className="mt-3 text-sm">1 event · 12 months · One-time payment</p><Link href={`/account/billing?plan=${key}`} className={button}>Choose {plan.name}</Link></section>; })}
     </div>
     <p className="mt-6 text-sm">Paid checkout uses Cashfree. After payment, apply your purchase to this event in My account &amp; billing.</p>
     <p className="mt-3 text-sm">Monthly subscriptions are not available for checkout yet. <Link href="/contact" className="underline">Contact us</Link> for monthly plans.</p>

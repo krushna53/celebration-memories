@@ -23,16 +23,29 @@ const ORGANISER_WHATSAPP_URL =
   "https://wa.me/919987982969?text=" +
   encodeURIComponent("Hi, I organise events and would like a 30-minute EveryMoment demo.");
 
-const PARTNER_OPTIONS: { title: string; body: string; highlight?: boolean }[] = [
-  { title: "Per event", body: "Pay per client event. Ideal for a pilot or occasional use." },
+/** Prices mirror features/pricing/event-pricing-plans.tsx — keep the two in step. */
+const PARTNER_OPTIONS: { title: string; price: string; body: string; href: string; cta: string; highlight?: boolean }[] = [
   {
-    title: "Organiser plan",
-    body: "A set number of events a year at a fixed price, with client logins included.",
+    title: "Corporate Event",
+    price: "₹4,999 per event",
+    body: "One event for 12 months: 2,000 attendees, check-in desk, event report, 20 team members and your branding.",
+    href: "/account/billing?plan=corporate",
+    cta: "Buy for one event",
+  },
+  {
+    title: "Organiser plans",
+    price: "From ₹1,999 / month",
+    body: "Run 5 or 20 events at once with your logo on every event and logins for the people you organise for.",
+    href: "/pricing#organisers",
+    cta: "Compare organiser plans",
     highlight: true,
   },
   {
-    title: "Co-branded",
-    body: "\"Powered by\" your business, with your logo, on every event site and invite page — bundled into your own packages.",
+    title: "White-label",
+    price: "From ₹1,50,000 / year",
+    body: "Your brand only — EveryMoment branding removed, your own domain and custom limits, bundled into your packages.",
+    href: ORGANISER_WHATSAPP_URL,
+    cta: "Talk to us",
   },
 ];
 
@@ -176,20 +189,22 @@ export default function CorporatePage() {
                   <h3 className={option.highlight ? "font-display text-xl text-gold-300" : "font-display text-xl text-navy-950"}>
                     {option.title}
                   </h3>
+                  <p className={option.highlight ? "mt-2 font-display text-2xl text-ivory-50" : "mt-2 font-display text-2xl text-navy-950"}>
+                    {option.price}
+                  </p>
                   <p className={option.highlight ? "mt-2 text-sm text-ivory-100/75" : "mt-2 text-sm text-navy-700/80"}>
                     {option.body}
                   </p>
                   <a
-                    href={ORGANISER_WHATSAPP_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={option.href}
+                    {...(option.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                     className={
                       option.highlight
                         ? "mt-4 inline-block text-sm font-medium text-gold-300 underline underline-offset-4"
                         : "mt-4 inline-block text-sm font-medium text-gold-700 underline underline-offset-4"
                     }
                   >
-                    Talk to us about pricing
+                    {option.cta}
                   </a>
                 </div>
               ))}
