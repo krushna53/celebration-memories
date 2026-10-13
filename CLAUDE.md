@@ -172,6 +172,28 @@ Agencies brand their events from `/admin/branding` (`services/host-brands.ts`,
 keyed by the owning account `events.owner_user_id`); a per-event override
 lives in `events.cobrand_name/url` (`services/event-cobrand.ts`).
 
+### RSVP forms, WhatsApp contact, card-matched & private templates (added 2026-10-13)
+
+- **Configurable RSVP forms** — `lib/rsvp-config.ts` (shape, presets,
+  `buildRsvpSchema`, `pickAnswers`), stored in `events.rsvp_config` (null =
+  the original form), answers in `rsvps.answers`. Built at `/admin/rsvp-form`
+  or the optional wizard step `rsvp-form`. Both RSVP forms render
+  `features/rsvp/rsvp-config-fields.tsx`; both Server Actions re-load the
+  config and validate against it (the public form always requires phone).
+- **WhatsApp contact** — `events.whatsapp_contact` (wa.me digits),
+  `services/event-extras.ts`, shown next to RSVP by
+  `features/event-landing/whatsapp-contact-button.tsx`; set in Event
+  Settings or read off the invitation card.
+- **"Matched to your card" template** (`card-match`) — the card reader also
+  returns the card's colours + font style → `events.card_theme` →
+  `lib/card-theme.ts` builds the palette. Wizard card reads apply it when
+  the event is still on the default template; Templates page has "Build a
+  template from my card". Only offered to events with a card theme.
+- **Private templates** — `TemplateSummary.access` (`emails`, `eventIds`),
+  checked by `canUseTemplate()` in every picker (`templatesForEvent()`),
+  both preview routes and both save actions (`assertTemplateAllowed()`).
+  First one: `humanos` (HumanOS Learning and Consultancy LLP).
+
 ### Guest experience
 
 - **RSVP** — personal `/invite/[token]` link with automatic
