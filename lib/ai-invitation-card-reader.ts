@@ -82,6 +82,19 @@ const CardDetailsSchema = z.object({
     .optional()
     .transform((v) => (v ?? []).map((s) => s.trim()).filter(Boolean).slice(0, 6)),
   message: optionalText(600),
+  /** A number the card explicitly invites guests to WhatsApp ("Drop a WhatsApp +91 …"), as printed. */
+  whatsappNumber: optionalText(40),
+  /** The card's look, for the "Matched to your card" template (lib/card-theme.ts — re-validated there). */
+  theme: z
+    .object({
+      background: z.string().nullable().optional(),
+      text: z.string().nullable().optional(),
+      accent: z.string().nullable().optional(),
+      font: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
 });
 
 export type InvitationCardDetails = z.infer<typeof CardDetailsSchema>;
@@ -104,7 +117,14 @@ Output ONLY a single raw JSON object — no markdown fences, no text before or a
   "dressCode": string | null,
   "parkingInfo": string | null,
   "notices": string[],            // short practical notes, e.g. "No gifts please", "Lunch will be served"
-  "message": string | null        // the card's main invitation wording or verse, lightly cleaned up
+  "message": string | null,       // the card's main invitation wording or verse, lightly cleaned up
+  "whatsappNumber": string | null, // ONLY a number the card explicitly invites people to WhatsApp, e.g. "+91 70226 42121"
+  "theme": {                      // the card's visual style, for building a matching website
+    "background": "#rrggbb",      // the main background colour of the card
+    "text": "#rrggbb",            // the main heading/text colour
+    "accent": "#rrggbb",          // the most distinctive brand/accent colour (a rule, a logo dot, a highlight) — not the background or text colour
+    "font": "serif" | "sans" | "rounded" | "script"  // the style of the main heading typeface
+  } | null
 }
 
 Rules:
@@ -112,8 +132,9 @@ Rules:
 - Today's date is ${today}. If the card shows a day and month but no year, use the next occurrence on or after today.
 - Convert times like "11 AM", "7:30 pm", "Evening 7 onwards" to 24-hour "HH:mm". If only a start time is shown, leave endTime null. If the event ends on the same day, endDate may be null.
 - If the card is in another language (e.g. Hindi, Gujarati, Marathi), translate names of places and wording into English, but keep people's names as written (transliterated to English letters).
-- Keep RSVP phone numbers and contact details OUT of every field.
-- If the image is not an invitation card at all, return every field as null and notices as [].`;
+- Keep RSVP phone numbers and contact details OUT of every other field. Put a number in "whatsappNumber" only when the card itself says to WhatsApp / message on WhatsApp (often with a WhatsApp logo); otherwise null.
+- "theme" describes the card's design, not the event: pick real colours you can see, as 6-digit hex. Use null if the image isn't a designed card.
+- If the image is not an invitation card at all, return every field as null and notices as [] (theme and whatsappNumber null too).`;
 }
 
 function parse(raw: string, usage: CardReadUsage): InvitationCardDetails {

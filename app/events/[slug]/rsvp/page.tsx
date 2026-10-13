@@ -10,7 +10,8 @@ import { computeRsvpPrice } from "@/lib/rsvp-pricing";
 import { buildEventMetadata } from "@/lib/event-metadata";
 import { getTemplateBySlug } from "@/lib/templates";
 import { templateAccentStyle } from "@/lib/template-theme-css";
-import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
+import { templatesForEvent } from "@/services/template-access";
+import { getRsvpConfig } from "@/services/rsvp-config";
 import { communitySubmissionToTemplateSummary } from "@/lib/community-theme";
 import { listApprovedTemplateSubmissions } from "@/services/template-submissions";
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -64,7 +65,11 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
   const isAdmin = isAdminForEvent(admin, event.id);
   const templateOptions = isAdmin
     ? [
-        ...TEMPLATE_CATALOG,
+        ...(await templatesForEvent(event.id, {
+          isPlatformOwner: admin?.role === "owner",
+          email: admin?.email ?? null,
+          eventId: event.id,
+        })),
         ...(await listApprovedTemplateSubmissions()).map(communitySubmissionToTemplateSummary),
       ]
     : [];
@@ -114,6 +119,7 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
                 honoreeName={event.honoreeName}
                 rsvpPrice={rsvpPrice}
                 workshopSessions={workshopSessions}
+                rsvpConfig={await getRsvpConfig(event.id)}
               />
             </Reveal>
           ) : (

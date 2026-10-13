@@ -13,6 +13,7 @@ import {
 } from "@/services/uploads";
 import { validateCustomCss } from "@/lib/custom-css";
 import { galleryTitlesForCategory } from "@/lib/event-segment";
+import { assertTemplateAllowed } from "@/services/template-access";
 import { AiCssError, generateCustomCssFromPrompt } from "@/lib/ai-css";
 import { countAiCssGenerations, recordAiCssGeneration } from "@/services/ai-css-generations";
 import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
@@ -159,6 +160,11 @@ export async function updateEventAction(
   try {
     // Best-effort — never let a snapshot failure block the actual save.
     await snapshotEventSettings(eventId, admin.id).catch((err) => console.error("snapshotEventSettings failed:", err));
+    // Private templates (TemplateSummary.access) can only be applied by the people they're shared with.
+    if (input.templateSlug !== undefined) {
+      const current = await getEventById(eventId);
+      await assertTemplateAllowed(eventId, input.templateSlug, current?.templateSlug ?? null);
+    }
     // Moving between family and corporate also swaps the default gallery chapter names (lib/event-segment.ts).
     if (input.category && input.galleryChapterTitles === undefined) {
       const current = await getEventById(eventId);

@@ -18,6 +18,7 @@ import type { EventDisplayData } from "@/lib/event-display";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 import { PoweredByBand } from "@/features/event-landing/powered-by-band";
+import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
 
 export interface EventSectionsProps {
   event: EventRecord | null;
@@ -80,12 +81,15 @@ export function EventSections({
     gallery: event ? <GallerySectionServer eventId={event.id} eventSlug={event.slug} photos={galleryPhotos} chapterTitles={event.galleryChapterTitles} /> : <GallerySection photos={galleryPhotos} />,
     timeline: <TimelineSection milestones={milestones} category={event?.category} />,
     rsvp: (
-      <RsvpTeaserSection
-        eventId={event?.id}
-        eventSlug={event?.slug}
-        publicRsvpEnabled={event?.publicRsvpEnabled}
-        honoreeName={event?.honoreeName}
-      />
+      <>
+        <RsvpTeaserSection
+          eventId={event?.id}
+          eventSlug={event?.slug}
+          publicRsvpEnabled={event?.publicRsvpEnabled}
+          honoreeName={event?.honoreeName}
+        />
+        {event ? <WhatsAppContactButton eventId={event.id} eventName={event.eventTitle || event.honoreeName} /> : null}
+      </>
     ),
     wishMessage: <WishMessageSection data={data} />,
     memoryWall: event ? (

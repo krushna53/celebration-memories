@@ -11,6 +11,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
 import { setActiveEventOverrideId } from "@/lib/admin-active-event";
+import { assertTemplateAllowed } from "@/services/template-access";
 import type { AdminActionResult, DetectTimezoneResult } from "@/features/admin/event-settings/actions";
 
 /**
@@ -30,6 +31,7 @@ export async function draftUpdateEventAction(
   try {
     const event = await requireDraftEvent(token);
     if (event.id !== eventId) return { success: false, error: "This link doesn't match that event." };
+    if (input.templateSlug !== undefined) await assertTemplateAllowed(event.id, input.templateSlug, event.templateSlug);
     // Plan limits (storage quota, AI caps) are set by the platform — never by whoever holds a draft link.
     await updateEvent(eventId, withoutPlanLimits(input));
     return { success: true };

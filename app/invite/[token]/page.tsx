@@ -19,7 +19,9 @@ import { Reveal } from "@/components/motion/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SiteShell } from "@/components/layout/site-shell";
 import { getSegmentCopy } from "@/lib/event-segment";
+import { getRsvpConfig } from "@/services/rsvp-config";
 import { PoweredByBand } from "@/features/event-landing/powered-by-band";
+import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
 
 // Always dynamic: every request must re-check the token and re-log a
 // visit, so this route is never statically generated or cached.
@@ -69,6 +71,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
   });
 
   const guestCopy = getSegmentCopy(event.category).guest;
+  const rsvpConfig = await getRsvpConfig(event.id);
 
   return (
     <SiteShell
@@ -113,6 +116,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 rsvpPrice={rsvpPrice}
                 workshopSessions={workshopSessions}
                 reminderMessage={guestCopy.rsvpReminder}
+                rsvpConfig={rsvpConfig}
                 reelSelfie={
                   reelOptIn
                     ? {
@@ -143,6 +147,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                         children: existingRsvp.children,
                         mealPreference: existingRsvp.mealPreference,
                         comments: existingRsvp.comments ?? "",
+                        answers: existingRsvp.answers ?? undefined,
                         phone: invitee.phone ?? "",
                         email: invitee.email ?? "",
                       }
@@ -153,6 +158,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 }
               />
             </Reveal>
+            <WhatsAppContactButton eventId={event.id} eventName={event.eventTitle || event.honoreeName} variant="inline" />
           </div>
         ) : null}
 

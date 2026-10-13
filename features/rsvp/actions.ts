@@ -6,7 +6,9 @@ import { headers } from "next/headers";
 import { getInviteeByToken } from "@/services/invitees";
 import { submitRsvp } from "@/services/rsvps";
 import { sendRsvpConfirmation } from "@/lib/email";
-import { rsvpFormSchema, type RsvpFormValues } from "@/types/rsvp";
+import { buildRsvpSchema, pickAnswers } from "@/lib/rsvp-config";
+import { getRsvpConfig } from "@/services/rsvp-config";
+import type { ConfiguredRsvpValues } from "@/features/rsvp/rsvp-config-fields";
 import { notifyAdminsOfRsvpSubmission } from "@/services/admin-notifications";
 
 export type SubmitRsvpResult =
@@ -21,20 +23,22 @@ export type SubmitRsvpResult =
  */
 export async function submitRsvpAction(
   token: string,
-  values: RsvpFormValues,
+  values: ConfiguredRsvpValues,
 ): Promise<SubmitRsvpResult> {
-  const parsed = rsvpFormSchema.safeParse(values);
-  if (!parsed.success) {
-    return { success: false, error: "Please check the form and try again." };
-  }
-
   const found = await getInviteeByToken(token);
   if (!found) {
     return { success: false, error: "This invitation link is not valid." };
   }
 
+  // Validated against this event's own RSVP form setup (required fields, custom questions).
+  const config = await getRsvpConfig(found.event.id);
+  const parsed = buildRsvpSchema(config).safeParse(values);
+  if (!parsed.success) {
+    return { success: false, error: "Please check the form and try again." };
+  }
+
   try {
-    await submitRsvp(found.invitee.id, parsed.data);
+    await submitRsvp(found.invitee.id, parsed.data, config.questions.length > 0 ? pickAnswers(config, parsed.data.answers) : undefined);
   } catch (err) {
     console.error("submitRsvpAction failed:", err);
     return {

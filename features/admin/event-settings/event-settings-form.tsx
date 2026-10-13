@@ -670,9 +670,23 @@ export function EventSettingsForm({
         {origin ? (
           <p className="text-xs text-navy-700/50">
             Your event&rsquo;s address will be{" "}
-            <code className="rounded bg-navy-950/5 px-1.5 py-0.5">
-              {origin}/events/{form.slug || "..."}
-            </code>
+            {form.slug && form.slug === event.slug ? (
+              <a
+                href={`${origin}/events/${form.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all rounded bg-navy-950/5 px-1.5 py-0.5 font-mono text-gold-700 underline underline-offset-2 hover:text-gold-800"
+              >
+                {origin}/events/{form.slug}
+              </a>
+            ) : (
+              <>
+                <code className="break-all rounded bg-navy-950/5 px-1.5 py-0.5">
+                  {origin}/events/{form.slug || "..."}
+                </code>{" "}
+                (save to open the new address)
+              </>
+            )}
           </p>
         ) : null}
       </section>

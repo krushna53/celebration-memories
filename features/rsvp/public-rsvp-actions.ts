@@ -6,7 +6,9 @@ import { headers } from "next/headers";
 import { findOrCreateSelfInvitee, getEventForPublicRsvp } from "@/services/public-rsvp";
 import { submitRsvp } from "@/services/rsvps";
 import { sendRsvpConfirmation } from "@/lib/email";
-import { rsvpFormSchema, type RsvpFormValues } from "@/types/rsvp";
+import { buildRsvpSchema, pickAnswers } from "@/lib/rsvp-config";
+import { getRsvpConfig } from "@/services/rsvp-config";
+import type { ConfiguredRsvpValues } from "@/features/rsvp/rsvp-config-fields";
 import { notifyAdminsOfRsvpSubmission } from "@/services/admin-notifications";
 
 export type SubmitPublicRsvpResult =
@@ -28,7 +30,7 @@ export type SubmitPublicRsvpResult =
  */
 export async function submitPublicRsvpAction(
   eventSlug: string,
-  values: RsvpFormValues,
+  values: ConfiguredRsvpValues,
   honeypot?: string,
 ): Promise<SubmitPublicRsvpResult> {
   if (honeypot) {
@@ -37,7 +39,14 @@ export async function submitPublicRsvpAction(
     return { success: true, inviteeId: "" };
   }
 
-  const parsed = rsvpFormSchema.safeParse(values);
+  const event = await getEventForPublicRsvp(eventSlug);
+  if (!event) {
+    return { success: false, error: "Public RSVP isn't open for this event." };
+  }
+
+  // Validated against this event's own RSVP form setup; phone stays required here (it identifies a returning guest).
+  const config = await getRsvpConfig(event.id);
+  const parsed = buildRsvpSchema(config, { forcePhone: true }).safeParse(values);
   if (!parsed.success) {
     return { success: false, error: "Please check the form and try again." };
   }
@@ -49,11 +58,6 @@ export async function submitPublicRsvpAction(
     };
   }
 
-  const event = await getEventForPublicRsvp(eventSlug);
-  if (!event) {
-    return { success: false, error: "Public RSVP isn't open for this event." };
-  }
-
   let inviteeId: string;
   try {
     const invitee = await findOrCreateSelfInvitee(event.id, {
@@ -62,7 +66,7 @@ export async function submitPublicRsvpAction(
       email: parsed.data.email,
     });
     inviteeId = invitee.id;
-    await submitRsvp(invitee.id, parsed.data);
+    await submitRsvp(invitee.id, parsed.data, config.questions.length > 0 ? pickAnswers(config, parsed.data.answers) : undefined);
   } catch (err) {
     console.error("submitPublicRsvpAction failed:", err);
     return {

@@ -6,7 +6,9 @@ import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listApprovedTemplateSubmissions } from "@/services/template-submissions";
 import { communitySubmissionToTemplateSummary } from "@/lib/community-theme";
-import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
+import { templatesForEvent } from "@/services/template-access";
+import { BuildFromCardButton } from "@/features/admin/templates/build-from-card-button";
+import { CARD_TEMPLATE_SLUG } from "@/lib/card-theme";
 import { TemplatePicker, type PickerTemplate } from "@/features/admin/templates/template-picker";
 import { NoEventState } from "@/features/admin/components/no-event-state";
 
@@ -27,8 +29,9 @@ export default async function AdminTemplatesPage() {
   // Built-in templates first, then approved community submissions — see
   // lib/community-theme.ts#communitySubmissionToTemplateSummary for how a
   // submission maps to this same shape.
+  const viewer = { isPlatformOwner: admin?.role === "owner", email: admin?.email ?? null, eventId: event.id };
   const templates: PickerTemplate[] = [
-    ...TEMPLATE_CATALOG,
+    ...(await templatesForEvent(event.id, viewer)),
     ...approvedSubmissions.map(communitySubmissionToTemplateSummary),
   ];
 
@@ -45,6 +48,14 @@ export default async function AdminTemplatesPage() {
         </Link>
         .
       </p>
+      {event.shareImagePath ? (
+        <div className="mt-6">
+          <BuildFromCardButton
+            eventId={event.id}
+            hasCardTemplate={templates.some((t) => t.slug === CARD_TEMPLATE_SLUG)}
+          />
+        </div>
+      ) : null}
       <div className="mt-6">
         <TemplatePicker
           eventId={event.id}

@@ -95,6 +95,42 @@ export interface TemplateSummary {
    * general-purpose and shown in their normal position.
    */
   occasions?: EventCategory[];
+  /**
+   * Private (client-specific) templates only. When set, the template is
+   * hidden from every picker and can't be applied except by: the platform
+   * owner, a signed-in user whose email is listed, or anyone working on a
+   * listed event (its team, or its wizard draft). Events already using it
+   * keep rendering normally for guests. Enforced by canUseTemplate() in
+   * the pickers, the preview route and both save actions.
+   */
+  access?: TemplateAccess;
+  /** Only offered to events that have colours read off their invitation card (lib/card-theme.ts). */
+  requiresCardTheme?: boolean;
+}
+
+export interface TemplateAccess {
+  emails: readonly string[];
+  eventIds: readonly string[];
+}
+
+/** Who is choosing a template, and for which event. */
+export interface TemplateViewer {
+  isPlatformOwner: boolean;
+  email: string | null;
+  eventId: string | null;
+}
+
+export function canUseTemplate(template: { access?: TemplateAccess }, viewer: TemplateViewer): boolean {
+  const access = template.access;
+  if (!access) return true;
+  if (viewer.isPlatformOwner) return true;
+  const email = viewer.email?.trim().toLowerCase();
+  if (email && access.emails.some((allowed) => allowed.toLowerCase() === email)) return true;
+  return Boolean(viewer.eventId && access.eventIds.includes(viewer.eventId));
+}
+
+export function isPrivateTemplateSlug(slug: string | null | undefined): boolean {
+  return Boolean(slug && TEMPLATE_CATALOG.some((t) => t.slug === slug && t.access));
 }
 
 export const TEMPLATE_CATALOG: TemplateSummary[] = [
@@ -397,6 +433,37 @@ export const TEMPLATE_CATALOG: TemplateSummary[] = [
     secondaryColor: "#17263c",
     fontFamily: "Playfair Display",
     occasions: ["reunion"],
+  },
+  {
+    id: "tpl-card-match",
+    slug: "card-match",
+    name: "Matched to your card",
+    description: "Built automatically from your invitation card — its background, text and accent colours and its type style — so your site looks like your card.",
+    category: "general",
+    premium: false,
+    thumbnail: "/templates/card-match.svg",
+    primaryColor: "#c8963e",
+    secondaryColor: "#1f2a44",
+    fontFamily: "From your card",
+    requiresCardTheme: true,
+  },
+  {
+    id: "tpl-humanos",
+    slug: "humanos",
+    name: "HumanOS",
+    description: "Deep navy on warm cream with a mustard accent and clean geometric type — matches HumanOS Learning and Consultancy LLP's invitation cards. Private to HumanOS.",
+    category: "corporate",
+    premium: false,
+    thumbnail: "/templates/humanos.svg",
+    primaryColor: "#d4a03a",
+    secondaryColor: "#0f2440",
+    fontFamily: "Poppins",
+    occasions: ["workshop", "corporate"],
+    access: {
+      emails: ["pradhanharshal2@gmail.com"],
+      // Circle of Insight (monthly-online-reflection-space-new-event).
+      eventIds: ["fe7f30a8-2672-4698-8ffb-131a7db2e288"],
+    },
   },
 ];
 

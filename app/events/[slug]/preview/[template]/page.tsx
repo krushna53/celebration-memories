@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { EventLandingPage } from "@/features/event-landing/event-landing-page";
 import { EventUnpublishedScreen } from "@/features/event-landing/event-unpublished-screen";
 import { getEventBySlug } from "@/services/events";
+import { canUseTemplate, TEMPLATE_CATALOG } from "@/lib/template-catalog";
+import { getTemplateViewer } from "@/services/template-access";
 
 export const dynamic = "force-dynamic";
 
@@ -28,5 +30,9 @@ export default async function TemplatePreviewPage({ params }: TemplatePreviewPag
   const event = await getEventBySlug(slug).catch(() => null);
   if (!event) notFound();
   if (event.pageStatus === "unpublished") return <EventUnpublishedScreen eventTitle={event.eventTitle} />;
-  return <EventLandingPage event={event} templateOverride={decodeURIComponent(template)} />;
+  const requested = decodeURIComponent(template);
+  // A private template only previews for the people it's shared with; anyone else sees the event's own look.
+  const privateTemplate = TEMPLATE_CATALOG.find((t) => t.slug === requested && t.access);
+  const allowed = !privateTemplate || canUseTemplate(privateTemplate, await getTemplateViewer(event.id));
+  return <EventLandingPage event={event} templateOverride={allowed ? requested : event.templateSlug} />;
 }

@@ -75,4 +75,6 @@ export interface RsvpRecord {
   mealPreference: MealPreference;
   comments: string | null;
   submittedAt: string;
+  /** Answers to the event's custom RSVP questions, keyed by question id (lib/rsvp-config.ts). */
+  answers?: Record<string, string> | null;
 }

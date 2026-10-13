@@ -13,6 +13,7 @@ import { utcIsoToZonedInputValue, zonedInputValueToUtcIso } from "@/lib/timezone
 import { resolveTimezoneFromAddress } from "@/lib/timezone-lookup";
 import { countUploadedAiImages } from "@/services/ai-image-jobs";
 import { recordCardRead } from "@/services/card-read-usage";
+import { applyCardExtras } from "@/services/card-extras";
 import { updateEvent, type EventUpdateInput } from "@/services/events";
 import { externalMediaUrl } from "@/services/external-media";
 
@@ -196,6 +197,11 @@ export async function draftReadInvitationCardAction(
       durationMs: readMs,
     });
     if (filled.length > 0) await updateEvent(event.id, input);
+    // WhatsApp contact + the card's colours ("Matched to your card" template) — saved separately, see services/card-extras.ts.
+    filled.push(...(await applyCardExtras(event.id, details, event.templateSlug).catch((err) => {
+      console.error("draftReadInvitationCardAction extras failed:", err);
+      return [] as string[];
+    })));
 
     return {
       success: true,

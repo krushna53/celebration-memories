@@ -3,6 +3,7 @@ import { MailCheck } from "lucide-react";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { PublicRsvpForm } from "@/features/rsvp/public-rsvp-form";
+import { getRsvpConfig } from "@/services/rsvp-config";
 
 interface RsvpTeaserSectionProps {
   eventId?: string;
@@ -19,13 +20,14 @@ interface RsvpTeaserSectionProps {
  * here — no extra click to a separate page — for visitors who arrived
  * through a shared/direct link rather than a personal invitation.
  */
-export function RsvpTeaserSection({
+export async function RsvpTeaserSection({
   eventId,
   eventSlug,
   publicRsvpEnabled,
   honoreeName = "",
 }: RsvpTeaserSectionProps) {
   const showPublicForm = Boolean(publicRsvpEnabled && eventSlug && eventId);
+  const rsvpConfig = showPublicForm && eventId ? await getRsvpConfig(eventId) : undefined;
 
   return (
     <section id="rsvp" className="bg-ivory-50 py-20 sm:py-28">
@@ -65,7 +67,7 @@ export function RsvpTeaserSection({
       {showPublicForm ? (
         <div className="mx-auto mt-10 max-w-xl px-6">
           <Reveal delay={0.1}>
-            <PublicRsvpForm eventSlug={eventSlug!} eventId={eventId!} honoreeName={honoreeName} />
+            <PublicRsvpForm eventSlug={eventSlug!} eventId={eventId!} honoreeName={honoreeName} rsvpConfig={rsvpConfig} />
           </Reveal>
         </div>
       ) : null}

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getDraftEventByToken } from "@/services/event-drafts";
 import { listApprovedTemplateSubmissions } from "@/services/template-submissions";
 import { communitySubmissionToTemplateSummary } from "@/lib/community-theme";
-import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
+import { templatesForEvent } from "@/services/template-access";
 import { TemplatePicker, type PickerTemplate } from "@/features/admin/templates/template-picker";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
 import { draftUpdateEventAction } from "@/features/start/actions/event";
@@ -19,7 +19,7 @@ export default async function WizardTemplatePage({ params }: { params: Promise<{
   if (!event) notFound();
 
   const templates: PickerTemplate[] = [
-    ...TEMPLATE_CATALOG,
+    ...(await templatesForEvent(event.id)),
     ...approvedSubmissions.map(communitySubmissionToTemplateSummary),
   ];
 

@@ -13,14 +13,13 @@ import { NotificationPrompt } from "@/features/push/notification-prompt";
 import { RsvpPaymentPanel } from "@/features/rsvp-payment/rsvp-payment-panel";
 import { WorkshopSessionPicker } from "@/features/rsvp/workshop-session-picker";
 import type { RsvpPrice } from "@/lib/rsvp-pricing";
+import type { RsvpFormValues } from "@/types/rsvp";
+import { buildRsvpSchema, DEFAULT_RSVP_CONFIG, type RsvpConfig } from "@/lib/rsvp-config";
 import {
-  ATTENDANCE_LABELS,
-  ATTENDANCE_OPTIONS,
-  MEAL_PREFERENCES,
-  MEAL_PREFERENCE_LABELS,
-  rsvpFormSchema,
-  type RsvpFormValues,
-} from "@/types/rsvp";
+  RsvpAttendanceField,
+  RsvpDetailFields,
+  type ConfiguredRsvpValues,
+} from "@/features/rsvp/rsvp-config-fields";
 import type { ScheduleItemRecord } from "@/types/content";
 import { StoryShareButton, type StoryCard } from "@/features/share/story-share-button";
 import { ConsentPhotoPicker } from "@/features/reels/consent-photo-picker";
@@ -34,7 +33,9 @@ interface RsvpFormProps {
   token: string;
   eventId: string;
   inviteeId: string;
-  defaultValues: Partial<RsvpFormValues>;
+  defaultValues: Partial<ConfiguredRsvpValues>;
+  /** The event's RSVP form setup (lib/rsvp-config.ts); omitted = the default form. */
+  rsvpConfig?: RsvpConfig;
   guestName: string;
   /** Non-null only when the event is a paid event with pricing configured (lib/rsvp-pricing.ts) — shows the payment step after a "coming" RSVP. */
   rsvpPrice?: RsvpPrice | null;
@@ -59,7 +60,9 @@ export function RsvpForm({
   reminderMessage = "Get a reminder to share a photo or video memory before the big day?",
   story,
   reelSelfie,
+  rsvpConfig,
 }: RsvpFormProps) {
+  const config = rsvpConfig ?? DEFAULT_RSVP_CONFIG;
   const [submitted, setSubmitted] = useState(false);
   const [submittedComing, setSubmittedComing] = useState<RsvpFormValues["coming"] | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -76,8 +79,8 @@ export function RsvpForm({
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<RsvpFormValues>({
-    resolver: zodResolver(rsvpFormSchema),
+  } = useForm<ConfiguredRsvpValues>({
+    resolver: zodResolver(buildRsvpSchema(config)),
     defaultValues: {
       name: guestName,
       coming: "coming",
@@ -90,7 +93,7 @@ export function RsvpForm({
 
   const coming = watch("coming");
 
-  async function onSubmit(values: RsvpFormValues) {
+  async function onSubmit(values: ConfiguredRsvpValues) {
     setServerError(null);
     const result = await submitRsvpAction(token, values);
     if (result.success) {
@@ -148,43 +151,7 @@ export function RsvpForm({
       noValidate
       className="grid gap-6 rounded-2xl border border-gold-500/15 bg-white px-6 py-8 text-left shadow-sm sm:px-10 sm:py-10"
     >
-      {/* Attendance */}
-      <div>
-        <span className={labelClasses}>
-          Will you be joining us? <span className="normal-case text-red-500">*</span>
-        </span>
-        <div
-          className={cn(
-            "mt-2 grid grid-cols-1 gap-2 rounded-lg sm:grid-cols-3",
-            errors.coming && "border-2 border-red-400 p-1.5",
-          )}
-        >
-          {ATTENDANCE_OPTIONS.map((option) => (
-            <label
-              key={option}
-              className={cn(
-                "cursor-pointer rounded-lg border px-4 py-2.5 text-center text-sm transition-luxury duration-200",
-                coming === option
-                  ? "border-gold-500 bg-gold-500/10 text-navy-950 font-medium"
-                  : "border-navy-950/15 text-navy-700/70 hover:border-gold-400",
-              )}
-            >
-              <input
-                type="radio"
-                value={option}
-                className="sr-only"
-                {...register("coming")}
-              />
-              {ATTENDANCE_LABELS[option]}
-            </label>
-          ))}
-        </div>
-        {errors.coming ? (
-          <p className="mt-1 text-xs font-medium text-red-600" role="alert">
-            {errors.coming.message}
-          </p>
-        ) : null}
-      </div>
+      <RsvpAttendanceField config={config} register={register} errors={errors} coming={coming} />
 
       {/* Name */}
       <div>
@@ -209,99 +176,12 @@ export function RsvpForm({
         ) : null}
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div>
-          <label className={labelClasses} htmlFor="phone">
-            Phone
-          </label>
-          <input
-            id="phone"
-            type="tel"
-            className={cn(inputClasses, "mt-1.5")}
-            {...register("phone")}
-          />
-        </div>
-        <div>
-          <label className={labelClasses} htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            aria-invalid={errors.email ? "true" : "false"}
-            className={cn(
-              inputClasses,
-              "mt-1.5",
-              errors.email && "border-red-500 focus:border-red-500 focus:ring-red-500/30",
-            )}
-            {...register("email")}
-          />
-          {errors.email ? (
-            <p className="mt-1 text-xs font-medium text-red-600" role="alert">
-              {errors.email.message}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div>
-          <label className={labelClasses} htmlFor="adults">
-            Adults
-          </label>
-          <input
-            id="adults"
-            type="number"
-            min={0}
-            max={20}
-            className={cn(inputClasses, "mt-1.5")}
-            {...register("adults")}
-          />
-        </div>
-        <div>
-          <label className={labelClasses} htmlFor="children">
-            Children
-          </label>
-          <input
-            id="children"
-            type="number"
-            min={0}
-            max={20}
-            className={cn(inputClasses, "mt-1.5")}
-            {...register("children")}
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className={labelClasses} htmlFor="mealPreference">
-          Meal Preference
-        </label>
-        <select
-          id="mealPreference"
-          className={cn(inputClasses, "mt-1.5")}
-          {...register("mealPreference")}
-        >
-          {MEAL_PREFERENCES.map((option) => (
-            <option key={option} value={option}>
-              {MEAL_PREFERENCE_LABELS[option]}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className={labelClasses} htmlFor="comments">
-          Comments
-        </label>
-        <textarea
-          id="comments"
-          rows={3}
-          className={cn(inputClasses, "mt-1.5 resize-none")}
-          placeholder="Dietary needs, well-wishes, anything else we should know..."
-          {...register("comments")}
-        />
-      </div>
+      <RsvpDetailFields
+        config={config}
+        register={register}
+        errors={errors}
+        commentsPlaceholder="Dietary needs, well-wishes, anything else we should know..."
+      />
 
       {reelSelfie && coming !== "not_coming" ? (
         <div className="rounded-xl border border-gold-500/20 bg-ivory-50 p-4">

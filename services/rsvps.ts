@@ -10,7 +10,12 @@ import { logActivity } from "@/services/tracking";
  * dashboard queries don't need to join against `rsvps` for the common
  * case of "what's this guest's current status".
  */
-export async function submitRsvp(inviteeId: string, values: RsvpFormValues) {
+export async function submitRsvp(
+  inviteeId: string,
+  values: RsvpFormValues,
+  /** Answers to the event's custom RSVP questions (lib/rsvp-config.ts pickAnswers) — omitted for events without any. */
+  answers?: Record<string, string> | null,
+) {
   const client = supabaseAdmin();
 
   const { error: rsvpError } = await client.from("rsvps").upsert(
@@ -23,6 +28,7 @@ export async function submitRsvp(inviteeId: string, values: RsvpFormValues) {
       comments: values.comments || null,
       submitted_at: new Date().toISOString(),
       consent_at: new Date().toISOString(),
+      ...(answers !== undefined ? { answers } : {}),
     },
     { onConflict: "invitee_id" },
   );

@@ -1,0 +1,11 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#f6f3ec"/>
+  <rect x="140" y="40" width="120" height="160" rx="10" fill="#ffffff" stroke="#1f2a44" stroke-width="2"/>
+  <line x1="165" y1="80" x2="235" y2="80" stroke="#1f2a44" stroke-width="5"/>
+  <line x1="175" y1="100" x2="225" y2="100" stroke="#c8963e" stroke-width="3"/>
+  <circle cx="175" cy="150" r="14" fill="#1f2a44"/>
+  <circle cx="200" cy="150" r="14" fill="#c8963e"/>
+  <circle cx="225" cy="150" r="14" fill="#e9e2d0" stroke="#1f2a44" stroke-width="1"/>
+  <text x="200" y="245" font-family="Helvetica, Arial, sans-serif" font-size="20" fill="#1f2a44" text-anchor="middle">Matched to your card</text>
+  <text x="200" y="270" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#5b6478" text-anchor="middle">Colours &amp; type from your invitation</text>
+</svg>

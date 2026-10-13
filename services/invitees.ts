@@ -35,6 +35,8 @@ interface RsvpRow {
   meal_preference: MealPreference;
   comments: string | null;
   submitted_at: string;
+  /** Answers to the event's custom RSVP questions (lib/rsvp-config.ts); absent before migration 20261013130000. */
+  answers?: Record<string, string> | null;
 }
 
 function mapInvitee(row: InviteeRow): InviteeRecord {
@@ -67,6 +69,7 @@ function mapRsvp(row: RsvpRow): RsvpRecord {
     mealPreference: row.meal_preference,
     comments: row.comments,
     submittedAt: row.submitted_at,
+    answers: row.answers ?? null,
   };
 }
 

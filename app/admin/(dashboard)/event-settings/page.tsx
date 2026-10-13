@@ -14,6 +14,9 @@ import { getReelSettings } from "@/services/guest-reels";
 import { CobrandCard } from "@/features/admin/event-settings/cobrand-card";
 import { getEventOwnCobrand } from "@/services/event-cobrand";
 import { getBrandForEvent } from "@/services/host-brands";
+import { WhatsAppContactCard } from "@/features/admin/event-settings/whatsapp-contact-card";
+import { getEventWhatsAppContact } from "@/services/event-extras";
+import { getEventSegment } from "@/lib/event-segment";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +29,11 @@ export default async function AdminEventSettingsPage() {
     return <NoEventState />;
   }
 
-  const [cobrand, hostBrand] = await Promise.all([getEventOwnCobrand(event.id), getBrandForEvent(event.id)]);
+  const [cobrand, hostBrand, whatsapp] = await Promise.all([
+    getEventOwnCobrand(event.id),
+    getBrandForEvent(event.id),
+    getEventWhatsAppContact(event.id),
+  ]);
   const shareImageUrl = event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null;
   const shareVideoUrl = event.shareVideoPath ? publicMediaUrl("gallery", event.shareVideoPath) : null;
   const highlightReelUrl = event.highlightReelPath
@@ -62,6 +69,12 @@ export default async function AdminEventSettingsPage() {
         honoreeName={event.honoreeName}
         photoUrl={reelSettings.honoreePhotoUrl}
         category={event.category}
+      />
+      <WhatsAppContactCard
+        eventId={event.id}
+        initialNumber={whatsapp?.number ?? ""}
+        initialLabel={whatsapp?.label ?? ""}
+        corporate={getEventSegment(event.category) === "corporate"}
       />
       <CobrandCard
         eventId={event.id}

@@ -137,6 +137,16 @@ const STEP_REGISTRY = {
       "Not sure about the exact time yet? You can always change it later — nothing here is locked in.",
     ],
   },
+  "rsvp-form": {
+    slug: "rsvp-form",
+    label: "RSVP Form",
+    description: "Choose what guests are asked",
+    tips: [
+      "Only ask what you'll actually use — shorter forms get more replies.",
+      "Add your own questions, like a company name or a session choice. You can change this any time from your dashboard.",
+    ],
+    optional: true,
+  },
   timeline: {
     slug: "timeline",
     label: "Timeline",
@@ -248,6 +258,7 @@ function resolveWizardStepList(goals: string[] | null | undefined): WizardStep[]
   const wantsSlideshow = !hasGoals || goals!.includes("slideshow");
 
   steps.push(STEP_REGISTRY.card, STEP_REGISTRY.basics);
+  if (wantsWebsite) steps.push(STEP_REGISTRY["rsvp-form"]);
   if (wantsWebsite || wantsSlideshow) steps.push(STEP_REGISTRY.timeline, STEP_REGISTRY.gallery);
   steps.push(STEP_REGISTRY.template);
   if (wantsWebsite || wantsCard) steps.push(STEP_REGISTRY["ai-image"]);
