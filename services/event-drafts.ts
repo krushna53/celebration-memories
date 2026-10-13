@@ -102,24 +102,27 @@ export interface DraftSummary {
   honoreeName: string;
   eventTitle: string;
   createdAt: string;
+  /** The draft's wizard token — owner-only view, used for "Continue editing" and the host handover link. */
+  draftToken: string;
 }
 
 /** For the owner-only draft management view (features/admin/drafts). */
 export async function listDraftEvents(): Promise<DraftSummary[]> {
   const { data, error } = await supabaseAdmin()
     .from("events")
-    .select("id, slug, honoree_name, event_title, created_at")
+    .select("id, slug, honoree_name, event_title, created_at, draft_token")
     .eq("status", "draft")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`Failed to list draft events: ${error.message}`);
-  return (data as { id: string; slug: string; honoree_name: string; event_title: string; created_at: string }[]).map(
+  return (data as { id: string; slug: string; honoree_name: string; event_title: string; created_at: string; draft_token: string }[]).map(
     (row) => ({
       id: row.id,
       slug: row.slug,
       honoreeName: row.honoree_name,
       eventTitle: row.event_title,
       createdAt: row.created_at,
+      draftToken: row.draft_token,
     }),
   );
 }

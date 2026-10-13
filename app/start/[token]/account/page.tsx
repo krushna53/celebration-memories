@@ -8,6 +8,7 @@ import { getCurrentSupabaseUser } from "@/features/auth/actions";
 import { AccountForm } from "@/features/start/account-form";
 import { claimDraftEventFormAction, linkDraftEventFormAction } from "@/features/start/actions/event";
 import { signOutAction } from "@/features/admin/auth-actions";
+import { SITE_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -87,14 +88,32 @@ export default async function WizardAccountPage({ params, searchParams }: Wizard
         <div className="rounded-2xl border border-navy-950/10 bg-white p-8 text-center">
           <h1 className="font-display text-2xl text-navy-950">Platform Admin Account</h1>
           <p className="mt-2 text-sm text-navy-700/60">
-            You&rsquo;re signed in as <strong className="text-navy-950">{admin.email}</strong>, the site owner&rsquo;s
-            account. This draft is not published or paid for. Sign out and use the host&rsquo;s account to choose a plan and publish it.
+            You&rsquo;re signed in as <strong className="text-navy-950">{admin.email}</strong>, the platform
+            account — it can&rsquo;t own or publish customer events. Your draft is saved. To publish it, send this link
+            to the person who&rsquo;ll run the event: they sign in or create an account, become its owner, and publish
+            it from their own login.
+          </p>
+          <p className="mt-4 break-all rounded-lg border border-dashed border-navy-950/15 bg-navy-950/[0.02] px-3 py-2 text-left font-mono text-xs text-navy-950">
+            {`${SITE_URL}/start/${token}/account`}
+          </p>
+          <p className="mt-2 text-xs text-navy-700/50">
+            Building your own demo? Sign out and create a separate host login (any other email) for it. The draft stays in{" "}
+            <Link href="/admin/drafts" className="underline underline-offset-2">
+              Drafts
+            </Link>{" "}
+            either way.
           </p>
           <Link
-            href="/admin"
+            href={`/start/${token}/review`}
             className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 transition-luxury duration-200 hover:brightness-110"
           >
-            Return to Platform Dashboard
+            Back to my draft
+          </Link>
+          <Link
+            href="/admin/drafts"
+            className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-navy-950/15 px-4 py-2.5 text-sm font-medium text-navy-950 hover:border-navy-950/30"
+          >
+            Go to Drafts
           </Link>
           <form action={signOutAction} className="mt-3">
             <button type="submit" className="text-sm text-navy-700/60 underline underline-offset-4 hover:text-navy-950">

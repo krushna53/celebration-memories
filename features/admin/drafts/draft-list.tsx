@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ExternalLink, Loader2, Trash2 } from "lucide-react";
+import { Check, ExternalLink, Link2, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import { deleteDraftEventAction } from "@/features/admin/drafts/actions";
 import type { DraftSummary } from "@/services/event-drafts";
@@ -11,12 +11,26 @@ import type { DraftSummary } from "@/services/event-drafts";
  * Owner-only list of in-progress wizard drafts (app/admin/(dashboard)/drafts).
  * Manual delete only — per the deliberate decision that drafts never
  * auto-expire (see services/event-drafts.ts's deleteDraftEvent).
+ *
+ * The platform owner never owns or publishes a customer event (the
+ * wizard's account step turns that account away). So a draft the owner
+ * builds — a demo, or one set up for a client — is finished with
+ * "Continue editing" and then handed over with the host link: the host
+ * opens it, signs in or creates an account, becomes the event's owner,
+ * and publishes or pays from their own login.
  */
 export function DraftList({ initialDrafts }: { initialDrafts: DraftSummary[] }) {
   const [drafts, setDrafts] = useState(initialDrafts);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  async function copyHandoverLink(id: string, token: string) {
+    await navigator.clipboard.writeText(`${window.location.origin}/start/${token}/account`);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId((current) => (current === id ? null : current)), 2000);
+  }
 
   function remove(id: string, label: string) {
     if (!confirm(`Permanently delete "${label}"? This deletes everything added so far — photos, timeline, slideshow. This can't be undone.`)) {
@@ -70,7 +84,23 @@ export function DraftList({ initialDrafts }: { initialDrafts: DraftSummary[] }) 
                   })}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-3">
+                  <div className="flex flex-wrap items-center justify-end gap-3">
+                    <Link
+                      href={`/start/${draft.draftToken}/basics`}
+                      target="_blank"
+                      className="inline-flex items-center gap-1 text-xs text-navy-700/60 hover:text-navy-950"
+                    >
+                      <Pencil size={13} /> Continue editing
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => void copyHandoverLink(draft.id, draft.draftToken)}
+                      title="The host opens this, signs in or creates an account, and publishes the event from their own login"
+                      className="inline-flex items-center gap-1 text-xs text-gold-700 hover:text-gold-800"
+                    >
+                      {copiedId === draft.id ? <Check size={13} /> : <Link2 size={13} />}
+                      {copiedId === draft.id ? "Link copied" : "Copy host link"}
+                    </button>
                     <Link
                       href={`/events/${draft.slug}`}
                       target="_blank"
