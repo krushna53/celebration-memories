@@ -18,7 +18,7 @@ import type { EventDisplayData } from "@/lib/event-display";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 import { PoweredByBand } from "@/features/event-landing/powered-by-band";
-import { CardArtworkBand } from "@/features/event-landing/card-artwork-band";
+import { getCardArtworkUrl } from "@/services/card-artwork";
 import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
 
 export interface EventSectionsProps {
@@ -52,7 +52,7 @@ export interface EventSectionsProps {
 /** After the event: memories first; the invitation-era sections no longer apply. */
 const RELIVE_ORDER: SectionKey[] = ["memoryWall", "gallery", "timeline", "wishMessage"];
 
-export function EventSections({
+export async function EventSections({
   event,
   displayData: data,
   galleryPhotos,
@@ -60,6 +60,8 @@ export function EventSections({
   renderHero,
   omitSections = [],
 }: EventSectionsProps) {
+  // Banner image under the hero title — from the invitation card or uploaded by the host (services/card-artwork.ts).
+  const artworkUrl = event ? await getCardArtworkUrl(event.id) : null;
   // "Relive the day" mode switches on by itself once the event has ended (endAt is an absolute
   // instant, so no timezone maths needed); the page revalidates every minute.
   const ended = Boolean(event?.endAt && Date.parse(event.endAt) < Date.now());
@@ -106,8 +108,7 @@ export function EventSections({
   return (
     <>
       {event ? <PageViewBeacon eventId={event.id} page="landing" /> : null}
-      {renderHero ? renderHero(relive) : <HeroSection data={data} relive={relive} />}
-      {event ? <CardArtworkBand eventId={event.id} alt={`Illustration from the ${event.eventTitle || event.honoreeName} invitation`} /> : null}
+      {renderHero ? renderHero(relive) : <HeroSection data={data} relive={relive} artworkUrl={artworkUrl} />}
       {config
         .filter((item) => item.visible)
         .map((item) => (

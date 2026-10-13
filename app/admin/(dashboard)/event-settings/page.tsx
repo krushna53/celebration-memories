@@ -73,7 +73,7 @@ export default async function AdminEventSettingsPage() {
         photoUrl={reelSettings.honoreePhotoUrl}
         category={event.category}
       />
-      <CardArtworkCard eventId={event.id} artworkUrl={artworkUrl} hasCard={Boolean(event.shareImagePath)} />
+      <CardArtworkCard eventId={event.id} eventSlug={event.slug} artworkUrl={artworkUrl} hasCard={Boolean(event.shareImagePath)} />
       <WhatsAppContactCard
         eventId={event.id}
         initialNumber={whatsapp?.number ?? ""}

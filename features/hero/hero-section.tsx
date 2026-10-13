@@ -30,6 +30,8 @@ interface HeroSectionProps {
   data: EventDisplayData;
   /** Set once the event has ended ("Relive the day" mode): thank-you copy and an "add your photos" call to action instead of the countdown and RSVP. */
   relive?: HeroRelive | null;
+  /** The event's banner image (services/card-artwork.ts — cropped off the invitation card or uploaded by the host), shown under the title. */
+  artworkUrl?: string | null;
 }
 
 // CSS custom properties, not hex literals, so the particle colors
@@ -54,7 +56,7 @@ const THEME_PARTICLE_COLORS = [
  * rising balloons instead of the original gold-dust drift, so a
  * birthday event actually reads as a celebration at a glance.
  */
-export function HeroSection({ data, relive = null }: HeroSectionProps) {
+export function HeroSection({ data, relive = null, artworkUrl = null }: HeroSectionProps) {
   const personality = useTemplateAnimation();
   const guestCopy = getSegmentCopy(data.category).guest;
   // No real family video has been uploaded to /public/hero/family.mp4 yet,
@@ -132,6 +134,17 @@ export function HeroSection({ data, relive = null }: HeroSectionProps) {
           >
             {data.eventTitle}
           </motion.p>
+
+          {artworkUrl ? (
+            <motion.div custom={0.35} variants={fadeUp} initial="hidden" animate="show" className="mt-6">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={artworkUrl}
+                alt={`Illustration for ${data.honoreeName}`}
+                className="mx-auto h-auto max-h-56 w-auto max-w-full rounded-xl object-contain sm:max-h-72"
+              />
+            </motion.div>
+          ) : null}
 
           <motion.div
             custom={0.4}

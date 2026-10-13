@@ -276,6 +276,26 @@ export async function createSignedShareImageUpload(params: {
 }
 
 /**
+ * Same signed-upload pattern, for the banner image shown under the hero
+ * title (services/card-artwork.ts) when the host uploads their own instead
+ * of using the one cropped off their invitation card. Only formats the
+ * `gallery` bucket accepts.
+ */
+export async function createSignedCardArtworkUpload(params: { eventId: string; contentType: string; fileSize: number }) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
+  const ext: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+  const extension = ext[params.contentType];
+  if (!extension) throw new UploadValidationError("Use a JPG, PNG or WebP image.");
+  const limit = UPLOAD_LIMITS.photo;
+  if (params.fileSize > limit.maxBytes) throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+
+  const path = `${params.eventId}/card-artwork/${randomUUID()}.${extension}`;
+  const { data, error } = await supabaseAdmin().storage.from("gallery").createSignedUploadUrl(path);
+  if (error || !data) throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  return { path, signedUrl: data.signedUrl };
+}
+
+/**
  * Same signed-upload pattern, for an admin who'd rather upload their own
  * invitation image than generate one with AI (see the "Upload your own"
  * tab in features/admin/ai-image/ai-image-generator.tsx). Stored under

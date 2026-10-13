@@ -8,7 +8,8 @@ import { externalMediaUrl } from "@/services/external-media";
 import { recordCardRead } from "@/services/card-read-usage";
 import { applyCardExtras } from "@/services/card-extras";
 import { getEventWhatsAppContact } from "@/services/event-extras";
-import { removeCardArtwork } from "@/services/card-artwork";
+import { removeCardArtwork, setUploadedCardArtwork } from "@/services/card-artwork";
+import { createSignedCardArtworkUpload } from "@/services/uploads";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   AI_CARD_READER_CONFIGURED,
@@ -145,5 +146,36 @@ export async function removeCardArtworkAction(eventId: string): Promise<{ succes
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to remove." };
+  }
+}
+
+/** Step 1 of a host's own banner image upload: a signed URL into this event's card-artwork folder. */
+export async function requestCardArtworkUploadAction(
+  eventId: string,
+  contentType: string,
+  fileSize: number,
+): Promise<{ success: true; path: string; signedUrl: string } | { success: false; error: string }> {
+  try {
+    await requireAdminForEvent(eventId);
+    const { path, signedUrl } = await createSignedCardArtworkUpload({ eventId, contentType, fileSize });
+    return { success: true, path, signedUrl };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Upload failed." };
+  }
+}
+
+/** Step 2: makes the uploaded file the event's banner image (replacing any previous one). */
+export async function confirmCardArtworkUploadAction(
+  eventId: string,
+  path: string,
+): Promise<{ success: true; url: string } | { success: false; error: string }> {
+  try {
+    await requireAdminForEvent(eventId);
+    const url = await setUploadedCardArtwork(eventId, path);
+    revalidatePath("/admin/event-settings");
+    revalidatePath("/events/[slug]", "page");
+    return { success: true, url };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to save the image." };
   }
 }

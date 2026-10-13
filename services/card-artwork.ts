@@ -8,9 +8,9 @@ import { publicMediaUrl } from "@/services/uploads";
 /**
  * The invitation card's main illustration, cropped out of the uploaded
  * card (events.share_image_path) using the box the card reader returned
- * (lib/ai-invitation-card-reader.ts → `artwork`), stored as
- * events.card_artwork_path and shown under the hero
- * (features/event-landing/card-artwork-band.tsx).
+ * (lib/ai-invitation-card-reader.ts → `artwork`) — or uploaded by the
+ * host — stored as events.card_artwork_path and shown under the hero
+ * title (features/hero/hero-section.tsx `artworkUrl`).
  *
  * Reads degrade to null on any error, so a page never breaks over it.
  */
@@ -100,4 +100,25 @@ export async function removeCardArtwork(eventId: string): Promise<void> {
   const { error } = await supabaseAdmin().from("events").update({ card_artwork_path: null }).eq("id", eventId);
   if (error) throw new Error(error.message);
   if (previous) await supabaseAdmin().storage.from(BUCKET).remove([previous]);
+}
+
+/**
+ * Points the event at a banner image the host uploaded themselves
+ * (createSignedCardArtworkUpload). The path must be in this event's own
+ * card-artwork folder and the file must actually exist.
+ */
+export async function setUploadedCardArtwork(eventId: string, path: string): Promise<string> {
+  const folder = `${eventId}/card-artwork/`;
+  if (!path.startsWith(folder) || path.includes("..") || path.slice(folder.length).includes("/")) {
+    throw new Error("That upload doesn't belong to this event.");
+  }
+  const client = supabaseAdmin();
+  const { data: listed, error: listError } = await client.storage.from(BUCKET).list(`${eventId}/card-artwork`, { search: path.slice(folder.length) });
+  if (listError || !listed?.some((f) => `${folder}${f.name}` === path)) throw new Error("The upload didn't finish — please try again.");
+
+  const previous = await currentPath(eventId);
+  const { error } = await client.from("events").update({ card_artwork_path: path }).eq("id", eventId);
+  if (error) throw new Error(error.message);
+  if (previous && previous !== path) await client.storage.from(BUCKET).remove([previous]);
+  return publicMediaUrl(BUCKET, path);
 }
