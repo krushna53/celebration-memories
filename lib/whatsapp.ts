@@ -106,6 +106,11 @@ export function previewInviteMessage(
 
 export const CREDIT_WHATSAPP_URL = BUILDER.whatsappUrl;
 
+/** The guest-facing "Message us on WhatsApp" link for an event's contact number (digits with country code). */
+export function eventContactWhatsAppUrl(number: string, eventName: string): string {
+  return `https://wa.me/${number}?text=${encodeURIComponent(`Hi, I have a question about ${eventName}.`)}`;
+}
+
 /**
  * Tap-to-open wa.me link TO a captured lead's own phone number (not
  * BUILDER's) — used in the wizard-account-lead notification email

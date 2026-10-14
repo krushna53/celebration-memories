@@ -19,6 +19,8 @@ import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 import { PoweredByBand } from "@/features/event-landing/powered-by-band";
 import { getCardArtworkUrl } from "@/services/card-artwork";
+import { getEventWhatsAppContact } from "@/services/event-extras";
+import { eventContactWhatsAppUrl } from "@/lib/whatsapp";
 import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
 
 export interface EventSectionsProps {
@@ -61,7 +63,16 @@ export async function EventSections({
   omitSections = [],
 }: EventSectionsProps) {
   // Banner image under the hero title — from the invitation card or uploaded by the host (services/card-artwork.ts).
-  const artworkUrl = event ? await getCardArtworkUrl(event.id) : null;
+  const [artworkUrl, whatsappContact] = event
+    ? await Promise.all([getCardArtworkUrl(event.id), getEventWhatsAppContact(event.id)])
+    : [null, null];
+  const heroWhatsapp =
+    event && whatsappContact
+      ? {
+          href: eventContactWhatsAppUrl(whatsappContact.number, event.eventTitle || event.honoreeName),
+          label: whatsappContact.label || "Message us on WhatsApp",
+        }
+      : null;
   // "Relive the day" mode switches on by itself once the event has ended (endAt is an absolute
   // instant, so no timezone maths needed); the page revalidates every minute.
   const ended = Boolean(event?.endAt && Date.parse(event.endAt) < Date.now());
@@ -108,7 +119,7 @@ export async function EventSections({
   return (
     <>
       {event ? <PageViewBeacon eventId={event.id} page="landing" /> : null}
-      {renderHero ? renderHero(relive) : <HeroSection data={data} relive={relive} artworkUrl={artworkUrl} />}
+      {renderHero ? renderHero(relive) : <HeroSection data={data} relive={relive} artworkUrl={artworkUrl} whatsapp={heroWhatsapp} />}
       {config
         .filter((item) => item.visible)
         .map((item) => (

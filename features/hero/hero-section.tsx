@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { MessageCircle } from "lucide-react";
 
 import type { EventDisplayData } from "@/lib/event-display";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ interface HeroSectionProps {
   relive?: HeroRelive | null;
   /** The event's banner image (services/card-artwork.ts — cropped off the invitation card or uploaded by the host), shown under the title. */
   artworkUrl?: string | null;
+  /** "Message us on WhatsApp" — shown first in the button row when the event has a WhatsApp contact (Event Settings). */
+  whatsapp?: { href: string; label: string } | null;
 }
 
 // CSS custom properties, not hex literals, so the particle colors
@@ -56,7 +59,7 @@ const THEME_PARTICLE_COLORS = [
  * rising balloons instead of the original gold-dust drift, so a
  * birthday event actually reads as a celebration at a glance.
  */
-export function HeroSection({ data, relive = null, artworkUrl = null }: HeroSectionProps) {
+export function HeroSection({ data, relive = null, artworkUrl = null, whatsapp = null }: HeroSectionProps) {
   const personality = useTemplateAnimation();
   const guestCopy = getSegmentCopy(data.category).guest;
   // No real family video has been uploaded to /public/hero/family.mp4 yet,
@@ -207,6 +210,14 @@ export function HeroSection({ data, relive = null, artworkUrl = null }: HeroSect
               </>
             ) : (
               <>
+                {whatsapp ? (
+                  <Button asChild size="lg" className="w-full bg-[#1f7a5c] text-white hover:bg-[#1f7a5c] hover:brightness-110 sm:w-auto">
+                    <a href={whatsapp.href} target="_blank" rel="noopener noreferrer">
+                      <MessageCircle size={18} aria-hidden="true" />
+                      {whatsapp.label}
+                    </a>
+                  </Button>
+                ) : null}
                 <Button asChild size="lg" className="w-full sm:w-auto">
                   <a href="#rsvp">RSVP Now</a>
                 </Button>

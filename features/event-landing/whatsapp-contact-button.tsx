@@ -1,6 +1,7 @@
 import { MessageCircle } from "lucide-react";
 
 import { getEventWhatsAppContact } from "@/services/event-extras";
+import { eventContactWhatsAppUrl } from "@/lib/whatsapp";
 
 /**
  * "Message us on WhatsApp" — a wa.me link to the host's number, shown just
@@ -20,7 +21,7 @@ export async function WhatsAppContactButton({
   const contact = await getEventWhatsAppContact(eventId);
   if (!contact) return null;
 
-  const href = `https://wa.me/${contact.number}?text=${encodeURIComponent(`Hi, I have a question about ${eventName}.`)}`;
+  const href = eventContactWhatsAppUrl(contact.number, eventName);
   const link = (
     <a
       href={href}
