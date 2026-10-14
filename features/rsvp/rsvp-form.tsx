@@ -36,6 +36,8 @@ interface RsvpFormProps {
   defaultValues: Partial<ConfiguredRsvpValues>;
   /** The event's RSVP form setup (lib/rsvp-config.ts); omitted = the default form. */
   rsvpConfig?: RsvpConfig;
+  /** Corporate-type events get professional default wording (attendance choices, comments hint). */
+  segment?: "family" | "corporate";
   guestName: string;
   /** Non-null only when the event is a paid event with pricing configured (lib/rsvp-pricing.ts) — shows the payment step after a "coming" RSVP. */
   rsvpPrice?: RsvpPrice | null;
@@ -61,6 +63,7 @@ export function RsvpForm({
   story,
   reelSelfie,
   rsvpConfig,
+  segment = "family",
 }: RsvpFormProps) {
   const config = rsvpConfig ?? DEFAULT_RSVP_CONFIG;
   const [submitted, setSubmitted] = useState(false);
@@ -151,7 +154,7 @@ export function RsvpForm({
       noValidate
       className="grid gap-6 rounded-2xl border border-gold-500/15 bg-white px-6 py-8 text-left shadow-sm sm:px-10 sm:py-10"
     >
-      <RsvpAttendanceField config={config} register={register} errors={errors} coming={coming} />
+      <RsvpAttendanceField config={config} register={register} errors={errors} coming={coming} segment={segment} />
 
       {/* Name */}
       <div>
@@ -180,7 +183,11 @@ export function RsvpForm({
         config={config}
         register={register}
         errors={errors}
-        commentsPlaceholder="Dietary needs, well-wishes, anything else we should know..."
+        commentsPlaceholder={
+          segment === "corporate"
+            ? "Questions, accessibility needs, anything else we should know..."
+            : "Dietary needs, well-wishes, anything else we should know..."
+        }
       />
 
       {reelSelfie && coming !== "not_coming" ? (

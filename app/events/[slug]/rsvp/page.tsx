@@ -12,6 +12,7 @@ import { getTemplateBySlug } from "@/lib/templates";
 import { templateAccentStyle } from "@/lib/template-theme-css";
 import { templatesForEvent } from "@/services/template-access";
 import { getRsvpConfig } from "@/services/rsvp-config";
+import { getEventSegment } from "@/lib/event-segment";
 import { communitySubmissionToTemplateSummary } from "@/lib/community-theme";
 import { listApprovedTemplateSubmissions } from "@/services/template-submissions";
 import { getCurrentAdmin } from "@/services/admin-auth";
@@ -120,6 +121,7 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
                 rsvpPrice={rsvpPrice}
                 workshopSessions={workshopSessions}
                 rsvpConfig={await getRsvpConfig(event.id)}
+                segment={getEventSegment(event.category)}
               />
             </Reveal>
           ) : (

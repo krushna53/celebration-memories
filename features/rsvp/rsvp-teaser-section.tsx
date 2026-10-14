@@ -4,12 +4,16 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { PublicRsvpForm } from "@/features/rsvp/public-rsvp-form";
 import { getRsvpConfig } from "@/services/rsvp-config";
+import { getEventSegment } from "@/lib/event-segment";
+import type { EventCategory } from "@/types/event";
 
 interface RsvpTeaserSectionProps {
   eventId?: string;
   eventSlug?: string;
   publicRsvpEnabled?: boolean;
   honoreeName?: string;
+  /** Picks professional default RSVP wording for corporate-type events. */
+  category?: EventCategory | null;
 }
 
 /**
@@ -25,6 +29,7 @@ export async function RsvpTeaserSection({
   eventSlug,
   publicRsvpEnabled,
   honoreeName = "",
+  category,
 }: RsvpTeaserSectionProps) {
   const showPublicForm = Boolean(publicRsvpEnabled && eventSlug && eventId);
   const rsvpConfig = showPublicForm && eventId ? await getRsvpConfig(eventId) : undefined;
@@ -67,7 +72,7 @@ export async function RsvpTeaserSection({
       {showPublicForm ? (
         <div className="mx-auto mt-10 max-w-xl px-6">
           <Reveal delay={0.1}>
-            <PublicRsvpForm eventSlug={eventSlug!} eventId={eventId!} honoreeName={honoreeName} rsvpConfig={rsvpConfig} />
+            <PublicRsvpForm eventSlug={eventSlug!} eventId={eventId!} honoreeName={honoreeName} rsvpConfig={rsvpConfig} segment={getEventSegment(category)} />
           </Reveal>
         </div>
       ) : null}

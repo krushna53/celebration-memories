@@ -33,8 +33,14 @@ interface FieldsProps {
 }
 
 /** "Will you be joining us?" — the event's attendance choices and wording. */
-export function RsvpAttendanceField({ config, register, errors, coming }: FieldsProps & { coming: string | undefined }) {
-  const options = attendanceOptions(config);
+export function RsvpAttendanceField({
+  config,
+  register,
+  errors,
+  coming,
+  segment = "family",
+}: FieldsProps & { coming: string | undefined; segment?: "family" | "corporate" }) {
+  const options = attendanceOptions(config, segment);
   return (
     <div>
       <span className={labelClasses}>

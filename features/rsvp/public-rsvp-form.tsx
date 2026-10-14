@@ -36,6 +36,8 @@ interface PublicRsvpFormProps {
   workshopSessions?: ScheduleItemRecord[];
   /** The event's RSVP form setup (lib/rsvp-config.ts); omitted = the default form. Phone always stays required here. */
   rsvpConfig?: RsvpConfig;
+  /** Corporate-type events get professional default wording (attendance choices, comments hint). */
+  segment?: "family" | "corporate";
 }
 
 /**
@@ -47,7 +49,15 @@ interface PublicRsvpFormProps {
  * honeypot field guards against bots since this page has no secret
  * token gating it.
  */
-export function PublicRsvpForm({ eventSlug, eventId, honoreeName, rsvpPrice, workshopSessions, rsvpConfig }: PublicRsvpFormProps) {
+export function PublicRsvpForm({
+  eventSlug,
+  eventId,
+  honoreeName,
+  rsvpPrice,
+  workshopSessions,
+  rsvpConfig,
+  segment = "family",
+}: PublicRsvpFormProps) {
   const config = rsvpConfig ?? DEFAULT_RSVP_CONFIG;
   const [submitted, setSubmitted] = useState(false);
   const [submittedName, setSubmittedName] = useState("");
@@ -151,7 +161,7 @@ export function PublicRsvpForm({ eventSlug, eventId, honoreeName, rsvpPrice, wor
         />
       </div>
 
-      <RsvpAttendanceField config={config} register={register} errors={errors} coming={coming} />
+      <RsvpAttendanceField config={config} register={register} errors={errors} coming={coming} segment={segment} />
 
       <div>
         <label className={labelClasses} htmlFor="name">
@@ -181,7 +191,11 @@ export function PublicRsvpForm({ eventSlug, eventId, honoreeName, rsvpPrice, wor
         register={register}
         errors={errors}
         publicMode
-        commentsPlaceholder={`Dietary needs, well-wishes for ${honoreeName}, anything else...`}
+        commentsPlaceholder={
+          segment === "corporate"
+            ? "Questions, accessibility needs, anything else we should know..."
+            : `Dietary needs, well-wishes for ${honoreeName}, anything else...`
+        }
       />
 
       <div

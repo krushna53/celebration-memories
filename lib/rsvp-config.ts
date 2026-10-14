@@ -153,10 +153,21 @@ export function fieldLabel(config: RsvpConfig, field: BuiltInField): string {
   return config.fields[field].label || DEFAULT_FIELD_LABELS[field];
 }
 
-export function attendanceOptions(config: RsvpConfig): { value: AttendanceOption; label: string }[] {
+/** Default attendance wording for corporate-type events (lib/event-segment.ts) when the host hasn't set their own; family events keep ATTENDANCE_LABELS. */
+export const CORPORATE_ATTENDANCE_LABELS: Record<AttendanceOption, string> = {
+  coming: "Attending",
+  maybe: "Not sure yet",
+  not_coming: "Can't attend",
+};
+
+export function attendanceOptions(
+  config: RsvpConfig,
+  segment: "family" | "corporate" = "family",
+): { value: AttendanceOption; label: string }[] {
+  const defaults = segment === "corporate" ? CORPORATE_ATTENDANCE_LABELS : ATTENDANCE_LABELS;
   return ATTENDANCE_OPTIONS.filter((o) => o !== "maybe" || config.allowMaybe).map((value) => ({
     value,
-    label: config.attendanceLabels[value] || ATTENDANCE_LABELS[value],
+    label: config.attendanceLabels[value] || defaults[value],
   }));
 }
 

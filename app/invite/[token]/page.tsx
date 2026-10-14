@@ -18,7 +18,7 @@ import { areGuestReelsEnabled, getInviteeReelOptIn } from "@/services/guest-reel
 import { Reveal } from "@/components/motion/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SiteShell } from "@/components/layout/site-shell";
-import { getSegmentCopy } from "@/lib/event-segment";
+import { getEventSegment, getSegmentCopy } from "@/lib/event-segment";
 import { getRsvpConfig } from "@/services/rsvp-config";
 import { PoweredByBand } from "@/features/event-landing/powered-by-band";
 import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
@@ -118,6 +118,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 workshopSessions={workshopSessions}
                 reminderMessage={guestCopy.rsvpReminder}
                 rsvpConfig={rsvpConfig}
+                segment={getEventSegment(event.category)}
                 reelSelfie={
                   reelOptIn
                     ? {

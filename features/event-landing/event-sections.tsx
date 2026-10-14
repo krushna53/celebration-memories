@@ -104,6 +104,7 @@ export async function EventSections({
           eventSlug={event?.slug}
           publicRsvpEnabled={event?.publicRsvpEnabled}
           honoreeName={event?.honoreeName}
+          category={event?.category}
         />
       </>
     ),
