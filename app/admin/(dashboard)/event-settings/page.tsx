@@ -17,6 +17,8 @@ import { getBrandForEvent } from "@/services/host-brands";
 import { WhatsAppContactCard } from "@/features/admin/event-settings/whatsapp-contact-card";
 import { CardArtworkCard } from "@/features/admin/event-settings/card-artwork-card";
 import { getCardArtworkUrl } from "@/services/card-artwork";
+import { PaymentDetailsCard } from "@/features/admin/event-settings/payment-details-card";
+import { getPaymentDetails } from "@/services/payment-details";
 import { getEventWhatsAppContact } from "@/services/event-extras";
 import { getEventSegment } from "@/lib/event-segment";
 
@@ -31,11 +33,12 @@ export default async function AdminEventSettingsPage() {
     return <NoEventState />;
   }
 
-  const [cobrand, hostBrand, whatsapp, artworkUrl] = await Promise.all([
+  const [cobrand, hostBrand, whatsapp, artworkUrl, payment] = await Promise.all([
     getEventOwnCobrand(event.id),
     getBrandForEvent(event.id),
     getEventWhatsAppContact(event.id),
     getCardArtworkUrl(event.id),
+    getPaymentDetails(event.id),
   ]);
   const shareImageUrl = event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null;
   const shareVideoUrl = event.shareVideoPath ? publicMediaUrl("gallery", event.shareVideoPath) : null;
@@ -72,6 +75,12 @@ export default async function AdminEventSettingsPage() {
         honoreeName={event.honoreeName}
         photoUrl={reelSettings.honoreePhotoUrl}
         category={event.category}
+      />
+      <PaymentDetailsCard
+        eventId={event.id}
+        eventSlug={event.slug}
+        initialText={payment?.text ?? ""}
+        initialImageUrl={payment?.imageUrl ?? null}
       />
       <CardArtworkCard eventId={event.id} eventSlug={event.slug} artworkUrl={artworkUrl} hasCard={Boolean(event.shareImagePath)} />
       <WhatsAppContactCard

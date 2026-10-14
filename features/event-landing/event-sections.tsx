@@ -19,6 +19,7 @@ import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 import { PoweredByBand } from "@/features/event-landing/powered-by-band";
 import { getCardArtworkUrl } from "@/services/card-artwork";
+import { PaymentDetailsSection } from "@/features/event-landing/payment-details-section";
 import { getEventWhatsAppContact } from "@/services/event-extras";
 import { eventContactWhatsAppUrl } from "@/lib/whatsapp";
 import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
@@ -91,6 +92,7 @@ export async function EventSections({
     countdown: <CountdownSection isoStart={data.isoStart} />,
     invitation: <InvitationSection data={data} />,
     eventDetails: <EventDetailsSection data={data} />,
+    payment: event ? <PaymentDetailsSection eventId={event.id} eventName={event.eventTitle || event.honoreeName} /> : null,
     liveStream: <LiveStreamSection enabled={event?.liveStreamEnabled ?? false} url={event?.liveStreamUrl ?? null} />,
     gallery: event ? <GallerySectionServer eventId={event.id} eventSlug={event.slug} photos={galleryPhotos} chapterTitles={event.galleryChapterTitles} /> : <GallerySection photos={galleryPhotos} />,
     timeline: <TimelineSection milestones={milestones} category={event?.category} />,

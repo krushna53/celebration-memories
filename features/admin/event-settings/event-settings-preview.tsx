@@ -93,6 +93,13 @@ export function EventSettingsPreview({ data, scrollable = true }: { data: EventS
   const config = normalizeSectionConfig(data.sectionConfig);
 
   const sectionsByKey: Record<SectionKey, ReactNode> = {
+    // Real content lives in its own Event Settings card (payment-details-card.tsx); the section only shows when filled in.
+    payment: (
+      <PreviewSectionShell tone="light">
+        <p className={previewLabel}>Payment Details</p>
+        <p className="mt-2 text-[11px] text-navy-700/60">Packages and bank details — shown when added below</p>
+      </PreviewSectionShell>
+    ),
     countdown: (
       <PreviewSectionShell tone="muted">
         <p className={previewLabel}>Counting Down</p>

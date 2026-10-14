@@ -13,6 +13,7 @@ export const SECTION_KEYS = [
   "countdown",
   "invitation",
   "eventDetails",
+  "payment",
   "liveStream",
   "gallery",
   "timeline",
@@ -32,6 +33,7 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
   countdown: "Countdown",
   invitation: "Invitation",
   eventDetails: "Event Details",
+  payment: "Payment Details",
   liveStream: "Live Stream",
   gallery: "Gallery",
   timeline: "Timeline",
@@ -60,11 +62,23 @@ export function normalizeSectionConfig(
   const known = config.filter((item): item is SectionConfigItem =>
     (SECTION_KEYS as readonly string[]).includes(item.key),
   );
-  const seenKeys = new Set(known.map((item) => item.key));
-  const missing = SECTION_KEYS.filter((key) => !seenKeys.has(key)).map((key) => ({
-    key,
-    visible: true,
-  }));
+  // A key added to the registry after this config was saved goes in at its
+  // default spot — right after the nearest key that precedes it in
+  // SECTION_KEYS — rather than at the very end (e.g. a new "Payment
+  // Details" section lands after Event Details, not after the Memory Wall).
+  const result = [...known];
+  for (const [index, key] of SECTION_KEYS.entries()) {
+    if (result.some((item) => item.key === key)) continue;
+    let insertAt = 0;
+    for (let i = index - 1; i >= 0; i--) {
+      const at = result.findIndex((item) => item.key === SECTION_KEYS[i]);
+      if (at !== -1) {
+        insertAt = at + 1;
+        break;
+      }
+    }
+    result.splice(insertAt, 0, { key, visible: true });
+  }
 
-  return [...known, ...missing];
+  return result;
 }
