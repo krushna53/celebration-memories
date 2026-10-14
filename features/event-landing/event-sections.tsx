@@ -20,6 +20,7 @@ import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/conten
 import { PoweredByBand } from "@/features/event-landing/powered-by-band";
 import { getCardArtworkUrl } from "@/services/card-artwork";
 import { PaymentDetailsSection } from "@/features/event-landing/payment-details-section";
+import { DemoEventStrip } from "@/features/event-landing/demo-event-strip";
 import { getEventWhatsAppContact } from "@/services/event-extras";
 import { eventContactWhatsAppUrl } from "@/lib/whatsapp";
 import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
@@ -127,6 +128,7 @@ export async function EventSections({
       ) : (
         <HeroSection data={data} relive={relive} artworkUrl={artworkUrl} whatsapp={heroWhatsapp} />
       )}
+      {event ? <DemoEventStrip eventId={event.id} /> : null}
       {config
         .filter((item) => item.visible)
         .map((item) => (
