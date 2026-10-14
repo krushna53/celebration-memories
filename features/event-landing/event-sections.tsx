@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 
-import { HeroSection, type HeroRelive } from "@/features/hero/hero-section";
+import { HeroSection, type HeroExtras, type HeroRelive } from "@/features/hero/hero-section";
 import { CountdownSection } from "@/features/countdown/countdown-section";
 import { InvitationSection } from "@/features/invitation/invitation-section";
 import { EventDetailsSection } from "@/features/event-details/event-details-section";
@@ -33,7 +33,7 @@ export interface EventSectionsProps {
    * layout (e.g. templates/WhiteCoatReunion). Receives the same `relive`
    * state HeroSection gets (non-null once the event has ended).
    */
-  renderHero?: (relive: HeroRelive | null) => ReactNode;
+  renderHero?: (relive: HeroRelive | null, extras: HeroExtras) => ReactNode;
   /** Sections this template never shows, whatever the event's section_config says — e.g. "countdown" when the template's own hero already has one. */
   omitSections?: readonly SectionKey[];
 }
@@ -119,7 +119,11 @@ export async function EventSections({
   return (
     <>
       {event ? <PageViewBeacon eventId={event.id} page="landing" /> : null}
-      {renderHero ? renderHero(relive) : <HeroSection data={data} relive={relive} artworkUrl={artworkUrl} whatsapp={heroWhatsapp} />}
+      {renderHero ? (
+        renderHero(relive, { artworkUrl, whatsapp: heroWhatsapp })
+      ) : (
+        <HeroSection data={data} relive={relive} artworkUrl={artworkUrl} whatsapp={heroWhatsapp} />
+      )}
       {config
         .filter((item) => item.visible)
         .map((item) => (

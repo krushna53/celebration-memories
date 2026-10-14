@@ -27,6 +27,12 @@ export interface HeroRelive {
   shareHref: string;
 }
 
+/** Per-event extras EventSections loads for the hero — also handed to templates' own heroes (renderHero). */
+export interface HeroExtras {
+  artworkUrl: string | null;
+  whatsapp: { href: string; label: string } | null;
+}
+
 interface HeroSectionProps {
   data: EventDisplayData;
   /** Set once the event has ended ("Relive the day" mode): thank-you copy and an "add your photos" call to action instead of the countdown and RSVP. */
