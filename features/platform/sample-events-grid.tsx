@@ -33,8 +33,15 @@ export async function SampleEventsGrid({ tone = "light" }: { tone?: "light" | "d
                   : "group flex h-full flex-col overflow-hidden rounded-2xl border border-navy-950/10 bg-white shadow-sm transition-luxury duration-300 hover:-translate-y-1 hover:shadow-lg"
               }
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={template.thumbnail} alt="" className="aspect-[4/3] w-full object-cover transition-luxury duration-500 group-hover:scale-[1.03]" />
+              <div className="overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={sample.coverUrl ?? template.thumbnail}
+                  alt=""
+                  loading="lazy"
+                  className="aspect-[4/3] w-full object-cover transition-luxury duration-500 group-hover:scale-[1.04]"
+                />
+              </div>
               <div className="flex flex-1 flex-col p-5">
                 <p className={dark ? "text-xs uppercase tracking-[0.2em] text-gold-300" : "text-xs uppercase tracking-[0.2em] text-gold-600"}>
                   {label} · {template.name} template
