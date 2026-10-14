@@ -32,6 +32,7 @@ import { TestimonialsSection } from "@/features/testimonials/testimonials-sectio
 import { VideoTestimonialSection } from "@/features/testimonials/video-testimonial-section";
 import { HowItWorksSection } from "@/features/platform/how-it-works-section";
 import { StartBuildingButton } from "@/features/start/start-building-button";
+import { SampleEventsGrid } from "@/features/platform/sample-events-grid";
 
 const LIVE_FEATURES = [
   {
@@ -171,6 +172,7 @@ const FEATURE_GROUPS = [
  * exist on it.
  */
 export const PLATFORM_NAV_LINKS = [
+  { label: "Samples", href: "/samples" },
   { label: "Pricing", href: "/pricing" },
   { label: "Corporate", href: "/corporate" },
   { label: "AI Image Tool", href: "/ai-invitation-image" },
@@ -214,6 +216,12 @@ export async function PlatformMarketingContent() {
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <StartBuildingButton size="lg" formClassName="w-full min-w-0 sm:w-auto" className="h-auto min-h-13 w-full whitespace-normal px-4 py-3 sm:px-8">Build Your Event Page — Free to Try</StartBuildingButton>
+              <Link
+                href="/samples"
+                className="inline-flex min-h-13 w-full items-center justify-center rounded-full border border-gold-400/50 px-8 py-3 text-sm font-semibold text-gold-300 transition-luxury duration-300 hover:border-gold-300 hover:bg-gold-400/10 sm:w-auto"
+              >
+                See sample events
+              </Link>
             </div>
             <p className="mt-6 text-xs text-ivory-100/60">
               Curious what a guest, host, or admin can each do?{" "}
@@ -226,6 +234,20 @@ export async function PlatformMarketingContent() {
               </Link>
             </p>
           </Reveal>
+        </div>
+      </div>
+
+      {/* Live sample events — the quickest way to see what a guest gets. */}
+      <div className="bg-ivory-50 py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeading
+            eyebrow="See It Live"
+            title="Sample Event Pages"
+            description="Real, working pages — RSVP, schedule, photo wall and all. Open one on your phone."
+          />
+          <div className="mt-10">
+            <SampleEventsGrid />
+          </div>
         </div>
       </div>
 
