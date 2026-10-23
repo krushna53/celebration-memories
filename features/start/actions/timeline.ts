@@ -5,6 +5,8 @@ import { requireDraftEvent } from "@/features/start/draft-auth";
 import { createMilestone, deleteMilestone, getMilestoneById, updateMilestone } from "@/services/timeline";
 import { createSignedTimelineImageUpload } from "@/services/uploads";
 import { reverseGeocode } from "@/lib/reverse-geocode";
+import { suggestTimelineFromPhotos } from "@/services/timeline-ai";
+import type { SuggestTimelineResult } from "@/features/admin/timeline/actions";
 
 /** Draft-token-gated mirrors of features/admin/timeline/actions.ts — see that file and draft-auth.ts. */
 
@@ -100,5 +102,21 @@ export async function draftDescribePhotoPlaceAction(token: string, eventId: stri
     return { success: true as const, data: { place: await reverseGeocode(lat, lon) } };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/** Draft-token-gated mirror of suggestTimelineFromPhotosAction (same per-event daily limit as hosts). */
+export async function draftSuggestTimelineFromPhotosAction(
+  token: string,
+  eventId: string,
+  groups: unknown,
+): Promise<SuggestTimelineResult> {
+  try {
+    const event = await requireDraftEvent(token);
+    if (event.id !== eventId) return { success: false, error: "This link doesn't match that event." };
+    const suggestions = await suggestTimelineFromPhotos(event, groups, { adminId: null, exempt: false });
+    return { success: true, data: { suggestions } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "AI writing failed." };
   }
 }

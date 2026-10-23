@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
 import { GoogleDriveButton } from "@/features/uploads/components/google-drive-button";
 import { PhotoMetadataTip } from "@/features/uploads/components/photo-metadata-tip";
+import { PhotoTimelineImport } from "@/features/admin/timeline/photo-timeline-import";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import { formatTakenDay, formatTakenMonth, readPhotoMetadata } from "@/lib/photo-metadata";
@@ -19,6 +20,7 @@ import {
   describePhotoPlaceAction,
   removeTimelineImageAction,
   requestTimelineImageUploadUrlAction,
+  suggestTimelineFromPhotosAction,
   updateMilestoneAction,
 } from "@/features/admin/timeline/actions";
 
@@ -34,6 +36,7 @@ export interface TimelineActions {
   confirmImageUpload: typeof confirmTimelineImageUploadAction;
   removeImage: typeof removeTimelineImageAction;
   describePlace: typeof describePhotoPlaceAction;
+  suggestFromPhotos: typeof suggestTimelineFromPhotosAction;
 }
 
 const DEFAULT_ACTIONS: TimelineActions = {
@@ -44,6 +47,7 @@ const DEFAULT_ACTIONS: TimelineActions = {
   confirmImageUpload: confirmTimelineImageUploadAction,
   removeImage: removeTimelineImageAction,
   describePlace: describePhotoPlaceAction,
+  suggestFromPhotos: suggestTimelineFromPhotosAction,
 };
 
 interface TimelineManagerProps {
@@ -258,6 +262,13 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
           if (file) void handleStartPhoto(file);
           e.target.value = "";
         }}
+      />
+
+      <PhotoTimelineImport
+        eventId={eventId}
+        existingCount={milestones.length}
+        actions={actions}
+        uploadToMilestone={uploadToMilestone}
       />
 
       <div className="grid gap-3 rounded-xl border border-gold-500/20 bg-gold-500/5 p-4 sm:grid-cols-3">

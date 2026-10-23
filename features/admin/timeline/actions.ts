@@ -8,6 +8,9 @@ import { createMilestone, deleteMilestone, getMilestoneById, updateMilestone } f
 import { createSignedTimelineImageUpload } from "@/services/uploads";
 import { snapshotTimeline } from "@/services/event-snapshots";
 import { reverseGeocode } from "@/lib/reverse-geocode";
+import { getEventById } from "@/services/events";
+import { suggestTimelineFromPhotos } from "@/services/timeline-ai";
+import type { TimelineMilestoneSuggestion } from "@/types/timeline-import";
 
 function revalidateTimelinePaths() {
   revalidatePath("/admin/timeline");
@@ -134,5 +137,27 @@ export async function describePhotoPlaceAction(eventId: string, lat: number, lon
     return { success: true as const, data: { place: await reverseGeocode(lat, lon) } };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+export type SuggestTimelineResult =
+  | { success: true; data: { suggestions: TimelineMilestoneSuggestion[] } }
+  | { success: false; error: string };
+
+/**
+ * "Build a timeline from photos": AI title/description/period for each
+ * photo group the browser put together (services/timeline-ai.ts). Returns
+ * suggestions only — the host reviews them, then each milestone is saved
+ * through createMilestoneAction like any other.
+ */
+export async function suggestTimelineFromPhotosAction(eventId: string, groups: unknown): Promise<SuggestTimelineResult> {
+  try {
+    const admin = await requireAdminForOrganizerArea(eventId, "timeline");
+    const event = await getEventById(eventId);
+    if (!event) return { success: false, error: "Event not found." };
+    const suggestions = await suggestTimelineFromPhotos(event, groups, { adminId: admin.id, exempt: admin.role === "owner" });
+    return { success: true, data: { suggestions } };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "AI writing failed." };
   }
 }
