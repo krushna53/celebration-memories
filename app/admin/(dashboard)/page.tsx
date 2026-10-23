@@ -8,6 +8,8 @@ import { getDashboardStats, getVisitorFunnel } from "@/services/admin-stats";
 import { StatCard } from "@/features/admin/components/stat-card";
 import { BarChart } from "@/features/admin/components/bar-chart";
 import { NoEventState } from "@/features/admin/components/no-event-state";
+import { DisplayMusicPicker } from "@/features/admin/display/display-music-picker";
+import { getDisplayMusic } from "@/services/display-music";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +56,7 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
 
   const stats = await getDashboardStats(event.id);
   const funnel = await getVisitorFunnel(event.id, stats.invitations);
+  const displayMusic = await getDisplayMusic(event.id).catch(() => ({ choice: "none" as const, path: null }));
 
   return (
     <div className="grid gap-8">
@@ -107,6 +110,13 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
         on (Event Settings); Event Report is a one-page summary to print or save as PDF; Big Screen
         Display is the chrome-free slideshow for a TV or projector at the venue.
       </p>
+
+      <DisplayMusicPicker
+        eventId={event.id}
+        initialChoice={displayMusic.choice}
+        // Stored as "<event>/slideshow-music/<uuid>-<name>" — show just the name.
+        initialCustomName={displayMusic.path?.split("/").pop()?.replace(/^[0-9a-f-]{36}-/, "") ?? null}
+      />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard label="Total Invitations" value={stats.invitations.total} />

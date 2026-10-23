@@ -9,6 +9,8 @@ import { NoEventState } from "@/features/admin/components/no-event-state";
 import { GuestContributionsPanel } from "@/features/admin/timeline/guest-contributions-panel";
 import { areTimelineContributionsEnabled, listPendingSubmissions } from "@/services/timeline-contributions";
 import { SITE_URL } from "@/lib/constants";
+import { DisplayMusicPicker } from "@/features/admin/display/display-music-picker";
+import { getDisplayMusic } from "@/services/display-music";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,7 @@ export default async function AdminTimelinePage() {
     return <NoEventState />;
   }
 
-  const [milestones, contributionsEnabled, submissions] = await Promise.all([
+  const [milestones, contributionsEnabled, submissions, displayMusic] = await Promise.all([
     listMilestones(event.id),
     areTimelineContributionsEnabled(event.id),
     // A failure here must never take the timeline page down with it.
@@ -28,6 +30,7 @@ export default async function AdminTimelinePage() {
       console.error("listPendingSubmissions failed:", err);
       return [];
     }),
+    getDisplayMusic(event.id).catch(() => ({ choice: "none" as const, path: null })),
   ]);
 
   return (
@@ -46,6 +49,19 @@ export default async function AdminTimelinePage() {
           milestones={milestones.map((m) => ({ id: m.id, period: m.period, title: m.title }))}
         />
         <TimelineManager eventId={event.id} initialMilestones={milestones} />
+        <div className="mt-8">
+          <DisplayMusicPicker
+            eventId={event.id}
+            initialChoice={displayMusic.choice}
+            // Stored as "<event>/slideshow-music/<uuid>-<name>" — show just the name.
+            initialCustomName={displayMusic.path?.split("/").pop()?.replace(/^[0-9a-f-]{36}-/, "") ?? null}
+          />
+          <p className="mt-2 text-xs text-navy-700/50">
+            The Big Screen Display (<a href={`/events/${event.slug}/display`} target="_blank" rel="noopener noreferrer" className="underline">open it</a>)
+            shows your Gallery, this Timeline in date order, then guests&rsquo; memories — and starts again from the top, with
+            anything new, when it reaches the end.
+          </p>
+        </div>
       </div>
     </div>
   );

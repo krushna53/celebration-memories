@@ -13,11 +13,16 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { useRouter } from "next/navigation";
+
+import { DisplayMusic, MusicToggleButton } from "@/features/display/display-music";
 import { formatCalendarDate } from "@/lib/timezone";
 import type { DisplaySlide } from "@/types/display";
 
 interface BigScreenSlideshowProps {
   slides: DisplaySlide[];
+  /** Background music chosen on the admin dashboard (services/display-music.ts); null = none. */
+  musicUrl?: string | null;
 }
 
 /** How long a non-media slide stays up before auto-advancing. */
@@ -110,8 +115,12 @@ function slideLabel(s: DisplaySlide): string {
  * (which also best-effort requests fullscreen) is simpler and more
  * reliable than trying to route around autoplay policies per slide.
  */
-export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
+export function BigScreenSlideshow({ slides, musicUrl = null }: BigScreenSlideshowProps) {
+  const router = useRouter();
   const [index, setIndex] = useState(0);
+  const indexRef = useRef(0);
+  indexRef.current = index;
+  const [musicMuted, setMusicMuted] = useState(false);
   const [started, setStarted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -145,8 +154,13 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
   const slide = slides[index];
 
   const goNext = useCallback(() => {
-    setIndex((i) => (slides.length === 0 ? 0 : (i + 1) % slides.length));
-  }, [slides.length]);
+    if (slides.length === 0) return setIndex(0);
+    const next = (indexRef.current + 1) % slides.length;
+    // Back at the start of the loop: fetch the latest slides, so memories and
+    // photos approved while the display was running join the next round.
+    if (next === 0) router.refresh();
+    setIndex(next);
+  }, [slides.length, router]);
 
   const goPrev = useCallback(() => {
     setIndex((i) => (slides.length === 0 ? 0 : (i - 1 + slides.length) % slides.length));
@@ -255,6 +269,12 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
         </motion.div>
       </AnimatePresence>
 
+      <DisplayMusic
+        url={musicUrl}
+        playing={started && !paused && !musicMuted}
+        duck={slide.kind === "memory-video" || slide.kind === "memory-audio" || slide.kind === "highlight-reel"}
+      />
+
       {!started ? (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-navy-950/90 text-center">
           <p className="text-xs uppercase tracking-[0.4em] text-gold-400">EveryMoment</p>
@@ -348,6 +368,8 @@ export function BigScreenSlideshow({ slides }: BigScreenSlideshowProps) {
               <span className="mx-1 text-ivory-100/40">/</span>
               <span>~{formatHMS(totalEstimatedMs)}</span>
             </div>
+
+            {musicUrl ? <MusicToggleButton muted={musicMuted} onToggle={() => setMusicMuted((m) => !m)} /> : null}
 
             <button
               type="button"
