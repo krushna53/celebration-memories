@@ -246,6 +246,31 @@ export async function sendCustomFormSubmissionNotification(input: {
  * features/admin/delete-account/actions.ts. Deliberately blunt/urgent
  * copy since this is the last checkpoint before an irreversible action.
  */
+/**
+ * Tells someone who already has a dashboard login that they've been
+ * given access to another event (features/admin/team/actions.ts). Their
+ * password is unchanged, so there's no link to set one — just where to
+ * find the new event.
+ */
+export async function sendTeamAccessGrantedNotification(input: {
+  to: string;
+  name: string;
+  eventName: string;
+  addedBy: string;
+  dashboardUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: `You've been added to ${input.eventName} — ${SITE_NAME}`,
+    html: `
+      <p>Hi ${escapeHtml(input.name)},</p>
+      <p><strong>${escapeHtml(input.addedBy)}</strong> has given you access to <strong>${escapeHtml(input.eventName)}</strong> on ${SITE_NAME}.</p>
+      <p>Sign in with your usual email and password at <a href="${escapeHtml(input.dashboardUrl)}">${escapeHtml(input.dashboardUrl)}</a>, then choose <strong>Switch event</strong> to open it. Your other events and your password haven't changed.</p>
+      <p style="color:#888;font-size:12px;">If you weren't expecting this, you can ignore it or ask ${escapeHtml(input.addedBy)} to remove you.</p>
+    `,
+  });
+}
+
 export async function sendAccountDeletionCode(input: {
   to: string;
   code: string;

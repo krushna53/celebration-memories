@@ -22,7 +22,7 @@ interface TeamManagerProps {
   currentAdminId: string;
   initialMembers: TeamMember[];
   initiallyAdding?: boolean;
-  /** The platform owner can also add people who already manage another event; hosts can't. */
+  /** The platform owner can also make an existing account's main event this one. */
   isOwner?: boolean;
 }
 
@@ -40,6 +40,7 @@ export function TeamManager({ memberCap, eventId, currentAdminId, initialMembers
   const [showAddForm, setShowAddForm] = useState(initiallyAdding);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const atCap = members.length >= memberCap;
@@ -126,15 +127,26 @@ export function TeamManager({ memberCap, eventId, currentAdminId, initialMembers
         {members.length} of {memberCap} team members
       </p>
 
+      {notice ? (
+        <p className="mt-3 rounded-lg bg-gold-500/10 px-3 py-2 text-sm text-navy-700/80" role="status">
+          {notice}
+        </p>
+      ) : null}
+
       {showAddForm ? (
         <AddMemberForm
           eventId={eventId}
           isOwner={isOwner}
           defaultMakeEventOwner={initiallyAdding}
           onClose={() => setShowAddForm(false)}
-          onAdded={(member) => {
+          onAdded={(member, existingAccount) => {
             setMembers((prev) => [...prev, member]);
             setShowAddForm(false);
+            setNotice(
+              existingAccount
+                ? `${member.name || member.email} already had an EveryMoment login, so they've been given access to this event too. They sign in with their usual password and pick it under “Switch event” — we've emailed to let them know.`
+                : null,
+            );
           }}
         />
       ) : (
@@ -164,7 +176,7 @@ function AddMemberForm({
   /** Pre-ticked when the owner arrived via "Create Login" on /admin/events — that's someone being set up as this event's owner. */
   defaultMakeEventOwner: boolean;
   onClose: () => void;
-  onAdded: (member: TeamMember) => void;
+  onAdded: (member: TeamMember, existingAccount: boolean) => void;
 }) {
   const [method, setMethod] = useState<"invite" | "password">("invite");
   const [name, setName] = useState("");
@@ -191,7 +203,7 @@ function AddMemberForm({
       return;
     }
 
-    if (result.member) onAdded(result.member);
+    if (result.member) onAdded(result.member, result.existingAccount === true);
   }
 
   return (
@@ -237,12 +249,8 @@ function AddMemberForm({
 
       <p className="mt-3 text-xs text-navy-700/60">
         {method === "invite"
-          ? isOwner
-            ? "New people get an invite email. Anyone who already has a dashboard login (even for another event) is simply given access to this event too — they keep their login and see it under “Switch event”."
-            : "New people get an invite email. If they already use EveryMoment for another event, contact us and we’ll add them."
-          : isOwner
-            ? "Choose a password for a new account. Anyone who already has a dashboard login keeps their current password and just gets access to this event too."
-            : "Choose a password for a new account. If they already use EveryMoment for another event, contact us and we’ll add them."}
+          ? "New people get an invite email. Anyone who already uses EveryMoment (even for another event) is simply given access to this event too — they keep their login and find it under “Switch event”."
+          : "Choose a password for a new account. Anyone who already uses EveryMoment keeps their current password (the one you type isn’t used) and just gets access to this event too."}
       </p>
 
       <form onSubmit={onSubmit} className="mt-4 grid gap-3">

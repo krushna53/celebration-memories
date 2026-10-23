@@ -12,6 +12,10 @@ import {
 } from "@/services/admin-team";
 
 import { getEventAccess } from "@/services/event-access";
+import { getEventById } from "@/services/events";
+import { sendTeamAccessGrantedNotification } from "@/lib/email";
+import { SITE_URL } from "@/lib/constants";
+import type { CurrentAdmin } from "@/services/admin-auth";
 async function requireTeamProvisioning(eventId: string) {
   const admin = await getCurrentAdmin();
   if (admin?.role === "owner") {
@@ -21,7 +25,26 @@ async function requireTeamProvisioning(eventId: string) {
   }
   return requireAdminForEvent(eventId);
 }
-export type TeamActionResult = { success: true; member?: TeamMember } | { success: false; error: string };
+export type TeamActionResult =
+  | { success: true; member?: TeamMember; existingAccount?: boolean }
+  | { success: false; error: string };
+
+/** Lets an existing login know they can now open this event — never blocks the add if email isn't configured or fails. */
+async function notifyExistingAccount(eventId: string, member: TeamMember | undefined, addedBy: CurrentAdmin) {
+  if (!member) return;
+  try {
+    const event = await getEventById(eventId);
+    await sendTeamAccessGrantedNotification({
+      to: member.email,
+      name: member.name || member.email,
+      eventName: event?.eventTitle || event?.honoreeName || "an event",
+      addedBy: addedBy.name || addedBy.email || "Someone on the team",
+      dashboardUrl: `${SITE_URL}/admin`,
+    });
+  } catch (err) {
+    console.error("notifyExistingAccount failed:", err);
+  }
+}
 
 /**
  * Available to the owner (any event) or the client who owns this
@@ -37,12 +60,20 @@ export async function inviteTeamMemberAction(
 ): Promise<TeamActionResult> {
   try {
     const admin = await requireTeamProvisioning(eventId);
-    // makeEventOwner is only honoured for the platform owner — the service ignores it unless canAddExistingAccounts.
-    await inviteTeamMemberByEmail({ eventId, name, email, canAddExistingAccounts: admin.role === "owner", makeEventOwner });
+    // Anyone managing the event may add an existing login; only the platform owner may make it their primary event.
+    const { existingAccount } = await inviteTeamMemberByEmail({
+      eventId,
+      name,
+      email,
+      canAddExistingAccounts: true,
+      canMakeEventOwner: admin.role === "owner",
+      makeEventOwner,
+    });
     revalidatePath("/admin/team");
     revalidatePath("/admin/events");
     const member = (await getTeamMembers(eventId)).find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
-    return { success: true, member };
+    if (existingAccount) await notifyExistingAccount(eventId, member, admin);
+    return { success: true, member, existingAccount };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to send invite." };
   }
@@ -57,18 +88,20 @@ export async function addTeamMemberWithPasswordAction(
 ): Promise<TeamActionResult> {
   try {
     const admin = await requireTeamProvisioning(eventId);
-    await addTeamMemberWithPassword({
+    const { existingAccount } = await addTeamMemberWithPassword({
       eventId,
       name,
       email,
       password,
-      canAddExistingAccounts: admin.role === "owner",
+      canAddExistingAccounts: true,
+      canMakeEventOwner: admin.role === "owner",
       makeEventOwner,
     });
     revalidatePath("/admin/team");
     revalidatePath("/admin/events");
     const member = (await getTeamMembers(eventId)).find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
-    return { success: true, member };
+    if (existingAccount) await notifyExistingAccount(eventId, member, admin);
+    return { success: true, member, existingAccount };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to add team member." };
   }

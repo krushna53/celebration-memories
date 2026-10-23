@@ -125,7 +125,8 @@ async function checkRoomAndExisting(
   eventId: string,
   email: string,
   canAddExistingAccounts: boolean,
-  makeEventOwner: boolean,
+  /** Platform owner promoting an existing full-access member to event owner. */
+  promoteToEventOwner: boolean,
 ): Promise<{ id: string; alreadyMember: boolean } | null> {
   const roomCheck = async () => {
     const cap = await getTeamMemberCap(eventId);
@@ -157,13 +158,12 @@ async function checkRoomAndExisting(
     .maybeSingle<{ role: AdminRole }>();
   if (membership) {
     // Already on the team — the platform owner can still promote a full-access member to event owner.
-    if (canAddExistingAccounts && makeEventOwner && membership.role === "client") {
+    if (promoteToEventOwner && membership.role === "client") {
       return { id: existing.id, alreadyMember: true };
     }
     throw new Error("This person is already on this event’s team.");
   }
   await roomCheck();
-  // Linking a login that already runs another event is the platform owner's call, not a host's.
   if (!canAddExistingAccounts) {
     throw new Error(
       "This person already uses EveryMoment for another event. Only the EveryMoment team can add them to yours — please contact us and we'll do it.",
@@ -177,7 +177,8 @@ async function checkRoomAndExisting(
  * host (skipped when `alreadyMember`). `makeEventOwner` also makes this
  * their primary event (admins.event_id) — the one /admin/events lists
  * them as owner of and the one they land on after signing in.
- * Platform-owner only (callers gate it on canAddExistingAccounts).
+ * Any event admin may link an existing account (canAddExistingAccounts);
+ * `makeEventOwner` is platform-owner only (canMakeEventOwner).
  */
 async function addMembership(
   { id: adminId, alreadyMember }: { id: string; alreadyMember: boolean },
@@ -219,10 +220,21 @@ export interface InviteTeamMemberInput {
   eventId: string;
   name: string;
   email: string;
-  /** Only the platform owner may add someone who already manages another event. */
+  /**
+   * Add someone who already has a dashboard login (for another event) by
+   * linking their login to this event. Their password and other events are
+   * untouched — they just gain access to this one.
+   */
   canAddExistingAccounts?: boolean;
-  /** Existing accounts only (new ones always get this event as their primary): make this their primary event — see addMembership. Ignored unless canAddExistingAccounts. */
+  /** Platform owner only: may also make an existing account's primary event this one (makeEventOwner). Defaults to canAddExistingAccounts for older callers. */
+  canMakeEventOwner?: boolean;
+  /** Existing accounts only (new ones always get this event as their primary): make this their primary event — see addMembership. Ignored unless canMakeEventOwner. */
   makeEventOwner?: boolean;
+}
+
+/** Whether the person already had a dashboard login (so they were linked, not invited). */
+export interface AddTeamMemberOutcome {
+  existingAccount: boolean;
 }
 
 /**
@@ -241,18 +253,20 @@ export async function inviteTeamMemberByEmail({
   name,
   email,
   canAddExistingAccounts = false,
+  canMakeEventOwner = canAddExistingAccounts,
   makeEventOwner = false,
-}: InviteTeamMemberInput): Promise<void> {
+}: InviteTeamMemberInput): Promise<AddTeamMemberOutcome> {
   const trimmedEmail = email.trim().toLowerCase();
   const trimmedName = name.trim();
   if (!trimmedName) throw new Error("Please enter a name.");
   if (!trimmedEmail) throw new Error("Please enter an email.");
 
-  const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail, canAddExistingAccounts, makeEventOwner);
+  const promote = canMakeEventOwner && makeEventOwner;
+  const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail, canAddExistingAccounts, promote);
   if (existingAdmin) {
     // Already has a dashboard login (maybe for another event) — just add this event to it.
-    await addMembership(existingAdmin, eventId, canAddExistingAccounts && makeEventOwner);
-    return;
+    await addMembership(existingAdmin, eventId, promote);
+    return { existingAccount: true };
   }
 
   const client = supabaseAdmin();
@@ -285,6 +299,7 @@ export async function inviteTeamMemberByEmail({
     if (!error) await client.auth.admin.deleteUser(user.id).catch(() => {});
     throw new Error(`Failed to grant dashboard access: ${insertError.message}`);
   }
+  return { existingAccount: false };
 }
 
 export interface AddTeamMemberWithPasswordInput {
@@ -292,9 +307,9 @@ export interface AddTeamMemberWithPasswordInput {
   name: string;
   email: string;
   password: string;
-  /** Only the platform owner may add someone who already manages another event. */
+  /** See InviteTeamMemberInput. An existing account's password is never changed. */
   canAddExistingAccounts?: boolean;
-  /** Existing accounts only (new ones always get this event as their primary): make this their primary event — see addMembership. Ignored unless canAddExistingAccounts. */
+  canMakeEventOwner?: boolean;
   makeEventOwner?: boolean;
 }
 
@@ -311,20 +326,22 @@ export async function addTeamMemberWithPassword({
   email,
   password,
   canAddExistingAccounts = false,
+  canMakeEventOwner = canAddExistingAccounts,
   makeEventOwner = false,
-}: AddTeamMemberWithPasswordInput): Promise<void> {
+}: AddTeamMemberWithPasswordInput): Promise<AddTeamMemberOutcome> {
   const trimmedEmail = email.trim().toLowerCase();
   const trimmedName = name.trim();
   if (!trimmedName) throw new Error("Please enter a name.");
   if (!trimmedEmail) throw new Error("Please enter an email.");
-  if (password.length < 8) throw new Error("Password must be at least 8 characters.");
-
-  const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail, canAddExistingAccounts, makeEventOwner);
+  const promote = canMakeEventOwner && makeEventOwner;
+  const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail, canAddExistingAccounts, promote);
   if (existingAdmin) {
     // Already has a dashboard login — add this event to it; their password is left exactly as it was.
-    await addMembership(existingAdmin, eventId, canAddExistingAccounts && makeEventOwner);
-    return;
+    await addMembership(existingAdmin, eventId, promote);
+    return { existingAccount: true };
   }
+  // Only a brand-new account uses the typed password.
+  if (password.length < 8) throw new Error("Password must be at least 8 characters.");
 
   const client = supabaseAdmin();
   const { data, error } = await client.auth.admin.createUser({
@@ -349,6 +366,7 @@ export async function addTeamMemberWithPassword({
     if (!error) await client.auth.admin.deleteUser(user.id).catch(() => {});
     throw new Error(`Failed to grant dashboard access: ${insertError.message}`);
   }
+  return { existingAccount: false };
 }
 
 /**
