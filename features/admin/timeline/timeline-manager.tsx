@@ -2,7 +2,7 @@
 
 import { CURATED_MEDIA_ACCEPT, isVideoMedia } from "@/lib/curated-media";
 import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Camera, ImagePlus, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Camera, ImagePlus, Images, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
@@ -12,9 +12,13 @@ import { PhotoTimelineImport } from "@/features/admin/timeline/photo-timeline-im
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import { formatTakenDay, formatTakenMonth, readPhotoMetadata } from "@/lib/photo-metadata";
+import { describePhotoFile, mapLimited } from "@/features/admin/timeline/photo-import";
 import type { TimelineMilestoneRecord } from "@/types/content";
 import {
+  addMilestonePhotosAction,
   confirmTimelineImageUploadAction,
+  getTimelineFingerprintsAction,
+  removeMilestonePhotoAction,
   createMilestoneAction,
   deleteMilestoneAction,
   describePhotoPlaceAction,
@@ -37,6 +41,9 @@ export interface TimelineActions {
   removeImage: typeof removeTimelineImageAction;
   describePlace: typeof describePhotoPlaceAction;
   suggestFromPhotos: typeof suggestTimelineFromPhotosAction;
+  addPhotos: typeof addMilestonePhotosAction;
+  removePhoto: typeof removeMilestonePhotoAction;
+  getFingerprints: typeof getTimelineFingerprintsAction;
 }
 
 const DEFAULT_ACTIONS: TimelineActions = {
@@ -48,7 +55,13 @@ const DEFAULT_ACTIONS: TimelineActions = {
   removeImage: removeTimelineImageAction,
   describePlace: describePhotoPlaceAction,
   suggestFromPhotos: suggestTimelineFromPhotosAction,
+  addPhotos: addMilestonePhotosAction,
+  removePhoto: removeMilestonePhotoAction,
+  getFingerprints: getTimelineFingerprintsAction,
 };
+
+/** Extra photos per "Add more photos" pick. */
+const MAX_PICK = 50;
 
 interface TimelineManagerProps {
   eventId: string;
@@ -73,6 +86,18 @@ function describeFacts(facts: PhotoFacts): string | null {
   return null;
 }
 
+/**
+ * A Server Action call from a page loaded before the latest deploy fails
+ * with "Failed to find Server Action" — the only fix is reloading, so say
+ * that instead of a cryptic error (or, worse, silently stalling).
+ */
+export function staleDeployMessage(err: unknown): string | null {
+  const text = err instanceof Error ? err.message : String(err);
+  return /server action/i.test(text)
+    ? "EveryMoment was updated while this page was open. Please reload the page and try again."
+    : null;
+}
+
 export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_ACTIONS }: TimelineManagerProps) {
   const [milestones, setMilestones] = useState([...initialMilestones].sort((a, b) => a.sortOrder - b.sortOrder));
   const [form, setForm] = useState(EMPTY);
@@ -89,6 +114,10 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
     facts: PhotoFacts;
   } | null>(null);
   const [readingPhoto, setReadingPhoto] = useState(false);
+  // "Add more photos" in progress on one milestone.
+  const [extraBusy, setExtraBusy] = useState<{ id: string; message: string } | null>(null);
+  const extraInputRef = useRef<HTMLInputElement>(null);
+  const extraMilestoneId = useRef<string | null>(null);
 
   /** Date + place for a photo, from its EXIF (and a reverse-geocode of its GPS). Never throws. */
   async function photoFacts(file: File): Promise<PhotoFacts> {
@@ -185,8 +214,8 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
     fileInputRef.current?.click();
   }
 
-  /** Compresses (photos only), uploads and attaches one file to a milestone. Throws on failure. */
-  async function uploadToMilestone(milestoneId: string, rawFile: File) {
+  /** Compresses (photos only) and uploads one file to the event's timeline storage. Returns its path. Throws on failure. */
+  async function uploadMedia(rawFile: File): Promise<string> {
     const file =
       rawFile.type.startsWith("video/") || isVideoMedia(rawFile.name) ? rawFile : await compressImage(rawFile);
     const signed = await actions.requestImageUpload(eventId, file.name, file.type, file.size);
@@ -197,9 +226,75 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
       contentType: signed.data.contentType,
     });
     if (uploadError) throw new Error(uploadError.message);
+    return path;
+  }
 
-    const confirmed = await actions.confirmImageUpload(milestoneId, path);
+  /** Uploads and attaches one file as a milestone's cover (its single photo/video). Throws on failure. */
+  async function uploadToMilestone(milestoneId: string, rawFile: File, fingerprint?: string | null) {
+    const path = await uploadMedia(rawFile);
+    const confirmed = await actions.confirmImageUpload(milestoneId, path, fingerprint ?? null);
     if (!confirmed.success) throw new Error(confirmed.error);
+  }
+
+  /**
+   * "Add more photos": extra photos shown with the cover on the public
+   * Timeline. The cover itself is never touched. Photos already on this
+   * milestone are skipped; dates/places are read from the originals first
+   * (compression strips them) and widen the milestone's stored range so
+   * later zip imports can find it.
+   */
+  async function handleAddPhotos(milestoneId: string, picked: File[]) {
+    const milestone = milestones.find((m) => m.id === milestoneId);
+    if (!milestone || picked.length === 0) return;
+    const files = picked.slice(0, MAX_PICK);
+    setExtraBusy({ id: milestoneId, message: "Reading photos…" });
+    try {
+      const known = new Set([milestone.imageFingerprint, ...(milestone.photos ?? []).map((p) => p.fingerprint)].filter(Boolean));
+      const described = await mapLimited(files, 3, async (file) => ({ file, ...(await describePhotoFile(file)) }));
+      const fresh = described.filter((d, i) => !known.has(d.fingerprint) && described.findIndex((x) => x.fingerprint === d.fingerprint) === i);
+
+      let done = 0;
+      const uploaded = await mapLimited(fresh, 3, async (d) => {
+        const path = await uploadMedia(d.file);
+        setExtraBusy({ id: milestoneId, message: `Uploading ${++done} of ${fresh.length}…` });
+        return { path, originalName: d.file.name, takenAt: d.takenAt, lat: d.lat, lon: d.lon, fingerprint: d.fingerprint };
+      });
+
+      const days = uploaded.map((u) => u.takenAt?.slice(0, 10)).filter((d): d is string => Boolean(d)).sort();
+      const gps = uploaded.find((u) => u.lat !== null && u.lon !== null);
+      if (uploaded.length > 0) {
+        const result = await actions.addPhotos(milestoneId, uploaded, {
+          takenFrom: days[0] ?? null,
+          takenTo: days[days.length - 1] ?? null,
+          lat: gps?.lat ?? null,
+          lon: gps?.lon ?? null,
+        });
+        if (!result.success) throw new Error(result.error);
+      }
+      const skipped = files.length - fresh.length + (picked.length - files.length);
+      if (skipped > 0) {
+        alert(
+          `${uploaded.length} photo${uploaded.length === 1 ? "" : "s"} added. ${skipped} skipped (already on this milestone${picked.length > MAX_PICK ? `, or over ${MAX_PICK} at a time` : ""}).`,
+        );
+      }
+      window.location.reload();
+    } catch (err) {
+      alert(staleDeployMessage(err) ?? (err instanceof Error ? err.message : "Upload failed."));
+      setExtraBusy(null);
+    }
+  }
+
+  async function handleRemoveExtra(photoId: string) {
+    if (!confirm("Remove this photo from the milestone?")) return;
+    const result = await actions.removePhoto(photoId).catch((err: unknown) => ({
+      success: false as const,
+      error: staleDeployMessage(err) ?? "Failed.",
+    }));
+    if (result.success) {
+      setMilestones((prev) => prev.map((m) => ({ ...m, photos: (m.photos ?? []).filter((p) => p.id !== photoId) })));
+    } else {
+      alert(result.error);
+    }
   }
 
   async function handleImageFile(rawFile: File) {
@@ -264,10 +359,24 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
         }}
       />
 
+      <input
+        ref={extraInputRef}
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+        className="hidden"
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          e.target.value = "";
+          if (extraMilestoneId.current) void handleAddPhotos(extraMilestoneId.current, files);
+        }}
+      />
+
       <PhotoTimelineImport
         eventId={eventId}
-        existingCount={milestones.length}
+        existingMilestones={milestones}
         actions={actions}
+        uploadMedia={uploadMedia}
         uploadToMilestone={uploadToMilestone}
       />
 
@@ -451,7 +560,43 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
                     <X size={13} /> Remove photo
                   </Button>
                 ) : null}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={extraBusy !== null}
+                  onClick={() => {
+                    extraMilestoneId.current = m.id;
+                    extraInputRef.current?.click();
+                  }}
+                >
+                  {extraBusy?.id === m.id ? <Loader2 className="animate-spin" size={13} /> : <Images size={13} />}
+                  {extraBusy?.id === m.id ? extraBusy.message : "Add more photos"}
+                </Button>
               </div>
+              {m.photos && m.photos.length > 0 ? (
+                <div className="mt-2">
+                  <p className="mb-1 text-xs text-navy-700/50">
+                    {m.photos.length} more photo{m.photos.length === 1 ? "" : "s"} — shown with the main photo on your Timeline
+                  </p>
+                  <ul className="flex flex-wrap gap-1.5">
+                    {m.photos.map((photo) => (
+                      <li key={photo.id} className="group relative h-12 w-12">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={photo.url} alt="" loading="lazy" className="h-full w-full rounded object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => void handleRemoveExtra(photo.id)}
+                          aria-label="Remove this photo"
+                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-navy-700 shadow ring-1 ring-navy-950/10 hover:text-red-600"
+                        >
+                          <X size={11} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
             <button
               type="button"

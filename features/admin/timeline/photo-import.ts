@@ -2,7 +2,8 @@
 
 import { compressImage } from "@/lib/image-compression";
 import { readPhotoMetadata } from "@/lib/photo-metadata";
-import { readZipEntries } from "@/features/admin/timeline/zip-reader";
+import { readZipEntries, type ZipEntry } from "@/features/admin/timeline/zip-reader";
+import { TakeoutIndex, isTakeoutSidecar } from "@/features/admin/timeline/google-takeout";
 
 /**
  * Browser-only half of "Build a timeline from photos": unzip (or take a
@@ -12,7 +13,8 @@ import { readZipEntries } from "@/features/admin/timeline/zip-reader";
  * except, later, one small thumbnail per group (see makeThumbnailDataUrl).
  */
 
-export const MAX_PHOTOS = 1000;
+/** Photos are read lazily and Takeout sidecars skip the EXIF read, so a whole library is fine; the AI still sees ≤ MAX_GROUPS thumbnails. */
+export const MAX_PHOTOS = 5000;
 /** Matches MAX_TIMELINE_AI_GROUPS in services/timeline-ai.ts. */
 export const MAX_GROUPS = 20;
 /** Zips are read lazily from disk (zip-reader.ts), never uploaded — this is a sanity cap, not a memory limit. */
@@ -32,13 +34,19 @@ const IMAGE_TYPES: Record<string, string> = {
   heif: "image/heif",
 };
 
+const VIDEO_EXTENSION = /\.(mp4|mov|m4v|3gp|avi|mkv|webm)$/i;
+
 export interface ImportedPhoto {
   id: string;
-  file: File;
-  /** "YYYY-MM-DDTHH:mm", camera local time. */
+  name: string;
+  /** The original bytes, read from the zip only when needed (thumbnail, upload). */
+  getFile: () => Promise<File>;
+  /** "YYYY-MM-DDTHH:mm", camera local time (EXIF) or the host's local time (Google sidecar). */
   takenAt: string | null;
   lat: number | null;
   lon: number | null;
+  /** Identifies this photo across imports (see photoFingerprint) — how a re-import knows it's already on the timeline. */
+  fingerprint: string;
 }
 
 export interface PhotoGroup {
@@ -69,16 +77,46 @@ export async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T, 
   return results;
 }
 
-/** Image files out of whatever the host picked: zips are opened, loose photos are kept, everything else is skipped. */
-async function collectImageFiles(picked: File[]): Promise<{ files: File[]; skipped: number; overLimit: number }> {
-  const files: File[] = [];
+/** A photo found in what the host picked, not read yet. */
+interface Candidate {
+  /** Folder path inside its export, plus an export namespace — what sidecars are matched on. */
+  path: string;
+  name: string;
+  size: number;
+  getFile: () => Promise<File>;
+}
+
+/**
+ * "takeout-20261024T101010Z-001.zip" and "-002.zip" are parts of ONE
+ * Google export (a sidecar can sit in a different part from its photo),
+ * while each Google account's export has its own timestamp — so the
+ * namespace is the zip name minus the part number. That keeps
+ * "Photos from 2019/IMG_0001.jpg" from two accounts apart.
+ */
+function exportNamespace(zipName: string) {
+  return zipName.replace(/-\d{3}\.zip$/i, "").replace(/\.zip$/i, "") + ":";
+}
+
+/** Caches an entry's bytes only when that's free (stored); deflated entries are re-inflated on demand instead of all sitting in memory. */
+function lazyFile(entry: ZipEntry, type: string): () => Promise<File> {
+  let cached: Promise<File> | null = null;
+  return () => {
+    if (entry.stored) return (cached ??= entry.file(type));
+    return entry.file(type);
+  };
+}
+
+/** Photos (and Google Takeout sidecars) out of whatever the host picked: zips are opened, loose photos kept, the rest skipped. */
+async function collect(picked: File[]): Promise<{ candidates: Candidate[]; takeout: TakeoutIndex; skipped: number; videos: number }> {
+  const candidates: Candidate[] = [];
+  const takeout = new TakeoutIndex();
   let skipped = 0;
-  let overLimit = 0;
+  let videos = 0;
 
   for (const file of picked) {
     if (isZip(file)) {
       if (file.size > MAX_ZIP_BYTES) {
-        throw new Error(`“${file.name}” is over 2 GB — please split it into smaller zips.`);
+        throw new Error(`“${file.name}” is over 2 GB — please split it into smaller zips (Google Takeout: choose 2 GB parts).`);
       }
       let entries;
       try {
@@ -86,55 +124,186 @@ async function collectImageFiles(picked: File[]): Promise<{ files: File[]; skipp
       } catch {
         throw new Error(`Couldn't open “${file.name}” — is it a normal .zip file?`);
       }
+      const ns = exportNamespace(file.name);
       for (const entry of entries) {
         const base = entry.name.split("/").pop() ?? "";
         // macOS adds __MACOSX/._photo.jpg resource forks — not real photos.
         if (entry.name.startsWith("__MACOSX/") || base.startsWith(".")) continue;
+        if (isTakeoutSidecar(entry.name)) {
+          // Sidecars are ~1 KB; anything bigger isn't one.
+          if (entry.size < 200_000) takeout.add(ns + entry.name, await (await entry.file("application/json")).text());
+          continue;
+        }
         const type = imageType(entry.name);
         if (!type) {
-          skipped++;
+          if (VIDEO_EXTENSION.test(entry.name)) videos++;
+          else skipped++;
           continue;
         }
-        if (files.length >= MAX_PHOTOS) {
-          // Count it as over the limit without reading it.
-          overLimit++;
-          continue;
-        }
-        files.push(await entry.file(type));
+        candidates.push({ path: ns + entry.name, name: base, size: entry.size, getFile: lazyFile(entry, type) });
       }
+    } else if (isTakeoutSidecar(file.name)) {
+      takeout.add(file.name, await file.text());
     } else if (file.type.startsWith("image/") || imageType(file.name)) {
-      files.push(file);
+      candidates.push({ path: file.name, name: file.name, size: file.size, getFile: () => Promise.resolve(file) });
+    } else if (VIDEO_EXTENSION.test(file.name) || file.type.startsWith("video/")) {
+      videos++;
     } else {
       skipped++;
     }
   }
-  return { files, skipped, overLimit };
+  return { candidates, takeout, skipped, videos };
+}
+
+async function sha256(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Drops byte-identical copies — the same photo appears once per album in
+ * a Takeout export, and again in a second account's export. Different
+ * photos that merely share a filename are kept. Only files whose size
+ * collides are ever read (first + last 64 KB, hashed), so this stays cheap
+ * on big libraries.
+ */
+async function dropDuplicates(candidates: Candidate[]): Promise<{ unique: Candidate[]; duplicates: number }> {
+  const bySize = new Map<number, Candidate[]>();
+  for (const c of candidates) bySize.set(c.size, [...(bySize.get(c.size) ?? []), c]);
+
+  const unique: Candidate[] = [];
+  for (const group of bySize.values()) {
+    if (group.length === 1) {
+      unique.push(...group);
+      continue;
+    }
+    const seen = new Set<string>();
+    for (const c of group) {
+      const fingerprint = await contentHash(await c.getFile());
+      if (seen.has(fingerprint)) continue;
+      seen.add(fingerprint);
+      unique.push(c);
+    }
+  }
+  const order = new Map(candidates.map((c, i) => [c, i]));
+  unique.sort((a, b) => (order.get(a) ?? 0) - (order.get(b) ?? 0));
+  return { unique, duplicates: candidates.length - unique.length };
 }
 
 export interface ReadPhotosResult {
   photos: ImportedPhoto[];
   skipped: number;
+  /** Videos found (the timeline import is photos-only — videos are added to a milestone one at a time). */
+  videos: number;
+  /** Byte-identical copies dropped. */
+  duplicates: number;
+  /** Photos whose date/place came from Google Takeout sidecars. */
+  fromGoogle: number;
+  /** Photos dated only by their filename (IMG_20190615_…, WhatsApp IMG-20200101-WA…). */
+  fromFileName: number;
   /** Photos beyond MAX_PHOTOS that were left out. */
   overLimit: number;
 }
 
-export async function readPhotos(picked: File[], onProgress?: (done: number, total: number) => void): Promise<ReadPhotosResult> {
-  const { files, skipped, overLimit: zipOverLimit } = await collectImageFiles(picked);
-  const kept = files.slice(0, MAX_PHOTOS);
+export async function readPhotos(
+  picked: File[],
+  onProgress?: (message: string) => void,
+): Promise<ReadPhotosResult> {
+  const { candidates, takeout, skipped, videos } = await collect(picked);
+  onProgress?.(`Checking ${candidates.length} photos for duplicates…`);
+  const { unique, duplicates } = await dropDuplicates(candidates);
+  const kept = unique.slice(0, MAX_PHOTOS);
+
   let done = 0;
-  const photos = await mapLimited(kept, 4, async (file, i) => {
-    const meta = await readPhotoMetadata(file);
-    onProgress?.(++done, kept.length);
-    return { id: `p${i}`, file, takenAt: meta.takenAt, lat: meta.lat, lon: meta.lon };
+  let fromGoogle = 0;
+  let fromFileName = 0;
+  const photos = await mapLimited(kept, 4, async (c, i): Promise<ImportedPhoto> => {
+    const google = takeout.lookup(c.path);
+    if (google && (google.takenAt || google.lat !== null)) fromGoogle++;
+    // The photo's own EXIF has the true local wall-clock time; Google's sidecar fills whatever it lacks.
+    // Skip reading the file at all when the sidecar already has both — that's what keeps big exports fast.
+    const exif =
+      google?.takenAt && google.lat !== null ? null : await c.getFile().then(readPhotoMetadata).catch(() => null);
+    onProgress?.(`Reading dates and places… ${++done} of ${kept.length}`);
+    const gps = exif?.lat != null && exif.lon != null ? exif : google?.lat != null && google.lon != null ? google : null;
+    const recorded = exif?.takenAt ?? google?.takenAt ?? null;
+    // Last resort only: a filename date never overrides a real capture date.
+    const named = recorded ? null : dateFromFileName(c.name);
+    if (named) fromFileName++;
+    return {
+      id: `p${i}`,
+      name: c.name,
+      getFile: c.getFile,
+      takenAt: recorded ?? named,
+      lat: gps?.lat ?? null,
+      lon: gps?.lon ?? null,
+      fingerprint: await photoFingerprint(c.size, recorded, c.getFile),
+    };
   });
-  return { photos, skipped, overLimit: zipOverLimit + files.length - kept.length };
+  return { photos, skipped, videos, duplicates, fromGoogle, fromFileName, overLimit: unique.length - kept.length };
+}
+
+/** SHA-256 of a file's first and last 64 KB — cheap, and different for any two real photos. */
+async function contentHash(file: File): Promise<string> {
+  return sha256(new Blob([file.slice(0, 65_536), file.slice(Math.max(0, file.size - 65_536))]));
+}
+
+/**
+ * Identifies the ORIGINAL photo across imports, Takeout parts and Google
+ * accounts. With a recorded capture time (EXIF / Google), byte size + that
+ * minute is unique in practice and needs no file read — important for
+ * deflated Takeout zips. Otherwise the content is hashed. Always computed
+ * from the original, never the compressed upload.
+ */
+export async function photoFingerprint(size: number, recordedTakenAt: string | null, getFile: () => Promise<File>): Promise<string> {
+  if (recordedTakenAt) return `s${size}-t${recordedTakenAt.replace(/[^0-9]/g, "")}`;
+  return `s${size}-h${(await contentHash(await getFile())).slice(0, 32)}`;
+}
+
+/** Everything the import knows about one picked file — used by "Add more photos" on a milestone. */
+export async function describePhotoFile(file: File): Promise<Pick<ImportedPhoto, "takenAt" | "lat" | "lon" | "fingerprint">> {
+  const meta = await readPhotoMetadata(file);
+  return {
+    takenAt: meta.takenAt ?? dateFromFileName(file.name),
+    lat: meta.lat,
+    lon: meta.lon,
+    fingerprint: await photoFingerprint(file.size, meta.takenAt, () => Promise.resolve(file)),
+  };
+}
+
+const FILE_NAME_DATES: { pattern: RegExp; hasTime: boolean }[] = [
+  // IMG_20190615_101010.jpg, PXL_20190615_101010123.jpg, VID_…, 20190615_101010.jpg (Android cameras)
+  { pattern: /(?:^|[^0-9])((?:19|20)\d{2})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2})/, hasTime: true },
+  // Screenshot_2019-06-15-10-10-10.png, 2019-06-15 10.10.10.jpg (Dropbox), signal-2020-01-01-101010.jpg
+  { pattern: /((?:19|20)\d{2})-(\d{2})-(\d{2})[ _-](\d{2})[.:-]?(\d{2})[.:-]?(\d{2})/, hasTime: true },
+  // IMG-20200101-WA0001.jpg (WhatsApp — date only)
+  { pattern: /-((?:19|20)\d{2})(\d{2})(\d{2})-WA\d+/i, hasTime: false },
+  // Anything else with a plain 2019-06-15
+  { pattern: /(?:^|[^0-9])((?:19|20)\d{2})-(\d{2})-(\d{2})(?:[^0-9]|$)/, hasTime: false },
+];
+
+/** "YYYY-MM-DDTHH:mm" from a camera/app filename, or null. Date-only names get midnight. */
+export function dateFromFileName(name: string): string | null {
+  for (const { pattern, hasTime } of FILE_NAME_DATES) {
+    const m = name.match(pattern);
+    if (!m) continue;
+    const [mo, d] = [Number(m[2]), Number(m[3])];
+    const [h, mi, se] = hasTime ? [Number(m[4]), Number(m[5]), Number(m[6])] : [0, 0, 0];
+    if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59 || se > 59) continue;
+    const stamp = `${m[1]}-${m[2]}-${m[3]}T${hasTime ? `${m[4]}:${m[5]}` : "00:00"}`;
+    const when = Date.parse(stamp);
+    // Not in the future, and a real calendar day (rejects 2019-02-31).
+    if (Number.isNaN(when) || when > Date.now() + 86_400_000 || new Date(when).getDate() !== d) continue;
+    return stamp;
+  }
+  return null;
 }
 
 function time(photo: ImportedPhoto): number {
   return photo.takenAt ? Date.parse(photo.takenAt) : NaN;
 }
 
-function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
+export function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const rad = Math.PI / 180;
   const dLat = (bLat - aLat) * rad;
   const dLon = (bLon - aLon) * rad;

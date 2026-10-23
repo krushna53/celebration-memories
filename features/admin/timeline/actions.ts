@@ -4,7 +4,19 @@ import { assertEventMediaPath } from "@/lib/curated-media";
 import { revalidatePath } from "next/cache";
 
 import { requireAdminForOrganizerArea } from "@/services/admin-auth";
-import { createMilestone, deleteMilestone, getMilestoneById, updateMilestone } from "@/services/timeline";
+import {
+  addMilestonePhotos,
+  createMilestone,
+  deleteMilestone,
+  deleteMilestonePhoto,
+  extendMilestoneMeta,
+  getMilestoneById,
+  getMilestonePhotoById,
+  listTimelineFingerprints,
+  updateMilestone,
+  type MilestonePhotoMeta,
+  type NewMilestonePhoto,
+} from "@/services/timeline";
 import { createSignedTimelineImageUpload } from "@/services/uploads";
 import { snapshotTimeline } from "@/services/event-snapshots";
 import { reverseGeocode } from "@/lib/reverse-geocode";
@@ -32,6 +44,8 @@ export async function createMilestoneAction(input: {
   title: string;
   description: string;
   sortOrder: number;
+  /** Only from the photo import. */
+  meta?: MilestonePhotoMeta;
 }) {
   try {
     const admin = await requireAdminForOrganizerArea(input.eventId, "timeline");
@@ -88,12 +102,12 @@ export async function requestTimelineImageUploadUrlAction(
   }
 }
 
-export async function confirmTimelineImageUploadAction(milestoneId: string, path: string) {
+export async function confirmTimelineImageUploadAction(milestoneId: string, path: string, fingerprint?: string | null) {
   try {
     const { admin, milestone } = await requireAdminForMilestone(milestoneId);
     await snapshotTimeline(milestone.eventId, admin.id).catch((err) => console.error("snapshotTimeline failed:", err));
     assertEventMediaPath(milestone.eventId, path);
-    await updateMilestone(milestoneId, { imagePath: path });
+    await updateMilestone(milestoneId, { imagePath: path, imageFingerprint: fingerprint ?? null });
     revalidateTimelinePaths();
     return { success: true as const };
   } catch (err) {
@@ -159,5 +173,50 @@ export async function suggestTimelineFromPhotosAction(eventId: string, groups: u
     return { success: true, data: { suggestions } };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "AI writing failed." };
+  }
+}
+
+/** At most this many photos per call — the browser uploads in batches. */
+const MAX_PHOTOS_PER_CALL = 50;
+
+/**
+ * Records extra photos (already uploaded via requestTimelineImageUploadUrlAction)
+ * on a milestone, after its cover. `meta` widens the milestone's stored
+ * date range so later imports can find it.
+ */
+export async function addMilestonePhotosAction(milestoneId: string, photos: NewMilestonePhoto[], meta?: MilestonePhotoMeta) {
+  try {
+    const { milestone } = await requireAdminForMilestone(milestoneId);
+    if (!Array.isArray(photos) || photos.length > MAX_PHOTOS_PER_CALL) throw new Error("Too many photos at once.");
+    for (const p of photos) assertEventMediaPath(milestone.eventId, p.path);
+    await addMilestonePhotos(milestone, photos);
+    if (meta) await extendMilestoneMeta(milestone, meta);
+    revalidateTimelinePaths();
+    return { success: true as const };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+export async function removeMilestonePhotoAction(photoId: string) {
+  try {
+    const photo = await getMilestonePhotoById(photoId);
+    if (!photo) throw new Error("Photo not found.");
+    await requireAdminForOrganizerArea(photo.eventId, "timeline");
+    await deleteMilestonePhoto(photoId);
+    revalidateTimelinePaths();
+    return { success: true as const };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/** Photos already on the timeline (fingerprint → milestone id), so a re-import skips them. */
+export async function getTimelineFingerprintsAction(eventId: string) {
+  try {
+    await requireAdminForOrganizerArea(eventId, "timeline");
+    return { success: true as const, data: await listTimelineFingerprints(eventId) };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
   }
 }

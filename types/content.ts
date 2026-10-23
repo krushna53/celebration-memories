@@ -56,6 +56,24 @@ export interface TimelineMilestoneRecord {
   /** Optional photo for this milestone — shown on the public Timeline and selectable in the Slideshow Video composer. */
   imageUrl: string | null;
   createdAt: string;
+  /** More photos beyond the cover (timeline_milestone_photos), oldest first — only set by listMilestones, usually empty. */
+  photos?: TimelineMilestonePhoto[];
+  /** When/where the milestone's photos were taken — only set for milestones built from photos (photo import). */
+  takenFrom?: string | null;
+  takenTo?: string | null;
+  lat?: number | null;
+  lon?: number | null;
+  place?: string | null;
+  /** Fingerprint of the cover photo, so re-importing it is recognised (features/admin/timeline/photo-import.ts). */
+  imageFingerprint?: string | null;
+}
+
+export interface TimelineMilestonePhoto {
+  id: string;
+  url: string;
+  /** "YYYY-MM-DDTHH:mm" camera local time, if known. */
+  takenAt: string | null;
+  fingerprint: string | null;
 }
 
 /** One time-blocked segment of the event-day run-of-show (see services/event-day.ts). */

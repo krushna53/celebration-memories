@@ -18,7 +18,11 @@
 
 export interface ZipEntry {
   name: string;
-  /** Lazily materialises the entry's bytes. */
+  /** Uncompressed size in bytes, from the directory — known without reading the entry. */
+  size: number;
+  /** Stored (uncompressed): file() is a free slice of the zip, so it's fine to call it again and again. */
+  stored: boolean;
+  /** Materialises the entry's bytes — free for stored entries, inflates deflated ones. */
   file(type: string): Promise<File>;
 }
 
@@ -83,7 +87,7 @@ export async function readZipEntries(zip: File): Promise<ZipEntry[]> {
     const method = cd.getUint16(p + 10, true);
     const modified = dosDate(cd.getUint16(p + 14, true), cd.getUint16(p + 12, true));
     let compressedSize = cd.getUint32(p + 20, true);
-    const uncompressedSize = cd.getUint32(p + 24, true);
+    let uncompressedSize = cd.getUint32(p + 24, true);
     const nameLen = cd.getUint16(p + 28, true);
     const extraLen = cd.getUint16(p + 30, true);
     const commentLen = cd.getUint16(p + 32, true);
@@ -98,7 +102,10 @@ export async function readZipEntries(zip: File): Promise<ZipEntry[]> {
       const size = cd.getUint16(e + 2, true);
       if (id === 0x0001) {
         let q = e + 4;
-        if (uncompressedSize === MAX_U32) q += 8;
+        if (uncompressedSize === MAX_U32) {
+          uncompressedSize = u64(cd, q);
+          q += 8;
+        }
         if (compressedSize === MAX_U32) {
           compressedSize = u64(cd, q);
           q += 8;
@@ -115,6 +122,8 @@ export async function readZipEntries(zip: File): Promise<ZipEntry[]> {
     const baseName = name.split("/").pop() ?? name;
     entries.push({
       name,
+      size: uncompressedSize,
+      stored: method === 0,
       async file(type: string) {
         // The local header's name/extra lengths can differ from the central directory's — read them.
         const local = await view(zip, localOffset, localOffset + 30);

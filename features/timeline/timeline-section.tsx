@@ -1,6 +1,7 @@
 import { isVideoMedia } from "@/lib/curated-media";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
+import { MilestonePhotoStrip } from "@/features/timeline/milestone-photo-strip";
 import { getSegmentCopy } from "@/lib/event-segment";
 import type { TimelineMilestoneRecord } from "@/types/content";
 import type { EventCategory } from "@/types/event";
@@ -54,6 +55,13 @@ export function TimelineSection({ milestones, category }: TimelineSectionProps) 
                     src={milestone.imageUrl}
                     alt={milestone.title}
                     className="mt-4 h-40 w-full max-w-sm rounded-xl border border-gold-500/15 object-cover sm:h-48"
+                  />
+                ) : null}
+                {milestone.photos?.length ? (
+                  <MilestonePhotoStrip
+                    title={milestone.title}
+                    coverUrl={milestone.imageUrl && !isVideoMedia(milestone.imageUrl) ? milestone.imageUrl : null}
+                    photos={milestone.photos}
                   />
                 ) : null}
               </li>

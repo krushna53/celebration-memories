@@ -2,7 +2,19 @@
 import { assertEventMediaPath } from "@/lib/curated-media";
 
 import { requireDraftEvent } from "@/features/start/draft-auth";
-import { createMilestone, deleteMilestone, getMilestoneById, updateMilestone } from "@/services/timeline";
+import {
+  addMilestonePhotos,
+  createMilestone,
+  deleteMilestone,
+  deleteMilestonePhoto,
+  extendMilestoneMeta,
+  getMilestoneById,
+  getMilestonePhotoById,
+  listTimelineFingerprints,
+  updateMilestone,
+  type MilestonePhotoMeta,
+  type NewMilestonePhoto,
+} from "@/services/timeline";
 import { createSignedTimelineImageUpload } from "@/services/uploads";
 import { reverseGeocode } from "@/lib/reverse-geocode";
 import { suggestTimelineFromPhotos } from "@/services/timeline-ai";
@@ -19,7 +31,7 @@ async function ownedMilestone(token: string, milestoneId: string) {
 
 export async function draftCreateMilestoneAction(
   token: string,
-  input: { eventId: string; period: string; title: string; description: string; sortOrder: number },
+  input: { eventId: string; period: string; title: string; description: string; sortOrder: number; meta?: MilestonePhotoMeta },
 ) {
   try {
     const event = await requireDraftEvent(token);
@@ -63,11 +75,16 @@ export async function draftRequestTimelineImageUploadUrlAction(
   }
 }
 
-export async function draftConfirmTimelineImageUploadAction(token: string, milestoneId: string, path: string) {
+export async function draftConfirmTimelineImageUploadAction(
+  token: string,
+  milestoneId: string,
+  path: string,
+  fingerprint?: string | null,
+) {
   try {
     const { event } = await ownedMilestone(token, milestoneId);
     assertEventMediaPath(event.id, path);
-    await updateMilestone(milestoneId, { imagePath: path });
+    await updateMilestone(milestoneId, { imagePath: path, imageFingerprint: fingerprint ?? null });
     return { success: true as const };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
@@ -118,5 +135,48 @@ export async function draftSuggestTimelineFromPhotosAction(
     return { success: true, data: { suggestions } };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "AI writing failed." };
+  }
+}
+
+/** Draft-token-gated mirror of addMilestonePhotosAction. */
+export async function draftAddMilestonePhotosAction(
+  token: string,
+  milestoneId: string,
+  photos: NewMilestonePhoto[],
+  meta?: MilestonePhotoMeta,
+) {
+  try {
+    const { event, milestone } = await ownedMilestone(token, milestoneId);
+    if (!Array.isArray(photos) || photos.length > 50) throw new Error("Too many photos at once.");
+    for (const p of photos) assertEventMediaPath(event.id, p.path);
+    await addMilestonePhotos(milestone, photos);
+    if (meta) await extendMilestoneMeta(milestone, meta);
+    return { success: true as const };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/** Draft-token-gated mirror of removeMilestonePhotoAction. */
+export async function draftRemoveMilestonePhotoAction(token: string, photoId: string) {
+  try {
+    const event = await requireDraftEvent(token);
+    const photo = await getMilestonePhotoById(photoId);
+    if (!photo || photo.eventId !== event.id) throw new Error("Not found.");
+    await deleteMilestonePhoto(photoId);
+    return { success: true as const };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
+  }
+}
+
+/** Draft-token-gated mirror of getTimelineFingerprintsAction. */
+export async function draftGetTimelineFingerprintsAction(token: string, eventId: string) {
+  try {
+    const event = await requireDraftEvent(token);
+    if (event.id !== eventId) return { success: false as const, error: "This link doesn't match that event." };
+    return { success: true as const, data: await listTimelineFingerprints(event.id) };
+  } catch (err) {
+    return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
   }
 }

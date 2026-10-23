@@ -15,6 +15,9 @@ import {
   draftRemoveTimelineImageAction,
   draftDescribePhotoPlaceAction,
   draftSuggestTimelineFromPhotosAction,
+  draftAddMilestonePhotosAction,
+  draftRemoveMilestonePhotoAction,
+  draftGetTimelineFingerprintsAction,
 } from "@/features/start/actions/timeline";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +51,9 @@ export default async function WizardTimelinePage({ params }: { params: Promise<{
           removeImage: draftRemoveTimelineImageAction.bind(null, token),
           describePlace: draftDescribePhotoPlaceAction.bind(null, token),
           suggestFromPhotos: draftSuggestTimelineFromPhotosAction.bind(null, token),
+          addPhotos: draftAddMilestonePhotosAction.bind(null, token),
+          removePhoto: draftRemoveMilestonePhotoAction.bind(null, token),
+          getFingerprints: draftGetTimelineFingerprintsAction.bind(null, token),
         }}
       />
     </WizardStepShell>
