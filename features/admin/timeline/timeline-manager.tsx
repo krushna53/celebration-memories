@@ -2,7 +2,7 @@
 
 import { CURATED_MEDIA_ACCEPT, isVideoMedia } from "@/lib/curated-media";
 import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Camera, ImagePlus, Images, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarClock, Camera, Check, ImagePlus, Images, Pencil, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { GooglePhotosButton } from "@/features/uploads/components/google-photos-button";
@@ -13,6 +13,8 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import { formatTakenDay, formatTakenMonth, readPhotoMetadata } from "@/lib/photo-metadata";
 import { describePhotoFile, mapLimited } from "@/features/admin/timeline/photo-import";
+import { staleDeployMessage } from "@/lib/stale-deploy";
+import { milestoneSortDate } from "@/lib/timeline-order";
 import type { TimelineMilestoneRecord } from "@/types/content";
 import {
   addMilestonePhotosAction,
@@ -86,20 +88,9 @@ function describeFacts(facts: PhotoFacts): string | null {
   return null;
 }
 
-/**
- * A Server Action call from a page loaded before the latest deploy fails
- * with "Failed to find Server Action" — the only fix is reloading, so say
- * that instead of a cryptic error (or, worse, silently stalling).
- */
-export function staleDeployMessage(err: unknown): string | null {
-  const text = err instanceof Error ? err.message : String(err);
-  return /server action/i.test(text)
-    ? "EveryMoment was updated while this page was open. Please reload the page and try again."
-    : null;
-}
-
 export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_ACTIONS }: TimelineManagerProps) {
-  const [milestones, setMilestones] = useState([...initialMilestones].sort((a, b) => a.sortOrder - b.sortOrder));
+  // Already oldest → newest from listMilestones (lib/timeline-order.ts).
+  const [milestones, setMilestones] = useState(initialMilestones);
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -118,6 +109,7 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
   const [extraBusy, setExtraBusy] = useState<{ id: string; message: string } | null>(null);
   const extraInputRef = useRef<HTMLInputElement>(null);
   const extraMilestoneId = useRef<string | null>(null);
+  const [editing, setEditing] = useState<{ id: string; period: string; title: string; description: string } | null>(null);
 
   /** Date + place for a photo, from its EXIF (and a reverse-geocode of its GPS). Never throws. */
   async function photoFacts(file: File): Promise<PhotoFacts> {
@@ -178,6 +170,33 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
     setBusy(false);
     setForm(EMPTY);
     window.location.reload();
+  }
+
+  function startEdit(m: TimelineMilestoneRecord) {
+    setEditing({ id: m.id, period: m.period, title: m.title, description: m.description });
+  }
+
+  /** Saves an edited milestone. A changed Period can move it — the list is re-read so it lands in date order. */
+  async function saveEdit() {
+    if (!editing) return;
+    if (!editing.period.trim() || !editing.title.trim() || !editing.description.trim()) {
+      alert("Period, title and description are all needed.");
+      return;
+    }
+    setBusyId(editing.id);
+    const result = await actions
+      .updateMilestone(editing.id, {
+        period: editing.period.trim(),
+        title: editing.title.trim(),
+        description: editing.description.trim(),
+      })
+      .catch((err: unknown) => ({ success: false as const, error: staleDeployMessage(err) ?? "Failed." }));
+    if (result.success) {
+      window.location.reload();
+    } else {
+      alert(result.error);
+      setBusyId(null);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -470,27 +489,45 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
       </p>
       <PhotoMetadataTip pickHint="tap “Start from a photo”, then choose Browse / Files / Drive" />
 
-      <div className="mt-6 space-y-3">
-        {milestones.map((m, index) => (
+      <p className="mt-6 text-xs text-navy-700/60">
+        Shown oldest first, by each milestone&rsquo;s Period. Milestones without a year (like &ldquo;Early years&rdquo;) stay where
+        you put them — move those with the arrows, or Edit them and add a year.
+      </p>
+      <div className="mt-2 space-y-3">
+        {milestones.map((m, index) => {
+          // Dated milestones are placed by their date; arrows only move undated ones.
+          const dated = milestoneSortDate(m) !== null;
+          return (
           <div key={m.id} className="flex items-start gap-3 rounded-xl border border-navy-950/10 bg-white p-4">
-            <div className="flex flex-col gap-1">
-              <button
-                type="button"
-                disabled={index === 0 || busy}
-                onClick={() => move(index, -1)}
-                className="tap-target flex items-center justify-center text-navy-700/50 hover:text-gold-600 disabled:opacity-30"
+            {dated ? (
+              <div
+                className="tap-target flex w-6 shrink-0 items-center justify-center text-navy-700/30"
+                title="Placed by its date — change the Period to move it"
               >
-                <ArrowUp size={16} />
-              </button>
-              <button
-                type="button"
-                disabled={index === milestones.length - 1 || busy}
-                onClick={() => move(index, 1)}
-                className="tap-target flex items-center justify-center text-navy-700/50 hover:text-gold-600 disabled:opacity-30"
-              >
-                <ArrowDown size={16} />
-              </button>
-            </div>
+                <CalendarClock size={15} aria-label="Placed by date" />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  disabled={index === 0 || busy}
+                  onClick={() => move(index, -1)}
+                  aria-label="Move up"
+                  className="tap-target flex items-center justify-center text-navy-700/50 hover:text-gold-600 disabled:opacity-30"
+                >
+                  <ArrowUp size={16} />
+                </button>
+                <button
+                  type="button"
+                  disabled={index === milestones.length - 1 || busy}
+                  onClick={() => move(index, 1)}
+                  aria-label="Move down"
+                  className="tap-target flex items-center justify-center text-navy-700/50 hover:text-gold-600 disabled:opacity-30"
+                >
+                  <ArrowDown size={16} />
+                </button>
+              </div>
+            )}
 
             {m.imageUrl ? (
               isVideoMedia(m.imageUrl) ? (
@@ -513,10 +550,55 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
             )}
 
             <div className="min-w-0 flex-1">
-              <p className="text-xs uppercase tracking-wide text-gold-600">{m.period}</p>
-              <p className="font-display text-lg text-navy-950">{m.title}</p>
-              <p className="text-sm text-navy-700/70">{m.description}</p>
-              <div className="mt-2 flex gap-2">
+              {editing?.id === m.id ? (
+                <div className="space-y-2">
+                  <div className="grid gap-2 sm:grid-cols-[10rem_1fr]">
+                    <input
+                      className={inputClasses}
+                      value={editing.period}
+                      onChange={(e) => setEditing({ ...editing, period: e.target.value })}
+                      placeholder="Period (e.g. March 1998)"
+                      aria-label="Period"
+                    />
+                    <input
+                      className={inputClasses}
+                      value={editing.title}
+                      onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                      placeholder="Title"
+                      aria-label="Title"
+                    />
+                  </div>
+                  <textarea
+                    className={inputClasses}
+                    rows={2}
+                    value={editing.description}
+                    onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                    placeholder="Description"
+                    aria-label="Description"
+                  />
+                  <p className="text-xs text-navy-700/50">Put a year in the Period (e.g. &ldquo;1998&rdquo;) and it moves to its place by date.</p>
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" disabled={busyId === m.id} onClick={() => void saveEdit()}>
+                      {busyId === m.id ? <Loader2 className="animate-spin" size={13} /> : <Check size={13} />} Save
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" disabled={busyId === m.id} onClick={() => setEditing(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs uppercase tracking-wide text-gold-600">{m.period}</p>
+                  <p className="font-display text-lg text-navy-950">{m.title}</p>
+                  <p className="text-sm text-navy-700/70">{m.description}</p>
+                </>
+              )}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {editing?.id !== m.id ? (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => startEdit(m)}>
+                    <Pencil size={13} /> Edit
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   variant="outline"
@@ -607,7 +689,8 @@ export function TimelineManager({ eventId, initialMilestones, actions = DEFAULT_
               <Trash2 size={16} />
             </button>
           </div>
-        ))}
+          );
+        })}
         {milestones.length === 0 ? (
           <p className="rounded-xl border border-dashed border-navy-950/15 py-16 text-center text-sm text-navy-700/50">
             No milestones yet — add the first one above.

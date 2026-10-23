@@ -74,6 +74,8 @@ export interface TimelineMilestonePhoto {
   /** "YYYY-MM-DDTHH:mm" camera local time, if known. */
   takenAt: string | null;
   fingerprint: string | null;
+  /** Guest who shared it, for "Shared by …"; null for the host's own photos. */
+  contributedBy?: string | null;
 }
 
 /** One time-blocked segment of the event-day run-of-show (see services/event-day.ts). */

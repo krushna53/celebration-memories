@@ -32,6 +32,7 @@ export function MilestonePhotoStrip({
   const slides = [...(coverUrl ? [{ key: "cover", src: coverUrl }] : []), ...photos.map((p) => ({ key: p.id, src: p.url }))];
   const offset = coverUrl ? 1 : 0;
   const hidden = photos.length - VISIBLE;
+  const contributors = [...new Set(photos.map((p) => p.contributedBy).filter((n): n is string => Boolean(n)))];
 
   return (
     <>
@@ -55,6 +56,9 @@ export function MilestonePhotoStrip({
           </li>
         ))}
       </ul>
+      {contributors.length > 0 ? (
+        <p className="mt-2 text-xs text-ivory-100/50">Photos shared by {contributors.join(", ")}</p>
+      ) : null}
       <PhotoSlider
         images={slides}
         visible={index !== null}

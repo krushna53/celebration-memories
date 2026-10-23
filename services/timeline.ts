@@ -2,6 +2,7 @@ import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { publicMediaUrl } from "@/services/uploads";
+import { orderChronologically } from "@/lib/timeline-order";
 import type { TimelineMilestonePhoto, TimelineMilestoneRecord } from "@/types/content";
 
 interface MilestoneRow {
@@ -28,6 +29,7 @@ interface MilestonePhotoRow {
   storage_path: string;
   taken_at: string | null;
   fingerprint: string | null;
+  contributed_by?: string | null;
 }
 
 function mapPhoto(row: MilestonePhotoRow): TimelineMilestonePhoto {
@@ -36,6 +38,7 @@ function mapPhoto(row: MilestonePhotoRow): TimelineMilestonePhoto {
     url: publicMediaUrl("gallery", row.storage_path),
     takenAt: row.taken_at ? row.taken_at.slice(0, 16) : null,
     fingerprint: row.fingerprint,
+    contributedBy: row.contributed_by ?? null,
   };
 }
 
@@ -66,13 +69,14 @@ export async function listMilestones(eventId: string): Promise<TimelineMilestone
     .order("sort_order", { ascending: true });
 
   if (error) throw new Error(`Failed to list milestones: ${error.message}`);
-  const milestones = (data as MilestoneRow[]).map(mapRow);
+  // Always oldest → newest (lib/timeline-order.ts) — every caller (public Timeline, admin, wizard, slideshow) gets the same order.
+  const milestones = orderChronologically((data as MilestoneRow[]).map(mapRow));
   if (milestones.length === 0) return milestones;
 
   // Extra photos are a bonus — if they can't be read, the timeline still renders exactly as before.
   const { data: photoRows, error: photoError } = await supabaseAdmin()
     .from("timeline_milestone_photos")
-    .select("id, milestone_id, event_id, storage_path, taken_at, fingerprint")
+    .select("id, milestone_id, event_id, storage_path, taken_at, fingerprint, contributed_by")
     .eq("event_id", eventId)
     .order("sort_order", { ascending: true })
     .order("taken_at", { ascending: true, nullsFirst: false })
@@ -214,6 +218,8 @@ export interface NewMilestonePhoto {
   lat?: number | null;
   lon?: number | null;
   fingerprint?: string | null;
+  /** Guest who shared it (approved timeline contribution). */
+  contributedBy?: string | null;
 }
 
 /** Adds photos (already uploaded to `path`, checked by the caller) to a milestone after its existing ones. */
@@ -241,6 +247,7 @@ export async function addMilestonePhotos(milestone: TimelineMilestoneRecord, pho
       lat: lat !== null && lon !== null ? lat : null,
       lon: lat !== null && lon !== null ? lon : null,
       fingerprint: cleanFingerprint(p.fingerprint),
+      contributed_by: typeof p.contributedBy === "string" && p.contributedBy.trim() ? p.contributedBy.trim().slice(0, 100) : null,
       sort_order: start + i,
     };
   });

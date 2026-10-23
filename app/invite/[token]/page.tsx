@@ -22,6 +22,8 @@ import { getEventSegment, getSegmentCopy } from "@/lib/event-segment";
 import { getRsvpConfig } from "@/services/rsvp-config";
 import { PoweredByBand } from "@/features/event-landing/powered-by-band";
 import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
+import { TimelineShareCard } from "@/features/timeline-share/timeline-share-card";
+import { areTimelineContributionsEnabled } from "@/services/timeline-contributions";
 
 // Always dynamic: every request must re-check the token and re-log a
 // visit, so this route is never statically generated or cached.
@@ -198,6 +200,11 @@ export default async function InvitePage({ params }: InvitePageProps) {
           <Reveal delay={0.1} className="mt-8">
             <MediaUploadsSection token={token} />
           </Reveal>
+          {(await areTimelineContributionsEnabled(event.id).catch(() => false)) ? (
+            <Reveal delay={0.1} className="mt-8">
+              <TimelineShareCard href={`/events/${event.slug}/timeline/share?t=${encodeURIComponent(token)}`} honoreeName={event.honoreeName} />
+            </Reveal>
+          ) : null}
         </div>
       </div>
       <PoweredByBand eventId={event.id} />

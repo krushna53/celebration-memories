@@ -21,7 +21,8 @@ import {
   type ImportedPhoto,
   type PhotoGroup,
 } from "@/features/admin/timeline/photo-import";
-import { staleDeployMessage, type TimelineActions } from "@/features/admin/timeline/timeline-manager";
+import type { TimelineActions } from "@/features/admin/timeline/timeline-manager";
+import { staleDeployMessage } from "@/lib/stale-deploy";
 import type { TimelinePhotoGroupInput } from "@/types/timeline-import";
 
 const inputClasses =

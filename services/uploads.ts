@@ -481,6 +481,31 @@ export async function createSignedTestimonialPhotoUpload(params: {
 }
 
 /** Same signed-upload pattern, for an optional photo attached to a Timeline milestone (see services/timeline.ts, /admin/timeline). */
+/**
+ * Signed upload for a GUEST's photo contributed to the Timeline
+ * (/events/[slug]/timeline/share). Photos only, guest storage-quota
+ * wording, and its own `contrib-` prefix under the event's timeline
+ * folder so services/timeline-contributions.ts can tell a guest's upload
+ * from anything else. Callers have already resolved the guest's token
+ * and checked the event accepts contributions.
+ */
+export async function createSignedTimelineContributionUpload(params: {
+  eventId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const type = params.contentType.split(";")[0]!.trim().toLowerCase();
+  if (!type.startsWith("image/")) throw new UploadValidationError("Please choose a photo.");
+  const { fileName, contentType } = curatedMediaFile(params.fileName, type, params.fileSize);
+  await ensureEventSpace(params.eventId, params.fileSize, "guest");
+
+  const path = `${params.eventId}/timeline/contrib-${randomUUID()}-${sanitizeFileName(fileName)}`;
+  const { data, error } = await supabaseAdmin().storage.from("gallery").createSignedUploadUrl(path);
+  if (error || !data) throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  return { bucket: "gallery", contentType, path, token: data.token };
+}
+
 export async function createSignedTimelineImageUpload(params: {
   eventId: string;
   fileName: string;
