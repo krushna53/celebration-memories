@@ -95,17 +95,44 @@ export function buildDisplaySlides(params: {
   }
 
   for (const milestone of milestones) {
-    if (milestone.imageUrl && isVideoMedia(milestone.imageUrl)) {
+    // A milestone can carry a cover plus extra photos (timeline_milestone_photos).
+    // The Big Screen used to show only the cover; give every image its own
+    // timeline slide so the full milestone is seen, all with the same period/
+    // title/description for context. Dedupe in case a photo was ever also set
+    // as the cover.
+    const coverIsVideo = Boolean(milestone.imageUrl && isVideoMedia(milestone.imageUrl));
+    const images = [
+      ...(milestone.imageUrl && !coverIsVideo ? [{ key: "cover", url: milestone.imageUrl }] : []),
+      ...(milestone.photos ?? []).map((photo) => ({ key: photo.id, url: photo.url })),
+    ].filter((image, i, all) => Boolean(image.url) && all.findIndex((other) => other.url === image.url) === i);
+
+    if (coverIsVideo && milestone.imageUrl) {
       slides.push({ id: `timeline-${milestone.id}`, kind: "memory-video", url: milestone.imageUrl, authorName: milestone.title, caption: `${milestone.period} — ${milestone.description}` });
+      // Still show the milestone's photos after its video cover.
+    }
+
+    if (images.length === 0) {
+      if (coverIsVideo) continue;
+      slides.push({
+        id: `timeline-${milestone.id}`,
+        kind: "timeline",
+        imageUrl: null,
+        period: milestone.period,
+        title: milestone.title,
+        description: milestone.description,
+      });
       continue;
     }
-    slides.push({
-      id: `timeline-${milestone.id}`,
-      kind: "timeline",
-      imageUrl: milestone.imageUrl,
-      period: milestone.period,
-      title: milestone.title,
-      description: milestone.description,
+
+    images.forEach((image) => {
+      slides.push({
+        id: `timeline-${milestone.id}-${image.key}`,
+        kind: "timeline",
+        imageUrl: image.url,
+        period: milestone.period,
+        title: milestone.title,
+        description: milestone.description,
+      });
     });
   }
 
