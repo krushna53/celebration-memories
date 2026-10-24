@@ -31,6 +31,24 @@ const HOST_STEPS: Record<GameType, string[]> = {
     "Guests tap \"Claim\" the moment they complete a row, column, or diagonal (Line) or their whole card (Full House). The \"Winners\" list here fills in automatically as valid claims come in — only the first valid claim for each prize counts.",
     "Click \"End Game\" when you're finished.",
   ],
+  bubble_pop: [
+    "Enter a title and the magic number (6 for a 6th birthday), and how long a round lasts.",
+    "Click \"Create Game\", then share the link or QR code — kids play on a grown-up's phone.",
+    "Numbered balloons float up; kids tap only the magic number. Wrong taps don't lose points.",
+    "Every round is saved — the leaderboard here shows the highest scores. Kids can play again as often as they like.",
+  ],
+  animal_sounds: [
+    "Enter a title and how many animals per game (8 works well for 6-year-olds).",
+    "Click \"Create Game\", then share the link or QR code. Remind parents to turn the sound up.",
+    "The phone says each animal's sound with its built-in voice, and the child taps the right animal out of 4 pictures.",
+    "The leaderboard here shows the most correct answers (fastest first when tied).",
+  ],
+  memory_match: [
+    "Add photos to your Timeline or Gallery first — the cards are made from them.",
+    "Enter a title and how many pairs (6 pairs = 12 cards suits young kids).",
+    "Click \"Create Game\" — photos are picked automatically. Create another game for a different mix of photos.",
+    "Share the link or QR code. The leaderboard here shows the fastest players.",
+  ],
 };
 
 const GUEST_STEPS: Record<GameType, string[]> = {
@@ -59,12 +77,30 @@ const GUEST_STEPS: Record<GameType, string[]> = {
     "Complete any full row, column, or diagonal for a Line win, or fill your entire card for Full House.",
     "Tap \"Claim\" the moment you complete one — first valid claim for each prize wins it.",
   ],
+  bubble_pop: [
+    "Open the link, type the player's name and a grown-up's phone number.",
+    "Tap only the balloons showing the magic number before they float away.",
+    "When time's up you see your score, and can play again.",
+  ],
+  animal_sounds: [
+    "Open the link, type the player's name and a grown-up's phone number, and turn the sound up.",
+    "Listen to the sound, then tap the animal that makes it. \"Hear it again\" replays it.",
+    "See how many you got right at the end, and play again.",
+  ],
+  memory_match: [
+    "Open the link, type the player's name and a grown-up's phone number.",
+    "Turn over two cards at a time to find matching photos.",
+    "Find every pair as fast as you can.",
+  ],
 };
 
 const GAME_TYPE_LABEL: Record<GameType, string> = {
   word_search: "Word Search",
   housie: "Housie (Tambola)",
   movie_housie: "Movie Name Housie",
+  bubble_pop: "Bubble Pop",
+  animal_sounds: "Animal Sounds",
+  memory_match: "Photo Memory Match",
 };
 
 /**

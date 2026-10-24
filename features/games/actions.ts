@@ -7,6 +7,7 @@ import {
   joinTicketGame,
   getGameCallState,
   claimPrize,
+  getSoloLeaderboard,
 } from "@/services/games";
 import { gamePlayerIdentitySchema } from "@/types/games";
 import type { GameAttemptRecord, GameTicketRecord, GameStatus } from "@/types/games";
@@ -42,9 +43,13 @@ export async function completeGameAttemptAction(
   attemptId: string,
   foundWords: string[],
   durationSeconds: number,
+  score?: number | null,
 ): Promise<PlayActionResult<undefined>> {
   try {
-    await completeGameAttempt(attemptId, { foundWords, durationSeconds });
+    if (!Array.isArray(foundWords) || !Number.isFinite(durationSeconds) || durationSeconds < 0) {
+      return { success: false, error: "Couldn't record your result." };
+    }
+    await completeGameAttempt(attemptId, { foundWords: foundWords.slice(0, 50), durationSeconds: Math.round(durationSeconds), score });
     return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Couldn't record your result." };
@@ -99,5 +104,16 @@ export async function claimPrizeAction(
     return { success: true, data: undefined };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Couldn't submit your claim." };
+  }
+}
+
+/** Resolve access from the share link; expose names and results only. */
+export async function getSoloLeaderboardAction(token: string) {
+  try {
+    const game = await getGameByShareToken(token);
+    if (!game) return { success: false as const, error: "This game link isn't active anymore." };
+    return { success: true as const, data: await getSoloLeaderboard(game) };
+  } catch {
+    return { success: false as const, error: "Couldn't load the scoreboard." };
   }
 }

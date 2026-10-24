@@ -22,9 +22,12 @@ import type {
   GameAttemptRecord,
   GameTicketRecord,
   GameClaimRecord,
-  WordSearchConfig,
   HousieConfig,
   MovieHousieConfig,
+  BubblePopConfig,
+  AnimalSoundsConfig,
+  MemoryMatchConfig,
+  GameConfig,
   GamePlayerIdentity,
   GameStatus,
   GameType,
@@ -52,7 +55,7 @@ interface GameRow {
   event_id: string;
   type: GameType;
   title: string;
-  config: WordSearchConfig | HousieConfig | MovieHousieConfig;
+  config: GameConfig;
   share_token: string;
   is_active: boolean;
   called_items: (number | string)[];
@@ -72,6 +75,7 @@ interface GameAttemptRow {
   completed_at: string | null;
   duration_seconds: number | null;
   found_words: string[];
+  score?: number | null;
   created_at: string;
 }
 
@@ -123,6 +127,7 @@ function mapAttempt(row: GameAttemptRow): GameAttemptRecord {
     completedAt: row.completed_at,
     durationSeconds: row.duration_seconds,
     foundWords: row.found_words,
+    score: row.score ?? null,
     createdAt: row.created_at,
   };
 }
@@ -224,6 +229,54 @@ export async function createMovieHousieGame(eventId: string, input: { title: str
 
   if (error || !data) throw new Error(`Failed to create game: ${error?.message}`);
   return mapGame(data);
+}
+
+/** Shared insert for the solo kids' games — all config, no tickets. */
+async function insertSoloGame(eventId: string, type: GameType, title: string, config: GameConfig): Promise<GameRecord> {
+  const { data, error } = await supabaseAdmin()
+    .from("event_games")
+    .insert({ event_id: eventId, type, title, config, share_token: generateDraftToken() })
+    .select("*")
+    .single<GameRow>();
+  if (error || !data) throw new Error(`Failed to create game: ${error?.message}`);
+  return mapGame(data);
+}
+
+export async function createBubblePopGame(eventId: string, input: { title: string; target: number; seconds: number }): Promise<GameRecord> {
+  const config: BubblePopConfig = { target: input.target, seconds: input.seconds };
+  return insertSoloGame(eventId, "bubble_pop", input.title, config);
+}
+
+export async function createAnimalSoundsGame(eventId: string, input: { title: string; rounds: number }): Promise<GameRecord> {
+  const config: AnimalSoundsConfig = { rounds: input.rounds };
+  return insertSoloGame(eventId, "animal_sounds", input.title, config);
+}
+
+/**
+ * Picks the event's own photos for the cards: Timeline main photos first
+ * (they're the story), then Gallery photos, skipping videos. Stored as
+ * gallery-bucket paths and signed each time the game page loads.
+ */
+export async function createMemoryMatchGame(eventId: string, input: { title: string; pairs: number }): Promise<GameRecord> {
+  const client = supabaseAdmin();
+  const [{ data: milestones, error: timelineError }, { data: gallery, error: galleryError }] = await Promise.all([
+    client.from("timeline_milestones").select("image_path").eq("event_id", eventId).not("image_path", "is", null),
+    client.from("gallery_photos").select("storage_path").eq("event_id", eventId),
+  ]);
+  if (timelineError || galleryError) throw new Error("Couldn't load photos. Please try again.");
+  const isPhoto = (p: string | null | undefined): p is string => Boolean(p) && !/\.(mp4|mov|webm|m4v)$/i.test(p as string);
+  const candidates = [
+    ...((milestones ?? []) as { image_path: string | null }[]).map((m) => m.image_path),
+    ...((gallery ?? []) as { storage_path: string | null }[]).map((g) => g.storage_path),
+  ].filter(isPhoto);
+  const unique = [...new Set(candidates)];
+  if (unique.length < 3) {
+    throw new Error("Add at least 3 photos to your Timeline or Gallery first — the cards are made from them.");
+  }
+  // A different mix each time a game is created, so a second game isn't the same cards.
+  const shuffled = unique.map((p) => ({ p, k: Math.random() })).sort((a, b) => a.k - b.k).map((x) => x.p);
+  const config: MemoryMatchConfig = { photos: shuffled.slice(0, input.pairs) };
+  return insertSoloGame(eventId, "memory_match", input.title, config);
 }
 
 export async function setGameActive(eventId: string, gameId: string, isActive: boolean): Promise<void> {
@@ -358,7 +411,7 @@ export async function startGameAttempt(game: GameRecord, identity: GamePlayerIde
 
 export async function completeGameAttempt(
   attemptId: string,
-  input: { foundWords: string[]; durationSeconds: number },
+  input: { foundWords: string[]; durationSeconds: number; score?: number | null },
 ): Promise<void> {
   const { data: attempt } = await supabaseAdmin().from("game_attempts").select("event_id").eq("id", attemptId).maybeSingle();
   if (!attempt || !await canViewEvent(attempt.event_id)) throw new Error("This event requires access.");
@@ -368,8 +421,13 @@ export async function completeGameAttempt(
       completed_at: new Date().toISOString(),
       duration_seconds: input.durationSeconds,
       found_words: input.foundWords,
+      ...(typeof input.score === "number" && Number.isFinite(input.score)
+        ? { score: Math.max(0, Math.min(10_000, Math.round(input.score))) }
+        : {}),
     })
-    .eq("id", attemptId);
+    .eq("id", attemptId)
+    // An attempt is finished once — replaying starts a new attempt.
+    .is("completed_at", null);
   if (error) throw new Error(`Failed to record completion: ${error.message}`);
 }
 
@@ -481,4 +539,18 @@ export async function claimPrize(gameId: string, ticketId: string, pattern: stri
   }
 
   return { valid: true };
+}
+
+/** Public scoreboard deliberately excludes phone numbers and attempt/guest IDs. */
+export async function getSoloLeaderboard(game: GameRecord) {
+  const points = game.type === "bubble_pop" || game.type === "animal_sounds";
+  let query = supabaseAdmin().from("game_attempts")
+    .select("player_name,score,duration_seconds")
+    .eq("game_id", game.id).not("completed_at", "is", null);
+  if (points) query = query.order("score", { ascending: false, nullsFirst: false });
+  query = query.order("duration_seconds", { ascending: true, nullsFirst: false });
+  if (!points) query = query.order("score", { ascending: true, nullsFirst: false });
+  const { data, error } = await query.limit(10);
+  if (error) throw new Error("Couldn't load the scoreboard.");
+  return (data ?? []).map(row => ({ name: row.player_name as string, score: row.score as number | null, seconds: row.duration_seconds as number | null }));
 }

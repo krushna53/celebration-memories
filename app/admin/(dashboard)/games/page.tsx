@@ -5,7 +5,7 @@ import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectOrganizerAway, shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listEventGames, listGameAttempts, listClaimsForGame, listTicketsForGame } from "@/services/games";
 import { GamesManager } from "@/features/admin/games/games-manager";
-import type { GameAttemptRecord, GameClaimRecord } from "@/types/games";
+import { isCallingGame, type GameAttemptRecord, type GameClaimRecord } from "@/types/games";
 import { NoEventState } from "@/features/admin/components/no-event-state";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ export default async function AdminGamesPage() {
 
   await Promise.all(
     games.map(async (g) => {
-      if (g.type === "word_search") {
+      if (!isCallingGame(g.type)) {
         attemptsByGame[g.id] = await listGameAttempts(g.id);
       } else {
         const [claims, tickets] = await Promise.all([listClaimsForGame(g.id), listTicketsForGame(g.id)]);

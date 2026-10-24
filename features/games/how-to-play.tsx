@@ -35,6 +35,33 @@ const INSTRUCTIONS: Record<GameType, { title: string; steps: string[] }> = {
       "Tap the prize to claim it the moment you complete it — first valid claim wins.",
     ],
   },
+  bubble_pop: {
+    title: "How to Play — Bubble Pop",
+    steps: [
+      "Type the player's name and a grown-up's phone number, then tap Let's play.",
+      "Balloons with numbers float up the screen.",
+      "Tap only the balloons with the magic number at the top — each one is a star!",
+      "Other numbers just wobble. Pop as many as you can before the time runs out.",
+    ],
+  },
+  animal_sounds: {
+    title: "How to Play — Guess the Animal Sound",
+    steps: [
+      "Type the player's name and a grown-up's phone number, then tap Let's play.",
+      "Turn the phone's sound up! The phone makes an animal's sound.",
+      "Tap the animal that makes that sound. Tap “Hear it again” as many times as you like.",
+      "Get as many right as you can — each one is a star.",
+    ],
+  },
+  memory_match: {
+    title: "How to Play — Photo Memory Match",
+    steps: [
+      "Type the player's name and a grown-up's phone number, then tap Let's play.",
+      "Tap two cards to turn them over.",
+      "If the photos match, they stay face up. If not, they flip back — try to remember where they were!",
+      "Find all the pairs as fast as you can.",
+    ],
+  },
 };
 
 export function HowToPlay({ type }: { type: GameType }) {

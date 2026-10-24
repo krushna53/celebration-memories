@@ -9,13 +9,16 @@ import {
   createWordSearchGameAction,
   createHousieGameAction,
   createMovieHousieGameAction,
+  createBubblePopGameAction,
+  createAnimalSoundsGameAction,
+  createMemoryMatchGameAction,
   setGameActiveAction,
   setGameStatusAction,
   callNextItemAction,
   deleteGameAction,
 } from "@/features/admin/games/actions";
 import { AdminHowToPlay } from "@/features/admin/games/admin-how-to-play";
-import type { GameRecord, GameAttemptRecord, GameClaimRecord, GameType } from "@/types/games";
+import { isCallingGame, type GameRecord, type GameAttemptRecord, type GameClaimRecord, type GameType } from "@/types/games";
 
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
@@ -24,7 +27,29 @@ const GAME_TYPE_LABEL: Record<GameType, string> = {
   word_search: "Word Search",
   housie: "Housie (Tambola)",
   movie_housie: "Movie Name Housie",
+  bubble_pop: "Bubble Pop",
+  animal_sounds: "Animal Sounds",
+  memory_match: "Photo Memory Match",
 };
+
+/** Ranks a solo game's finished attempts best-first, and says how to show each one. */
+function rankAttempts(type: GameType, attempts: GameAttemptRecord[]) {
+  const done = attempts.filter((a) => a.completedAt);
+  const time = (a: GameAttemptRecord) => a.durationSeconds ?? Number.MAX_SAFE_INTEGER;
+  if (type === "bubble_pop" || type === "animal_sounds") {
+    // Most points first; quicker wins a tie.
+    return done.sort((a, b) => (b.score ?? 0) - (a.score ?? 0) || time(a) - time(b));
+  }
+  // Word Search and Memory Match: fastest first (fewer moves breaks a tie).
+  return done.sort((a, b) => time(a) - time(b) || (a.score ?? 0) - (b.score ?? 0));
+}
+
+function attemptLabel(type: GameType, a: GameAttemptRecord): string {
+  if (type === "bubble_pop") return `⭐ ${a.score ?? 0} balloons`;
+  if (type === "animal_sounds") return `⭐ ${a.score ?? 0} right · ${formatDuration(a.durationSeconds ?? 0)}`;
+  if (type === "memory_match") return `${formatDuration(a.durationSeconds ?? 0)} · ${a.score ?? 0} moves`;
+  return formatDuration(a.durationSeconds ?? 0);
+}
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -53,6 +78,10 @@ export function GamesManager({
   const [title, setTitle] = useState("");
   const [wordsText, setWordsText] = useState("");
   const [poolText, setPoolText] = useState("");
+  const [target, setTarget] = useState("6");
+  const [seconds, setSeconds] = useState("45");
+  const [rounds, setRounds] = useState("8");
+  const [pairs, setPairs] = useState("6");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -71,7 +100,13 @@ export function GamesManager({
         ? await createWordSearchGameAction(eventId, { title, wordsText })
         : tab === "housie"
           ? await createHousieGameAction(eventId, { title })
-          : await createMovieHousieGameAction(eventId, { title, poolText });
+          : tab === "bubble_pop"
+            ? await createBubblePopGameAction(eventId, { title, target, seconds })
+            : tab === "animal_sounds"
+              ? await createAnimalSoundsGameAction(eventId, { title, rounds })
+              : tab === "memory_match"
+                ? await createMemoryMatchGameAction(eventId, { title, pairs })
+                : await createMovieHousieGameAction(eventId, { title, poolText });
     setCreating(false);
     if (result.success) {
       setGames((prev) => [result.data, ...prev]);
@@ -83,7 +118,7 @@ export function GamesManager({
 
   return (
     <div>
-      <div className="flex gap-2 border-b border-navy-950/10">
+      <div className="flex gap-2 overflow-x-auto border-b border-navy-950/10 [scrollbar-width:none]">
         {(Object.keys(GAME_TYPE_LABEL) as GameType[]).map((t) => (
           <button
             key={t}
@@ -92,7 +127,7 @@ export function GamesManager({
               setTab(t);
               setCreateError(null);
             }}
-            className={`border-b-2 px-3 py-2 text-sm font-medium transition-luxury duration-200 ${
+            className={`shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-luxury duration-200 ${
               tab === t ? "border-gold-500 text-navy-950" : "border-transparent text-navy-700/50 hover:text-navy-700"
             }`}
           >
@@ -112,7 +147,13 @@ export function GamesManager({
             ? "Guests drag to find hidden words, racing against the clock — full rules are shown to them automatically."
             : tab === "housie"
               ? "Classic Tambola: guests get a numbered ticket, you call numbers live, they claim prizes as they complete them — full rules are shown to them automatically."
-              : "Guests get a 5x5 card of movie names instead of numbers — same calling/claiming flow as Housie. Full rules are shown to them automatically."}
+              : tab === "bubble_pop"
+                ? "For little ones: numbered balloons float up and kids tap only the magic number. Score after each round."
+                : tab === "animal_sounds"
+                  ? "For little ones: the phone says an animal's sound, kids tap the matching animal out of 4 pictures. Sound on!"
+                  : tab === "memory_match"
+                    ? "Flip cards to find pairs of your own photos (taken from your Timeline and Gallery). Fastest wins."
+                    : "Guests get a 5x5 card of movie names instead of numbers — same calling/claiming flow as Housie. Full rules are shown to them automatically."}
         </p>
         <input
           value={title}
@@ -138,6 +179,30 @@ export function GamesManager({
             Uses the standard 1-90 numbered ticket — no extra setup needed. You&rsquo;ll call numbers live from this
             page once guests have joined.
           </p>
+        ) : null}
+        {tab === "bubble_pop" ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="text-xs text-navy-700/70">
+              Magic number (1–9)
+              <input type="number" min={1} max={9} value={target} onChange={(e) => setTarget(e.target.value)} className={inputClasses} />
+            </label>
+            <label className="text-xs text-navy-700/70">
+              Seconds per round
+              <input type="number" min={20} max={120} value={seconds} onChange={(e) => setSeconds(e.target.value)} className={inputClasses} />
+            </label>
+          </div>
+        ) : null}
+        {tab === "animal_sounds" ? (
+          <label className="text-xs text-navy-700/70">
+            Animals per game (4–12)
+            <input type="number" min={4} max={12} value={rounds} onChange={(e) => setRounds(e.target.value)} className={inputClasses} />
+          </label>
+        ) : null}
+        {tab === "memory_match" ? (
+          <label className="text-xs text-navy-700/70">
+            Pairs of photos (3–8 — 6 pairs is 12 cards)
+            <input type="number" min={3} max={8} value={pairs} onChange={(e) => setPairs(e.target.value)} className={inputClasses} />
+          </label>
         ) : null}
         {tab === "movie_housie" ? (
           <textarea
@@ -212,8 +277,8 @@ function GameCard({
   }, []);
 
   const link = origin ? `${origin}/games/${game.shareToken}` : "";
-  const completed = attempts.filter((a) => a.completedAt);
-  const isCallingGame = game.type === "housie" || game.type === "movie_housie";
+  const completed = rankAttempts(game.type, attempts);
+  const isCalling = isCallingGame(game.type);
   const patterns = game.type === "housie" ? HOUSIE_PATTERNS : MOVIE_PATTERNS;
 
   function copy() {
@@ -288,9 +353,20 @@ function GameCard({
           <p className="font-medium text-navy-950">{game.title}</p>
           <p className="text-xs text-navy-700/50">
             {GAME_TYPE_LABEL[game.type]} &middot;{" "}
-            {isCallingGame ? `${ticketCount} joined` : `${game.config && "words" in game.config ? game.config.words.length : 0} words`} &middot;{" "}
-            {isCallingGame ? "" : `${completed.length} completed`}
-            {isCallingGame ? (
+            {isCalling
+              ? `${ticketCount} joined`
+              : game.type === "word_search"
+                ? `${game.config && "words" in game.config ? game.config.words.length : 0} words`
+                : game.type === "bubble_pop" && "target" in game.config
+                  ? `Magic number ${game.config.target}`
+                  : game.type === "memory_match" && "photos" in game.config
+                    ? `${game.config.photos.length} pairs`
+                    : game.type === "animal_sounds" && "rounds" in game.config
+                      ? `${game.config.rounds} animals`
+                      : ""}{" "}
+            &middot;{" "}
+            {isCalling ? "" : `${completed.length} played`}
+            {isCalling ? (
               <span className={game.status === "live" ? "text-emerald-600" : game.status === "ended" ? "text-navy-700/40" : "text-gold-600"}>
                 {game.status === "live" ? "Live" : game.status === "ended" ? "Ended" : "Waiting to start"}
               </span>
@@ -346,7 +422,7 @@ function GameCard({
             </button>
           </div>
 
-          {!isCallingGame && completed.length > 0 ? (
+          {!isCalling && completed.length > 0 ? (
             <div className="mt-3">
               <p className="flex items-center gap-1.5 text-xs font-medium text-navy-700/70">
                 <Trophy size={12} className="text-gold-500" /> Leaderboard
@@ -357,14 +433,14 @@ function GameCard({
                     <span>
                       {i + 1}. {a.playerName}
                     </span>
-                    <span className="text-navy-700/50">{formatDuration(a.durationSeconds ?? 0)}</span>
+                    <span className="text-navy-700/50">{attemptLabel(game.type, a)}</span>
                   </li>
                 ))}
               </ol>
             </div>
           ) : null}
 
-          {isCallingGame ? (
+          {isCalling ? (
             <div className="mt-3">
               <div className="flex flex-wrap items-center gap-2">
                 {game.status === "waiting" ? (

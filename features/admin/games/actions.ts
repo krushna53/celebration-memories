@@ -7,6 +7,9 @@ import {
   createWordSearchGame,
   createHousieGame,
   createMovieHousieGame,
+  createBubblePopGame,
+  createAnimalSoundsGame,
+  createMemoryMatchGame,
   setGameActive,
   setGameStatus,
   deleteGame,
@@ -16,6 +19,9 @@ import {
   createWordSearchFormSchema,
   createHousieFormSchema,
   createMovieHousieFormSchema,
+  createBubblePopFormSchema,
+  createAnimalSoundsFormSchema,
+  createMemoryMatchFormSchema,
 } from "@/types/games";
 import type { GameRecord, GameStatus } from "@/types/games";
 
@@ -78,6 +84,45 @@ export async function createMovieHousieGameAction(
       title: parsed.data.title,
       pool: splitLines(parsed.data.poolText),
     });
+    revalidatePath("/admin/games");
+    return { success: true, data: game };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to create game." };
+  }
+}
+
+export async function createBubblePopGameAction(eventId: string, values: unknown): Promise<GameActionResult<GameRecord>> {
+  try {
+    await requireAdminForEvent(eventId);
+    const parsed = createBubblePopFormSchema.safeParse(values);
+    if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Please check the form and try again." };
+    const game = await createBubblePopGame(eventId, parsed.data);
+    revalidatePath("/admin/games");
+    return { success: true, data: game };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to create game." };
+  }
+}
+
+export async function createAnimalSoundsGameAction(eventId: string, values: unknown): Promise<GameActionResult<GameRecord>> {
+  try {
+    await requireAdminForEvent(eventId);
+    const parsed = createAnimalSoundsFormSchema.safeParse(values);
+    if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Please check the form and try again." };
+    const game = await createAnimalSoundsGame(eventId, parsed.data);
+    revalidatePath("/admin/games");
+    return { success: true, data: game };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Failed to create game." };
+  }
+}
+
+export async function createMemoryMatchGameAction(eventId: string, values: unknown): Promise<GameActionResult<GameRecord>> {
+  try {
+    await requireAdminForEvent(eventId);
+    const parsed = createMemoryMatchFormSchema.safeParse(values);
+    if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Please check the form and try again." };
+    const game = await createMemoryMatchGame(eventId, parsed.data);
     revalidatePath("/admin/games");
     return { success: true, data: game };
   } catch (err) {

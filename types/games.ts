@@ -1,7 +1,14 @@
 import { z } from "zod";
 import type { HousieTicket, MovieTicket, HousiePattern, MoviePattern } from "@/lib/housie";
 
-export type GameType = "word_search" | "housie" | "movie_housie";
+export type GameType = "word_search" | "housie" | "movie_housie" | "bubble_pop" | "animal_sounds" | "memory_match";
+
+/** Solo, timed games recorded as game_attempts (vs. the multiplayer "calling" games housie/movie_housie). */
+export const SOLO_GAME_TYPES: readonly GameType[] = ["word_search", "bubble_pop", "animal_sounds", "memory_match"];
+
+export function isCallingGame(type: GameType): boolean {
+  return type === "housie" || type === "movie_housie";
+}
 export type GameStatus = "waiting" | "live" | "ended";
 
 export interface WordSearchConfig {
@@ -19,14 +26,36 @@ export interface MovieHousieConfig {
   patterns: MoviePattern[];
 }
 
-export type GameConfig = WordSearchConfig | HousieConfig | MovieHousieConfig;
+/** Tap the balloons showing `target` before they float away. */
+export interface BubblePopConfig {
+  target: number;
+  seconds: number;
+}
+
+/** The phone says an animal's sound; tap the matching animal out of 4. */
+export interface AnimalSoundsConfig {
+  rounds: number;
+}
+
+/** Flip cards to find pairs of the event's own photos. `photos` are gallery-bucket storage paths, signed when the page loads. */
+export interface MemoryMatchConfig {
+  photos: string[];
+}
+
+export type GameConfig =
+  | WordSearchConfig
+  | HousieConfig
+  | MovieHousieConfig
+  | BubblePopConfig
+  | AnimalSoundsConfig
+  | MemoryMatchConfig;
 
 export interface GameRecord {
   id: string;
   eventId: string;
   type: GameType;
   title: string;
-  config: WordSearchConfig | HousieConfig | MovieHousieConfig;
+  config: GameConfig;
   shareToken: string;
   isActive: boolean;
   calledItems: (number | string)[];
@@ -46,6 +75,8 @@ export interface GameAttemptRecord {
   completedAt: string | null;
   durationSeconds: number | null;
   foundWords: string[];
+  /** Points (Bubble Pop, Animal Sounds) or moves (Memory Match); null for Word Search. */
+  score: number | null;
   createdAt: string;
 }
 
@@ -103,3 +134,19 @@ export const gamePlayerIdentitySchema = z.object({
   phone: z.string().trim().min(7, "Please enter a valid phone number.").max(20),
 });
 export type GamePlayerIdentity = z.infer<typeof gamePlayerIdentitySchema>;
+
+export const createBubblePopFormSchema = z.object({
+  title: z.string().trim().min(1, "Please add a title.").max(120),
+  target: z.coerce.number().int().min(1, "Pick a number from 1 to 9.").max(9, "Pick a number from 1 to 9."),
+  seconds: z.coerce.number().int().min(20).max(120),
+});
+
+export const createAnimalSoundsFormSchema = z.object({
+  title: z.string().trim().min(1, "Please add a title.").max(120),
+  rounds: z.coerce.number().int().min(4).max(12),
+});
+
+export const createMemoryMatchFormSchema = z.object({
+  title: z.string().trim().min(1, "Please add a title.").max(120),
+  pairs: z.coerce.number().int().min(3).max(8),
+});
