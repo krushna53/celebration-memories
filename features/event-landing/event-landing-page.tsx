@@ -1,5 +1,6 @@
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listMilestones } from "@/services/timeline";
+import { canSeePrivatePhotos } from "@/services/event-access";
 import { toEventDisplayData } from "@/lib/event-display";
 import { resolveTemplate } from "@/lib/templates";
 import { CustomCssBlock } from "@/features/event-landing/custom-css-block";
@@ -29,9 +30,11 @@ export async function EventLandingPage({ event, templateOverride }: EventLanding
 
   if (event) {
     try {
+      // Private event + anonymous visitor → public gallery photos and timeline covers only.
+      const full = await canSeePrivatePhotos(event.id);
       [galleryPhotos, milestones] = await Promise.all([
-        listGalleryPhotos(event.id),
-        listMilestones(event.id),
+        listGalleryPhotos(event.id, { publicOnly: !full }),
+        listMilestones(event.id, { coversOnly: !full }),
       ]);
     } catch (err) {
       console.error("EventLandingPage failed to load gallery/timeline:", err);

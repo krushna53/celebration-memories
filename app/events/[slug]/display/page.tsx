@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { getEventBySlug } from "@/services/events";
 import { listGalleryPhotos } from "@/services/gallery-photos";
 import { listMilestones } from "@/services/timeline";
+import { canSeePrivatePhotos } from "@/services/event-access";
 import { getMemoryWallItems } from "@/services/memory-wall";
 import { publicMediaUrl } from "@/services/uploads";
 import { buildDisplaySlides } from "@/lib/build-display-slides";
@@ -53,9 +54,11 @@ export default async function BigScreenDisplayPage({ params }: BigScreenDisplayP
     notFound();
   }
 
+  // Same photo set as the event page for this viewer — see seesPrivatePhotos.
+  const full = await canSeePrivatePhotos(event.id).catch(() => false);
   const [galleryPhotos, milestones, memories, musicUrl] = await Promise.all([
-    listGalleryPhotos(event.id).catch(() => []),
-    listMilestones(event.id).catch(() => []),
+    listGalleryPhotos(event.id, { publicOnly: !full }).catch(() => []),
+    listMilestones(event.id, { coversOnly: !full }).catch(() => []),
     getMemoryWallItems(event.id, 100).catch(() => []),
     getDisplayMusicUrl(event.id),
   ]);

@@ -61,7 +61,8 @@ function mapRow(row: MilestoneRow): TimelineMilestoneRecord {
   };
 }
 
-export async function listMilestones(eventId: string): Promise<TimelineMilestoneRecord[]> {
+/** `coversOnly`: each milestone's cover photo but none of its extra photos — what an anonymous visitor of a private event sees (seesPrivatePhotos). */
+export async function listMilestones(eventId: string, options: { coversOnly?: boolean } = {}): Promise<TimelineMilestoneRecord[]> {
   const { data, error } = await supabaseAdmin()
     .from("timeline_milestones")
     .select("*")
@@ -72,6 +73,7 @@ export async function listMilestones(eventId: string): Promise<TimelineMilestone
   // Always oldest → newest (lib/timeline-order.ts) — every caller (public Timeline, admin, wizard, slideshow) gets the same order.
   const milestones = orderChronologically((data as MilestoneRow[]).map(mapRow));
   if (milestones.length === 0) return milestones;
+  if (options.coversOnly) return milestones.map((m) => ({ ...m, photos: [] }));
 
   // Extra photos are a bonus — if they can't be read, the timeline still renders exactly as before.
   const { data: photoRows, error: photoError } = await supabaseAdmin()

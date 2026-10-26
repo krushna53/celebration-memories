@@ -76,10 +76,11 @@ async function requireAdminForPhoto(id: string) {
 
 export async function updateGalleryPhotoAction(
   id: string,
-  input: { category?: GalleryCategory; caption?: string | null },
+  input: { category?: GalleryCategory; caption?: string | null; isPublic?: boolean },
 ) {
   try {
     const { admin, photo } = await requireAdminForPhoto(id);
+    if (input.isPublic !== undefined && typeof input.isPublic !== "boolean") throw new Error("Invalid visibility.");
     await snapshotGallery(photo.eventId, admin.id).catch((err) => console.error("snapshotGallery failed:", err));
     await updateGalleryPhoto(id, input);
     revalidateGalleryPaths();

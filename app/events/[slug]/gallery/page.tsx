@@ -11,6 +11,7 @@ import { buildEventMetadata } from "@/lib/event-metadata";
 import { getEventBySlug } from "@/services/events";
 import { publicMediaUrl } from "@/services/uploads";
 import { listGalleryPhotos } from "@/services/gallery-photos";
+import { canSeePrivatePhotos } from "@/services/event-access";
 import { listGuestGalleryPhotos } from "@/services/gallery-story";
 import { TemplateThemeWrapper } from "@/templates/shared/template-theme-wrapper";
 import type { EventRecord } from "@/types/event";
@@ -73,8 +74,9 @@ export default async function EventGalleryPage({ params, searchParams }: Gallery
   // A taken-down page stays taken down — the event page decides what to show.
   if (event.pageStatus === "unpublished") redirect(eventHref);
 
+  const full = await canSeePrivatePhotos(event.id).catch(() => false);
   const [photos, guestPhotos] = await Promise.all([
-    listGalleryPhotos(event.id).catch(() => []),
+    listGalleryPhotos(event.id, { publicOnly: !full }).catch(() => []),
     listGuestGalleryPhotos(event.id, GUEST_PHOTO_LIMIT).catch(() => []),
   ]);
 

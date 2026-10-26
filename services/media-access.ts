@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { eventPermissions, supportExpiry } from "@/services/event-access";
+import { eventPermissions, seesPrivatePhotos, supportExpiry } from "@/services/event-access";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -43,7 +43,8 @@ export async function authorizeMedia(bucket: string, path: string, support = fal
   }
   if (bucket === "gallery") {
     const results = await Promise.all([
-      db.from("gallery_photos").select("id").eq("event_id", eventId).eq("storage_path", path).is("deleted_at", null).limit(1),
+      // "*" not "id,is_public": works before and after migration 20261026120000.
+      db.from("gallery_photos").select("*").eq("event_id", eventId).eq("storage_path", path).is("deleted_at", null).limit(1),
       db.from("timeline_milestones").select("id").eq("event_id", eventId).eq("image_path", path).limit(1),
       // card_artwork_path: the banner image under the hero title (services/card-artwork.ts);
       // payment_details_image_path: the Payment Details section's image, e.g. a QR code (services/payment-details.ts).
@@ -51,9 +52,16 @@ export async function authorizeMedia(bucket: string, path: string, support = fal
     ]);
     if (results.some(r => r.error)) return null;
     const assets = results[2].data;
-    if (results[0].data?.length || results[1].data?.length || (assets && Object.values(assets).includes(path))) {
+    if (results[1].data?.length || (assets && Object.values(assets).includes(path))) {
       return { ttl: 60, eventId, support: false };
     }
+    // Hidden from anonymous visitors of a private event: Gallery photos marked
+    // "Guests only" and every Timeline photo except the covers above.
+    const galleryRows = (results[0].data ?? []) as { is_public?: boolean }[];
+    if (galleryRows.some(row => row.is_public !== false)) return { ttl: 60, eventId, support: false };
+    const { data: extra, error: extraError } = await db.from("timeline_milestone_photos").select("id").eq("event_id", eventId).eq("storage_path", path).limit(1);
+    if (extraError) return null;
+    if ((galleryRows.length || extra?.length) && await seesPrivatePhotos(permissions)) return { ttl: 60, eventId, support: false };
   }
   const publishedJobs = bucket === "gallery" ? ["slideshow_video_jobs", "ai_video_jobs", "ai_image_jobs"] : bucket === "videos" ? ["guest_reels", "timeline_movie_jobs"] : [];
   for (const table of publishedJobs) {

@@ -10,6 +10,8 @@ export interface GalleryPhotoRecord {
   createdAt: string;
   /** True once a scanned print has been cropped/enhanced — the original is kept for "Revert" (gallery_photos.original_storage_path). */
   cleaned?: boolean;
+  /** Shown to anonymous visitors of a private event (gallery_photos.is_public). Signed-in viewers and invited guests always see every photo. */
+  isPublic?: boolean;
 }
 
 /** "Then & Now": an old gallery photo paired with a recent one (gallery_pairs). */

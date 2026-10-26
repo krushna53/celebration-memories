@@ -73,7 +73,7 @@ export async function draftDeleteGalleryPhotoAction(token: string, id: string) {
 export async function draftUpdateGalleryPhotoAction(
   token: string,
   id: string,
-  input: { category?: GalleryCategory; caption?: string | null },
+  input: { category?: GalleryCategory; caption?: string | null; isPublic?: boolean },
 ) {
   try {
     const event = await requireDraftEvent(token);
@@ -84,6 +84,7 @@ export async function draftUpdateGalleryPhotoAction(
     await updateGalleryPhoto(id, {
       category: input.category,
       caption: input.caption === undefined ? undefined : input.caption?.trim().slice(0, 200) || null,
+      isPublic: typeof input.isPublic === "boolean" ? input.isPublic : undefined,
     });
     return { success: true as const };
   } catch (err) {

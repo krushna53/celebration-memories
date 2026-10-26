@@ -34,6 +34,7 @@ export default async function AdminGalleryPage() {
           initialPairs={pairs}
           aiAutoTagAvailable={AI_GALLERY_TAGGER_CONFIGURED}
           chapterTitles={event.galleryChapterTitles}
+          eventIsPrivate={event.visibility === "private"}
         />
       </div>
     </div>

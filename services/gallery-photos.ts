@@ -15,6 +15,8 @@ interface GalleryPhotoRow {
   caption: string | null;
   sort_order: number;
   created_at: string;
+  /** Missing until migration 20261026120000 is applied — treated as public. */
+  is_public?: boolean;
 }
 
 function mapRow(row: GalleryPhotoRow): GalleryPhotoRecord {
@@ -27,6 +29,7 @@ function mapRow(row: GalleryPhotoRow): GalleryPhotoRecord {
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     cleaned: row.original_storage_path !== null,
+    isPublic: row.is_public !== false,
   };
 }
 
@@ -53,7 +56,8 @@ export async function setGalleryPhotoFile(id: string, storagePath: string, origi
   if (error) throw new Error(`Failed to update gallery photo file: ${error.message}`);
 }
 
-export async function listGalleryPhotos(eventId: string): Promise<GalleryPhotoRecord[]> {
+/** `publicOnly`: just the photos marked public — what an anonymous visitor of a private event sees (seesPrivatePhotos). */
+export async function listGalleryPhotos(eventId: string, options: { publicOnly?: boolean } = {}): Promise<GalleryPhotoRecord[]> {
   const { data, error } = await supabaseAdmin()
     .from("gallery_photos")
     .select("*")
@@ -63,7 +67,8 @@ export async function listGalleryPhotos(eventId: string): Promise<GalleryPhotoRe
     .order("sort_order", { ascending: true });
 
   if (error) throw new Error(`Failed to list gallery photos: ${error.message}`);
-  return (data as GalleryPhotoRow[]).map(mapRow);
+  const photos = (data as GalleryPhotoRow[]).map(mapRow);
+  return options.publicOnly ? photos.filter((photo) => photo.isPublic) : photos;
 }
 
 /** One representative photo for an event card (e.g. the /events directory). */
@@ -116,9 +121,10 @@ export async function countGalleryPhotos(eventId: string): Promise<number> {
 
 export async function updateGalleryPhoto(
   id: string,
-  input: { category?: GalleryCategory; caption?: string | null; sortOrder?: number },
+  input: { category?: GalleryCategory; caption?: string | null; sortOrder?: number; isPublic?: boolean },
 ): Promise<void> {
   const patch: Record<string, unknown> = {};
+  if (input.isPublic !== undefined) patch.is_public = input.isPublic;
   if (input.category !== undefined) patch.category = input.category;
   if (input.caption !== undefined) patch.caption = input.caption;
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;

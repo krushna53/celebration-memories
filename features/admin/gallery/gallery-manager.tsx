@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Check, CheckCircle2, GripVertical, Loader2, Pencil, RotateCcw, Sparkles, Trash2, Upload, X } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, Eye, EyeOff, GripVertical, Loader2, Pencil, RotateCcw, Sparkles, Trash2, Upload, X } from "lucide-react";
 
 import { CURATED_MEDIA_ACCEPT, isVideoMedia } from "@/lib/curated-media";
 import { cn } from "@/lib/utils";
@@ -201,6 +201,8 @@ interface GalleryManagerProps {
   chapterTitles?: Record<string, string> | null;
   /** Same names as `chapterTitles`, used only as labels (no rename panel) — for the /start wizard, e.g. a corporate draft's "Keynotes & Sessions". */
   chapterLabels?: Record<string, string> | null;
+  /** events.visibility === "private" — explains the per-photo Public / Guests only toggle (it only matters then). */
+  eventIsPrivate?: boolean;
 }
 
 type CategoryOption = { value: GalleryCategory; label: string };
@@ -310,7 +312,7 @@ function CategoryGrid({
   onDelete: (id: string) => void;
   updatePhoto: GalleryActions["updatePhoto"];
   /** Lifts an edit to the parent — a category change moves the photo to another grid. */
-  onUpdated: (id: string, patch: { caption: string; category: GalleryCategory }) => void;
+  onUpdated: (id: string, patch: { caption?: string; category?: GalleryCategory; isPublic?: boolean }) => void;
   /** Photos the AI sorted/captioned in this session — get an "Auto" badge until the page reloads. */
   autoTaggedIds: ReadonlySet<string>;
 }) {
@@ -318,6 +320,22 @@ function CategoryGrid({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [visibilityBusyId, setVisibilityBusyId] = useState<string | null>(null);
+
+  /** Public = anonymous visitors of a private event see it too; Guests only = signed-in viewers and invited guests. */
+  async function toggleVisibility(photo: GalleryPhotoRecord) {
+    const isPublic = photo.isPublic === false;
+    setVisibilityBusyId(photo.id);
+    setSaveError(null);
+    const result = await updatePhoto(photo.id, { isPublic });
+    setVisibilityBusyId(null);
+    if (!result.success) {
+      setSaveError(result.error);
+      return;
+    }
+    setPhotos((prev) => prev.map((p) => (p.id === photo.id ? { ...p, isPublic } : p)));
+    onUpdated(photo.id, { isPublic });
+  }
 
   // DnD state
   const dragIdx = useRef<number | null>(null);
@@ -425,6 +443,21 @@ function CategoryGrid({
 
               {/* Edit / Delete buttons */}
               <div className="flex items-center justify-end gap-2 border-t border-navy-950/10 bg-white p-2">
+                <button
+                  type="button"
+                  onClick={() => toggleVisibility(photo)}
+                  disabled={visibilityBusyId === photo.id}
+                  title={photo.isPublic === false ? "Guests only — hidden from visitors who aren't signed in or invited. Tap to make public." : "Public — anyone with the link sees it. Tap to show to guests only."}
+                  aria-label={photo.isPublic === false ? "Guests only. Make public" : "Public. Show to guests only"}
+                  aria-pressed={photo.isPublic === false}
+                  className={cn(
+                    "mr-auto inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium ring-1 ring-inset transition-luxury duration-200 disabled:opacity-50",
+                    photo.isPublic === false ? "bg-navy-950 text-ivory-100 ring-navy-950" : "bg-white text-navy-700 ring-navy-950/20 hover:ring-navy-950/50",
+                  )}
+                >
+                  {visibilityBusyId === photo.id ? <Loader2 size={14} className="animate-spin" /> : photo.isPublic === false ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {photo.isPublic === false ? "Guests only" : "Public"}
+                </button>
                 <button
                   type="button"
                   onClick={() => setEditingId(editingId === photo.id ? null : photo.id)}
@@ -588,6 +621,7 @@ export function GalleryManager({
   aiAutoTagAvailable = false,
   chapterTitles,
   chapterLabels,
+  eventIsPrivate = false,
 }: GalleryManagerProps) {
   const [titles, setTitles] = useState<Record<string, string> | null>(chapterTitles ?? chapterLabels ?? null);
   // Categories under this event's own names, everywhere in the manager.
@@ -734,7 +768,7 @@ export function GalleryManager({
     void runJobs(failed.map((j) => ({ ...j, status: "waiting" as const, error: undefined })));
   }
 
-  function handlePhotoUpdated(id: string, patch: { caption: string; category: GalleryCategory }) {
+  function handlePhotoUpdated(id: string, patch: { caption?: string; category?: GalleryCategory; isPublic?: boolean }) {
     setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   }
 
@@ -862,6 +896,13 @@ export function GalleryManager({
         {actions === DEFAULT_ACTIONS ? " Deleted items can be restored from the Recycle Bin for 30 days." : ""}
         Drag the <GripVertical size={11} className="inline" /> handle on any photo to reorder within its category.
         The same order appears on the Big Screen display.
+      </p>
+      <p className="mt-2 text-xs text-navy-700/60">
+        <Eye size={11} className="inline" /> <strong>Public</strong> photos are shown to everyone;{" "}
+        <EyeOff size={11} className="inline" /> <strong>Guests only</strong> photos are shown only to people who are signed in or opened their invite link.
+        {eventIsPrivate
+          ? " This event is private, so visitors who aren't signed in also see only the cover photo of each Timeline moment."
+          : " This only takes effect while the event is private (Event Settings → Visibility)."}
       </p>
 
       {/* Per-category draggable grids */}

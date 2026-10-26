@@ -1,4 +1,5 @@
 import "server-only";
+import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -6,18 +7,20 @@ export type ViewingAccess = "public" | "signed_in" | "invited_only";
 export interface EventAccess {
   id: string; slug: string; status: string; page_status: string;
   public_access_pinned: boolean; viewing_access: ViewingAccess; owner_user_id: string | null;
+  /** "private" = unlisted; anonymous visitors then see only the event's public photos (seesPrivatePhotos). */
+  visibility: "public" | "private";
 }
 
 export async function getEventAccess(eventId: string): Promise<EventAccess | null> {
   const { data, error } = await supabaseAdmin().from("events")
-    .select("id,slug,status,page_status,viewing_access,owner_user_id,public_access_pinned").eq("id", eventId).maybeSingle<EventAccess>();
+    .select("id,slug,status,page_status,viewing_access,owner_user_id,public_access_pinned,visibility").eq("id", eventId).maybeSingle<EventAccess>();
   if (error) throw new Error("Event privacy could not be checked.");
   return data;
 }
 
 export async function eventPermissions(eventId: string) {
   const event = await getEventAccess(eventId);
-  if (!event) return { event, userId: null, view: false, manage: false, owner: false, platformAdmin: false };
+  if (!event) return { event, userId: null, signedIn: false, view: false, manage: false, owner: false, platformAdmin: false };
   const { data: { user } } = await (await supabaseServer()).auth.getUser();
   let platformAdmin = false;
   let member = false;
@@ -43,7 +46,41 @@ export async function eventPermissions(eventId: string) {
       view = !!data?.length;
     }
   }
-  return { event, userId: user?.id ?? null, view, manage, owner, platformAdmin };
+  return { event, userId: user?.id ?? null, signedIn: !!user && !user.is_anonymous, view, manage, owner, platformAdmin };
+}
+
+export type EventPermissions = Awaited<ReturnType<typeof eventPermissions>>;
+
+/**
+ * Whether this viewer gets an event's full photo set. On a private event an
+ * anonymous visitor (not signed in, no invite link of this event) sees only
+ * Timeline cover photos and Gallery photos marked public
+ * (gallery_photos.is_public); everyone else sees everything. Used for both
+ * the page data and the /media proxy, so a hidden photo can't be fetched by URL.
+ */
+export async function seesPrivatePhotos(permissions: EventPermissions): Promise<boolean> {
+  const event = permissions.event;
+  if (!event) return false;
+  if (event.visibility !== "private" || permissions.manage || permissions.platformAdmin) return true;
+  const jar = await cookies();
+  // The host's own wizard preview of a draft (drafts start out private).
+  const draftToken = event.status === "draft" ? jar.get("em_draft_preview")?.value : undefined;
+  if (draftToken) {
+    const { data } = await supabaseAdmin().from("events").select("id").eq("id", event.id).eq("draft_token", draftToken).maybeSingle();
+    if (data) return true;
+  }
+  if (!permissions.view) return false;
+  if (permissions.signedIn) return true;
+  const guestToken = jar.get("em_guest_preview")?.value;
+  if (guestToken) {
+    const { data } = await supabaseAdmin().from("invitees").select("id").eq("event_id", event.id).eq("token", guestToken).maybeSingle();
+    if (data) return true;
+  }
+  return false;
+}
+
+export async function canSeePrivatePhotos(eventId: string): Promise<boolean> {
+  return seesPrivatePhotos(await eventPermissions(eventId));
 }
 
 export async function requireEventView(eventId: string): Promise<void> {
