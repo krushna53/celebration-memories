@@ -1,4 +1,5 @@
 import { isVideoMedia } from "@/lib/curated-media";
+import { displayPhotoOrder, similarRepeats } from "@/lib/photo-similarity";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 import type { MemoryItem } from "@/types/memory";
@@ -24,6 +25,8 @@ export function buildDisplaySlides(params: {
   highlightReelUrl?: string | null;
 }): DisplaySlide[] {
   const { event, galleryPhotos, milestones, memories, highlightReelUrl } = params;
+  // Look-alike photos (a re-sent or resized copy, a burst shot) show once — see similarRepeats.
+  const repeats = similarRepeats(displayPhotoOrder(galleryPhotos, milestones));
 
   const slides: DisplaySlide[] = [
     {
@@ -82,6 +85,7 @@ export function buildDisplaySlides(params: {
   }
 
   for (const photo of galleryPhotos) {
+    if (repeats.has(`gallery-${photo.id}`)) continue;
     if (isVideoMedia(photo.url)) {
       slides.push({ id: `gallery-${photo.id}`, kind: "memory-video", url: photo.url, authorName: "", caption: photo.caption });
       continue;
@@ -104,7 +108,8 @@ export function buildDisplaySlides(params: {
     const images = [
       ...(milestone.imageUrl && !coverIsVideo ? [{ key: "cover", url: milestone.imageUrl }] : []),
       ...(milestone.photos ?? []).map((photo) => ({ key: photo.id, url: photo.url })),
-    ].filter((image, i, all) => Boolean(image.url) && all.findIndex((other) => other.url === image.url) === i);
+    ].filter((image, i, all) => Boolean(image.url) && all.findIndex((other) => other.url === image.url) === i
+      && !repeats.has(`timeline-${milestone.id}-${image.key}`));
 
     if (coverIsVideo && milestone.imageUrl) {
       slides.push({ id: `timeline-${milestone.id}`, kind: "memory-video", url: milestone.imageUrl, authorName: milestone.title, caption: `${milestone.period} — ${milestone.description}` });

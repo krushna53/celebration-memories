@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-compression";
 import { readPhotoMetadata } from "@/lib/photo-metadata";
+import { photoFingerprint } from "@/features/admin/timeline/photo-import";
 import { CHAPTERS, CHAPTER_TITLE_MAX, GALLERY_CATEGORIES, type GalleryCategory } from "@/features/gallery/gallery-data";
 import { renameGalleryChapterAction } from "@/features/gallery/actions";
 import type { GalleryPairRecord, GalleryPhotoRecord } from "@/types/content";
@@ -41,6 +42,8 @@ interface UploadJob {
   preview: string | null;
   status: JobStatus;
   error?: string;
+  /** photoFingerprint of the original — saved so the same photo isn't uploaded twice. */
+  fingerprint: string | null;
 }
 
 const STATUS_LABEL: Record<JobStatus, string> = {
@@ -51,6 +54,12 @@ const STATUS_LABEL: Record<JobStatus, string> = {
   done: "Done",
   failed: "Failed",
 };
+
+/** Same identity the Timeline import uses, so a re-picked photo is recognised whatever its file name. */
+async function fingerprintFile(file: File, isVideo: boolean): Promise<string> {
+  const takenAt = isVideo ? null : (await readPhotoMetadata(file).catch(() => null))?.takenAt ?? null;
+  return photoFingerprint(file.size, takenAt, () => Promise.resolve(file));
+}
 
 /**
  * Live progress for a gallery upload batch: how many are done, a
@@ -692,6 +701,7 @@ export function GalleryManager({
         takenAt: meta?.takenAt ?? null,
         lat: meta?.lat ?? null,
         lon: meta?.lon ?? null,
+        fingerprint: job.fingerprint,
       });
       if (!confirmed.success) throw new Error(confirmed.error);
 
@@ -706,7 +716,7 @@ export function GalleryManager({
     }
   }
 
-  async function runJobs(batch: UploadJob[]) {
+  async function runJobs(batch: UploadJob[], identicalSkipped = 0) {
     setUploading(true);
     setError(null);
     setNotice(null);
@@ -726,26 +736,51 @@ export function GalleryManager({
     await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, batch.length) }, worker));
 
     setUploading(false);
+    const notices: string[] = [];
+    if (identicalSkipped > 0) notices.push(identicalNotice(identicalSkipped));
     if (tagged.length > 0) {
       setAutoTaggedIds((prev) => new Set([...prev, ...tagged]));
-      setNotice(
+      notices.push(
         `AI sorted ${tagged.length} photo${tagged.length === 1 ? "" : "s"} into categories and wrote captions${
           withMetadata > 0 ? " using when and where they were taken" : ""
         } — look for the “Auto” badge, and tap the pencil on any photo to change it.`,
       );
     }
+    if (notices.length > 0) setNotice(notices.join(" "));
     setUploadCaption("");
     if (inputRef.current) inputRef.current.value = "";
     router.refresh();
   }
 
-  function handleFiles(files: FileList | File[]) {
-    const list = Array.from(files);
-    if (list.length === 0 || uploading) return;
+  function identicalNotice(count: number) {
+    return `Skipped ${count} identical ${count === 1 ? "photo" : "photos"} — already in the gallery or picked twice.`;
+  }
+
+  async function handleFiles(files: FileList | File[]) {
+    const picked = Array.from(files);
+    if (picked.length === 0 || uploading) return;
+    // Exact copies (already in the gallery, or picked twice) are dropped before anything is uploaded.
+    const known = new Set(photos.flatMap((p) => (p.fingerprint ? [p.fingerprint] : [])));
+    const isVideoFile = (file: File) => file.type.startsWith("video/") || isVideoMedia(file.name);
+    const fingerprints = await Promise.all(picked.map((file) => fingerprintFile(file, isVideoFile(file)).catch(() => null)));
+    const list: { file: File; fingerprint: string | null }[] = [];
+    picked.forEach((file, i) => {
+      const fingerprint = fingerprints[i] ?? null;
+      if (fingerprint && known.has(fingerprint)) return;
+      if (fingerprint) known.add(fingerprint);
+      list.push({ file, fingerprint });
+    });
+    const identicalSkipped = picked.length - list.length;
+    if (list.length === 0) {
+      setNotice(identicalNotice(identicalSkipped));
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
     const stamp = Date.now();
-    const batch: UploadJob[] = list.map((file, i) => {
-      const isVideo = file.type.startsWith("video/") || isVideoMedia(file.name);
+    const batch: UploadJob[] = list.map(({ file, fingerprint }, i) => {
+      const isVideo = isVideoFile(file);
       return {
+        fingerprint,
         key: `${stamp}-${i}`,
         file,
         name: file.name,
@@ -757,7 +792,7 @@ export function GalleryManager({
     releasePreviews();
     previewUrls.current = batch.flatMap((j) => (j.preview ? [j.preview] : []));
     setJobs(batch);
-    void runJobs(batch);
+    void runJobs(batch, identicalSkipped);
   }
 
   function retryFailed() {

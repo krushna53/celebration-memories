@@ -20,6 +20,10 @@ import { resolveGalleryUpload, type GalleryUploadOptions } from "@/services/gall
 import { getEventById } from "@/services/events";
 import { getEventSegment } from "@/lib/event-segment";
 
+function cleanFingerprint(value: unknown): string | null {
+  return typeof value === "string" && /^[A-Za-z0-9:._-]{1,120}$/.test(value) ? value : null;
+}
+
 function revalidateGalleryPaths() {
   revalidatePath("/admin/gallery");
   revalidatePath("/admin/recycle-bin");
@@ -58,7 +62,7 @@ export async function confirmGalleryUploadAction(
     assertEventMediaPath(eventId, path);
     const segment = getEventSegment((await getEventById(eventId))?.category);
     const resolved = await resolveGalleryUpload({ path, category, caption, options, segment });
-    const id = await createGalleryPhoto({ eventId, category: resolved.category, storagePath: path, caption: resolved.caption });
+    const id = await createGalleryPhoto({ eventId, category: resolved.category, storagePath: path, caption: resolved.caption, fingerprint: cleanFingerprint(options?.fingerprint) });
     revalidateGalleryPaths();
     return { success: true as const, data: { id, ...resolved } };
   } catch (err) {

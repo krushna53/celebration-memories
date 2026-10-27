@@ -20,6 +20,7 @@ interface MilestoneRow {
   lon?: number | null;
   place?: string | null;
   image_fingerprint?: string | null;
+  image_phash?: string | null;
 }
 
 interface MilestonePhotoRow {
@@ -30,6 +31,7 @@ interface MilestonePhotoRow {
   taken_at: string | null;
   fingerprint: string | null;
   contributed_by?: string | null;
+  phash?: string | null;
 }
 
 function mapPhoto(row: MilestonePhotoRow): TimelineMilestonePhoto {
@@ -39,6 +41,7 @@ function mapPhoto(row: MilestonePhotoRow): TimelineMilestonePhoto {
     takenAt: row.taken_at ? row.taken_at.slice(0, 16) : null,
     fingerprint: row.fingerprint,
     contributedBy: row.contributed_by ?? null,
+    phash: row.phash ?? null,
   };
 }
 
@@ -58,6 +61,7 @@ function mapRow(row: MilestoneRow): TimelineMilestoneRecord {
     lon: row.lon ?? null,
     place: row.place ?? null,
     imageFingerprint: row.image_fingerprint ?? null,
+    imagePhash: row.image_phash ?? null,
   };
 }
 
@@ -78,7 +82,8 @@ export async function listMilestones(eventId: string, options: { coversOnly?: bo
   // Extra photos are a bonus — if they can't be read, the timeline still renders exactly as before.
   const { data: photoRows, error: photoError } = await supabaseAdmin()
     .from("timeline_milestone_photos")
-    .select("id, milestone_id, event_id, storage_path, taken_at, fingerprint, contributed_by")
+    // "*": also picks up phash once migration 20261026140000 is applied, without breaking before it.
+    .select("*")
     .eq("event_id", eventId)
     .order("sort_order", { ascending: true })
     .order("taken_at", { ascending: true, nullsFirst: false })

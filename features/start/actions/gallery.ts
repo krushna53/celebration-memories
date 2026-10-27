@@ -50,7 +50,8 @@ export async function draftConfirmGalleryUploadAction(
       options: { ...options, autoTag },
       segment: getEventSegment(event.category),
     });
-    const id = await createGalleryPhoto({ eventId: event.id, category: resolved.category, storagePath: path, caption: resolved.caption });
+    const fingerprint = typeof options?.fingerprint === "string" && /^[A-Za-z0-9:._-]{1,120}$/.test(options.fingerprint) ? options.fingerprint : null;
+    const id = await createGalleryPhoto({ eventId: event.id, category: resolved.category, storagePath: path, caption: resolved.caption, fingerprint });
     return { success: true as const, data: { id, ...resolved } };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };

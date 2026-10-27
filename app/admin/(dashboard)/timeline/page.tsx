@@ -11,6 +11,7 @@ import { areTimelineContributionsEnabled, listPendingSubmissions } from "@/servi
 import { SITE_URL } from "@/lib/constants";
 import { DisplayMusicPicker } from "@/features/admin/display/display-music-picker";
 import { getDisplayMusic } from "@/services/display-music";
+import { SimilarPhotosPanel } from "@/features/admin/photo-duplicates/similar-photos-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,7 @@ export default async function AdminTimelinePage() {
             anything new, when it reaches the end.
           </p>
         </div>
+        <SimilarPhotosPanel eventId={event.id} />
       </div>
     </div>
   );

@@ -15,6 +15,8 @@ export interface GalleryUploadOptions {
   takenAt?: string | null;
   lat?: number | null;
   lon?: number | null;
+  /** photoFingerprint of the original file — stored so the same photo isn't uploaded twice. */
+  fingerprint?: string | null;
 }
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

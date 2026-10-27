@@ -12,6 +12,10 @@ export interface GalleryPhotoRecord {
   cleaned?: boolean;
   /** Shown to anonymous visitors of a private event (gallery_photos.is_public). Signed-in viewers and invited guests always see every photo. */
   isPublic?: boolean;
+  /** Identity of the original file (photo-import.ts → photoFingerprint) — an identical photo isn't uploaded twice. */
+  fingerprint?: string | null;
+  /** Perceptual hash (lib/photo-similarity.ts) — look-alikes show once on the Big Screen. */
+  phash?: string | null;
 }
 
 /** "Then & Now": an old gallery photo paired with a recent one (gallery_pairs). */
@@ -68,6 +72,8 @@ export interface TimelineMilestoneRecord {
   place?: string | null;
   /** Fingerprint of the cover photo, so re-importing it is recognised (features/admin/timeline/photo-import.ts). */
   imageFingerprint?: string | null;
+  /** Perceptual hash of the cover photo (lib/photo-similarity.ts). */
+  imagePhash?: string | null;
 }
 
 export interface TimelineMilestonePhoto {
@@ -78,6 +84,8 @@ export interface TimelineMilestonePhoto {
   fingerprint: string | null;
   /** Guest who shared it, for "Shared by …"; null for the host's own photos. */
   contributedBy?: string | null;
+  /** Perceptual hash (lib/photo-similarity.ts). */
+  phash?: string | null;
 }
 
 /** One time-blocked segment of the event-day run-of-show (see services/event-day.ts). */

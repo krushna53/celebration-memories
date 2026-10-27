@@ -17,6 +17,8 @@ interface GalleryPhotoRow {
   created_at: string;
   /** Missing until migration 20261026120000 is applied — treated as public. */
   is_public?: boolean;
+  fingerprint?: string | null;
+  phash?: string | null;
 }
 
 function mapRow(row: GalleryPhotoRow): GalleryPhotoRecord {
@@ -30,6 +32,8 @@ function mapRow(row: GalleryPhotoRow): GalleryPhotoRecord {
     createdAt: row.created_at,
     cleaned: row.original_storage_path !== null,
     isPublic: row.is_public !== false,
+    fingerprint: row.fingerprint ?? null,
+    phash: row.phash ?? null,
   };
 }
 
@@ -95,6 +99,7 @@ export async function createGalleryPhoto(input: {
   category: GalleryCategory;
   storagePath: string;
   caption?: string | null;
+  fingerprint?: string | null;
 }): Promise<string> {
   const { data, error } = await supabaseAdmin()
     .from("gallery_photos")
@@ -103,6 +108,7 @@ export async function createGalleryPhoto(input: {
       category: input.category,
       storage_path: input.storagePath,
       caption: input.caption || null,
+      ...(input.fingerprint ? { fingerprint: input.fingerprint } : {}),
     })
     .select("id")
     .single<{ id: string }>();

@@ -8,6 +8,7 @@ import { listGalleryPairs } from "@/services/gallery-story";
 import { GalleryManager } from "@/features/admin/gallery/gallery-manager";
 import { AI_GALLERY_TAGGER_CONFIGURED } from "@/lib/ai-gallery-tagger";
 import { NoEventState } from "@/features/admin/components/no-event-state";
+import { SimilarPhotosPanel } from "@/features/admin/photo-duplicates/similar-photos-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,7 @@ export default async function AdminGalleryPage() {
           chapterTitles={event.galleryChapterTitles}
           eventIsPrivate={event.visibility === "private"}
         />
+        <SimilarPhotosPanel eventId={event.id} />
       </div>
     </div>
   );
