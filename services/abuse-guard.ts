@@ -17,7 +17,7 @@ import { getClientIp, hashIp } from "@/lib/ip-hash";
  * because a bookkeeping query failed would be worse than briefly losing
  * brute-force protection.
  */
-export type GuardScope = "invite-token" | "event-day-phone" | "promo-code" | "mobile-access-code" | "date-poll-vote";
+export type GuardScope = "invite-token" | "event-day-phone" | "promo-code" | "mobile-access-code" | "date-poll-vote" | "quick-rsvp";
 
 const LIMITS: Record<GuardScope, { maxFailures: number; windowMinutes: number }> = {
   // A guest mistyping a link a few times never gets near this.
@@ -28,6 +28,8 @@ const LIMITS: Record<GuardScope, { maxFailures: number; windowMinutes: number }>
   // Not a secret guess — every public (no invite link) date-poll vote is
   // recorded, so one person can't stuff the poll with made-up names.
   "date-poll-vote": { maxFailures: 15, windowMinutes: 60 },
+  // Likewise every name-only Maybe/No on the public 3-click RSVP (features/rsvp/quick-rsvp-actions.ts).
+  "quick-rsvp": { maxFailures: 15, windowMinutes: 60 },
 };
 
 export async function currentIpHash(): Promise<string | null> {

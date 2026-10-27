@@ -14,7 +14,7 @@ import { RsvpPaymentPanel } from "@/features/rsvp-payment/rsvp-payment-panel";
 import { WorkshopSessionPicker } from "@/features/rsvp/workshop-session-picker";
 import type { RsvpPrice } from "@/lib/rsvp-pricing";
 import type { RsvpFormValues } from "@/types/rsvp";
-import { buildRsvpSchema, DEFAULT_RSVP_CONFIG, type RsvpConfig } from "@/lib/rsvp-config";
+import { attendanceOptions, buildRsvpSchema, DEFAULT_RSVP_CONFIG, type RsvpConfig } from "@/lib/rsvp-config";
 import {
   RsvpAttendanceField,
   RsvpDetailFields,
@@ -69,6 +69,10 @@ export function RsvpForm({
   const [submitted, setSubmitted] = useState(false);
   const [submittedComing, setSubmittedComing] = useState<RsvpFormValues["coming"] | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  // A guest who hasn't answered yet gets one-tap buttons first (their invite link already identifies them);
+  // the full form is one tap away, and opens by itself when the host requires details the guest hasn't given.
+  const [quick, setQuick] = useState(!defaultValues.coming);
+  const [quickSaving, setQuickSaving] = useState(false);
   const startedTracked = useRef(false);
 
   function trackStarted() {
@@ -96,6 +100,29 @@ export function RsvpForm({
 
   const coming = watch("coming");
 
+  async function answerInOneTap(value: RsvpFormValues["coming"]) {
+    trackStarted();
+    setServerError(null);
+    setQuickSaving(true);
+    const result = await submitRsvpAction(token, {
+      name: guestName,
+      adults: 1,
+      children: 0,
+      mealPreference: "no_preference",
+      ...defaultValues,
+      coming: value,
+      consent: true,
+    });
+    setQuickSaving(false);
+    if (result.success) {
+      setSubmitted(true);
+      setSubmittedComing(value);
+    } else {
+      setQuick(false);
+      setServerError("Almost there — please fill in the details below.");
+    }
+  }
+
   async function onSubmit(values: ConfiguredRsvpValues) {
     setServerError(null);
     const result = await submitRsvpAction(token, values);
@@ -118,8 +145,14 @@ export function RsvpForm({
           Your RSVP has been recorded. You can revisit this link anytime to
           update your response.
         </p>
-        <Button variant="outline" onClick={() => setSubmitted(false)}>
-          Edit my RSVP
+        <Button
+          variant="outline"
+          onClick={() => {
+            setQuick(false);
+            setSubmitted(false);
+          }}
+        >
+          {submittedComing === "coming" ? "Add details (guests, meal) or edit" : "Edit my RSVP"}
         </Button>
         {submittedComing === "coming" && story ? (
           <StoryShareButton card={story.card} shareText={story.shareText} fileName="im-going" label="Tell your friends — share to your Story" />
@@ -143,6 +176,38 @@ export function RsvpForm({
             />
           </div>
         ) : null}
+      </div>
+    );
+  }
+
+  if (quick) {
+    const options = attendanceOptions(config, segment);
+    const others = options.filter((o) => o.value !== "coming");
+    return (
+      <div className="grid gap-4 rounded-2xl border border-gold-500/15 bg-white px-6 py-8 text-center shadow-sm sm:px-10">
+        <p className={labelClasses}>Will you be joining us?</p>
+        <Button type="button" size="lg" onClick={() => answerInOneTap("coming")} disabled={quickSaving} className="w-full">
+          {quickSaving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={18} />}
+          {options.find((o) => o.value === "coming")?.label ?? "Yes, I'll be there"}
+        </Button>
+        <div className={cn("grid gap-2", others.length > 1 && "sm:grid-cols-2")}>
+          {others.map((option) => (
+            <Button key={option.value} type="button" variant="outline" onClick={() => answerInOneTap(option.value)} disabled={quickSaving}>
+              {option.label}
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs text-navy-700/70">
+          One tap and you&rsquo;re done — your reply is saved under {guestName}. By replying you agree the host may store it
+          to plan this event (
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+            Privacy Notice
+          </a>
+          ).
+        </p>
+        <button type="button" className="text-sm text-gold-700 underline underline-offset-4" onClick={() => setQuick(false)}>
+          Fill in the full form instead (guests, meal, comments)
+        </button>
       </div>
     );
   }

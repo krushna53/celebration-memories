@@ -2,7 +2,7 @@ import { MailCheck } from "lucide-react";
 
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
-import { PublicRsvpForm } from "@/features/rsvp/public-rsvp-form";
+import { QuickRsvp } from "@/features/rsvp/quick-rsvp";
 import { getRsvpConfig } from "@/services/rsvp-config";
 import { getEventSegment } from "@/lib/event-segment";
 import type { EventCategory } from "@/types/event";
@@ -22,7 +22,9 @@ interface RsvpTeaserSectionProps {
  * event has opted into a shared RSVP link (events.public_rsvp_enabled —
  * see Event Settings), the actual self-service form is embedded right
  * here — no extra click to a separate page — for visitors who arrived
- * through a shared/direct link rather than a personal invitation.
+ * through a shared/direct link rather than a personal invitation. That
+ * form is the 3-click QuickRsvp (Yes → Confirm with Google → done), with
+ * the original phone-based form one tap away for guests without Google.
  */
 export async function RsvpTeaserSection({
   eventId,
@@ -43,13 +45,10 @@ export async function RsvpTeaserSection({
           </div>
           {showPublicForm ? (
             <>
-              <SectionHeading eyebrow="Kindly Respond" title="RSVP Right Here" />
+              <SectionHeading eyebrow="Kindly Respond" title="Will you be joining us?" />
               <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-navy-700/80 sm:text-base">
-                If you were sent your own personal invitation link, please use
-                that one instead — it keeps your response tied to your
-                invitation. If you&rsquo;re here through a link that was
-                shared directly (not a personal invitation), fill out the
-                form below to let us know if you&rsquo;ll be joining.
+                One quick reply — say yes and confirm with Google. Got a
+                personal invitation link? Use that one instead.
               </p>
             </>
           ) : (
@@ -72,7 +71,7 @@ export async function RsvpTeaserSection({
       {showPublicForm ? (
         <div className="mx-auto mt-10 max-w-xl px-6">
           <Reveal delay={0.1}>
-            <PublicRsvpForm eventSlug={eventSlug!} eventId={eventId!} honoreeName={honoreeName} rsvpConfig={rsvpConfig} segment={getEventSegment(category)} />
+            <QuickRsvp eventSlug={eventSlug!} eventId={eventId!} honoreeName={honoreeName} rsvpConfig={rsvpConfig} segment={getEventSegment(category)} />
           </Reveal>
         </div>
       ) : null}
