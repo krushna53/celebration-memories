@@ -10,6 +10,8 @@
  * minimal, so it always renders first and can't be hidden or reordered.
  */
 export const SECTION_KEYS = [
+  // Only renders while the event's date poll is open (services/date-poll.ts).
+  "datePoll",
   "countdown",
   "invitation",
   "eventDetails",
@@ -30,6 +32,7 @@ export interface SectionConfigItem {
 }
 
 export const SECTION_LABELS: Record<SectionKey, string> = {
+  datePoll: "Date Poll",
   countdown: "Countdown",
   invitation: "Invitation",
   eventDetails: "Event Details",

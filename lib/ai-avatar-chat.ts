@@ -44,6 +44,8 @@ export interface AvatarEventContext {
   hasEndTime?: boolean;
   /** The event's own IANA timezone, so times are stated in venue time rather than the server's. */
   timezone?: string;
+  /** True while guests are still voting on the date — startAt/endAt are then only a placeholder. */
+  datePollOpen?: boolean;
   dressCode: string | null;
   parkingInfo: string | null;
   additionalNotes: string | null;
@@ -61,6 +63,7 @@ export interface AvatarChatMessage {
 }
 
 function formatDateTimeRange(event: AvatarEventContext): string {
+  if (event.datePollOpen) return "not decided yet — guests are voting on the date in the \"Pick a Date\" section of this page";
   try {
     return `${formatEventDate(event.startAt, event.timezone)}, ${formatEventTimeRange(event, event.timezone)}`;
   } catch {

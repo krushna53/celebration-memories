@@ -7,6 +7,7 @@ import type { EventDisplayData } from "@/lib/event-display";
 import type { HeroExtras, HeroRelive } from "@/features/hero/hero-section";
 import { getSegmentCopy } from "@/lib/event-segment";
 import { useCountdown } from "@/hooks/use-countdown";
+import { DatePollHeroLink } from "@/features/date-poll/date-poll-hero-link";
 
 /** The card's own illustration colours, used only for soft background shapes. */
 const CARD = { teal: "#2e7d6b", coral: "#e2674a", sky: "#4fa3b5", mustard: "#d4a03a", navy: "#12294a" };
@@ -135,6 +136,10 @@ export function HumanOsHero({
             <motion.p {...rise(0.75)} className="mt-8 max-w-md text-base leading-relaxed text-navy-700/85 lg:max-w-lg">
               Relive the day — add the photos and videos you took, and see everyone else&rsquo;s.
             </motion.p>
+          ) : data.dateTbd ? (
+            <motion.div {...rise(0.75)} className="mt-8 flex justify-center lg:justify-start">
+              <DatePollHeroLink />
+            </motion.div>
           ) : (
             <motion.div {...rise(0.75)} className="mt-8 flex justify-center gap-2.5 lg:justify-start" role="timer" aria-label={guestCopy.countdownLabel}>
               {units.map((unit) => (

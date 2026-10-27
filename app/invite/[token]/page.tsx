@@ -24,6 +24,8 @@ import { PoweredByBand } from "@/features/event-landing/powered-by-band";
 import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
 import { TimelineShareCard } from "@/features/timeline-share/timeline-share-card";
 import { areTimelineContributionsEnabled } from "@/services/timeline-contributions";
+import { getDatePoll, getVoterChoices, inviteeVoterKey } from "@/services/date-poll";
+import { DatePollCard } from "@/features/date-poll/date-poll-card";
 
 // Always dynamic: every request must re-check the token and re-log a
 // visit, so this route is never statically generated or cached.
@@ -74,6 +76,14 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   const guestCopy = getSegmentCopy(event.category).guest;
   const rsvpConfig = await getRsvpConfig(event.id);
+  const [datePoll, datePollChoices] = event.datePollOpen
+    ? await Promise.all([
+        getDatePoll(event.id, event.timezone).catch(() => null),
+        getVoterChoices(event.id, inviteeVoterKey(invitee.id)),
+      ])
+    : [null, []];
+  const dateLine = event.datePollOpen ? "Date to be decided" : formatEventDate(event.startAt, event.timezone);
+  const timeLine = event.datePollOpen ? "Vote for the days that work for you below" : formatEventTimeRange(event, event.timezone);
 
   return (
     <SiteShell
@@ -100,12 +110,23 @@ export default async function InvitePage({ params }: InvitePageProps) {
             </p>
             <div className="divider-gold mx-auto mt-6 w-20" />
             <p className="mt-6 text-sm tracking-wide text-navy-700/70">
-              {formatEventDate(event.startAt, event.timezone)}
+              {dateLine}
               <br />
-              {formatEventTimeRange(event, event.timezone)}
+              {timeLine}
             </p>
           </Reveal>
         </div>
+
+        {datePoll && datePoll.options.length > 0 ? (
+          <div id="date-poll" className="mx-auto mt-12 max-w-xl scroll-mt-24 px-4 sm:px-6">
+            <Reveal>
+              <SectionHeading eyebrow="Help us choose" title="Pick a Date" description="The date isn't fixed yet — tell us which days work for you." />
+            </Reveal>
+            <Reveal delay={0.1} className="mt-8">
+              <DatePollCard poll={datePoll} voter={{ kind: "invite", token, guestName: invitee.name, initialChoices: datePollChoices }} />
+            </Reveal>
+          </div>
+        ) : null}
 
         {!ended ? (
           <div className="mx-auto mt-12 max-w-xl px-4 sm:px-6">
@@ -136,8 +157,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
                     title: event.honoreeName,
                     subtitle: event.eventTitle,
                     details: [
-                      formatEventDate(event.startAt, event.timezone),
-                      formatEventTimeRange(event, event.timezone),
+                      dateLine,
+                      ...(event.datePollOpen ? [] : [timeLine]),
                       ...(event.venueName ? [event.venueName] : []),
                     ],
                   },

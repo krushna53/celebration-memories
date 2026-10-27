@@ -7,6 +7,7 @@ import { MessageCircle } from "lucide-react";
 import type { EventDisplayData } from "@/lib/event-display";
 import { Button } from "@/components/ui/button";
 import { CountdownBadge } from "@/features/hero/components/countdown-badge";
+import { DatePollHeroLink } from "@/features/date-poll/date-poll-hero-link";
 import { GoldParticles } from "@/features/hero/components/gold-particles";
 import { ConfettiParticles } from "@/features/hero/components/confetti-particles";
 import { BalloonRise } from "@/features/hero/components/balloon-rise";
@@ -193,6 +194,8 @@ export function HeroSection({ data, relive = null, artworkUrl = null, whatsapp =
               <p className="mx-auto max-w-md text-sm leading-relaxed text-ivory-100/85 sm:text-base">
                 Relive the day — add the photos and videos you took, and see everyone else&rsquo;s.
               </p>
+            ) : data.dateTbd ? (
+              <DatePollHeroLink />
             ) : (
               <CountdownBadge isoStart={data.isoStart} label={guestCopy.countdownLabel} />
             )}

@@ -165,6 +165,14 @@ export async function updateEventAction(
       const current = await getEventById(eventId);
       await assertTemplateAllowed(eventId, input.templateSlug, current?.templateSlug ?? null);
     }
+    // While guests vote on the date, start/end are a placeholder owned by the poll (services/date-poll.ts) —
+    // the date is set by finalising the poll, not by saving this form with a stale value.
+    if (input.startAt !== undefined || input.endAt !== undefined || input.hasEndTime !== undefined) {
+      const current = await getEventById(eventId);
+      if (current?.datePollOpen) {
+        input = { ...input, startAt: undefined, endAt: undefined, hasEndTime: undefined };
+      }
+    }
     // Moving between family and corporate also swaps the default gallery chapter names (lib/event-segment.ts).
     if (input.category && input.galleryChapterTitles === undefined) {
       const current = await getEventById(eventId);

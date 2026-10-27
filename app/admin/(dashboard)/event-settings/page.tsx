@@ -21,6 +21,8 @@ import { PaymentDetailsCard } from "@/features/admin/event-settings/payment-deta
 import { getPaymentDetails } from "@/services/payment-details";
 import { getEventWhatsAppContact } from "@/services/event-extras";
 import { getEventSegment } from "@/lib/event-segment";
+import { DatePollAdminCard } from "@/features/admin/date-poll/date-poll-admin-card";
+import { getDatePoll } from "@/services/date-poll";
 
 export const dynamic = "force-dynamic";
 
@@ -33,12 +35,14 @@ export default async function AdminEventSettingsPage() {
     return <NoEventState />;
   }
 
-  const [cobrand, hostBrand, whatsapp, artworkUrl, payment] = await Promise.all([
+  const [cobrand, hostBrand, whatsapp, artworkUrl, payment, datePoll] = await Promise.all([
     getEventOwnCobrand(event.id),
     getBrandForEvent(event.id),
     getEventWhatsAppContact(event.id),
     getCardArtworkUrl(event.id),
     getPaymentDetails(event.id),
+    // Null (card hidden) if the date-poll tables aren't there yet — never take Event Settings down with it.
+    getDatePoll(event.id, event.timezone).catch(() => null),
   ]);
   const shareImageUrl = event.shareImagePath ? publicMediaUrl("gallery", event.shareImagePath) : null;
   const shareVideoUrl = event.shareVideoPath ? publicMediaUrl("gallery", event.shareVideoPath) : null;
@@ -70,6 +74,7 @@ export default async function AdminEventSettingsPage() {
           canEditStorageQuota={admin?.role === "owner"}
         />
       </div>
+      {datePoll ? <DatePollAdminCard eventId={event.id} eventSlug={event.slug} initialPoll={datePoll} /> : null}
       <HonoreeReelPhotoCard
         eventId={event.id}
         honoreeName={event.honoreeName}

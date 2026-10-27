@@ -202,6 +202,12 @@ export interface EventRecord {
   shareMemoryNudgeDaysBefore: number;
   /** Editable storage ceiling (GB) shown against live usage (services/storage-usage.ts) in the admin Storage dashboard and Event Settings — default 5, not tied to any real pricing plan yet. Crossing it triggers an admin_notifications 'storage_usage' warning (see services/admin-notification-jobs.ts). */
   storageQuotaGb: number;
+  /**
+   * True while guests are voting on the date (services/date-poll.ts) —
+   * startAt/endAt then hold a placeholder (the earliest candidate), and
+   * guest-facing pages show "Date to be decided" instead of them.
+   */
+  datePollOpen: boolean;
   /** Broadcast countdown-milestone + new-content-digest push notifications to opted-in guests running the installed PWA. See features/push/engagement-opt-in-banner.tsx and supabase/functions/send-engagement-push. */
   engagementNotificationsEnabled: boolean;
   /**

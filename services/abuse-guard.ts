@@ -17,7 +17,7 @@ import { getClientIp, hashIp } from "@/lib/ip-hash";
  * because a bookkeeping query failed would be worse than briefly losing
  * brute-force protection.
  */
-export type GuardScope = "invite-token" | "event-day-phone" | "promo-code" | "mobile-access-code";
+export type GuardScope = "invite-token" | "event-day-phone" | "promo-code" | "mobile-access-code" | "date-poll-vote";
 
 const LIMITS: Record<GuardScope, { maxFailures: number; windowMinutes: number }> = {
   // A guest mistyping a link a few times never gets near this.
@@ -25,6 +25,9 @@ const LIMITS: Record<GuardScope, { maxFailures: number; windowMinutes: number }>
   "event-day-phone": { maxFailures: 10, windowMinutes: 15 },
   "promo-code": { maxFailures: 8, windowMinutes: 60 },
   "mobile-access-code": { maxFailures: 5, windowMinutes: 15 },
+  // Not a secret guess — every public (no invite link) date-poll vote is
+  // recorded, so one person can't stuff the poll with made-up names.
+  "date-poll-vote": { maxFailures: 15, windowMinutes: 60 },
 };
 
 export async function currentIpHash(): Promise<string | null> {

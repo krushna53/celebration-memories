@@ -9,6 +9,7 @@ import type { GalleryPhotoRecord } from "@/types/content";
 import { isVideoMedia } from "@/lib/curated-media";
 import { Button } from "@/components/ui/button";
 import { useCountdown } from "@/hooks/use-countdown";
+import { DatePollHeroLink } from "@/features/date-poll/date-poll-hero-link";
 import { BatchMedallion, ReunionBackdrop, StethoscopeAccent } from "@/templates/WhiteCoatReunion/reunion-decor";
 
 interface ReunionHeroProps {
@@ -134,6 +135,10 @@ export function ReunionHero({ data, galleryPhotos, relive }: ReunionHeroProps) {
             <p className="wcr-rise mt-6 max-w-md text-base leading-relaxed text-navy-700" style={rise(4)}>
               Relive the day — add the photos and videos you took, and see everyone else&rsquo;s.
             </p>
+          ) : data.dateTbd ? (
+            <div className="wcr-rise mt-7" style={rise(4)}>
+              <DatePollHeroLink />
+            </div>
           ) : (
             <div className="wcr-rise mt-7" style={rise(4)}>
               <ReunionCountdown isoStart={data.isoStart} />

@@ -38,7 +38,20 @@ export interface EventDisplayData {
   wishMessage: string | null;
   /** IANA timezone every field above is pinned to — see lib/timezone.ts. */
   timezone: string;
+  /**
+   * True while guests are voting on the date (events.date_poll_open) —
+   * dayOfWeek/date/timeRange then hold "to be decided" wording rather than
+   * the placeholder date, and countdowns should not render.
+   */
+  dateTbd: boolean;
 }
+
+/** What every date field says while a date poll is open — reads naturally as "Date to be decided, vote below". */
+export const DATE_TBD_DISPLAY = {
+  dayOfWeek: "Date to be decided",
+  date: "vote below",
+  timeRange: "Pick the days that work for you",
+} as const;
 
 /** Just the weekday/date parts, in the given event timezone — used to split formatEventDate's combined string into EventDisplayData's separate dayOfWeek/date fields. */
 function zonedPart(iso: string, timezone: string, options: Intl.DateTimeFormatOptions): string {
@@ -69,6 +82,7 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
       additionalNotes: null,
       wishMessage: null,
       timezone: DEFAULT_EVENT_TIMEZONE,
+      dateTbd: false,
     };
   }
 
@@ -100,5 +114,7 @@ export function toEventDisplayData(event: EventRecord | null): EventDisplayData 
     additionalNotes: event.additionalNotes,
     wishMessage: event.wishMessage,
     timezone,
+    dateTbd: false,
+    ...(event.datePollOpen ? { ...DATE_TBD_DISPLAY, startTime: "", endTime: "", dateTbd: true } : {}),
   };
 }

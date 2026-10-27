@@ -12,6 +12,7 @@ import { EventDayHomepageSection } from "@/features/event-day/event-day-homepage
 import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
 import { WishMessageSection } from "@/features/event-landing/wish-message-section";
 import { MemoryWallSection } from "@/features/memory-wall/memory-wall-section";
+import { DatePollSection } from "@/features/date-poll/date-poll-section";
 import { PageViewBeacon } from "@/features/analytics/page-view-beacon";
 import { normalizeSectionConfig, type SectionKey } from "@/lib/section-registry";
 import type { EventDisplayData } from "@/lib/event-display";
@@ -90,7 +91,8 @@ export async function EventSections({
       : null;
 
   const sectionsByKey: Record<SectionKey, ReactNode> = {
-    countdown: <CountdownSection isoStart={data.isoStart} />,
+    datePoll: event ? <DatePollSection event={event} /> : null,
+    countdown: data.dateTbd ? null : <CountdownSection isoStart={data.isoStart} />,
     invitation: <InvitationSection data={data} />,
     eventDetails: <EventDetailsSection data={data} />,
     payment: event ? <PaymentDetailsSection eventId={event.id} eventName={event.eventTitle || event.honoreeName} /> : null,

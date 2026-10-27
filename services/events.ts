@@ -62,6 +62,7 @@ export interface EventRow {
   share_memory_nudge_enabled: boolean;
   share_memory_nudge_days_before: number;
   storage_quota_gb: number;
+  date_poll_open: boolean | null;
   engagement_notifications_enabled: boolean;
   is_paid_event: boolean;
   rsvp_regular_price: number | null;
@@ -128,6 +129,7 @@ export function mapEvent(row: EventRow): EventRecord {
     shareMemoryNudgeEnabled: row.share_memory_nudge_enabled ?? true,
     shareMemoryNudgeDaysBefore: row.share_memory_nudge_days_before ?? 3,
     storageQuotaGb: row.storage_quota_gb ?? 5,
+    datePollOpen: row.date_poll_open ?? false,
     engagementNotificationsEnabled: row.engagement_notifications_enabled ?? true,
     isPaidEvent: row.is_paid_event ?? false,
     rsvpRegularPrice: row.rsvp_regular_price,

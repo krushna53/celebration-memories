@@ -104,9 +104,17 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
             </h1>
             <div className="divider-gold mx-auto mt-6 w-20" />
             <p className="mt-6 text-sm tracking-wide text-navy-700/70">
-              {formatEventDate(event.startAt, event.timezone)}
-              <br />
-              {formatEventTimeRange(event, event.timezone)}
+              {event.datePollOpen ? (
+                <a href={`/events/${event.slug}#date-poll`} className="text-gold-600 underline underline-offset-4">
+                  Date to be decided — vote for a date
+                </a>
+              ) : (
+                <>
+                  {formatEventDate(event.startAt, event.timezone)}
+                  <br />
+                  {formatEventTimeRange(event, event.timezone)}
+                </>
+              )}
             </p>
           </Reveal>
         </div>

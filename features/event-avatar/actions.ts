@@ -57,6 +57,7 @@ export async function sendAvatarMessageAction(
         endAt: event.endAt,
         hasEndTime: event.hasEndTime,
         timezone: event.timezone,
+        datePollOpen: event.datePollOpen,
         dressCode: event.dressCode,
         parkingInfo: event.parkingInfo,
         additionalNotes: event.additionalNotes,

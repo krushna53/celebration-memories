@@ -702,6 +702,24 @@ export function EventSettingsForm({
           Times are in India Standard Time (IST), regardless of your own
           device&rsquo;s timezone.
         </p>
+        {event.datePollOpen ? (
+          <p className="rounded-lg border border-gold-500/30 bg-gold-500/10 px-3 py-2 text-sm text-navy-950">
+            Guests are voting on the date, so these fields are locked and guests see &ldquo;Date to be
+            decided&rdquo;.{" "}
+            <a href="#date-poll-settings" className="font-medium text-gold-700 underline underline-offset-2">
+              Finalise a date in the Date poll card
+            </a>{" "}
+            to set them.
+          </p>
+        ) : (
+          <p className="text-xs text-navy-700/60">
+            Not sure of the date yet?{" "}
+            <a href="#date-poll-settings" className="font-medium text-gold-700 underline underline-offset-2">
+              Let guests vote on it
+            </a>
+            .
+          </p>
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={labelClasses}>Celebration Starts</label>
@@ -710,6 +728,7 @@ export function EventSettingsForm({
               className={`${inputClasses} mt-1.5`}
               value={form.startAt}
               onChange={(e) => set("startAt", e.target.value)}
+              disabled={event.datePollOpen}
               required
             />
           </div>
@@ -721,6 +740,7 @@ export function EventSettingsForm({
                 className={`${inputClasses} mt-1.5`}
                 value={form.endAt}
                 onChange={(e) => set("endAt", e.target.value)}
+                disabled={event.datePollOpen}
                 required
               />
             </div>
@@ -730,6 +750,7 @@ export function EventSettingsForm({
               type="checkbox"
               className="mt-0.5 h-4 w-4 accent-gold-500"
               checked={hasEndTime}
+              disabled={event.datePollOpen}
               onChange={(e) => {
                 setHasEndTime(e.target.checked);
                 setSaved(false);

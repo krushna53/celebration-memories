@@ -53,7 +53,8 @@ export default async function PublicEventPage({ params }: PublicEventPageProps) 
 
   return (
     <>
-      <JsonLd data={buildEventJsonLd(event, coverImage)} />
+      {/* No schema.org Event while the date is still being voted on — its startDate would be a placeholder. */}
+      {event.datePollOpen ? null : <JsonLd data={buildEventJsonLd(event, coverImage)} />}
       <EventLandingPage event={event} />
     </>
   );

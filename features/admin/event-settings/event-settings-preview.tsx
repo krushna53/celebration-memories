@@ -93,6 +93,13 @@ export function EventSettingsPreview({ data, scrollable = true }: { data: EventS
   const config = normalizeSectionConfig(data.sectionConfig);
 
   const sectionsByKey: Record<SectionKey, ReactNode> = {
+    // Real content lives in its own Event Settings card (date-poll-card.tsx); the section only shows while the poll is open.
+    datePoll: (
+      <PreviewSectionShell tone="light">
+        <p className={previewLabel}>Pick a Date</p>
+        <p className="mt-2 text-[11px] text-navy-700/60">Guests vote on the date — shown only while a date poll is open</p>
+      </PreviewSectionShell>
+    ),
     // Real content lives in its own Event Settings card (payment-details-card.tsx); the section only shows when filled in.
     payment: (
       <PreviewSectionShell tone="light">
