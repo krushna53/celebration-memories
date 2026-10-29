@@ -1,4 +1,5 @@
 "use client";
+import { CONSENT_VERSION, RSVP_CONSENT } from "@/lib/privacy-consent";
 
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -71,6 +72,7 @@ export function RsvpForm({
   const [serverError, setServerError] = useState<string | null>(null);
   // A guest who hasn't answered yet gets one-tap buttons first (their invite link already identifies them);
   // the full form is one tap away, and opens by itself when the host requires details the guest hasn't given.
+  const [quickConsent, setQuickConsent] = useState(false);
   const [quick, setQuick] = useState(!defaultValues.coming);
   const [quickSaving, setQuickSaving] = useState(false);
   const startedTracked = useRef(false);
@@ -101,6 +103,7 @@ export function RsvpForm({
   const coming = watch("coming");
 
   async function answerInOneTap(value: RsvpFormValues["coming"]) {
+    if (!quickConsent) return;
     trackStarted();
     setServerError(null);
     setQuickSaving(true);
@@ -111,7 +114,8 @@ export function RsvpForm({
       mealPreference: "no_preference",
       ...defaultValues,
       coming: value,
-      consent: true,
+      consent: quickConsent,
+      consentVersion: CONSENT_VERSION,
     });
     setQuickSaving(false);
     if (result.success) {
@@ -124,6 +128,7 @@ export function RsvpForm({
   }
 
   async function onSubmit(values: ConfiguredRsvpValues) {
+    values.consentVersion = CONSENT_VERSION;
     setServerError(null);
     const result = await submitRsvpAction(token, values);
     if (result.success) {
@@ -186,13 +191,17 @@ export function RsvpForm({
     return (
       <div className="grid gap-4 rounded-2xl border border-gold-500/15 bg-white px-6 py-8 text-center shadow-sm sm:px-10">
         <p className={labelClasses}>Will you be joining us?</p>
-        <Button type="button" size="lg" onClick={() => answerInOneTap("coming")} disabled={quickSaving} className="w-full">
+        <label className="flex items-start gap-2 text-left text-sm text-navy-700">
+          <input type="checkbox" checked={quickConsent} onChange={(event) => setQuickConsent(event.target.checked)} className="mt-1" />
+          <span>{RSVP_CONSENT} <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Notice and withdrawal options</a>.</span>
+        </label>
+        <Button type="button" size="lg" onClick={() => answerInOneTap("coming")} disabled={quickSaving || !quickConsent} className="w-full">
           {quickSaving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={18} />}
           {options.find((o) => o.value === "coming")?.label ?? "Yes, I'll be there"}
         </Button>
         <div className={cn("grid gap-2", others.length > 1 && "sm:grid-cols-2")}>
           {others.map((option) => (
-            <Button key={option.value} type="button" variant="outline" onClick={() => answerInOneTap(option.value)} disabled={quickSaving}>
+            <Button key={option.value} type="button" variant="outline" onClick={() => answerInOneTap(option.value)} disabled={quickSaving || !quickConsent}>
               {option.label}
             </Button>
           ))}
@@ -290,9 +299,7 @@ export function RsvpForm({
             {...register("consent")}
           />
           <span>
-            I agree that the details I provide here (name, contact info, and
-            RSVP) may be stored and used by the host to plan this event. See
-            the{" "}
+            {RSVP_CONSENT} See the{" "}
             <a
               href="/privacy"
               target="_blank"

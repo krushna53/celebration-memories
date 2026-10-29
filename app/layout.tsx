@@ -13,7 +13,7 @@ import {
   quicksand,
 } from "@/lib/fonts";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
-import { ClarityScript } from "@/features/analytics/clarity-script";
+import { AnalyticsConsent } from "@/features/analytics/analytics-consent";
 import { InstallAppBanner } from "@/features/pwa/install-app-banner";
 import { ServiceWorkerRegister } from "@/features/pwa/service-worker-register";
 import { TopProgressBar } from "@/components/layout/top-progress-bar";
@@ -76,7 +76,7 @@ export default function RootLayout({
         <TopProgressBar />
         <ConciergeHelpBanner />
         {children}
-        <ClarityScript />
+        <AnalyticsConsent />
         <ServiceWorkerRegister />
         <InstallAppBanner />
         <MediaProtection />

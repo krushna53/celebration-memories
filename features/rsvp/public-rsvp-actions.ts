@@ -71,7 +71,7 @@ export async function submitPublicRsvpAction(
     console.error("submitPublicRsvpAction failed:", err);
     return {
       success: false,
-      error: "Something went wrong saving your RSVP. Please try again.",
+      error: "Unable to save this public reply. To update an existing reply, use your personal invitation or verified Google sign-in. Otherwise, contact the host.",
     };
   }
 
