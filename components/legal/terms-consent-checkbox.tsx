@@ -66,7 +66,7 @@ export function TermsConsentCheckbox({
         >
           Terms and Conditions
         </Link>
-        .
+        . Please also read our <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Notice</Link> for account data use and your rights. Optional analytics is a separate choice.
       </span>
     </label>
   );

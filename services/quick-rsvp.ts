@@ -1,4 +1,5 @@
 import "server-only";
+import { CONSENT_VERSION } from "@/lib/privacy-consent";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -25,10 +26,10 @@ export async function getSignedInGuest(): Promise<SignedInGuest | null> {
   try {
     const { data } = await (await supabaseServer()).auth.getUser();
     const user = data.user;
-    if (!user?.email) return null;
+    if (!user?.email || !user.email_confirmed_at) return null;
     const meta = (user.user_metadata ?? {}) as { full_name?: string; name?: string };
     const name = (meta.full_name || meta.name || user.email.split("@")[0] || "Guest").trim().slice(0, 120);
-    return { userId: user.id, name, email: user.email.toLowerCase(), phone: user.phone || null };
+    return { userId: user.id, name, email: user.email.toLowerCase(), phone: user.phone_confirmed_at ? user.phone || null : null };
   } catch {
     return null;
   }
@@ -69,12 +70,13 @@ export async function createNameOnlyInvitee(eventId: string, name: string): Prom
  * meal and comments (only `coming` changes); a new one gets the table
  * defaults (1 adult, no children, no meal preference).
  */
-export async function recordAttendance(inviteeId: string, coming: AttendanceOption): Promise<void> {
+export async function recordAttendance(inviteeId: string, coming: AttendanceOption, consentVersion: string): Promise<void> {
+  if (consentVersion !== CONSENT_VERSION) throw new Error("Please refresh and review the current privacy notice.");
   const db = supabaseAdmin();
   const now = new Date().toISOString();
   const { error } = await db
     .from("rsvps")
-    .upsert({ invitee_id: inviteeId, coming, submitted_at: now, consent_at: now }, { onConflict: "invitee_id" });
+    .upsert({ invitee_id: inviteeId, coming, submitted_at: now, consent_at: now, consent_version: CONSENT_VERSION }, { onConflict: "invitee_id" });
   if (error) throw new Error(`Failed to save RSVP: ${error.message}`);
 
   const { error: inviteeError } = await db.from("invitees").update({ rsvp_status: coming }).eq("id", inviteeId);

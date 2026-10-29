@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getEventBySlug } from "@/services/events";
-import { createInvitee, listInvitees, updateInvitee } from "@/services/admin-invitees";
+import { createInvitee, listInvitees } from "@/services/admin-invitees";
 import type { EventRecord, InviteeRecord } from "@/types/event";
 
 /** Strips everything but digits, so "+91 98765 43210" and "9876543210" match. */
@@ -28,17 +28,9 @@ export interface SelfRsvpIdentity {
   email?: string | null;
 }
 
-/**
- * Finds an existing invitee for this event by phone number (digits-only
- * match, so formatting differences don't create duplicates), or creates
- * a new one. This is what makes the public RSVP page usable without a
- * per-guest invite link: phone number stands in for the invite token as
- * the guest's identity within one event.
- *
- * Trade-off worth knowing: because matching is phone-only, a guest who
- * mistypes someone else's number would edit that person's RSVP instead
- * of creating their own. Acceptable for a self-service opt-in flow, but
- * it's why this is off by default — see events.public_rsvp_enabled.
+/** Publicly supplied contact information is not proof of identity.
+ * Existing guests must use their personal invitation or a verified sign-in.
+ * Never return or mutate a matching row from this unauthenticated path.
  */
 export async function findOrCreateSelfInvitee(
   eventId: string,
@@ -53,13 +45,7 @@ export async function findOrCreateSelfInvitee(
   const match = existing.find((inv) => inv.phone && normalizePhone(inv.phone) === normalized);
 
   if (match) {
-    await updateInvitee(match.id, eventId, {
-      name: identity.name,
-      phone: match.phone,
-      email: identity.email ?? match.email,
-      relationship: match.relationship,
-    });
-    return { ...match, name: identity.name, email: identity.email ?? match.email };
+    throw new Error("Please use your personal invitation or verified sign-in to update an RSVP.");
   }
 
   return createInvitee(eventId, {
