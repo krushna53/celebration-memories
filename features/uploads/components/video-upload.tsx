@@ -518,6 +518,9 @@ export function VideoUpload({
           remove(id);
         }}
         onUploadAll={uploadAll}
+        onRetry={upload.uploadOne}
+        ready={upload.ready}
+        recoveryAvailable={upload.recoveryAvailable}
         showCaption={showCaption}
         onRecordAgain={(id) => {
           if (id === lastRecordedId) setLastRecordedId(null);

@@ -129,20 +129,25 @@ export async function confirmMediaUpload(params: {
   const { inviteeId, eventId, kind, path, caption } = params;
   const table = TABLE_BY_KIND[kind];
 
-  const { data, error } = await supabaseAdmin()
-    .from(table)
-    .insert({
-      invitee_id: inviteeId,
-      event_id: eventId,
-      storage_path: path,
-      caption: caption || null,
-    })
-    .select("id")
-    .single();
-
-  if (error || !data) {
-    throw new Error(`Failed to save ${kind} upload: ${error?.message}`);
-  }
+  // One stable row ID per signed object makes a lost confirmation response safe
+  // to retry. Never accept another guest's storage path.
+  const prefix = `${eventId}/${inviteeId}/`;
+  if (!path.startsWith(prefix)) throw new UploadValidationError("That upload does not belong to this invitation.");
+  const filename = path.slice(prefix.length);
+  const id = filename.match(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-/i)?.[1];
+  if (!id || filename.includes("/")) throw new UploadValidationError("Invalid upload path.");
+  const client = supabaseAdmin();
+  const { data: existing, error: lookupError } = await client.from(table).select("id").eq("event_id", eventId).eq("invitee_id", inviteeId).eq("storage_path", path).maybeSingle();
+  if (lookupError) throw new Error("Could not check the saved upload.");
+  if (existing) return { id: existing.id as string };
+  const { data: object, error: objectError } = await client.storage.from(BUCKET_BY_KIND[kind]).info(path);
+  if (objectError || !object) throw new UploadValidationError("The file has not finished uploading. Please try again.");
+  const { error } = await client.from(table).upsert({
+    id, invitee_id: inviteeId, event_id: eventId, storage_path: path, caption: caption || null,
+  }, { onConflict: "id", ignoreDuplicates: true });
+  if (error) throw new Error(`Failed to save ${kind} upload: ${error.message}`);
+  const { data, error: savedError } = await client.from(table).select("id").eq("id", id).eq("invitee_id", inviteeId).eq("event_id", eventId).eq("storage_path", path).single();
+  if (savedError || !data) throw new Error("Could not verify the saved upload.");
 
   return { id: data.id as string };
 }

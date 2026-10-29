@@ -1,3 +1,6 @@
+import { getEventAccess } from "@/services/event-access";
+import { launchEventSummary } from "@/lib/launch-checklist";
+import { LaunchChecklist } from "@/features/admin/components/launch-checklist";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarCheck, FileText, Globe, LayoutGrid, MonitorPlay } from "lucide-react";
@@ -110,6 +113,8 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
         on (Event Settings); Event Report is a one-page summary to print or save as PDF; Big Screen
         Display is the chrome-free slideshow for a TV or projector at the venue.
       </p>
+
+      <LaunchChecklist event={launchEventSummary(event, await getEventAccess(event.id))} />
 
       <DisplayMusicPicker
         eventId={event.id}

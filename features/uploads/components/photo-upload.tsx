@@ -98,6 +98,9 @@ export function PhotoUpload({ upload, showCaption = true }: PhotoUploadProps) {
         onCaptionChange={setCaption}
         onRemove={remove}
         onUploadAll={uploadAll}
+        onRetry={upload.uploadOne}
+        ready={upload.ready}
+        recoveryAvailable={upload.recoveryAvailable}
         showCaption={showCaption}
       />
     </div>
