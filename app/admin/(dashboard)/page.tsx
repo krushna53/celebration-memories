@@ -56,7 +56,7 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
 
   const stats = await getDashboardStats(event.id);
   const funnel = await getVisitorFunnel(event.id, stats.invitations);
-  const displayMusic = await getDisplayMusic(event.id).catch(() => ({ choice: "none" as const, path: null }));
+  const displayMusic = await getDisplayMusic(event.id);
 
   return (
     <div className="grid gap-8">
@@ -113,9 +113,7 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
 
       <DisplayMusicPicker
         eventId={event.id}
-        initialChoice={displayMusic.choice}
-        // Stored as "<event>/slideshow-music/<uuid>-<name>" — show just the name.
-        initialCustomName={displayMusic.path?.split("/").pop()?.replace(/^[0-9a-f-]{36}-/, "") ?? null}
+        initialTracks={displayMusic}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
