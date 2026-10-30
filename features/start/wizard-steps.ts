@@ -8,9 +8,9 @@ import type { EventCategory } from "@/types/event";
  *
  * The step list is no longer fixed: it's computed from what the host
  * actually wants (see WizardGoal / resolveWizardSteps below), chosen on
- * the new Goals step right after Occasion. Occasion, Goals and Your
- * Card always run first, in that order, for every draft — everything
- * after that is conditional:
+ * Goals step right after Occasion. Website-only goals use quick setup:
+ * Occasion → Goals → Event Details → Template → Review. Other goal
+ * combinations use the full builder, where content is conditional:
  *
  *   - Your Card asks whether the host already has an invitation card.
  *     "Yes" uploads it, saves it as the invitation/link-preview image
@@ -250,6 +250,11 @@ export function resolveWizardSteps(
 }
 
 function resolveWizardStepList(goals: string[] | null | undefined): WizardStep[] {
+  // A website by itself takes the short path. Creative deliverables retain
+  // the full builder, and every optional tool remains available afterward.
+  if (goals?.length === 1 && goals[0] === "website") {
+    return [STEP_REGISTRY.occasion, STEP_REGISTRY.goals, STEP_REGISTRY.basics, STEP_REGISTRY.template, STEP_REGISTRY.review];
+  }
   const steps: WizardStep[] = [STEP_REGISTRY.occasion, STEP_REGISTRY.goals];
 
   const hasGoals = Array.isArray(goals) && goals.length > 0;

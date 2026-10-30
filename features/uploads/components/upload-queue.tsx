@@ -92,6 +92,9 @@ interface UploadQueueProps {
   onCaptionChange: (id: string, caption: string) => void;
   onRemove: (id: string) => void;
   onUploadAll: () => void;
+  onRetry?: (id: string) => void;
+  ready?: boolean;
+  recoveryAvailable?: boolean;
   /** Hides the per-item caption input — off for the public "share a memory" page (see MediaUploadsSection's showCaption prop) to keep that flow to the fewest possible fields. Defaults to true (shown). */
   showCaption?: boolean;
   /** Video/audio uploaders only — deletes the item (see onRemove) and drops the guest straight back into the camera/mic view for another take, in one tap instead of "Delete" then hunting for "Record instead" again. Omitted entirely for photos, where there's no equivalent single action. */
@@ -109,12 +112,16 @@ export function UploadQueue({
   onCaptionChange,
   onRemove,
   onUploadAll,
+  onRetry,
+  ready = true,
+  recoveryAvailable = true,
   showCaption = true,
   onRecordAgain,
 }: UploadQueueProps) {
   if (items.length === 0) return null;
 
   const pendingCount = items.filter((it) => it.status === "pending" || it.status === "error").length;
+  const savedCount = items.filter((it) => it.status === "done").length;
   const hasPending = pendingCount > 0;
   const isUploading = items.some((it) => it.status === "uploading");
 
@@ -135,6 +142,8 @@ export function UploadQueue({
 
   return (
     <div className="mt-4 space-y-3">
+      <p role="status" className="text-sm text-navy-700/70">{savedCount} of {items.length} memories saved{hasPending || isUploading ? " · Keep this page open until saving finishes." : " · Sent to the host for approval."}</p>
+      {hasPending ? <p className="text-xs text-navy-700/60">{!ready ? "Checking for unfinished uploads…" : recoveryAvailable ? "Unfinished files are kept on this device for up to 24 hours so you can return using the same link. Google Photos videos may need to be selected again." : "This browser couldn’t keep a recovery copy. Keep this page open until your uploads finish."}</p> : null}
       {items.map((item) => (
         <div key={item.id} className="flex flex-col gap-3 rounded-xl border border-navy-950/10 bg-white p-3">
           <div className="flex items-start gap-3">
@@ -154,7 +163,7 @@ export function UploadQueue({
                 {item.status === "uploading" && <Loader2 size={14} className="animate-spin" />}
                 {item.status === "done" && <CheckCircle2 size={14} />}
                 {item.status === "error" && <AlertCircle size={14} />}
-                {item.status === "error" ? item.error : item.status === "done" ? "Uploaded" : null}
+                {item.status === "error" ? item.error : item.status === "done" ? "Saved · awaiting host approval" : item.phase ?? "Ready to upload"}
               </span>
             </div>
 
@@ -170,6 +179,9 @@ export function UploadQueue({
             ) : null}
           </div>
 
+          {item.status === "error" && onRetry ? (
+            <button type="button" onClick={() => onRetry(item.id)} disabled={!ready || isUploading} className="min-h-11 self-start text-sm font-medium text-gold-700 underline underline-offset-4 disabled:opacity-50">Retry this memory</button>
+          ) : null}
           {isPlayable(item.file) ? <MediaPlayer file={item.file} /> : null}
 
           {showCaption ? (
@@ -197,7 +209,7 @@ export function UploadQueue({
       ))}
 
       {hasPending ? (
-        <Button onClick={onUploadAll} disabled={isUploading} className="w-full sm:w-auto">
+        <Button onClick={onUploadAll} disabled={!ready || isUploading} className="w-full sm:w-auto">
           {isUploading ? (
             <>
               <Loader2 className="animate-spin" size={16} /> Uploading...
