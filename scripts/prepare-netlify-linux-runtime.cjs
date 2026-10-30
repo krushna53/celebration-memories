@@ -35,7 +35,13 @@ async function main() {
       console.log(`Prepared ${name}@${version} for the Netlify function.`);
     }
     await fs.access(path.join(target, '@img/sharp-linux-x64/lib', `sharp-linux-x64-${sharp.version}.node`));
-    console.log('Linux Sharp runtime verified. Deploy with --skip-functions-cache to repackage it.');
+    // --no-build deploys use the existing ZIP from Netlify's manifest.
+    // Update that artifact as well as its source directory.
+    const functionRoot = path.dirname(target);
+    const functionArchive = path.join(root, '.netlify/functions/___netlify-server-handler.zip');
+    await fs.access(functionArchive);
+    execFileSync('zip', ['-q', '-r', functionArchive, 'node_modules/@img/sharp-linux-x64', 'node_modules/@img/sharp-libvips-linux-x64'], { cwd: functionRoot });
+    console.log('Linux Sharp runtime verified and included in the deployable function ZIP.');
   } finally {
     await fs.rm(temporary, { recursive: true, force: true });
   }
