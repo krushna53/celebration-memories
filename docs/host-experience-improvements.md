@@ -13,3 +13,9 @@ Unfinished local files, captions, and completed-transfer checkpoints are recover
 Run `npm run test:host-experience` for wizard routing, privacy wording, limited client serialization, concurrent/repeated confirmation, foreign path rejection, and missing-object checks. Run `npx tsc --noEmit`, ESLint on changed files, and `npm run build` for application checks.
 
 Additional manual checks: create a private disposable draft; take Quick setup through template and review on phone and desktop widths; open the guest preview; tick checklist items and reload; change details and verify ticks reset. In a guest queue, select a local file, reload and recover it, then verify Retry after a network interruption and confirm that the host sees only one pending memory. Delete test drafts and uploaded objects afterward.
+
+## Deployment
+
+The Netlify middleware bundle requires an explicit `@opentelemetry/api` dependency. The lockfile is synchronized with the existing package manifest, including its Capacitor CLI dev dependency.
+
+When using the local Netlify CLI, secret environment values returned by the API can be masked. Use `netlify build --offline --context production` with a validated `.env.local`, then `netlify deploy --no-build --prod` to deploy the packaged output. Hosted secret settings remain unchanged. Always check the final package and live deployment; a successful build alone does not establish that connection settings are valid.
