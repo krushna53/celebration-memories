@@ -54,6 +54,7 @@ export const SEGMENT_OCCASIONS: Record<EventSegment, OccasionOption[]> = {
     { id: "education", label: "Educational Event", category: "education", occasion: null },
     { id: "live_stream", label: "Live Streamed Event", category: "live_stream", occasion: null },
     { id: "obituary", label: "Memorial / Obituary", category: "obituary", occasion: null },
+    { id: "celebration", label: "Festival / Other Celebration", category: "celebration", occasion: null },
   ],
   corporate: [
     { id: "conference", label: "Conference / Summit", category: "corporate", occasion: "Conference" },

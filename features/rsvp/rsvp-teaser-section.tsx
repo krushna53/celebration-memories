@@ -3,6 +3,8 @@ import { MailCheck } from "lucide-react";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/motion/reveal";
 import { QuickRsvp } from "@/features/rsvp/quick-rsvp";
+import { NameOnlyRsvp } from "@/features/rsvp/name-only-rsvp";
+import { RsvpResponsesList } from "@/features/rsvp/rsvp-responses-list";
 import { getRsvpConfig } from "@/services/rsvp-config";
 import { getEventSegment } from "@/lib/event-segment";
 import type { EventCategory } from "@/types/event";
@@ -35,6 +37,7 @@ export async function RsvpTeaserSection({
 }: RsvpTeaserSectionProps) {
   const showPublicForm = Boolean(publicRsvpEnabled && eventSlug && eventId);
   const rsvpConfig = showPublicForm && eventId ? await getRsvpConfig(eventId) : undefined;
+  const nameOnly = Boolean(rsvpConfig?.nameOnly);
 
   return (
     <section id="rsvp" className="bg-ivory-50 py-20 sm:py-28">
@@ -47,8 +50,14 @@ export async function RsvpTeaserSection({
             <>
               <SectionHeading eyebrow="Kindly Respond" title="Will you be joining us?" />
               <p className="mx-auto mt-6 max-w-md text-sm leading-relaxed text-navy-700/80 sm:text-base">
-                One quick reply — say yes and confirm with Google. Got a
-                personal invitation link? Use that one instead.
+                {nameOnly ? (
+                  <>Just add your name and let us know if you can make it.</>
+                ) : (
+                  <>
+                    One quick reply — say yes and confirm with Google. Got a
+                    personal invitation link? Use that one instead.
+                  </>
+                )}
               </p>
             </>
           ) : (
@@ -71,8 +80,13 @@ export async function RsvpTeaserSection({
       {showPublicForm ? (
         <div className="mx-auto mt-10 max-w-xl px-6">
           <Reveal delay={0.1}>
-            <QuickRsvp eventSlug={eventSlug!} eventId={eventId!} honoreeName={honoreeName} rsvpConfig={rsvpConfig} segment={getEventSegment(category)} />
+            {rsvpConfig?.nameOnly ? (
+              <NameOnlyRsvp eventSlug={eventSlug!} eventId={eventId!} config={rsvpConfig} segment={getEventSegment(category)} />
+            ) : (
+              <QuickRsvp eventSlug={eventSlug!} eventId={eventId!} honoreeName={honoreeName} rsvpConfig={rsvpConfig} segment={getEventSegment(category)} />
+            )}
           </Reveal>
+          {rsvpConfig?.showResponses ? <RsvpResponsesList eventId={eventId!} config={rsvpConfig} /> : null}
         </div>
       ) : null}
     </section>

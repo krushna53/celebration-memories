@@ -145,6 +145,29 @@ export function RsvpFormBuilder({
       </section>
 
       <section className="rounded-xl border border-navy-950/10 bg-white p-5">
+        <label className="flex items-start gap-2 text-sm text-navy-950">
+          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-gold-500" checked={config.nameOnly} onChange={(e) => update({ nameOnly: e.target.checked })} />
+          <span>
+            <span className="font-medium">Name only on the shared RSVP link</span>
+            <span className="block text-navy-700/65">
+              Guests type just their name, pick a reply and answer your questions below — no Google sign-in or phone number. The
+              fields below still apply to personal invitation links.
+            </span>
+          </span>
+        </label>
+        <label className="mt-4 flex items-start gap-2 text-sm text-navy-950">
+          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-gold-500" checked={config.showResponses} onChange={(e) => update({ showResponses: e.target.checked })} />
+          <span>
+            <span className="font-medium">Show who&rsquo;s coming under the RSVP</span>
+            <span className="block text-navy-700/65">
+              Lists the names of guests who said yes on your event page, grouped by their answer to your first multiple-choice
+              question (for example, which date). Everyone who opens the page can see it.
+            </span>
+          </span>
+        </label>
+      </section>
+
+      <section className="rounded-xl border border-navy-950/10 bg-white p-5">
         <h2 className="font-display text-lg text-navy-950">Fields</h2>
         <p className="mt-1 text-sm text-navy-700/65">Full name is always asked. Choose what else to ask, and rename anything.</p>
         <div className="mt-4 divide-y divide-navy-950/5">

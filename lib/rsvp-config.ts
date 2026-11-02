@@ -58,6 +58,14 @@ export interface RsvpConfig {
   attendanceLabels: Record<AttendanceOption, string>;
   allowMaybe: boolean;
   questions: CustomQuestion[];
+  /**
+   * The shared (no-link) RSVP asks only for a name, the attendance choice
+   * and the host's own questions — no Google sign-in, phone or other fields.
+   * For small family gatherings where the host just wants a headcount.
+   */
+  nameOnly: boolean;
+  /** Lists guests who said yes under the RSVP, grouped by their answer to the first multiple-choice question (e.g. which date). Shows names publicly, so off by default. */
+  showResponses: boolean;
 }
 
 export const MAX_QUESTIONS = 10;
@@ -76,6 +84,8 @@ export const DEFAULT_RSVP_CONFIG: RsvpConfig = {
   attendanceLabels: { coming: "", maybe: "", not_coming: "" },
   allowMaybe: true,
   questions: [],
+  nameOnly: false,
+  showResponses: false,
 };
 
 /** A sensible starting point for corporate events — one click in the builder, never applied automatically. */
@@ -94,6 +104,8 @@ export const CORPORATE_RSVP_PRESET: RsvpConfig = {
     { id: "company", label: "Company / organisation", type: "text", options: [], required: false },
     { id: "designation", label: "Designation", type: "text", options: [], required: false },
   ],
+  nameOnly: false,
+  showResponses: false,
 };
 
 function cleanText(value: unknown, max: number): string {
@@ -142,7 +154,10 @@ export function sanitizeRsvpConfig(input: unknown): RsvpConfig {
     questions.push({ id, label, type, options, required: r.required === true });
   }
 
-  return { fields, attendanceLabels, allowMaybe: raw.allowMaybe !== false, questions };
+  return { fields, attendanceLabels, allowMaybe: raw.allowMaybe !== false, questions,
+    nameOnly: raw.nameOnly === true,
+    showResponses: raw.showResponses === true,
+  };
 }
 
 export function isDefaultRsvpConfig(config: RsvpConfig): boolean {
@@ -201,7 +216,8 @@ export function buildRsvpSchema(config: RsvpConfig, options: { forcePhone?: bool
       }
       for (const q of config.questions) {
         const answer = values.answers?.[q.id]?.trim() ?? "";
-        if (q.required && !answer) {
+        // A guest who can't come isn't asked the event's questions (e.g. which session they'll attend).
+        if (q.required && !answer && values.coming !== "not_coming") {
           ctx.addIssue({ code: "custom", path: ["answers", q.id], message: "Please answer this question." });
         }
         if (answer && q.type === "choice" && !q.options.includes(answer)) {
@@ -223,4 +239,36 @@ export function pickAnswers(config: RsvpConfig, answers: Record<string, string> 
     if (value) out[q.id] = value.slice(0, 1000);
   }
   return Object.keys(out).length > 0 ? out : null;
+}
+
+export interface ResponseGroup {
+  /** The choice picked, or null for guests listed without one. */
+  label: string | null;
+  names: string[];
+}
+
+/**
+ * Who's coming, for the public list under the RSVP (RsvpConfig.showResponses):
+ * guests who said yes, grouped by their answer to the event's first
+ * multiple-choice question in the question's own option order. Without such
+ * a question it's a single ungrouped list.
+ */
+export function groupComingResponses(
+  config: RsvpConfig,
+  rows: { name: string; coming: string; answers: Record<string, string> | null }[],
+): { question: string | null; groups: ResponseGroup[] } {
+  const coming = rows.filter((r) => r.coming === "coming");
+  const question = config.questions.find((q) => q.type === "choice");
+  if (!question) {
+    return { question: null, groups: coming.length > 0 ? [{ label: null, names: coming.map((r) => r.name) }] : [] };
+  }
+  const groups: ResponseGroup[] = question.options.map((label) => ({ label, names: [] }));
+  const unanswered: string[] = [];
+  for (const r of coming) {
+    const group = groups.find((g) => g.label === r.answers?.[question.id]);
+    if (group) group.names.push(r.name);
+    else unanswered.push(r.name);
+  }
+  if (unanswered.length > 0) groups.push({ label: null, names: unanswered });
+  return { question: question.label, groups };
 }

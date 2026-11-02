@@ -67,6 +67,7 @@ export const DEFAULT_GOALS_BY_CATEGORY: Record<EventCategory, WizardGoal[]> = {
   education: ["website"],
   live_stream: ["website"],
   reunion: ["website", "slideshow", "invitation_card"],
+  celebration: ["website", "invitation_card"],
 };
 
 export function getDefaultGoalsForCategory(

@@ -19,7 +19,8 @@ export type EventCategory =
   | "workshop"
   | "education"
   | "live_stream"
-  | "reunion";
+  | "reunion"
+  | "celebration";
 
 export interface EventRecord {
   id: string;

@@ -70,6 +70,7 @@ const COMPONENTS: Record<string, ComponentType<BirthdayTemplateProps>> = {
   "white-coat-reunion": dynamic(() => import("@/templates/WhiteCoatReunion")),
   "humanos": dynamic(() => import("@/templates/HumanOs")),
   "card-match": dynamic(() => import("@/templates/CardMatch")),
+  "festive-lights": dynamic(() => import("@/templates/FestiveLights")),
 };
 
 export const ALL_TEMPLATES: TemplateDefinition[] = TEMPLATE_CATALOG.map((summary) => ({

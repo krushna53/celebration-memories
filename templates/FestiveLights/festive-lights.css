@@ -1,0 +1,185 @@
+/* Festive Lights template — scoped under .fl. Every animation is decorative and stops for prefers-reduced-motion. */
+
+.fl .fl-hero {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgb(245 149 31 / 0.28), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgb(224 69 123 / 0.18), transparent 70%),
+    linear-gradient(180deg, var(--color-navy-950) 0%, var(--color-navy-900) 60%, var(--color-navy-800) 100%);
+}
+
+.fl .fl-sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* String of lights */
+.fl .fl-string {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2%;
+  border-top: 1px solid rgb(255 203 107 / 0.35);
+}
+.fl .fl-bulb {
+  width: 9px;
+  height: 13px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: var(--color-gold-300);
+  box-shadow: 0 0 10px 3px rgb(255 177 59 / 0.7);
+  animation: fl-twinkle 2.4s ease-in-out infinite;
+  animation-delay: var(--fl-bulb-delay, 0s);
+}
+.fl .fl-bulb:nth-child(odd) {
+  margin-top: 14px;
+}
+.fl .fl-bulb:nth-child(3n) {
+  background: #ff8fa3;
+  box-shadow: 0 0 10px 3px rgb(255 143 163 / 0.6);
+}
+@keyframes fl-twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Sparkles */
+.fl .fl-sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-gold-100);
+  box-shadow: 0 0 8px 2px rgb(255 226 168 / 0.8);
+  animation: fl-sparkle 4s ease-in-out infinite;
+  animation-delay: var(--fl-sparkle-delay, 0s);
+}
+@keyframes fl-sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.4); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Firework blooms — a ring of dots drawn with box-shadows that expands and fades */
+.fl .fl-burst {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  color: var(--fl-burst-color, var(--color-gold-300));
+  opacity: 0;
+  box-shadow:
+    0 -34px 0 0 currentColor, 24px -24px 0 0 currentColor, 34px 0 0 0 currentColor, 24px 24px 0 0 currentColor,
+    0 34px 0 0 currentColor, -24px 24px 0 0 currentColor, -34px 0 0 0 currentColor, -24px -24px 0 0 currentColor,
+    0 -18px 0 -1px currentColor, 18px 0 0 -1px currentColor, 0 18px 0 -1px currentColor, -18px 0 0 -1px currentColor;
+  animation: fl-burst 9s ease-out infinite;
+  animation-delay: var(--fl-burst-delay, 0s);
+}
+@keyframes fl-burst {
+  0% { opacity: 0; transform: scale(0.1); }
+  4% { opacity: 1; }
+  14% { opacity: 0; transform: scale(1.6); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+/* Sky lanterns drifting up */
+.fl .fl-lantern {
+  position: absolute;
+  bottom: -60px;
+  width: 22px;
+  height: 30px;
+  border-radius: 40% 40% 30% 30%;
+  background: linear-gradient(180deg, #ffd27a 0%, #f5951f 70%, #d9730d 100%);
+  box-shadow: 0 0 18px 6px rgb(245 149 31 / 0.45);
+  opacity: 0;
+  animation: fl-lantern var(--fl-lantern-duration, 20s) linear infinite;
+  animation-delay: var(--fl-lantern-delay, 0s);
+}
+@keyframes fl-lantern {
+  0% { opacity: 0; transform: translate(0, 0) scale(var(--fl-lantern-scale, 1)); }
+  8% { opacity: 0.9; }
+  50% { transform: translate(18px, -55vh) scale(var(--fl-lantern-scale, 1)); }
+  85% { opacity: 0.7; }
+  100% { opacity: 0; transform: translate(-10px, -110vh) scale(calc(var(--fl-lantern-scale, 1) * 0.7)); }
+}
+
+/* Diyas along the bottom */
+.fl .fl-diyas {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: clamp(10px, 4vw, 44px);
+  pointer-events: none;
+}
+.fl .fl-diya {
+  position: relative;
+  width: clamp(34px, 9vw, 58px);
+  padding-top: 26px;
+}
+.fl .fl-diya-bowl {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 10px rgb(245 149 31 / 0.5));
+}
+.fl .fl-flame {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  width: 12px;
+  height: 24px;
+  margin-left: -6px;
+  border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+  background: radial-gradient(ellipse at 50% 75%, #fff8e0 0%, #ffd27a 35%, #f5951f 70%, transparent 100%);
+  box-shadow: 0 0 22px 8px rgb(255 177 59 / 0.55);
+  transform-origin: 50% 100%;
+  animation: fl-flicker var(--fl-flicker, 1.8s) ease-in-out infinite alternate;
+  animation-delay: var(--fl-flicker-delay, 0s);
+}
+@keyframes fl-flicker {
+  0% { transform: scale(1, 1) rotate(-2deg); opacity: 0.95; }
+  35% { transform: scale(0.92, 1.08) rotate(2deg); opacity: 1; }
+  70% { transform: scale(1.05, 0.94) rotate(-1deg); opacity: 0.85; }
+  100% { transform: scale(0.97, 1.04) rotate(1.5deg); opacity: 1; }
+}
+
+/* Title glow, rangoli spin and card entrance */
+.fl .fl-title {
+  text-shadow: 0 0 24px rgb(255 177 59 / 0.35);
+}
+.fl .fl-rangoli {
+  animation: fl-spin 24s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes fl-spin {
+  to { rotate: 360deg; }
+}
+.fl .fl-rise {
+  animation: fl-rise 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes fl-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl .fl-bulb,
+  .fl .fl-sparkle,
+  .fl .fl-flame,
+  .fl .fl-rangoli,
+  .fl .fl-rise {
+    animation: none;
+  }
+  .fl .fl-sparkle { opacity: 0.6; }
+  .fl .fl-burst,
+  .fl .fl-lantern {
+    display: none;
+  }
+}

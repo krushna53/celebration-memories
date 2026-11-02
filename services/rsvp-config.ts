@@ -42,6 +42,11 @@ export interface RsvpAnswerRow {
 
 /** Every RSVP for the event that answered at least one custom question, newest first. */
 export async function listRsvpAnswers(eventId: string): Promise<RsvpAnswerRow[]> {
+  return (await listAllRsvps(eventId)).filter((r) => Object.keys(r.answers).length > 0);
+}
+
+/** Every RSVP for the event (answers {} when none), newest first. */
+export async function listAllRsvps(eventId: string): Promise<RsvpAnswerRow[]> {
   const { data, error } = await supabaseAdmin()
     .from("invitees")
     .select("name, rsvps(coming, answers, submitted_at)")
@@ -51,9 +56,7 @@ export async function listRsvpAnswers(eventId: string): Promise<RsvpAnswerRow[]>
   for (const invitee of data as { name: string; rsvps: { coming: string; answers: Record<string, string> | null; submitted_at: string }[] | { coming: string; answers: Record<string, string> | null; submitted_at: string } | null }[]) {
     const list = Array.isArray(invitee.rsvps) ? invitee.rsvps : invitee.rsvps ? [invitee.rsvps] : [];
     for (const r of list) {
-      if (r.answers && Object.keys(r.answers).length > 0) {
-        rows.push({ name: invitee.name, coming: r.coming, submittedAt: r.submitted_at, answers: r.answers });
-      }
+      rows.push({ name: invitee.name, coming: r.coming, submittedAt: r.submitted_at, answers: r.answers ?? {} });
     }
   }
   return rows.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));

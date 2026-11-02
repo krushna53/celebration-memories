@@ -10,6 +10,8 @@ import { buildRsvpSchema, pickAnswers } from "@/lib/rsvp-config";
 import { getRsvpConfig } from "@/services/rsvp-config";
 import type { ConfiguredRsvpValues } from "@/features/rsvp/rsvp-config-fields";
 import { notifyAdminsOfRsvpSubmission } from "@/services/admin-notifications";
+import { currentIpHash, isLockedOut, recordFailure } from "@/services/abuse-guard";
+import { createNameOnlyInvitee } from "@/services/quick-rsvp";
 
 export type SubmitPublicRsvpResult =
   | { success: true; inviteeId: string }
@@ -99,5 +101,66 @@ export async function submitPublicRsvpAction(
   }).catch((err) => console.error("notifyAdminsOfRsvpSubmission failed:", err));
 
   revalidatePath(`/events/${eventSlug}/rsvp`);
+  return { success: true, inviteeId };
+}
+
+/**
+ * The shared RSVP for events whose form is set to "name only"
+ * (RsvpConfig.nameOnly): a name, the attendance choice and the host's own
+ * questions. Like quickRsvpNameOnlyAction it always adds a new guest row (a
+ * typed name can't overwrite anyone else's reply), guarded by the honeypot
+ * and a per-connection limit.
+ */
+export async function submitNameOnlyRsvpAction(
+  eventSlug: string,
+  values: ConfiguredRsvpValues,
+  honeypot?: string,
+): Promise<SubmitPublicRsvpResult> {
+  if (honeypot) return { success: true, inviteeId: "" };
+
+  const event = await getEventForPublicRsvp(eventSlug);
+  if (!event) return { success: false, error: "RSVP isn't open for this event." };
+  const config = await getRsvpConfig(event.id);
+  if (!config.nameOnly) return { success: false, error: "Please use the full RSVP form for this event." };
+
+  // Only the name, reply and answers are taken from the guest — every other field gets the table defaults.
+  const parsed = buildRsvpSchema(config).safeParse({
+    name: values.name,
+    coming: values.coming,
+    answers: values.answers,
+    adults: 1,
+    children: 0,
+    mealPreference: "no_preference",
+    consent: true,
+  });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Please check the form and try again." };
+  }
+
+  const ipHash = await currentIpHash();
+  if (await isLockedOut("quick-rsvp", ipHash)) {
+    return { success: false, error: "Too many replies from this connection — please try again later." };
+  }
+
+  let inviteeId: string;
+  try {
+    const invitee = await createNameOnlyInvitee(event.id, parsed.data.name);
+    inviteeId = invitee.id;
+    await submitRsvp(invitee.id, parsed.data, pickAnswers(config, parsed.data.answers));
+    await recordFailure("quick-rsvp", ipHash);
+  } catch (err) {
+    console.error("submitNameOnlyRsvpAction failed:", err);
+    return { success: false, error: "Something went wrong saving your RSVP. Please try again." };
+  }
+
+  notifyAdminsOfRsvpSubmission({
+    eventId: event.id,
+    honoreeName: event.honoreeName,
+    eventTitle: event.eventTitle,
+    values: parsed.data,
+    host: (await headers()).get("host"),
+  }).catch((err) => console.error("notifyAdminsOfRsvpSubmission failed:", err));
+
+  revalidatePath("/admin/invitees");
   return { success: true, inviteeId };
 }

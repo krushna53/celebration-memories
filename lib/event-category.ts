@@ -12,6 +12,7 @@ export const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
   education: "Educational Event",
   live_stream: "Live Streamed Event",
   reunion: "Reunion",
+  celebration: "Festival / Other Celebration",
 };
 
 export const EVENT_CATEGORY_OPTIONS: { value: EventCategory; label: string }[] = (
@@ -108,6 +109,12 @@ const WISH_COPY_BY_CATEGORY: Partial<Record<EventCategory, WishSectionCopy>> = {
     placeholder: "e.g. It's been too long — can't wait to catch up and relive old memories together...",
     noticesTitle: "Good to Know",
   },
+  celebration: {
+    eyebrow: "A Note From Us",
+    title: "Celebrate With Us",
+    placeholder: "e.g. Wishing you and your family light, joy and prosperity — we'd love to celebrate together...",
+    noticesTitle: "Good to Know",
+  },
 };
 
 export function getWishSectionCopy(category: EventCategory | null | undefined): WishSectionCopy {
@@ -175,6 +182,12 @@ const FIELD_COPY_BY_CATEGORY: Partial<Record<EventCategory, EventFieldCopy>> = {
     honoreePlaceholder: "e.g. Batch 73, MGM Medical College",
     hostedByLabel: "Organized By",
     hostedByPlaceholder: "e.g. Reunion Committee",
+  },
+  celebration: {
+    honoreeLabel: "What are you celebrating?",
+    honoreePlaceholder: "e.g. Diwali Celebration",
+    hostedByLabel: "Hosted By",
+    hostedByPlaceholder: "e.g. The Shah Family",
   },
 };
 
