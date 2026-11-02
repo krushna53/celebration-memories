@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,9 @@ const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70";
 
+/** Matches the server's cap (features/rsvp/public-rsvp-actions.ts). */
+const MAX_EXTRA_NAMES = 9;
+
 interface NameOnlyRsvpProps {
   eventSlug: string;
   eventId: string;
@@ -28,14 +31,16 @@ interface NameOnlyRsvpProps {
 /**
  * The shared RSVP for events set to "name only" (RsvpConfig.nameOnly): a
  * name, the attendance choice and the host's own questions, which are
- * hidden for a guest who can't come. Several family members can reply one
- * after another from the same phone — "Add another reply" resets the form.
+ * hidden for a guest who can't come. A family can reply together — "Add
+ * another name" adds more people to the same reply (each is listed as their
+ * own guest) — or one after another with "Add another reply".
  */
 export function NameOnlyRsvp({ eventSlug, eventId, config, segment = "family" }: NameOnlyRsvpProps) {
   const router = useRouter();
   const [honeypot, setHoneypot] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState<{ name: string; coming: AttendanceOption; picks: string[] } | null>(null);
+  const [extraNames, setExtraNames] = useState<string[]>([]);
+  const [sent, setSent] = useState<{ names: string[]; coming: AttendanceOption; picks: string[] } | null>(null);
   const [started, setStarted] = useState(false);
   const {
     register,
@@ -58,26 +63,35 @@ export function NameOnlyRsvp({ eventSlug, eventId, config, segment = "family" }:
   async function onSubmit(values: ConfiguredRsvpValues) {
     setError(null);
     const answers = values.coming === "not_coming" ? {} : values.answers;
-    const result = await submitNameOnlyRsvpAction(eventSlug, { ...values, answers }, honeypot);
+    const others = extraNames.map((n) => n.trim()).filter(Boolean);
+    if (others.some((n) => n.length < 2)) {
+      setError("Please enter each person's full name, or remove the empty row.");
+      return;
+    }
+    const result = await submitNameOnlyRsvpAction(eventSlug, { ...values, answers }, honeypot, others);
     if (!result.success) {
       setError(result.error);
       return;
     }
     const picks = config.questions.flatMap((q) => (answers?.[q.id] ? [answers[q.id]!] : []));
-    setSent({ name: values.name, coming: values.coming, picks });
+    setSent({ names: [values.name, ...others], coming: values.coming, picks });
+    setExtraNames([]);
     reset();
     router.refresh();
   }
 
   if (sent) {
+    const firstNames = sent.names.map((n) => n.split(" ")[0]);
+    const who =
+      firstNames.length > 1 ? `${firstNames.slice(0, -1).join(", ")} & ${firstNames[firstNames.length - 1]}` : firstNames[0];
     return (
       <div className="rounded-3xl border border-gold-500/25 bg-white p-6 text-left shadow-sm sm:p-8" role="status">
         <p className="font-display text-xl text-navy-950">
           {sent.coming === "coming"
-            ? `Thank you, ${sent.name.split(" ")[0]} — see you there!`
+            ? `Thank you, ${who} — see you there!`
             : sent.coming === "maybe"
-              ? `Thanks, ${sent.name.split(" ")[0]} — we’ve noted you might make it.`
-              : `You’ll be missed, ${sent.name.split(" ")[0]}. Thank you for letting us know.`}
+              ? `Thanks, ${who} — we’ve noted you might make it.`
+              : `You’ll be missed, ${who}. Thank you for letting us know.`}
         </p>
         {sent.picks.length > 0 ? (
           <ul className="mt-3 space-y-1 text-sm text-navy-700">
@@ -122,6 +136,38 @@ export function NameOnlyRsvp({ eventSlug, eventId, config, segment = "family" }:
           <p className="mt-1 text-xs font-medium text-red-600" role="alert">
             {errors.name.message}
           </p>
+        ) : null}
+        {extraNames.map((value, i) => (
+          <div key={i} className="mt-2 flex items-center gap-2">
+            <input
+              className={inputClasses}
+              aria-label={`Name ${i + 2}`}
+              placeholder="Family member's name"
+              maxLength={120}
+              value={value}
+              onChange={(e) => setExtraNames((list) => list.map((n, j) => (j === i ? e.target.value : n)))}
+            />
+            <button
+              type="button"
+              className="shrink-0 rounded-full p-2 text-navy-700/70 hover:bg-ivory-100 hover:text-navy-950"
+              aria-label={`Remove name ${i + 2}`}
+              onClick={() => setExtraNames((list) => list.filter((_, j) => j !== i))}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ))}
+        {extraNames.length < MAX_EXTRA_NAMES ? (
+          <button
+            type="button"
+            className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 underline-offset-4 hover:underline"
+            onClick={() => setExtraNames((list) => [...list, ""])}
+          >
+            <Plus size={15} aria-hidden="true" /> Add another name
+          </button>
+        ) : null}
+        {extraNames.length > 0 ? (
+          <p className="mt-1 text-xs text-navy-700/70">Everyone listed gets the same reply and date.</p>
         ) : null}
       </div>
 

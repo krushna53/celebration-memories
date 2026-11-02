@@ -10,7 +10,7 @@ import { groupComingResponses, type RsvpConfig } from "@/lib/rsvp-config";
  * email or comments.
  */
 export async function RsvpResponsesList({ eventId, config }: { eventId: string; config: RsvpConfig }) {
-  const { question, groups } = groupComingResponses(config, await listAllRsvps(eventId));
+  const { question, groups } = groupComingResponses(config, (await listAllRsvps(eventId)).reverse()); // oldest first, so a family reads in the order it was typed
   const total = groups.reduce((sum, g) => sum + g.names.length, 0);
 
   return (
@@ -20,7 +20,7 @@ export async function RsvpResponsesList({ eventId, config }: { eventId: string; 
         Who&rsquo;s coming
         <span className="ml-auto rounded-full bg-gold-500/10 px-3 py-0.5 font-sans text-sm text-gold-700">{total}</span>
       </h3>
-      {total === 0 ? (
+      {groups.length === 0 ? (
         <p className="mt-3 text-sm text-navy-700/80">No replies yet — be the first!</p>
       ) : (
         <div className="mt-4 grid gap-4">

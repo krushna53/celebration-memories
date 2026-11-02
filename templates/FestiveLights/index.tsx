@@ -15,9 +15,10 @@ import "./festive-lights.css";
  * soft fireworks over a row of flickering diyas, all pure CSS and switched
  * off for prefers-reduced-motion.
  *
- * When the host hides Event Details, the hero leaves out the date too —
- * that's the "just a title and an RSVP" page, e.g. a gathering over two
- * days where guests pick their session in the RSVP form.
+ * When the host hides Event Details, the hero keeps just the day(s) the
+ * event spans (no times or "View Details") — the "title and an RSVP" page,
+ * e.g. a gathering over two days where guests pick their session in the
+ * RSVP form.
  */
 export default function FestiveLights(props: BirthdayTemplateProps) {
   const showDetails = normalizeSectionConfig(props.event?.sectionConfig).some(
@@ -34,7 +35,7 @@ export default function FestiveLights(props: BirthdayTemplateProps) {
               displayData={props.displayData}
               galleryPhotos={props.galleryPhotos}
               milestones={props.milestones}
-              renderHero={(relive) => <FestiveLightsHero data={props.displayData} relive={relive} showDetails={showDetails} />}
+              renderHero={(relive) => <FestiveLightsHero data={props.displayData} relive={relive} showDetails={showDetails} endIso={props.event?.endAt ?? null} />}
             />
           </SiteShell>
         </div>

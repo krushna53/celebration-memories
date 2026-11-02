@@ -13,6 +13,9 @@ import { notifyAdminsOfRsvpSubmission } from "@/services/admin-notifications";
 import { currentIpHash, isLockedOut, recordFailure } from "@/services/abuse-guard";
 import { createNameOnlyInvitee } from "@/services/quick-rsvp";
 
+/** Extra family members one name-only reply can carry (plus the person filling it in). */
+const MAX_EXTRA_NAMES = 9;
+
 export type SubmitPublicRsvpResult =
   | { success: true; inviteeId: string }
   | { success: false; error: string };
@@ -115,6 +118,8 @@ export async function submitNameOnlyRsvpAction(
   eventSlug: string,
   values: ConfiguredRsvpValues,
   honeypot?: string,
+  /** Family members replying together — each becomes their own guest row with the same reply and answers. */
+  extraNames: string[] = [],
 ): Promise<SubmitPublicRsvpResult> {
   if (honeypot) return { success: true, inviteeId: "" };
 
@@ -137,6 +142,10 @@ export async function submitNameOnlyRsvpAction(
     return { success: false, error: parsed.error.issues[0]?.message ?? "Please check the form and try again." };
   }
 
+  const others = extraNames.map((n) => n.trim().replace(/\s+/g, " ")).filter(Boolean);
+  if (others.length > MAX_EXTRA_NAMES) return { success: false, error: `Please add at most ${MAX_EXTRA_NAMES + 1} names in one reply.` };
+  if (others.some((n) => n.length < 2 || n.length > 120)) return { success: false, error: "Please enter each person's full name." };
+
   const ipHash = await currentIpHash();
   if (await isLockedOut("quick-rsvp", ipHash)) {
     return { success: false, error: "Too many replies from this connection — please try again later." };
@@ -144,9 +153,15 @@ export async function submitNameOnlyRsvpAction(
 
   let inviteeId: string;
   try {
+    const answers = pickAnswers(config, parsed.data.answers);
     const invitee = await createNameOnlyInvitee(event.id, parsed.data.name);
     inviteeId = invitee.id;
-    await submitRsvp(invitee.id, parsed.data, pickAnswers(config, parsed.data.answers));
+    await submitRsvp(invitee.id, parsed.data, answers);
+    for (const name of others) {
+      const extra = await createNameOnlyInvitee(event.id, name);
+      await submitRsvp(extra.id, { ...parsed.data, name }, answers);
+    }
+    // One submission counts once, however many names it carries.
     await recordFailure("quick-rsvp", ipHash);
   } catch (err) {
     console.error("submitNameOnlyRsvpAction failed:", err);
@@ -157,7 +172,7 @@ export async function submitNameOnlyRsvpAction(
     eventId: event.id,
     honoreeName: event.honoreeName,
     eventTitle: event.eventTitle,
-    values: parsed.data,
+    values: others.length > 0 ? { ...parsed.data, name: [parsed.data.name, ...others].join(", ") } : parsed.data,
     host: (await headers()).get("host"),
   }).catch((err) => console.error("notifyAdminsOfRsvpSubmission failed:", err));
 

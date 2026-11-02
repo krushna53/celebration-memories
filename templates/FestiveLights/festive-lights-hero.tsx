@@ -3,12 +3,15 @@ import type { CSSProperties } from "react";
 import type { EventDisplayData } from "@/lib/event-display";
 import type { HeroRelive } from "@/features/hero/hero-section";
 import { Button } from "@/components/ui/button";
+import { formatEventDate } from "@/lib/timezone";
 
 interface FestiveLightsHeroProps {
   data: EventDisplayData;
   relive: HeroRelive | null;
   /** False when the host hid Event Details — the date and "View Details" go too. */
   showDetails: boolean;
+  /** The event's end (events.end_at) — with details hidden, the card still lists each day the event spans. */
+  endIso: string | null;
 }
 
 /** Fixed positions so the server and client render the same sky (no Math.random in render). */
@@ -76,8 +79,10 @@ function RangoliDivider() {
  * layers are aria-hidden; the text sits in the same glass card as the
  * other templates. Animations live in festive-lights.css.
  */
-export function FestiveLightsHero({ data, relive, showDetails }: FestiveLightsHeroProps) {
+export function FestiveLightsHero({ data, relive, showDetails, endIso }: FestiveLightsHeroProps) {
   const subtitle = data.eventTitle.trim();
+  const startDay = formatEventDate(data.isoStart, data.timezone);
+  const endDay = endIso ? formatEventDate(endIso, data.timezone) : startDay;
   const showHost = data.hostedBy.trim() && data.hostedBy.trim().toLowerCase() !== subtitle.toLowerCase();
 
   return (
@@ -120,6 +125,16 @@ export function FestiveLightsHero({ data, relive, showDetails }: FestiveLightsHe
                 <span className="whitespace-nowrap">{data.date}</span>
               </span>
               <span className="mt-1.5 block text-lg font-medium tracking-wide text-ivory-100/90">{data.timeRange}</span>
+            </p>
+          ) : !relive && !data.dateTbd ? (
+            <p className="mt-6 font-display text-xl font-semibold leading-snug text-ivory-50 sm:text-2xl">
+              {startDay}
+              {endDay !== startDay ? (
+                <>
+                  <span className="mx-2 block text-base font-normal text-gold-300 sm:inline">&amp;</span>
+                  {endDay}
+                </>
+              ) : null}
             </p>
           ) : null}
 
