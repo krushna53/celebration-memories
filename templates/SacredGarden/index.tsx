@@ -20,7 +20,10 @@ function localDateTime(iso: string, timeZone: string): string {
  * The couple ("Kunal & Aanchal"), date, venue and dress code come from the event; everything else is the design's sample text.
  */
 export default function SacredGarden({ event, displayData, galleryPhotos, milestones }: BirthdayTemplateProps) {
-  const [groom = "", bride = ""] = (event?.honoreeName ?? displayData.honoreeName).split(/\s*(?:&|\band\b)\s*/i);
+  const rawName = event?.honoreeName ?? displayData.honoreeName;
+  // a fresh draft is called "New Event" until the host names it; show the sample couple instead
+  const coupleName = rawName.trim() === "New Event" ? "" : rawName;
+  const [groom = "", bride = ""] = coupleName.split(/\s*(?:&|\band\b)\s*/i);
   const form = {
     ...formDefaults,
     groom: groom.trim() || formDefaults.groom,
@@ -35,7 +38,7 @@ export default function SacredGarden({ event, displayData, galleryPhotos, milest
   const film = FILMS[letters];
   // the site's own header and footer, like every template; sample events get the usual "Create your own" strip
   return (
-    <SiteShell honoreeName={displayData.honoreeName} transparentUntilScroll>
+    <SiteShell honoreeName={`${form.groom} & ${form.bride}`} transparentUntilScroll>
       {/* The garden design (with its own RSVP) is the hero; after it come the site's own sections (sample strip, gallery…).
           The design already shows the countdown, invitation, details and RSVP, so those are left out. */}
       <EventSections
