@@ -33,7 +33,12 @@ export function ConciergeHelpBanner() {
   if (HIDDEN_ON_PATHS.some((p) => pathname.endsWith(p))) return null;
   if (HIDDEN_ON_EXACT.includes(pathname)) return null;
   if (HIDDEN_ON_PREFIXES.some((p) => pathname.startsWith(p))) return null;
+  // Template previews render the full guest site, whose own fixed menu sits under this bar
+  if (pathname.includes("/preview/")) return null;
+  return <ConciergeHelpBar pathname={pathname} />;
+}
 
+function ConciergeHelpBar({ pathname }: { pathname: string }) {
   const [visible, setVisible] = useState(false);
   const [countryCode, setCountryCode] = useState("+91");
   const [phone, setPhone] = useState("");

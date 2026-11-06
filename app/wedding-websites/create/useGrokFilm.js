@@ -78,6 +78,9 @@ export default function useGrokFilm(letters, filmLetters, onFilm) {
     return () => clearTimeout(timer);
   }, [letters, filmLetters, config, code, tick]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // a new code gets a fresh try at letters that failed with the old one
+  useEffect(() => { failed.current.clear(); setError(""); setTick((t) => t + 1); }, [code]);
+
   const retry = () => { failed.current.delete(letters); setError(""); setTick((t) => t + 1); };
   return { status, error, askCode, code, setCode, retry };
 }
