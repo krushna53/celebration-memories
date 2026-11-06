@@ -1,0 +1,7 @@
+/* Fonts of the Sacred Garden design (files in /public/fonts/sacred). */
+@font-face { font-family: "SG Imperial Script"; src: url("/fonts/sacred/ImperialScript-Regular.woff") format("woff"); font-display: swap; }
+@font-face { font-family: "SG GT Super Display"; src: url("/fonts/sacred/GTSuperDisplay-Light.woff") format("woff"); font-display: swap; }
+@font-face { font-family: "SG Beau Rivage"; src: url("/fonts/sacred/BeauRivage-Regular.woff") format("woff"); font-display: swap; }
+@font-face { font-family: "SG Vazir"; src: url("/fonts/sacred/Vazir-Regular.woff") format("woff"); font-display: swap; }
+@font-face { font-family: "SG Rufina"; src: url("/fonts/sacred/Rufina-Regular.woff") format("woff"); font-display: swap; }
+@font-face { font-family: "SG Ovo"; src: url("/fonts/sacred/Ovo-Regular.woff2") format("woff2"); font-display: swap; }

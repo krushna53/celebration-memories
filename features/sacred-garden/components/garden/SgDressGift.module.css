@@ -1,0 +1,9 @@
+/* in-flow text on the panel; spacing matches the printed layout for short notes */
+.flow { position: relative; z-index: 4; padding: 86px 70px 103px; }
+.title { margin: 0 -125px; height: 64px; }
+.copy { margin-top: 13px; }
+.second { margin-top: 43px; }
+
+@media (max-width: 479px) { .flow { padding-left: 75px; padding-right: 75px; } .title { margin: 0 -130px; } }
+.gift { position: relative; z-index: 0; }
+.copy, .title { position: relative; z-index: 1; }
