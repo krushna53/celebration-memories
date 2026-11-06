@@ -4,7 +4,10 @@ import { InviteShell } from "@/features/sacred-garden/components";
 import { SacredGardenInvitation, SgEnvelope, gardenTheme } from "@/features/sacred-garden/components/garden";
 import { buildInvitation } from "@/features/sacred-garden/lib/invitation-form";
 
-/** The Sacred Garden page for one event: the envelope film (when one carries these initials) opens onto the garden. */
+/**
+ * The Sacred Garden page for one event: the envelope film (when one carries these initials) opens onto the garden.
+ * @param {{ form: any, rsvp?: import("react").ReactNode }} props rsvp: true = the design's own, false = none, or a node in its place
+ */
 export default function SacredGardenEvent({ form, rsvp = true }) {
   const [opened, setOpened] = useState(false);
   const c = useMemo(() => buildInvitation(form), [form]);
