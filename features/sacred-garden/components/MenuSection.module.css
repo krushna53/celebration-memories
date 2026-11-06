@@ -1,0 +1,49 @@
+.grid {
+  max-width: 420px;
+  margin: 0 auto;
+}
+.card {
+  padding: 30px 26px;
+  border-radius: 22px;
+  background: var(--inv-surface, #fff);
+  border: 1px solid var(--inv-line, #f0d6cd);
+  text-align: center;
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  font-family: var(--inv-caps, "Cinzel", serif);
+  font-size: 15px;
+  letter-spacing: 0.2em;
+  color: var(--inv-ink, #1e1b4b);
+}
+.badge {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+}
+.badge::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.veg .badge { color: #2e8b57; }
+.list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.list li {
+  font-family: var(--inv-serif, "Cormorant Garamond", serif);
+  font-size: 19px;
+  color: var(--inv-ink, #1e1b4b);
+}
+.list li + li::before {
+  content: "✦";
+  display: block;
+  margin-bottom: 10px;
+  font-size: 9px;
+  color: var(--inv-accent, #e5503c);
+}
+
+/* linen theme */
+:global([data-theme="linen"]) .card { background: none; border: 0; box-shadow: none; }
+:global([data-theme="linen"]) .list li { color: var(--inv-ink); }

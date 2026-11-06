@@ -1,0 +1,70 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  max-width: 820px;
+  margin: 0 auto;
+}
+.card {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 32px 26px;
+  border-radius: 22px;
+  background: rgba(253, 246, 236, 0.06);
+  border: 1px solid rgba(253, 246, 236, 0.2);
+  text-align: center;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--inv-accent, #e5503c);
+  color: #fff;
+}
+.card h3 {
+  margin: 4px 0 0;
+  font-family: var(--inv-caps, "Cinzel", serif);
+  font-size: 15px;
+  letter-spacing: 0.24em;
+  color: var(--inv-accent-bright, #ff6b57);
+}
+.card p {
+  margin: 0;
+  font-family: var(--inv-serif, "Cormorant Garamond", serif);
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--inv-on-deep, #fdf6ec);
+}
+.palette { margin-top: clamp(30px, 6cqi, 44px); text-align: center; }
+.palette p {
+  margin: 0 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--inv-on-deep-muted, #d6d2e8);
+}
+.swatches { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.swatches li { display: grid; justify-items: center; gap: 6px; font-size: 12px; color: var(--inv-on-deep-muted, #d6d2e8); }
+.swatches span {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid rgba(253, 246, 236, 0.85);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* tone other than "dark": cards on a light / paper background */
+.light .card { background: var(--inv-surface, #fff); border-color: var(--inv-line, #f0d6cd); box-shadow: 0 18px 36px -30px rgba(30, 27, 75, 0.5); }
+.light .card h3 { color: var(--inv-accent, #e5503c); }
+.light .card p { color: var(--inv-ink, #1e1b4b); }
+.light .palette p, .light .swatches li { color: var(--inv-muted, #625e7e); }
+.light .swatches span { border-color: #fff; box-shadow: 0 6px 14px rgba(30, 27, 75, 0.18); }
+
+/* linen theme: open columns on the paper */
+:global([data-theme="linen"]) .light .card { background: none; border: 0; box-shadow: none; padding: 22px 10px; }
+:global([data-theme="linen"]) .light .icon { background: none; border: 1px solid var(--inv-line); color: var(--inv-accent); }
+:global([data-theme="linen"]) .light .swatches span { border-color: rgba(255, 255, 255, 0.7); }

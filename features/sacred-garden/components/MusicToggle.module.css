@@ -1,0 +1,27 @@
+.toggle {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(253, 246, 236, 0.45);
+  border-radius: 50%;
+  background: var(--inv-deep, #1e1b4b);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(30, 27, 75, 0.35);
+}
+.toggle:focus-visible { outline: 2px solid var(--inv-accent, #e5503c); outline-offset: 3px; }
+.playing { background: var(--inv-accent, #e5503c); border-color: transparent; }
+.playing::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border: 1px solid var(--inv-accent, #e5503c);
+  border-radius: 50%;
+  animation: ring 2s ease-out infinite;
+}
+@keyframes ring { from { transform: scale(0.9); opacity: 0.8; } to { transform: scale(1.35); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .playing::before { animation: none; } }

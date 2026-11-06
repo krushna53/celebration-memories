@@ -1,0 +1,93 @@
+/* Linen invitation, in the look of the reference: one continuous page with sage-green type,
+   a floral vine down both sides, bouquets in the bottom corners and wavy dividers between sections.
+   Sections below read the --inv-* tokens set on .page, and linen rules live in each section's
+   CSS as :global([data-theme="linen"]) overrides. */
+.page {
+  --inv-ink: #3f4d33;
+  --inv-accent: #5f7147;
+  --inv-accent-bright: #7a8f5b;
+  --inv-accent-soft: #e4e0c8;
+  --inv-muted: #6d7a5d;
+  --inv-line: #bfb48f;
+  --inv-surface: #f8f4e8;
+  --inv-deep: #3f4d33;
+  --inv-bg: #dccaa6;
+  --inv-caps: "Playfair Display", Georgia, serif;
+  --inv-serif: "Cormorant Garamond", Georgia, serif;
+  --inv-script: "Great Vibes", cursive;
+  --inv-section-bg: transparent;
+  --inv-section-pad-x: clamp(6px, 2vw, 20px);
+  --inv-closing-height: 0;
+  --inv-deco: none;
+  position: relative;
+  color: var(--inv-ink);
+  background-color: var(--inv-bg);
+  background-image:
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.28), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(110, 92, 58, 0.045) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(110, 92, 58, 0.04) 0 1px, transparent 1px 4px);
+  isolation: isolate;
+}
+
+/* the paper column: vines run down both edges */
+.paper {
+  /* sections size themselves to the paper, not the screen */
+  container: invite / inline-size;
+  position: relative;
+  --vine: clamp(40px, 7cqi, 92px);
+  --corner: clamp(130px, 26vw, 320px);
+  padding: clamp(40px, 7vw, 90px) calc(var(--vine) - 6px) clamp(80px, 13vw, 170px);
+  background-image: var(--inv-vine, url(/invite-art/vine.svg)), var(--inv-vine, url(/invite-art/vine.svg));
+  background-repeat: repeat-y, repeat-y;
+  background-size: var(--vine) auto, var(--vine) auto;
+  background-position: left 2px top 0, right 2px top 0;
+}
+/* a faint printed rule just inside the vines */
+.paper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--vine) + 4px);
+  right: calc(var(--vine) + 4px);
+  border-left: 1px solid rgba(95, 113, 71, 0.12);
+  border-right: 1px solid rgba(95, 113, 71, 0.12);
+  pointer-events: none;
+}
+
+.corner {
+  position: absolute;
+  z-index: 2;
+  width: var(--corner);
+  height: var(--corner);
+  background: var(--inv-corner, url(/invite-art/corner.svg)) 0 0 / contain no-repeat;
+  pointer-events: none;
+}
+.tl { top: 0; left: 0; }
+.tr { top: 0; right: 0; transform: scaleX(-1); }
+.bl { bottom: 0; left: 0; transform: scaleY(-1); }
+.br { bottom: 0; right: 0; transform: scale(-1, -1); }
+
+.content { position: relative; z-index: 1; }
+/* wavy divider drawn above every section except the first */
+.content > section + section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(380px, 72%);
+  height: 16px;
+  transform: translateX(-50%);
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 380 16'><path d='M0 8 Q 48 1 95 8 T 190 8 T 285 8 T 380 8' fill='none' stroke='%237a8f5b' stroke-width='1.2' opacity='.7'/></svg>") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+.caption {
+  margin: 0;
+  padding: 18px 16px 28px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--inv-muted);
+}
+.caption a { color: var(--inv-accent); font-weight: 600; text-decoration: none; }

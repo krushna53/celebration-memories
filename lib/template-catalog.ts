@@ -478,6 +478,19 @@ export const TEMPLATE_CATALOG: TemplateSummary[] = [
       eventIds: ["fe7f30a8-2672-4698-8ffb-131a7db2e288"],
     },
   },
+  {
+    id: "tpl-sacred-garden",
+    slug: "sacred-garden",
+    name: "Sacred Garden",
+    description: "Cream paper, roses and gold script, opened by a wax-sealed envelope film with the couple's initials. Its own full page (moved from krushna-53-invitations).",
+    category: "romantic",
+    premium: false,
+    thumbnail: "/invite-art/sacred/couple.webp",
+    primaryColor: "#b8925a",
+    secondaryColor: "#7a1f1f",
+    fontFamily: "Imperial Script",
+    occasions: ["wedding"],
+  },
 ];
 
 export const DEFAULT_TEMPLATE_SLUG = "royal-gold";

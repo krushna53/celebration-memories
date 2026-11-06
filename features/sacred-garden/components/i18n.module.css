@@ -1,0 +1,74 @@
+/* Language picker: a small globe pill (bottom-left, above the music button) with a list that opens upward.
+   Same serif and sage / cream colours as the invitation. */
+.wrap {
+  position: fixed;
+  left: 18px;
+  bottom: 82px;
+  z-index: 70;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 14px 0 11px;
+  border: 1px solid #c9b98f;
+  border-radius: 999px;
+  background: #f8f4e8;
+  color: #3f4d33;
+  font: 600 16px/1 var(--inv-serif, "Cormorant Garamond", Georgia, serif);
+  box-shadow: 0 8px 20px rgba(47, 58, 38, 0.22);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.toggle svg { color: #5f7147; flex: none; }
+.toggle:hover { background: #fffaf0; }
+.toggle:focus-visible { outline: 2px solid #5f7147; outline-offset: 3px; }
+
+.menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  display: grid;
+  gap: 2px;
+  min-width: 168px;
+  max-height: min(70vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  border: 1px solid #d9cba4;
+  border-radius: 16px;
+  background: #f8f4e8;
+  box-shadow: 0 16px 36px rgba(47, 58, 38, 0.26);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transform-origin: bottom left;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+}
+.open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #3f4d33;
+  font: 600 18px/1.2 var(--inv-serif, "Cormorant Garamond", Georgia, serif);
+  text-align: left;
+  cursor: pointer;
+}
+.item:hover { background: #ece4cc; }
+.item:focus-visible { outline: 2px solid #5f7147; outline-offset: -2px; }
+.on, .on:hover { background: #5f7147; color: #fff; }
+.on::after { content: "✓"; font-size: 14px; }

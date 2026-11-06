@@ -1,0 +1,44 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+.card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 28px 24px;
+  border-radius: 22px;
+  background: var(--inv-surface, #fff);
+  border: 1px solid var(--inv-line, #f0d6cd);
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: var(--inv-accent-soft, #fde7e1);
+  color: var(--inv-accent, #e5503c);
+}
+.card h3 {
+  margin: 6px 0 0;
+  font-family: var(--inv-serif, "Cormorant Garamond", serif);
+  font-size: 25px;
+  font-weight: 600;
+  color: var(--inv-ink, #1e1b4b);
+}
+.card p { margin: 0; font-size: 14px; line-height: 1.65; color: var(--inv-muted, #625e7e); }
+.card a {
+  justify-self: start;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--inv-accent, #e5503c);
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+}
+
+/* linen theme */
+:global([data-theme="linen"]) .card { background: none; border: 0; box-shadow: none; padding: 20px 10px; }
+:global([data-theme="linen"]) .icon { background: none; border: 1px solid var(--inv-line); color: var(--inv-accent); }
