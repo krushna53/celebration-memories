@@ -12,6 +12,7 @@ async function handle(request) {
     apiKey: process.env.XAI_API_KEY ?? "",
     accessCode: process.env.AI_VIDEO_ACCESS_CODE ?? "",
     allowLocalAccess: process.env.NODE_ENV !== "production", // free on your own machine
+    openAccess: true, // no owner code: every visitor can have their initials put on the film
   });
 }
 export { handle as GET, handle as HEAD, handle as POST };

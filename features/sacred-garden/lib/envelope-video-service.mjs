@@ -59,7 +59,7 @@ function closeUp(data) {
  * store: { get, set, claim } for JSON jobs — claim must be atomic (writes only if the key is new).
  * films: { get(id) → bytes | null, set(id, bytes) } for the finished films.
  */
-export async function serveEnvelopeVideo(request, { store, films, apiKey = "", accessCode = "", allowLocalAccess = false, fetcher = fetch, now = Date.now() }) {
+export async function serveEnvelopeVideo(request, { store, films, apiKey = "", accessCode = "", allowLocalAccess = false, openAccess = false, fetcher = fetch, now = Date.now() }) {
   const url = new URL(request.url);
   const parts = url.pathname.replace(/\/$/, "").split("/");
   const action = parts.at(-1);
@@ -80,7 +80,8 @@ export async function serveEnvelopeVideo(request, { store, films, apiKey = "", a
     return new Response(request.method === "HEAD" ? null : all, { headers: { ...headers, "content-length": String(all.length) } });
   }
 
-  const localAccess = allowLocalAccess && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  // openAccess: anyone may make a film (no owner code); otherwise only on your own machine, or with the code
+  const localAccess = openAccess || (allowLocalAccess && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname));
   const ready = Boolean(apiKey && (localAccess || accessCode.length >= 16));
   if (request.method === "GET" && action === "config") {
     return reply(200, { ready, accessRequired: !localAccess, estimatedCents: estimateEnvelopeCents(), message: ready ? "Grok can put your letters on the envelope film." : !apiKey ? "The xAI API key is missing on the server." : "Add a private generation access code of at least 16 characters on the server." });

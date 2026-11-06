@@ -62,9 +62,10 @@ export const formDefaults = {
   rsvpDeadline: demo.rsvp.deadline,
   couplePhoto: "",
   closingVideo: "",
-  // Grok's re-lettered envelope film (a path on our server) and the letters it shows; set by the create page
-  envelopeFilm: "",
-  envelopeLetters: "",
+  // Grok's re-lettered envelope film and the letters it shows; set by the create page.
+  // The sample names start with the K & A film we already have, so nothing is made for them.
+  envelopeFilm: "/invite-art/sacred/envelope-k-a.mp4",
+  envelopeLetters: "K & A",
   fontScript: DEFAULT_FONTS.script,
   fontNames: DEFAULT_FONTS.names,
   fontBody: DEFAULT_FONTS.body,
@@ -91,7 +92,7 @@ export const SAMPLE_CLOSING_VIDEO = CLOSING_REEL;
 
 // Two ready-made websites from the sample (Kunal & Aanchal), at /wedding/sample-photo and /wedding/sample-video.
 // Their envelope film already carries K & A (made once, the same way the create page makes it).
-const sampleSite = { ...formDefaults, envelopeFilm: "/invite-art/sacred/envelope-k-a.mp4", envelopeLetters: "K & A" };
+const sampleSite = formDefaults;
 export const SAMPLE_SITES = {
   "sample-photo": sampleSite,
   "sample-video": { ...sampleSite, closingVideo: CLOSING_REEL },
