@@ -5,11 +5,11 @@ import { SacredGardenInvitation, SgEnvelope } from "@/features/sacred-garden/com
 import { FORM_GROUPS, formDefaults, buildInvitation, DESIGN_MUSIC, SAMPLE_CLOSING_VIDEO, colorFields, slugOptions, slugFor } from "@/features/sacred-garden/lib/invitation-form";
 import { readImage } from "@/features/sacred-garden/lib/image-upload";
 import useGrokFilm from "./useGrokFilm";
-import { DM_Sans } from "next/font/google";
+import { dmSans } from "@/lib/fonts";
 import s from "./create.module.css";
 
 // the form's own clean text font (the invitation on the right keeps its design fonts)
-const formFont = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const formFont = dmSans;
 
 const MAX_AUDIO_MB = 15;
 const MAX_VIDEO_MB = 4; // an uploaded video is saved with the website, which takes about 5 MB in all
