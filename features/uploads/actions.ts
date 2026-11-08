@@ -80,7 +80,7 @@ export async function confirmUpload(
       path,
       caption,
     });
-    await logActivity(found.invitee.id, `${kind}_uploaded`);
+    await logActivity(found.invitee.id, `${kind}_uploaded`).catch((error) => console.error("Upload activity log failed:", error));
     return { success: true, data: { id } };
   } catch (err) {
     console.error("confirmUpload failed:", err);

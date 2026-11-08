@@ -68,6 +68,15 @@ export function GoalsPicker({
 
   return (
     <div>
+      <section className="mb-6 rounded-xl border border-gold-500/30 bg-gold-500/5 p-5">
+        <h2 className="font-display text-lg text-navy-950">Start with a shareable event page</h2>
+        <p className="mt-2 text-sm text-navy-700/70">Add your event details, pick a look, and preview your page. You can add photos, invitation artwork, and a slideshow later from your dashboard.</p>
+        <Button className="mt-4" disabled={pending} onClick={() => proceed(["website"])}>
+          {pending ? <Loader2 className="animate-spin" size={16} /> : "Quick setup"}
+        </Button>
+        <p className="mt-2 text-xs text-navy-700/60">You’ll choose a plan before publishing.</p>
+      </section>
+      <h2 className="mb-3 text-sm font-medium text-navy-950">Or choose what you’d like to create</h2>
       <div className="grid gap-3 sm:grid-cols-3">
         {WIZARD_GOAL_OPTIONS.map((opt) => {
           const Icon = ICONS[opt.value];
@@ -77,6 +86,7 @@ export function GoalsPicker({
               key={opt.value}
               type="button"
               disabled={pending}
+              aria-pressed={isSelected}
               onClick={() => toggle(opt.value)}
               className={`flex flex-col items-start gap-2 rounded-xl border-2 p-4 text-left transition-luxury duration-300 disabled:cursor-wait ${
                 isSelected ? "border-gold-500 bg-gold-500/5" : "border-navy-950/10 hover:border-gold-500/40"

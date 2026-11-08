@@ -1,3 +1,6 @@
+import { getEventAccess } from "@/services/event-access";
+import { launchEventSummary } from "@/lib/launch-checklist";
+import { LaunchChecklist } from "@/features/admin/components/launch-checklist";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -210,6 +213,8 @@ export default async function AdminSimplePage() {
             <h1 className="font-display text-2xl text-navy-950">{event.honoreeName}</h1>
             <p className="mt-1 text-sm text-navy-700/60">{event.eventTitle}</p>
           </div>
+
+          <LaunchChecklist event={launchEventSummary(event, await getEventAccess(event.id))} />
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <StatCard label="Coming" value={stats.invitations.coming} />

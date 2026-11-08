@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { GooglePhotosVideo } from "@/features/uploads/components/google-photos-button";
+import { readRecovery, recoveryKey, writeRecovery } from "@/lib/upload-recovery";
 import { compressImage } from "@/lib/image-compression";
 import { confirmUpload, deleteUploadAction, logCaptureStartedAction, requestUploadUrl } from "@/features/uploads/actions";
 
@@ -12,6 +13,9 @@ export interface UploadItem {
   file: File;
   status: "pending" | "uploading" | "done" | "error";
   error?: string;
+  phase?: string;
+  /** Once bytes arrive, retry only confirmation, never upload a second copy. */
+  uploadedPath?: string;
   caption: string;
   /** Set once the upload finishes (the photos/videos/audio row's id) — lets remove() delete it server-side too, not just drop it from this local queue. Undefined until then. */
   mediaId?: string;
@@ -28,6 +32,52 @@ export interface UploadItem {
  */
 export function useMediaUpload(token: string, kind: "photo" | "video" | "audio") {
   const [items, setItems] = useState<UploadItem[]>([]);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const active = useRef(new Set<string>());
+  const batchActive = useRef(false);
+  const scope = `${token}:${kind}`;
+  const [readyScope, setReadyScope] = useState<string | null>(null);
+  const ready = readyScope === scope;
+  const [recoveryAvailable, setRecoveryAvailable] = useState(true);
+  const persistence = useRef(Promise.resolve());
+  const lastSnapshot = useRef("");
+
+  useEffect(() => {
+    let cancelled = false;
+    setReadyScope(null);
+    setItems([]);
+    setRecoveryAvailable(true);
+    recoveryKey(token, kind).then(readRecovery).then((saved) => {
+      if (!cancelled) setItems((current) => [...saved.map((item): UploadItem => ({
+        ...item, file: new File([item.file], item.name, { type: item.file.type, lastModified: item.lastModified }),
+        status: "pending", phase: "Recovered on this device — tap Upload to continue.",
+      })), ...current]);
+    }).catch(() => { if (!cancelled) setRecoveryAvailable(false); }).finally(() => { if (!cancelled) setReadyScope(scope); });
+    return () => { cancelled = true; };
+  }, [token, kind, scope]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const saved = items.filter((item) => item.status !== "done" && !item.remote).map((item) => ({
+      id: item.id, file: item.file, name: item.file.name, lastModified: item.file.lastModified,
+      caption: item.caption, uploadedPath: item.uploadedPath,
+    }));
+    const snapshot = JSON.stringify([scope, saved.map(({ id, name, caption, uploadedPath }) => ({ id, name, caption, uploadedPath }))]);
+    if (snapshot === lastSnapshot.current) return;
+    lastSnapshot.current = snapshot;
+    // Serialize writes so an older snapshot cannot overwrite a completed queue.
+    persistence.current = persistence.current.then(async () => writeRecovery(await recoveryKey(token, kind), saved))
+      .catch(() => setRecoveryAvailable(false));
+  }, [items, ready, token, kind, scope]);
+
+  useEffect(() => {
+    if (!items.some((item) => item.status !== "done")) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [items]);
+
 
   /** Returns the newly-created items' ids, in order — lets a caller (e.g. the recorder UI's "Record again") target the specific item it just added without guessing at array position. */
   const addFiles = useCallback((files: FileList | File[]): string[] => {
@@ -81,7 +131,8 @@ export function useMediaUpload(token: string, kind: "photo" | "video" | "audio")
    */
   const remove = useCallback(
     (id: string) => {
-      const item = items.find((it) => it.id === id);
+      if (active.current.has(id)) return;
+      const item = itemsRef.current.find((it) => it.id === id);
       setItems((prev) => prev.filter((it) => it.id !== id));
       if (item?.status === "done" && item.mediaId) {
         deleteUploadAction(token, kind, item.mediaId).catch((err) => {
@@ -89,77 +140,63 @@ export function useMediaUpload(token: string, kind: "photo" | "video" | "audio")
         });
       }
     },
-    [items, token, kind],
+    [token, kind],
   );
 
   const performUpload = useCallback(
-    async (item: UploadItem) => {
-      setItems((prev) =>
-        prev.map((it) =>
-          it.id === item.id ? { ...it, status: "uploading", error: undefined } : it,
-        ),
-      );
-
+    async (initial: UploadItem) => {
+      if (active.current.has(initial.id) || initial.status === "done") return;
+      active.current.add(initial.id);
+      let item = initial;
+      let signed: Awaited<ReturnType<typeof requestUploadUrl>> | undefined;
+      let file: File | undefined;
+      const update = (patch: Partial<UploadItem>) => {
+        item = { ...item, ...patch };
+        setItems((prev) => prev.map((it) => it.id === item.id ? { ...it, ...patch } : it));
+      };
       try {
-        if (item.remote) {
-          // Size isn't known until it streams; the Edge Function enforces the video limit while copying.
-          const signedRemote = await requestUploadUrl(token, kind, item.remote.name, "video/mp4", 1);
-          if (!signedRemote.success) throw new Error(signedRemote.error);
-          const { bucket, path, token: uploadToken } = signedRemote.data;
-          const { data, error } = await supabaseBrowser().functions.invoke<{ ok?: boolean; error?: string }>("google-photos-transfer", {
-            body: { sourceUrl: item.remote.sourceUrl, googleToken: item.remote.googleToken, bucket, path, uploadToken },
-          });
-          if (error || !data?.ok) {
-            let message = data?.error;
-            if (!message && error && "context" in error && error.context instanceof Response) {
-              message = ((await error.context.json().catch(() => ({}))) as { error?: string }).error;
-            }
-            throw new Error(message ?? "Couldn't copy the video from Google Photos.");
-          }
-          const confirmedRemote = await confirmUpload(token, kind, path, item.caption);
-          if (!confirmedRemote.success) throw new Error(confirmedRemote.error);
-          setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, status: "done", mediaId: confirmedRemote.data.id } : it)));
-          return;
-        }
-
-        const file = kind === "photo" ? await compressImage(item.file) : item.file;
-
-        const signed = await requestUploadUrl(token, kind, file.name, file.type, file.size);
-        if (!signed.success) {
-          throw new Error(signed.error);
-        }
-
-        const { bucket, path, token: uploadToken } = signed.data;
-        const { error: uploadError } = await supabaseBrowser()
-          .storage.from(bucket)
-          .uploadToSignedUrl(path, uploadToken, file);
-
-        if (uploadError) {
-          throw new Error(uploadError.message);
-        }
-
-        const confirmed = await confirmUpload(token, kind, path, item.caption);
-        if (!confirmed.success) {
-          throw new Error(confirmed.error);
-        }
-
-        setItems((prev) =>
-          prev.map((it) =>
-            it.id === item.id ? { ...it, status: "done", mediaId: confirmed.data.id } : it,
-          ),
-        );
-      } catch (err) {
-        setItems((prev) =>
-          prev.map((it) =>
-            it.id === item.id
-              ? {
-                  ...it,
-                  status: "error",
-                  error: err instanceof Error ? err.message : "Upload failed.",
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            update({ status: "uploading", error: undefined, phase: attempt ? "Connection interrupted — retrying…" : "Preparing your memory…" });
+            if (!navigator.onLine) throw new TypeError("You’re offline. Reconnect, then tap Retry.");
+            if (!item.uploadedPath) {
+              if (!file) file = kind === "photo" ? await compressImage(item.file) : item.file;
+              if (!signed) signed = await requestUploadUrl(token, kind, item.remote?.name ?? file.name, item.remote ? "video/mp4" : file.type, item.remote ? 1 : file.size);
+              if (!signed.success) throw new Error(signed.error);
+              const { bucket, path, token: uploadToken } = signed.data;
+              update({ phase: "Uploading your memory…" });
+              if (item.remote) {
+                const { data, error } = await supabaseBrowser().functions.invoke<{ ok?: boolean; error?: string }>("google-photos-transfer", {
+                  body: { sourceUrl: item.remote.sourceUrl, googleToken: item.remote.googleToken, bucket, path, uploadToken },
+                });
+                if (error || !data?.ok) throw new Error(data?.error ?? "Couldn’t copy the video from Google Photos. Please try again.");
+              } else {
+                const { error } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, uploadToken, file);
+                // A prior attempt may have arrived even though its response was lost.
+                // Confirmation verifies ownership and that the object exists.
+                if (error && !("statusCode" in error && ["409", "400"].includes(String(error.statusCode)) && /already exists|duplicate/i.test(error.message))) {
+                  const retryable = !("statusCode" in error) || Number(error.statusCode) >= 500 || Number(error.statusCode) === 429;
+                  if (retryable) throw new TypeError(error.message);
+                  throw new Error(error.message);
                 }
-              : it,
-          ),
-        );
+              }
+              update({ uploadedPath: path });
+            }
+            update({ phase: "Saving your memory…" });
+            const confirmed = await confirmUpload(token, kind, item.uploadedPath!, item.caption);
+            if (!confirmed.success) throw new TypeError(confirmed.error);
+            update({ status: "done", mediaId: confirmed.data.id, phase: undefined });
+            return;
+          } catch (error) {
+            if (!(error instanceof TypeError) || attempt === 2 || !navigator.onLine) throw error;
+            update({ phase: `Connection interrupted — retrying (${attempt + 1}/2)…` });
+            await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+          }
+        }
+      } catch (err) {
+        update({ status: "error", phase: undefined, error: err instanceof Error ? err.message : "Upload failed. Please retry." });
+      } finally {
+        active.current.delete(initial.id);
       }
     },
     [kind, token],
@@ -167,20 +204,25 @@ export function useMediaUpload(token: string, kind: "photo" | "video" | "audio")
 
   const uploadOne = useCallback(
     (id: string) => {
-      const item = items.find((it) => it.id === id);
-      if (item) return performUpload(item);
+      const item = itemsRef.current.find((it) => it.id === id);
+      if (ready && item && item.status !== "done") return performUpload(item);
     },
-    [items, performUpload],
+    [ready, performUpload],
   );
 
   const uploadAll = useCallback(async () => {
-    const pending = items.filter((it) => it.status === "pending" || it.status === "error");
-    for (const item of pending) {
-      // Sequential on purpose — keeps mobile uploads on flaky networks
-      // predictable and avoids saturating bandwidth with large videos.
-      await performUpload(item);
-    }
-  }, [items, performUpload]);
+    if (!ready || batchActive.current) return;
+    batchActive.current = true;
+    try {
+      const pending = itemsRef.current.filter((it) => it.status === "pending" || it.status === "error");
+      for (const queued of pending) {
+        const item = itemsRef.current.find((it) => it.id === queued.id);
+        if (!item) continue;
+        // Sequential uploads avoid saturating bandwidth on mobile networks.
+        await performUpload(item);
+      }
+    } finally { batchActive.current = false; }
+  }, [ready, performUpload]);
 
-  return { items, addFiles, addRemoteVideos, setCaption, remove, uploadOne, uploadAll };
+  return { items, ready, recoveryAvailable, addFiles, addRemoteVideos, setCaption, remove, uploadOne, uploadAll };
 }

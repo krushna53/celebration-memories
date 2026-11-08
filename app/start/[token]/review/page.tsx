@@ -1,3 +1,6 @@
+import { getEventAccess } from "@/services/event-access";
+import { launchEventSummary } from "@/lib/launch-checklist";
+import { LaunchChecklist } from "@/features/admin/components/launch-checklist";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Download, ExternalLink, PartyPopper, Sparkles } from "lucide-react";
@@ -43,7 +46,7 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
         description="No account needed for this — download anything below, or come back anytime using this same link."
         hideFooter
       >
-        <div className="grid gap-6">
+        <div className="grid min-w-0 gap-6">
           <WizardBackLink token={token} slug="review" goals={event.wizardGoals} />
           {wantsCard ? (
             <section className="rounded-xl border border-navy-950/10 bg-white p-5">
@@ -128,8 +131,9 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
       description="Check your event page, then continue to your account and choose a plan to publish it."
       hideFooter
     >
-      <div className="grid gap-6">
+      <div className="grid min-w-0 gap-6">
         <WizardBackLink token={token} slug="review" goals={event.wizardGoals} />
+        <LaunchChecklist event={launchEventSummary(event, await getEventAccess(event.id))} draftToken={token} />
         <section className="rounded-xl border border-navy-950/10 bg-white p-5">
           <h2 className="font-display text-lg text-navy-950">Your Event Page</h2>
           <p className="mt-1 text-sm text-navy-700/60">
@@ -162,17 +166,17 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold-500/15 text-gold-600">
               <Sparkles size={18} />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="font-display text-lg text-navy-950">Ready to go live?</h2>
               <p className="mt-1 text-sm text-navy-700/70">
                 Continue to your account to choose a plan and publish this event.
                 Your draft and uploaded invitation card are saved.
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Button asChild size="lg">
+                <Button asChild size="lg" className="h-auto min-h-11 max-w-full whitespace-normal text-center">
                   <Link href={`/start/${token}/account`}>{user ? "Continue with My Account" : "Create Account & Continue"}</Link>
                 </Button>
-                <Button asChild variant="outline" size="lg">
+                <Button asChild variant="outline" size="lg" className="h-auto min-h-11 max-w-full whitespace-normal text-center">
                   <Link href={publicUrl} target="_blank">
                     Preview Event Page <ExternalLink size={15} />
                   </Link>
