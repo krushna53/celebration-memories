@@ -18,6 +18,8 @@ import type { EventCategory } from "@/types/event";
  *     "No" goes straight on to Event Details.
  *   - Event Details and Template always show (every goal benefits from
  *     both — Template even shapes the AI Image prompt's palette).
+ *   - Design (weddings only, when "website" was picked) comes right after
+ *     Event Details: the Sacred Garden create form, saved into this draft.
  *   - Timeline and Gallery show if "slideshow" or "website" was picked
  *     (Slideshow is built from their photos either way).
  *   - Invitation Card (AI Image) shows if "invitation_card" or
@@ -138,6 +140,15 @@ const STEP_REGISTRY = {
       "Not sure about the exact time yet? You can always change it later — nothing here is locked in.",
     ],
   },
+  design: {
+    slug: "design",
+    label: "Design",
+    description: "Design your wedding website",
+    tips: [
+      "Type on the left and your website changes on the right — names, schedule, photos, colours, fonts and music.",
+      "The envelope film is re-lettered with your initials; wait for it to finish before you save.",
+    ],
+  },
   "rsvp-form": {
     slug: "rsvp-form",
     label: "RSVP Form",
@@ -242,15 +253,15 @@ function withSegmentCopy(step: WizardStep, segment: EventSegment): WizardStep {
   return override ? { ...step, ...override } : step;
 }
 
-/** Computes the actual step list for a draft based on its chosen goals — see this file's top doc comment for the exact rules. `category` only changes step wording (family vs. corporate), never which steps appear. */
+/** Computes the actual step list for a draft based on its chosen goals — see this file's top doc comment for the exact rules. `category` changes step wording (family vs. corporate) and adds the Design step for weddings. */
 export function resolveWizardSteps(
   goals: string[] | null | undefined,
   category?: EventCategory | null,
 ): WizardStep[] {
-  return resolveWizardStepList(goals).map((step) => withSegmentCopy(step, getEventSegment(category)));
+  return resolveWizardStepList(goals, category).map((step) => withSegmentCopy(step, getEventSegment(category)));
 }
 
-function resolveWizardStepList(goals: string[] | null | undefined): WizardStep[] {
+function resolveWizardStepList(goals: string[] | null | undefined, category?: EventCategory | null): WizardStep[] {
   const steps: WizardStep[] = [STEP_REGISTRY.occasion, STEP_REGISTRY.goals];
 
   const hasGoals = Array.isArray(goals) && goals.length > 0;
@@ -259,6 +270,7 @@ function resolveWizardStepList(goals: string[] | null | undefined): WizardStep[]
   const wantsSlideshow = !hasGoals || goals!.includes("slideshow");
 
   steps.push(STEP_REGISTRY.card, STEP_REGISTRY.basics);
+  if (wantsWebsite && category === "wedding") steps.push(STEP_REGISTRY.design);
   if (wantsWebsite) steps.push(STEP_REGISTRY["rsvp-form"]);
   if (wantsWebsite || wantsSlideshow) steps.push(STEP_REGISTRY.timeline, STEP_REGISTRY.gallery);
   steps.push(STEP_REGISTRY.template);
@@ -273,15 +285,15 @@ export function wizardStepHref(token: string, slug: string): string {
   return `/start/${token}/${slug}`;
 }
 
-export function nextWizardStep(slug: string, goals?: string[] | null): WizardStep | null {
-  const steps = resolveWizardSteps(goals);
+export function nextWizardStep(slug: string, goals?: string[] | null, category?: EventCategory | null): WizardStep | null {
+  const steps = resolveWizardSteps(goals, category);
   const i = steps.findIndex((s) => s.slug === slug);
   if (i === -1 || i === steps.length - 1) return null;
   return steps[i + 1] ?? null;
 }
 
-export function prevWizardStep(slug: string, goals?: string[] | null): WizardStep | null {
-  const steps = resolveWizardSteps(goals);
+export function prevWizardStep(slug: string, goals?: string[] | null, category?: EventCategory | null): WizardStep | null {
+  const steps = resolveWizardSteps(goals, category);
   const i = steps.findIndex((s) => s.slug === slug);
   if (i <= 0) return null;
   return steps[i - 1] ?? null;

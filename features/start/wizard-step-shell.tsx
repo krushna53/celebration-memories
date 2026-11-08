@@ -36,7 +36,7 @@ export function WizardStepShell({
   token: string;
   slug: string;
   goals?: string[] | null;
-  /** The draft's category — only changes sidebar wording for corporate events (see resolveWizardSteps). */
+  /** The draft's category — changes sidebar wording for corporate events and adds the Design step for weddings (see resolveWizardSteps). */
   category?: EventCategory | null;
   title: string;
   description: string;
@@ -51,12 +51,12 @@ export function WizardStepShell({
    */
   headerAction?: React.ReactNode;
 }) {
-  const prev = prevWizardStep(slug, goals);
-  const next = nextWizardStep(slug, goals);
+  const prev = prevWizardStep(slug, goals, category);
+  const next = nextWizardStep(slug, goals, category);
 
   return (
     <div>
-      <WizardNav token={token} currentSlug={slug} goals={goals} />
+      <WizardNav token={token} currentSlug={slug} goals={goals} category={category} />
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:gap-4">

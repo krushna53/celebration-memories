@@ -905,3 +905,42 @@ export async function submitAdminGuestbookNote(params: {
 }
 
 export type { MemoryKind };
+
+/** Browser-reported types the buckets know under another name. */
+const DESIGN_TYPE_ALIASES: Record<string, string> = { "audio/mp3": "audio/mpeg", "audio/x-m4a": "audio/mp4", "audio/x-wav": "audio/wav" };
+const DESIGN_TYPES: Record<"image" | "video" | "audio", Record<string, string>> = {
+  image: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" },
+  video: { "video/mp4": "mp4" },
+  audio: { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/aac": "aac", "audio/wav": "wav", "audio/webm": "webm" },
+};
+
+/**
+ * Same signed-upload pattern, for the pictures, closing video and music
+ * on a design-first template's create page (Sacred Garden). Pictures and
+ * video go to `gallery`, music to `audio`; storage only, no DB row — the
+ * design keeps a "media:<bucket>/<path>" ref (features/sacred-garden/lib/design.ts).
+ * Returns the content type the browser must upload with (aliases resolved).
+ */
+export async function createSignedDesignMediaUpload(params: {
+  eventId: string;
+  kind: "image" | "video" | "audio";
+  contentType: string;
+  fileSize: number;
+}) {
+  await ensureEventSpace(params.eventId, params.fileSize, "host");
+  const { eventId, kind, fileSize } = params;
+  const raw = (params.contentType.split(";")[0] ?? "").trim().toLowerCase();
+  const contentType = DESIGN_TYPE_ALIASES[raw] ?? raw;
+  const extension = DESIGN_TYPES[kind][contentType];
+  if (!extension) throw new UploadValidationError(kind === "image" ? "Use a JPG, PNG or WebP picture." : kind === "video" ? "Use an MP4 video." : "Use an MP3, M4A, AAC or WAV file.");
+
+  const limit = UPLOAD_LIMITS[kind === "image" ? "photo" : kind];
+  if (fileSize > limit.maxBytes) throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
+
+  const bucket = kind === "audio" ? "audio" : "gallery";
+  const path = `${eventId}/design/${randomUUID()}.${extension}`;
+  const { data, error } = await supabaseAdmin().storage.from(bucket).createSignedUploadUrl(path);
+  if (error || !data) throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+
+  return { bucket, path, token: data.token, contentType };
+}

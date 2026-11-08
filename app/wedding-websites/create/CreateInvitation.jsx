@@ -1,18 +1,21 @@
 "use client";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { InviteShell } from "@/features/sacred-garden/components";
 import { SacredGardenInvitation, SgEnvelope } from "@/features/sacred-garden/components/garden";
 import { FORM_GROUPS, formDefaults, buildInvitation, DESIGN_MUSIC, SAMPLE_CLOSING_VIDEO, colorFields, slugOptions, slugFor } from "@/features/sacred-garden/lib/invitation-form";
 import { readImage } from "@/features/sacred-garden/lib/image-upload";
 import useGrokFilm from "./useGrokFilm";
 import { dmSans } from "@/lib/fonts";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { requestWeddingMediaUploadAction, saveWeddingDesignAction, startWeddingDraftAction } from "@/features/sacred-garden/actions";
 import s from "./create.module.css";
 
 // the form's own clean text font (the invitation on the right keeps its design fonts)
 const formFont = dmSans;
 
 const MAX_AUDIO_MB = 15;
-const MAX_VIDEO_MB = 4; // an uploaded video is saved with the website, which takes about 5 MB in all
+const MAX_VIDEO_MB = 50; // kept in the browser until Publish uploads it to storage
 
 /** One picture: upload from the device, or paste a URL. Empty = the design's own picture. */
 function ImageField({ value, onChange }) {
@@ -108,17 +111,36 @@ function SlugField({ value, onChange, options, current }) {
       {options.map((o) => <button key={o} type="button" className={`${s.preset} ${o === current ? s.presetOn : ""}`} aria-pressed={o === current} onClick={() => onChange(o)}>{o}</button>)}
     </div>
     <input className={s.input} value={value} maxLength={60} placeholder={current} onChange={(e) => onChange(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))} />
-    <p className={s.hint}>Your website will be at /wedding/{current}</p>
+    <p className={s.hint}>Your website will be at /events/{current}</p>
   </>;
 }
 
-const siteKey = (slug) => `everymoment-site-key:${slug}`;
+/** An uploaded file still held in the form as a data: URL → stored in Supabase Storage; returns its "media:" ref. */
+async function uploadDataUrl(token, dataUrl) {
+  const blob = await (await fetch(dataUrl)).blob();
+  const kind = blob.type.startsWith("image/") ? "image" : blob.type.startsWith("video/") ? "video" : "audio";
+  const signed = await requestWeddingMediaUploadAction(token, kind, blob.type, blob.size);
+  if (!signed.success) throw new Error(signed.error);
+  const { bucket, path, uploadToken, contentType, ref } = signed.data;
+  const { error } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, uploadToken, new Blob([blob], { type: contentType }));
+  if (error) throw new Error(error.message);
+  return ref;
+}
 
-/** Left: the form. Right: the Sacred Garden invitation, updated as you type or upload. */
-export default function CreateInvitation() {
-  const [form, setForm] = useState(formDefaults);
+/**
+ * Left: the form. Right: the Sacred Garden invitation, updated as you type or upload.
+ * Publish saves it into a wizard draft event (features/sacred-garden/actions.ts) and goes on to the next wizard step.
+ * `inWizard`: shown as the wizard's Design step (app/start/[token]/design), so the button reads Save & Continue.
+ * `rsvp`: the site's live RSVP section, shown in the preview where the design's own RSVP was (as on the published event).
+ * @param {{ draftToken?: string | null, initialForm?: Record<string, string>, inWizard?: boolean, rsvp?: import("react").ReactNode }} props
+ */
+export default function CreateInvitation({ draftToken = null, initialForm = formDefaults, inWizard = false, rsvp = null }) {
+  const router = useRouter();
+  const [form, setForm] = useState(initialForm);
   const [envelope, setEnvelope] = useState(false);
-  const [publish, setPublish] = useState({ busy: false, url: "", error: "" });
+  const [publish, setPublish] = useState({ busy: false, error: "" });
+  // the draft this design is saved into: the wizard's, or the one the first Publish starts
+  const [token, setToken] = useState(draftToken);
   const c = useMemo(() => buildInvitation(form), [form]);
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
   const fontSample = (key) => (key === "fontBodyStyle"
@@ -129,22 +151,27 @@ export default function CreateInvitation() {
   // Grok re-letters our envelope film whenever the couple's initials change
   const grok = useGrokFilm(c.monogram, form.envelopeLetters, (film, letters) => setForm((f) => ({ ...f, envelopeFilm: film, envelopeLetters: letters })));
 
-  // Publish: save the form under the link and open the website in a new tab
+  // Publish: upload the couple's files, save the design on the draft event, then on to the next wizard step
   const publishSite = async () => {
     if (publish.busy) return;
-    if (!c.envelope.ready) { setPublish({ busy: false, url: "", error: `Wait until Grok has put ${c.monogram} on the envelope film, then publish.` }); return; }
-    const tab = window.open("", "_blank"); // opened now, so the browser does not block it as a pop-up
-    setPublish({ busy: true, url: "", error: "" });
+    if (!c.envelope.ready) { setPublish({ busy: false, error: `Wait until Grok has put ${c.monogram} on the envelope film, then publish.` }); return; }
+    setPublish({ busy: true, error: "" });
     try {
-      let key = "";
-      try { key = localStorage.getItem(siteKey(slug)) || ""; } catch { /* not kept */ }
-      const r = await fetch("/api/website", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug, form: { ...form, slug }, key }) });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data.error || "The website could not be published.");
-      try { localStorage.setItem(siteKey(slug), data.key); } catch { /* republishing this link will need a new one */ }
-      if (tab) tab.location.href = data.url; else window.open(data.url, "_blank");
-      setPublish({ busy: false, url: data.url, error: "" });
-    } catch (e) { tab?.close(); setPublish({ busy: false, url: "", error: e.message }); }
+      let draft = token;
+      if (!draft) {
+        const started = await startWeddingDraftAction(null);
+        if (!started.success) throw new Error(started.error);
+        draft = started.data.token;
+        setToken(draft);
+      }
+      const saved = { ...form, slug };
+      for (const [key, value] of Object.entries(saved)) {
+        if (typeof value === "string" && value.startsWith("data:")) saved[key] = await uploadDataUrl(draft, value);
+      }
+      const result = await saveWeddingDesignAction(draft, saved);
+      if (!result.success) throw new Error(result.error);
+      router.push(result.data.href);
+    } catch (e) { setPublish({ busy: false, error: e.message || "Your website could not be saved." }); }
   };
 
   const field = ([key, label, type = "text", choices]) => {
@@ -175,9 +202,8 @@ export default function CreateInvitation() {
           <button type="button" className={s.reset} onClick={() => setForm(formDefaults)} title="Reset to sample">Reset</button>
           <button type="button" className={s.envelopeBtn} disabled={!c.envelope.ready} onClick={() => setEnvelope(true)}
             title={c.envelope.ready ? "Preview the envelope" : "The envelope film is being made"}>Preview</button>
-          <button type="button" className={s.envelopeBtn} disabled={publish.busy || !c.envelope.ready} onClick={publishSite}>{publish.busy ? "Publishing…" : "Publish"}</button>
+          <button type="button" className={s.envelopeBtn} disabled={publish.busy || !c.envelope.ready} onClick={publishSite}>{publish.busy ? "Saving…" : inWizard ? "Save & Continue" : "Publish"}</button>
         </div>
-        {publish.url && <p className={s.hint}>Published: <a href={publish.url} target="_blank" rel="noreferrer">{publish.url}</a></p>}
         {publish.error && <p className={s.error}>{publish.error}</p>}
         {grok.status && <p className={s.hint} role="status">{grok.status}</p>}
         {grok.askCode && <input className={s.input} type="password" autoComplete="off" placeholder="Owner code for Grok (asked once)" value={grok.code} onChange={(e) => grok.setCode(e.target.value)} />}
@@ -210,7 +236,7 @@ export default function CreateInvitation() {
       </form>
     </aside>
     <main className={s.previewPane}>
-      <div className={s.previewGarden}><SacredGardenInvitation c={c} /></div>
+      <div className={s.previewGarden}><SacredGardenInvitation c={c} rsvp={rsvp} /></div>
     </main>
     {envelope && <SgEnvelope video={c.envelope.video} music={c.music || undefined} monogram={c.monogram} sealTrack={c.envelope.sealTrack} sealImage={c.envelope.sealImage} tapLabel={c.envelope.tapLabel} onDone={() => setEnvelope(false)} />}
   </InviteShell>;

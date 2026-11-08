@@ -20,7 +20,7 @@ export default async function WizardBasicsPage({
   const event = await getDraftEventByToken(token);
   if (!event) notFound();
 
-  const next = nextWizardStep("basics", event.wizardGoals);
+  const next = nextWizardStep("basics", event.wizardGoals, event.category);
 
   return (
     <WizardStepShell

@@ -146,6 +146,8 @@ export interface EventRecord {
   hasEndTime: boolean;
   /** Host-chosen colour tweaks layered on top of the selected template — see lib/template-theme-vars.ts. */
   themeOverrides: ThemeOverrides | null;
+  /** Every field of the create-page design (Sacred Garden), media as "media:<bucket>/<path>" refs; null for other events. */
+  designConfig: Record<string, string> | null;
   /**
    * Custom names for the gallery's chapters, keyed by stored category
    * ("grandchildren" → "Aarav & Myra"). Missing keys use the default

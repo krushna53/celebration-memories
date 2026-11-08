@@ -16,7 +16,6 @@ export const FORM_GROUPS = [
   { title: "Schedule of events", hint: "One per line: Time | Event", fields: [["program", "Schedule", "textarea"]] },
   { title: "Location", fields: [["venueName", "Venue name"], ["venueAddress", "Address"], ["venueMap", "Map search (optional)"], ["venueImage", "Hotel / venue picture", "image"]] },
   { title: "Dress code & gifts", fields: [["dress", "Dress code", "textarea"], ["gifts", "Gift note", "textarea"]] },
-  { title: "RSVP", fields: [["rsvpDeadline", "Reply-by note (e.g. Kindly reply by 15 November 2026)"]] },
   { title: "Closing", hint: "A photo or a video at the bottom of the page — pick one.", closingChoice: true, fields: [
     ["couplePhoto", "Photo (upload to replace the sample)", "image"],
     ["closingVideo", "Video", "video"],
@@ -59,7 +58,7 @@ export const formDefaults = {
   venueImage: "/wedding-demo-royal.webp",
   dress: [demo.dressCode.women, demo.dressCode.men].join(" "),
   gifts: demo.guestInfo.find((item) => item.icon === "gift").text,
-  rsvpDeadline: demo.rsvp.deadline,
+  rsvpDeadline: demo.rsvp.deadline, // only the older /wedding/<slug> sites use the design's own RSVP; events use the site's live RSVP
   couplePhoto: "",
   closingVideo: "",
   // Grok's re-lettered envelope film and the letters it shows; set by the create page.

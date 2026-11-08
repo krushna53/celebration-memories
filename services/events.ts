@@ -51,6 +51,7 @@ export interface EventRow {
   wizard_goals: string[] | null;
   has_end_time: boolean | null;
   theme_overrides: ThemeOverrides | null;
+  design_config: Record<string, string> | null;
   gallery_chapter_titles: Record<string, string> | null;
   event_day_mode: "off" | "public" | "private";
   event_day_share_token: string | null;
@@ -118,6 +119,7 @@ export function mapEvent(row: EventRow): EventRecord {
     wizardGoals: row.wizard_goals,
     hasEndTime: row.has_end_time ?? true,
     themeOverrides: row.theme_overrides ?? null,
+    designConfig: row.design_config ?? null,
     galleryChapterTitles: row.gallery_chapter_titles ?? null,
     eventDayMode: row.event_day_mode ?? "off",
     eventDayShareToken: row.event_day_share_token,
@@ -321,6 +323,7 @@ export interface EventUpdateInput {
   wizardGoals?: string[] | null;
   hasEndTime?: boolean;
   themeOverrides?: ThemeOverrides | null;
+  designConfig?: Record<string, string> | null;
   galleryChapterTitles?: Record<string, string> | null;
   /**
    * Per-event AI generation caps. Not currently owner-only-editable
@@ -440,6 +443,7 @@ export async function updateEvent(id: string, input: EventUpdateInput): Promise<
   if (input.wizardGoals !== undefined) patch.wizard_goals = input.wizardGoals;
   if (input.hasEndTime !== undefined) patch.has_end_time = input.hasEndTime;
   if (input.themeOverrides !== undefined) patch.theme_overrides = sanitizeThemeOverrides(input.themeOverrides);
+  if (input.designConfig !== undefined) patch.design_config = input.designConfig;
   if (input.galleryChapterTitles !== undefined)
     patch.gallery_chapter_titles = sanitizeGalleryChapterTitles(input.galleryChapterTitles);
   if (input.aiImageGenerationLimit !== undefined) patch.ai_image_generation_limit = input.aiImageGenerationLimit;

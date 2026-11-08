@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { Check, X } from "lucide-react";
 
+import type { EventCategory } from "@/types/event";
 import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
 import { SITE_NAME } from "@/lib/constants";
 
@@ -28,10 +29,12 @@ export function WizardNav({
   token,
   currentSlug,
   goals,
+  category,
 }: {
   token: string;
   currentSlug: string;
   goals?: string[] | null;
+  category?: EventCategory | null;
 }) {
   const currentStep = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
@@ -41,7 +44,7 @@ export function WizardNav({
       list.scrollLeft = Math.max(0, link.offsetLeft - list.offsetLeft - (list.clientWidth - link.offsetWidth) / 2);
     }
   }, [currentSlug, goals]);
-  const steps = resolveWizardSteps(goals);
+  const steps = resolveWizardSteps(goals, category);
   const currentIndex = steps.findIndex((s) => s.slug === currentSlug);
 
   return (
