@@ -34,7 +34,7 @@ export const FORM_GROUPS = [
     ["colorTime", "Schedule times", "color"],
     ["colorButton", "Buttons (RSVP & music)", "color"],
   ] },
-  { title: "Opening video", hint: "What guests see first, before \"Tap to open\". Keep the design's wax-seal envelope, or upload your own (MP4, MOV or WebM). Add a wide video too for computers; without one they show the phone video.", fields: [
+  { title: "Opening video", hint: "What guests see first, before \"Tap to open\". Keep the design's wax-seal envelope, or upload your own (MP4). Add a wide video too for computers; without one they show the phone video.", fields: [
     ["introVideo", "Phone video (upright 9:16)", "video"],
     ["introVideoDesktop", "Computer video (wide 16:9, optional)", "video"],
   ] },

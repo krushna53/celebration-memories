@@ -88,7 +88,7 @@ function VideoField({ value, onChange, sample = SAMPLE_CLOSING_VIDEO, empty = "N
     <p className={s.hint}>{isSample ? "Showing the sample video." : uploaded ? "Your uploaded video." : value ? "Video from your link." : empty}</p>
     {value && <video className={s.thumb} src={value} muted playsInline controls preload="metadata" />}
     <div className={s.row}>
-      <label className={s.fileBtn}>{uploaded ? "Change video" : "Upload video"}<input type="file" accept="video/mp4,video/quicktime,video/webm" hidden onChange={pick} /></label>
+      <label className={s.fileBtn}>{uploaded ? "Change video" : "Upload video"}<input type="file" accept="video/mp4" hidden onChange={pick} /></label>
       {sample && !isSample && <button type="button" className={s.linkBtn} onClick={() => { onChange(sample); setError(""); }}>Use the sample video</button>}
       {value && <button type="button" className={s.linkBtn} onClick={() => { onChange(""); setError(""); }}>{reset}</button>}
     </div>

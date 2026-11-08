@@ -910,8 +910,7 @@ export type { MemoryKind };
 const DESIGN_TYPE_ALIASES: Record<string, string> = { "audio/mp3": "audio/mpeg", "audio/x-m4a": "audio/mp4", "audio/x-wav": "audio/wav" };
 const DESIGN_TYPES: Record<"image" | "video" | "audio", Record<string, string>> = {
   image: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" },
-  // MOV from phones, WebM from in-browser recordings — the same video types as ACCEPTED_MIME_TYPES.video
-  video: { "video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm" },
+  video: { "video/mp4": "mp4" },
   audio: { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/aac": "aac", "audio/wav": "wav", "audio/webm": "webm" },
 };
 
@@ -933,7 +932,7 @@ export async function createSignedDesignMediaUpload(params: {
   const raw = (params.contentType.split(";")[0] ?? "").trim().toLowerCase();
   const contentType = DESIGN_TYPE_ALIASES[raw] ?? raw;
   const extension = DESIGN_TYPES[kind][contentType];
-  if (!extension) throw new UploadValidationError(kind === "image" ? "Use a JPG, PNG or WebP picture." : kind === "video" ? "Use an MP4, MOV or WebM video." : "Use an MP3, M4A, AAC or WAV file.");
+  if (!extension) throw new UploadValidationError(kind === "image" ? "Use a JPG, PNG or WebP picture." : kind === "video" ? "Use an MP4 video." : "Use an MP3, M4A, AAC or WAV file.");
 
   const limit = UPLOAD_LIMITS[kind === "image" ? "photo" : kind];
   if (fileSize > limit.maxBytes) throw new UploadValidationError(`File is too large — limited to ${limit.label}.`);
