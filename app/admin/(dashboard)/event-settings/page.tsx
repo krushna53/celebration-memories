@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { publicMediaUrl } from "@/services/uploads";
@@ -62,6 +63,18 @@ export default async function AdminEventSettingsPage() {
       <p className="mt-1 text-sm text-navy-700/60">
         These details appear across the public site — hero, event details, and invite pages.
       </p>
+      {event.templateSlug === "sacred-garden" ? (
+        <Link
+          href="/admin/wedding-design"
+          className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-gold-500/40 bg-gold-500/10 px-5 py-4 text-sm text-navy-950 hover:border-gold-500"
+        >
+          <span>
+            <span className="block font-medium">Wedding design</span>
+            <span className="block text-navy-700/70">Names, schedule, photos, colours, fonts, music and the envelope — with a live preview.</span>
+          </span>
+          <span className="shrink-0 font-medium text-gold-700">Edit design →</span>
+        </Link>
+      ) : null}
       <div className="mt-6">
         <EventSettingsForm
           event={event}

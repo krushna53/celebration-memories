@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { InviteShell } from "@/features/sacred-garden/components";
 import { SacredGardenInvitation, SgEnvelope } from "@/features/sacred-garden/components/garden";
@@ -8,7 +8,7 @@ import { readImage } from "@/features/sacred-garden/lib/image-upload";
 import useGrokFilm from "./useGrokFilm";
 import { dmSans } from "@/lib/fonts";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { requestWeddingMediaUploadAction, saveWeddingDesignAction, startWeddingDraftAction } from "@/features/sacred-garden/actions";
+import { requestEventDesignUploadAction, requestWeddingMediaUploadAction, saveEventDesignAction, saveWeddingDesignAction, startWeddingDraftAction } from "@/features/sacred-garden/actions";
 import s from "./create.module.css";
 
 // the form's own clean text font (the invitation on the right keeps its design fonts)
@@ -115,11 +115,14 @@ function SlugField({ value, onChange, options, current }) {
   </>;
 }
 
-/** An uploaded file still held in the form as a data: URL → stored in Supabase Storage; returns its "media:" ref. */
-async function uploadDataUrl(token, dataUrl) {
+/**
+ * An uploaded file still held in the form as a data: URL → stored in Supabase Storage; returns its "media:" ref.
+ * requestUpload(kind, contentType, size): the signed upload from the wizard (draft token) or the dashboard (event id).
+ */
+async function uploadDataUrl(requestUpload, dataUrl) {
   const blob = await (await fetch(dataUrl)).blob();
   const kind = blob.type.startsWith("image/") ? "image" : blob.type.startsWith("video/") ? "video" : "audio";
-  const signed = await requestWeddingMediaUploadAction(token, kind, blob.type, blob.size);
+  const signed = await requestUpload(kind, blob.type, blob.size);
   if (!signed.success) throw new Error(signed.error);
   const { bucket, path, uploadToken, contentType, ref } = signed.data;
   const { error } = await supabaseBrowser().storage.from(bucket).uploadToSignedUrl(path, uploadToken, new Blob([blob], { type: contentType }));
@@ -132,13 +135,17 @@ async function uploadDataUrl(token, dataUrl) {
  * Publish saves it into a wizard draft event (features/sacred-garden/actions.ts) and goes on to the next wizard step.
  * `inWizard`: shown as the wizard's Design step (app/start/[token]/design), so the button reads Save & Continue.
  * `rsvp`: the site's live RSVP section, shown in the preview where the design's own RSVP was (as on the published event).
- * @param {{ draftToken?: string | null, initialForm?: Record<string, string>, inWizard?: boolean, rsvp?: import("react").ReactNode }} props
+ * `eventId`: the dashboard's Wedding Design page (app/admin/(dashboard)/wedding-design) — Save keeps the design on that
+ * event and stays here.
+ * @param {{ draftToken?: string | null, initialForm?: Record<string, string>, inWizard?: boolean, rsvp?: import("react").ReactNode, eventId?: string | null }} props
  */
-export default function CreateInvitation({ draftToken = null, initialForm = formDefaults, inWizard = false, rsvp = null }) {
+export default function CreateInvitation({ draftToken = null, initialForm = formDefaults, inWizard = false, rsvp = null, eventId = null }) {
   const router = useRouter();
   const [form, setForm] = useState(initialForm);
   const [envelope, setEnvelope] = useState(false);
-  const [publish, setPublish] = useState({ busy: false, error: "" });
+  const [publish, setPublish] = useState({ busy: false, error: "", saved: false });
+  // files already uploaded (data: URL → "media:" ref), so saving again doesn't upload them twice
+  const uploads = useRef(new Map());
   // the draft this design is saved into: the wizard's, or the one the first Publish starts
   const [token, setToken] = useState(draftToken);
   const c = useMemo(() => buildInvitation(form), [form]);
@@ -154,9 +161,24 @@ export default function CreateInvitation({ draftToken = null, initialForm = form
   // Publish: upload the couple's files, save the design on the draft event, then on to the next wizard step
   const publishSite = async () => {
     if (publish.busy) return;
-    if (!c.envelope.ready) { setPublish({ busy: false, error: `Wait until Grok has put ${c.monogram} on the envelope film, then publish.` }); return; }
-    setPublish({ busy: true, error: "" });
+    if (!c.envelope.ready) { setPublish({ busy: false, error: `Wait until Grok has put ${c.monogram} on the envelope film, then save.`, saved: false }); return; }
+    setPublish({ busy: true, error: "", saved: false });
+    const upload = async (requestUpload, value) => {
+      if (!uploads.current.has(value)) uploads.current.set(value, await uploadDataUrl(requestUpload, value));
+      return uploads.current.get(value);
+    };
     try {
+      if (eventId) {
+        const saved = { ...form, slug };
+        for (const [key, value] of Object.entries(saved)) {
+          if (typeof value === "string" && value.startsWith("data:")) saved[key] = await upload((...a) => requestEventDesignUploadAction(eventId, ...a), value);
+        }
+        const result = await saveEventDesignAction(eventId, saved);
+        if (!result.success) throw new Error(result.error);
+        setPublish({ busy: false, error: "", saved: true });
+        router.refresh();
+        return;
+      }
       let draft = token;
       if (!draft) {
         const started = await startWeddingDraftAction(null);
@@ -166,12 +188,12 @@ export default function CreateInvitation({ draftToken = null, initialForm = form
       }
       const saved = { ...form, slug };
       for (const [key, value] of Object.entries(saved)) {
-        if (typeof value === "string" && value.startsWith("data:")) saved[key] = await uploadDataUrl(draft, value);
+        if (typeof value === "string" && value.startsWith("data:")) saved[key] = await upload((...a) => requestWeddingMediaUploadAction(draft, ...a), value);
       }
       const result = await saveWeddingDesignAction(draft, saved);
       if (!result.success) throw new Error(result.error);
       router.push(result.data.href);
-    } catch (e) { setPublish({ busy: false, error: e.message || "Your website could not be saved." }); }
+    } catch (e) { setPublish({ busy: false, error: e.message || "Your website could not be saved.", saved: false }); }
   };
 
   const field = ([key, label, type = "text", choices]) => {
@@ -196,14 +218,17 @@ export default function CreateInvitation({ draftToken = null, initialForm = form
   return <InviteShell className={s.page}>
     <aside className={`${s.formPane} ${formFont.className}`}>
       <header className={s.head}>
-        <h1>Create your invitation</h1>
+        <h1>{eventId ? "Wedding design" : "Create your invitation"}</h1>
         <p>Type or upload on the left, and your invitation updates on the right.</p>
         <div className={s.actions}>
-          <button type="button" className={s.reset} onClick={() => setForm(formDefaults)} title="Reset to sample">Reset</button>
+          {eventId
+            ? <button type="button" className={s.reset} onClick={() => setForm(initialForm)} title="Undo changes since the last save">Undo</button>
+            : <button type="button" className={s.reset} onClick={() => setForm(formDefaults)} title="Reset to sample">Reset</button>}
           <button type="button" className={s.envelopeBtn} disabled={!c.envelope.ready} onClick={() => setEnvelope(true)}
             title={c.envelope.ready ? "Preview the envelope" : "The envelope film is being made"}>Preview</button>
-          <button type="button" className={s.envelopeBtn} disabled={publish.busy || !c.envelope.ready} onClick={publishSite}>{publish.busy ? "Saving…" : inWizard ? "Save & Continue" : "Publish"}</button>
+          <button type="button" className={s.envelopeBtn} disabled={publish.busy || !c.envelope.ready} onClick={publishSite}>{publish.busy ? "Saving…" : eventId ? "Save design" : inWizard ? "Save & Continue" : "Publish"}</button>
         </div>
+        {publish.saved && <p className={s.hint} role="status">Saved — your website shows the new design.</p>}
         {publish.error && <p className={s.error}>{publish.error}</p>}
         {grok.status && <p className={s.hint} role="status">{grok.status}</p>}
         {grok.askCode && <input className={s.input} type="password" autoComplete="off" placeholder="Owner code for Grok (asked once)" value={grok.code} onChange={(e) => grok.setCode(e.target.value)} />}
