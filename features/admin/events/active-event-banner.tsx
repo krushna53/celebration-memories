@@ -1,21 +1,37 @@
-import { ArrowLeftRight, ChevronDown } from "lucide-react";
+import { ArrowLeftRight, ChevronDown, X } from "lucide-react";
 
 import { getEventById } from "@/services/events";
-import { switchMyEventAction } from "@/features/admin/events/actions";
+import { clearActiveAdminEventAction, switchMyEventAction } from "@/features/admin/events/actions";
+import { resolveAdminEvent } from "@/lib/admin-event";
 import type { CurrentAdmin } from "@/services/admin-auth";
 
 /**
  * Thin "you're currently managing X" strip shown across the admin
- * dashboard while the owner has stepped into a specific client's event
- * (see lib/admin-active-event.ts). Renders nothing for client-role
- * admins (they're always scoped to their own event, nothing to
- * announce) and nothing for the owner when no override is active (the
- * default flagship-event view needs no extra chrome).
+ * dashboard: for a host with several events, which one plus a switcher;
+ * for the platform account, the event it owns that it has opened (see
+ * lib/admin-active-event.ts), with Exit. Nothing otherwise.
  */
 export async function ActiveEventBanner({ admin }: { admin: CurrentAdmin }) {
   if (admin.role !== "owner") return <MyEventsSwitcher admin={admin} />;
 
-  return null;
+  // the platform account inside an event it owns itself (Manage on All Events)
+  const event = await resolveAdminEvent(admin);
+  if (!event) return null;
+  return (
+    <div className="border-b border-gold-500/20 bg-gold-500/10">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs sm:px-6">
+        <span className="text-navy-950">
+          Managing your own event <strong className="font-medium">{event.honoreeName}</strong>
+          {event.eventTitle ? <span className="text-navy-700/70"> — {event.eventTitle}</span> : null}
+        </span>
+        <form action={clearActiveAdminEventAction}>
+          <button type="submit" className="inline-flex items-center gap-1 text-navy-700 underline underline-offset-2 hover:text-navy-950">
+            <X size={12} /> Exit to All Events
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 /**

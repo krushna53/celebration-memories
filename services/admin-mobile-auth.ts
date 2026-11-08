@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentIpHash, isLockedOut, recordFailure } from "@/services/abuse-guard";
 import { generateInviteToken } from "@/lib/tokens";
 import type { AdminRole, CurrentAdmin, EventMembership } from "@/services/admin-auth";
+import { listOwnedEventIds } from "@/services/admin-auth";
 
 /**
  * Mobile companion-app auth. Deliberately NOT the same email/password as
@@ -41,8 +42,9 @@ async function toCurrentAdmin(row: AdminRow): Promise<CurrentAdmin> {
     hasSeenTour: true, // the mobile app has its own onboarding; this field is a web-dashboard concept.
     eventId: row.event_id,
     memberships: [],
+    ownedEventIds: [],
   };
-  if (row.role === "owner") return base;
+  if (row.role === "owner") return { ...base, ownedEventIds: await listOwnedEventIds(row.id) };
 
   const { data, error } = await supabaseAdmin()
     .from("admin_event_memberships")

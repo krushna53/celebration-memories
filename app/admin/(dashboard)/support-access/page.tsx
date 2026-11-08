@@ -4,9 +4,10 @@ import { requireOwner } from "@/services/admin-auth";
 import { listAllActiveEvents } from "@/services/events";
 import { supportHistory } from "@/services/support-access";
 import { PrivacyPanel } from "@/features/privacy/privacy-panel";
+import { setActiveAdminEventAction } from "@/features/admin/events/actions";
 export const dynamic = "force-dynamic";
 export default async function SupportPage({ searchParams }: { searchParams: Promise<{ event?: string }> }) {
-  await requireOwner();
+  const admin = await requireOwner();
   const events = await listAllActiveEvents();
   const eventId = (await searchParams).event;
   const event = events.find(e => e.id === eventId);
@@ -20,6 +21,10 @@ export default async function SupportPage({ searchParams }: { searchParams: Prom
     {!event && <p className="rounded-xl border bg-white p-5">{eventId ? "That event is unavailable. Choose another event above." : "Select an event above to view its support requests."}</p>}
     {event && <h2 className="mb-4 font-display text-xl">Selected event: {event.honoreeName}</h2>}
     {event && !owner?.data?.owner_user_id && <p className="mb-4 rounded-xl border bg-white p-5">This event has no customer owner yet. Assign a customer from All Events before requesting support access.</p>}
-    {event && owner?.data?.owner_user_id && <PrivacyPanel key={event.id} eventId={event.id} mode="public" isOwner={false} {...await supportHistory(event.id)} />}
+    {event && owner?.data?.owner_user_id === admin.id && <div className="mb-4 rounded-xl border bg-white p-5">
+      <p>You own this event, so you can manage it directly — no support request needed.</p>
+      <form action={setActiveAdminEventAction.bind(null, event.id)} className="mt-3"><button type="submit" className="rounded-full bg-gold-500 px-5 py-2 text-sm font-medium text-navy-950 hover:brightness-110">Manage this event</button></form>
+    </div>}
+    {event && owner?.data?.owner_user_id && owner.data.owner_user_id !== admin.id && <PrivacyPanel key={event.id} eventId={event.id} mode="public" isOwner={false} {...await supportHistory(event.id)} />}
   </div>;
 }

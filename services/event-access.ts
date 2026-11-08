@@ -33,7 +33,8 @@ export async function eventPermissions(eventId: string) {
     platformAdmin = admin?.role === "owner";
     member = !!membership && membership.role !== "session_organizer" && !platformAdmin;
   }
-  const owner = !!user && user.id === event.owner_user_id && !platformAdmin;
+  // The event's own owner, even when that account is also a platform admin (it then manages its own events only).
+  const owner = !!user && user.id === event.owner_user_id;
   // Support grants never make a user a manager, member, or owner.
   const manage = owner || member;
   let view = manage;

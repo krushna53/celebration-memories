@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { getCurrentAdmin, requireOwner, requireAdminForEvent } from "@/services/admin-auth";
+import { getCurrentAdmin, requireOwner, requireAdminForEvent, type CurrentAdmin } from "@/services/admin-auth";
 import { createOwnerEvent, updateEvent, getEventById } from "@/services/events";
 import { deleteEventAndAllAssets } from "@/services/admin-danger-zone";
 import {
@@ -59,8 +59,21 @@ export async function toggleEventVisibilityAction(
  * from whatever you were looking at before.
  */
 export async function setActiveAdminEventAction(eventId: string): Promise<void> {
-  await requireOwner();
+  const admin = await requireOwner();
+  await enterOwnedEvent(admin, eventId, "/admin");
   redirect(`/admin/support-access?event=${encodeURIComponent(eventId)}`);
+}
+
+/**
+ * An event the platform account owns itself opens like a customer's own
+ * dashboard (lib/admin-event.ts's resolveAdminEvent); returns only when it
+ * isn't one, so the caller falls through to support access.
+ */
+async function enterOwnedEvent(admin: CurrentAdmin, eventId: string, destination: string): Promise<void> {
+  if (!admin.ownedEventIds.includes(eventId)) return;
+  await setActiveEventOverrideId(eventId);
+  revalidatePath("/admin", "layout");
+  redirect(destination);
 }
 
 /**
@@ -72,7 +85,10 @@ export async function setActiveAdminEventAction(eventId: string): Promise<void> 
 export async function switchMyEventAction(eventId: string): Promise<void> {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/login");
-  if (admin.role === "owner") redirect(`/admin/support-access?event=${encodeURIComponent(eventId)}`);
+  if (admin.role === "owner") {
+    await enterOwnedEvent(admin, eventId, "/admin");
+    redirect(`/admin/support-access?event=${encodeURIComponent(eventId)}`);
+  }
   if (!admin.memberships.some((m) => m.eventId === eventId)) {
     redirect("/admin");
   }
@@ -92,7 +108,8 @@ export async function switchMyEventAction(eventId: string): Promise<void> {
  * "Managing X — Exit" the whole time this is active.
  */
 export async function viewAsClientAction(eventId: string): Promise<void> {
-  await requireOwner();
+  const admin = await requireOwner();
+  await enterOwnedEvent(admin, eventId, "/admin/simple");
   redirect(`/admin/support-access?event=${encodeURIComponent(eventId)}`);
 }
 

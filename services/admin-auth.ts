@@ -60,6 +60,12 @@ export interface CurrentAdmin {
    * THAT event (adminForEvent), so a stale tab can't cross events.
    */
   memberships: EventMembership[];
+  /**
+   * Owner role only: events this platform account itself owns
+   * (events.owner_user_id). It manages these like any customer manages
+   * theirs; every other customer's event stays behind support access.
+   */
+  ownedEventIds: string[];
 }
 
 /**
@@ -111,8 +117,9 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
     hasSeenTour: data.has_seen_tour,
     eventId: data.event_id,
     memberships: [],
+    ownedEventIds: [],
   };
-  if (data.role === "owner") return base;
+  if (data.role === "owner") return { ...base, ownedEventIds: await listOwnedEventIds(data.id) };
 
   const memberships = await listMemberships(data.id);
   if (memberships.length === 0) return { ...base, eventId: null };
@@ -123,6 +130,16 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
     memberships.find((m) => m.eventId === data.event_id) ??
     memberships[0]!;
   return { ...base, role: active.role, eventId: active.eventId, memberships };
+}
+
+/** Events a platform account owns itself (events.owner_user_id). */
+export async function listOwnedEventIds(userId: string): Promise<string[]> {
+  const { data, error } = await supabaseAdmin().from("events").select("id").eq("owner_user_id", userId);
+  if (error) {
+    console.error("Failed to load owned events:", error.message);
+    return [];
+  }
+  return (data as { id: string }[]).map((row) => row.id);
 }
 
 /** A person's events, newest membership first. */
@@ -149,7 +166,7 @@ async function listMemberships(adminId: string): Promise<EventMembership[]> {
  * currently selected event.
  */
 export function adminForEvent(admin: CurrentAdmin, eventId: string): CurrentAdmin | null {
-  if (admin.role === "owner") return null;
+  if (admin.role === "owner") return admin.ownedEventIds.includes(eventId) ? { ...admin, eventId } : null;
   const membership = admin.memberships.find((m) => m.eventId === eventId);
   return membership ? { ...admin, role: membership.role, eventId } : null;
 }
