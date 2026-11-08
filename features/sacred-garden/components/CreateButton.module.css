@@ -1,0 +1,25 @@
+/* Horizontal pill, stacked just above the WhatsApp button (bottom-right). */
+.btn {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: calc(max(20px, env(safe-area-inset-bottom)) + 58px + 14px);
+  z-index: 56;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: var(--inv-accent, #e5503c);
+  color: #fff;
+  font-family: var(--inv-sans, "Poppins", system-ui, sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.45);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.btn::after { content: "↗"; font-size: 13px; }
+.btn:hover { background: var(--inv-accent-bright, #ff6b57); transform: translateY(-1px); }
+.btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }

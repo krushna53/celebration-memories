@@ -1,0 +1,99 @@
+/* Shared building blocks for every invitation section.
+   Every colour/font reads a CSS variable with an EveryMoment fallback,
+   so a section still looks right when used outside <InviteShell>. */
+
+.section {
+  position: relative;
+  padding: clamp(64px, 11cqi, 112px) var(--inv-section-pad-x, 20px);
+  /* --inv-section-bg lets a parent (e.g. InviteCard's paper) make every section transparent */
+  background: var(--inv-section-bg, var(--inv-bg, #fdf6ec));
+  color: var(--inv-ink, #1e1b4b);
+  overflow: hidden;
+}
+.cream { background: var(--inv-section-bg, var(--inv-bg-alt, #f8ece0)); }
+.white { background: var(--inv-section-bg, var(--inv-surface, #ffffff)); }
+.dark {
+  background: var(--inv-deep, #1e1b4b);
+  color: var(--inv-on-deep, #fdf6ec);
+}
+
+.inner { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; }
+.narrow { max-width: 640px; }
+
+.heading { text-align: center; margin: 0 auto clamp(32px, 6cqi, 52px); max-width: 600px; }
+.eyebrow {
+  margin: 0 0 10px;
+  font-family: var(--inv-caps, "Cinzel", Georgia, serif);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--inv-accent, #e5503c);
+}
+.title {
+  margin: 0;
+  font-family: var(--inv-script, "Great Vibes", cursive);
+  font-weight: 400;
+  font-size: clamp(44px, 9cqi, 68px);
+  line-height: 1.05;
+  color: var(--inv-ink, #1e1b4b);
+}
+.dark .title { color: var(--inv-on-deep, #fdf6ec); }
+.subtitle {
+  margin: 14px auto 0;
+  font-family: var(--inv-serif, "Cormorant Garamond", Georgia, serif);
+  font-size: clamp(18px, 3.4cqi, 21px);
+  line-height: 1.55;
+  color: var(--inv-muted, #625e7e);
+}
+.dark .subtitle { color: var(--inv-on-deep-muted, #d6d2e8); }
+
+.ornament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 16px auto 0;
+  color: var(--inv-accent, #e5503c);
+}
+.ornament i {
+  display: block;
+  width: 64px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, currentColor);
+}
+.ornament i:last-child { background: linear-gradient(to left, transparent, currentColor); }
+
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.revealIn { opacity: 1; transform: none; }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 12px 24px;
+  border: 1px solid var(--inv-accent, #e5503c);
+  border-radius: 999px;
+  background: var(--inv-accent, #e5503c);
+  color: #fff;
+  font-family: var(--inv-sans, "Poppins", system-ui, sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.button:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(229, 80, 60, 0.28); }
+.button:focus-visible { outline: 2px solid var(--inv-ink, #1e1b4b); outline-offset: 3px; }
+.ghost { background: transparent; color: var(--inv-accent, #e5503c); }
+.ghost:hover { background: rgba(229, 80, 60, 0.08); box-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}

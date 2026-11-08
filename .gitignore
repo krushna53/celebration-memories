@@ -49,3 +49,6 @@ ios/App/DerivedData
 ios/App/App.xcworkspace/xcuserdata
 ios/App/App.xcodeproj/xcuserdata
 ios/App/App.xcodeproj/project.xcworkspace/xcuserdata
+
+# Sacred Garden data saved on a local machine (Netlify uses Blobs)
+.local-sacred-garden/

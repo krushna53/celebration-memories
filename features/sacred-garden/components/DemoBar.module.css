@@ -1,0 +1,37 @@
+/* Sits over the top of the hero and scrolls away with it. */
+.bar {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: 0 auto;
+  padding: 6px 6px 6px 14px;
+  border: 1px solid rgba(253, 246, 236, 0.25);
+  border-radius: 999px;
+  background: rgba(30, 27, 75, 0.82);
+  backdrop-filter: blur(10px);
+  color: #fdf6ec;
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 10px 30px rgba(15, 12, 45, 0.3);
+}
+.brand { display: inline-flex; align-items: center; gap: 7px; color: #fff; text-decoration: none; }
+.brand img { width: 20px; height: 20px; }
+.brand b { color: var(--inv-accent-bright, #ff6b57); font-weight: 600; }
+.label { color: var(--inv-on-deep-muted, #d6d2e8); overflow: hidden; text-overflow: ellipsis; }
+.cta {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--inv-accent, #e5503c);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+@media (max-width: 420px) { .label { display: none; } }
+@container invite (max-width: 420px) { .label { display: none; } }

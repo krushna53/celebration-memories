@@ -1,0 +1,68 @@
+.section { isolation: isolate; }
+.bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.85);
+}
+.section::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(30, 27, 75, 0.9), rgba(30, 27, 75, 0.7) 50%, rgba(30, 27, 75, 0.92));
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(10px, 3cqi, 22px);
+  max-width: 640px;
+  margin: 0 auto;
+}
+.unit {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: clamp(18px, 4cqi, 28px) 6px;
+  border: 1px solid rgba(253, 246, 236, 0.22);
+  border-radius: 999px 999px 18px 18px;
+  background: rgba(253, 246, 236, 0.06);
+  backdrop-filter: blur(6px);
+}
+.value {
+  font-family: var(--inv-serif, "Cormorant Garamond", serif);
+  font-size: clamp(38px, 10cqi, 64px);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.label {
+  font-family: var(--inv-caps, "Cinzel", serif);
+  font-size: clamp(9px, 2.4cqi, 12px);
+  letter-spacing: 0.22em;
+  color: var(--inv-accent-bright, #ff6b57);
+}
+.done {
+  margin: 0;
+  text-align: center;
+  font-family: var(--inv-script, "Great Vibes", cursive);
+  font-size: clamp(40px, 9cqi, 60px);
+  color: #fff;
+}
+
+/* tone="light": countdown printed on a light / paper background */
+.section.light::after { display: none; }
+.light .unit { border-color: var(--inv-line, #f0d6cd); background: rgba(255, 255, 255, 0.55); backdrop-filter: none; box-shadow: 0 14px 30px -24px rgba(30, 27, 75, 0.5); }
+.light .value { color: var(--inv-ink, #1e1b4b); }
+.light .label { color: var(--inv-accent, #e5503c); }
+.light .done { color: var(--inv-ink, #1e1b4b); }
+
+/* linen theme */
+:global([data-theme="linen"]) .light .unit { background: none; border: 1px solid var(--inv-line); border-radius: 14px; box-shadow: none; }
+:global([data-theme="linen"]) .light .value { color: var(--inv-ink); }
+:global([data-theme="linen"]) .light .label { color: var(--inv-accent); }

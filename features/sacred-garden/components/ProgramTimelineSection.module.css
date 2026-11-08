@@ -1,0 +1,75 @@
+.list {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  max-width: 560px;
+}
+.list::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(var(--inv-line, #f0d6cd), var(--inv-accent, #e5503c), var(--inv-line, #f0d6cd));
+}
+.item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 44px 1fr;
+  align-items: center;
+  min-height: 74px;
+}
+.dot {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--inv-surface, #fff);
+  border: 1px solid var(--inv-accent, #e5503c);
+  color: var(--inv-accent, #e5503c);
+  z-index: 1;
+}
+.time {
+  grid-column: 1;
+  grid-row: 1;
+  padding-right: 18px;
+  text-align: right;
+  font-family: var(--inv-caps, "Cinzel", serif);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: var(--inv-accent, #e5503c);
+}
+.body { grid-column: 3; grid-row: 1; padding-left: 18px; }
+.item:nth-child(even) .time { grid-column: 3; text-align: left; padding: 0 0 0 18px; }
+.item:nth-child(even) .body { grid-column: 1; text-align: right; padding: 0 18px 0 0; }
+.body h3 {
+  margin: 0;
+  font-family: var(--inv-serif, "Cormorant Garamond", serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--inv-ink, #1e1b4b);
+}
+.body p { margin: 2px 0 0; font-size: 13px; line-height: 1.45; color: var(--inv-muted, #625e7e); }
+
+@media (max-width: 520px) {
+  .list::before { left: 18px; }
+  .item, .item:nth-child(even) { grid-template-columns: 36px 1fr; column-gap: 14px; }
+  .dot { grid-column: 1; grid-row: 1 / 3; }
+  .time, .item:nth-child(even) .time { grid-column: 2; grid-row: 1; text-align: left; padding: 0; }
+  .body, .item:nth-child(even) .body { grid-column: 2; grid-row: 2; text-align: left; padding: 0; }
+}
+@container invite (max-width: 520px) {
+  .list::before { left: 18px; }
+  .item, .item:nth-child(even) { grid-template-columns: 36px 1fr; column-gap: 14px; }
+  .dot { grid-column: 1; grid-row: 1 / 3; }
+  .time, .item:nth-child(even) .time { grid-column: 2; grid-row: 1; text-align: left; padding: 0; }
+  .body, .item:nth-child(even) .body { grid-column: 2; grid-row: 2; text-align: left; padding: 0; }
+}

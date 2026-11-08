@@ -1,0 +1,100 @@
+.open { width: 100%; font-family: var(--sg-script); font-size: 32px; line-height: 1.55; color: var(--sg-gold); }
+/* the wax seal picture is the button */
+.seal { width: 100%; height: 100%; }
+.seal img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+/* pop-up */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999999;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.8);
+  animation: fade 0.3s ease;
+  -webkit-overflow-scrolling: touch;
+}
+@keyframes fade { from { opacity: 0; } }
+.close { position: fixed; top: 20px; right: 20px; z-index: 1; padding: 0; border: 0; background: none; line-height: 0; cursor: pointer; }
+.panel {
+  position: relative;
+  width: 560px;
+  max-width: calc(100% - 40px);
+  margin: 60px auto;
+  padding: 40px 45px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #fffaf8;
+  color: #4f4f4f;
+  font-family: "newtemplate", "Times New Roman", serif;
+  outline: none;
+  animation: rise 0.3s ease;
+}
+@keyframes rise { from { transform: scale(0.97); } }
+.head { margin-bottom: 24px; text-align: center; }
+.title { margin: 0 0 11px; font: 400 22px/1.23 "newtemplate", "Times New Roman", serif; color: #4f4f4f; }
+.note { margin: 0; font-size: 18px; line-height: 1.55; }
+
+.group { margin-bottom: 25px; }
+.label { display: block; padding-bottom: 5px; font-size: 20px; line-height: 1.35; }
+.hint { margin: -2px 0 5px; font-size: 16px; line-height: 1.55; opacity: 0.7; }
+.input {
+  display: block;
+  width: 100%;
+  height: 60px;
+  margin: 0;
+  padding: 0 20px;
+  border: 1px solid #c9c9c9;
+  border-radius: 5px;
+  background: transparent;
+  color: #4f4f4f;
+  font: 400 16px/1.33 "newtemplate", "Times New Roman", serif;
+  outline: none;
+  appearance: none;
+}
+.input:focus-visible { border-color: #8c7666; }
+.radio { display: flex; margin: 3px 0 10px; padding-top: 1.6px; font-size: 16px; line-height: 16.8px; cursor: pointer; }
+.radio input { position: absolute; opacity: 0; }
+.radio i { position: relative; flex: none; width: 20px; height: 20px; margin: -1.6px 10px 0 0; border: 2px solid currentColor; border-radius: 50%; opacity: 0.6; transition: opacity 0.2s; }
+.radio i::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: currentColor; opacity: 0; transition: opacity 0.2s; }
+.radio input:checked + i, .radio input:checked + i::after { opacity: 1; }
+.radio input:focus-visible + i { outline: 2px solid #8c7666; outline-offset: 2px; }
+.bad .input { border-color: #f95d51; }
+.error { margin-top: 5px; font-size: 13px; color: #f95d51; }
+
+/* maroon button with a light sweeping across it */
+.submit {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 60px;
+  margin-top: 10px;
+  padding: 0 30px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 0;
+  border-radius: 20px;
+  background: var(--sg-button, #5a0f1b);
+  color: #f6f1e8;
+  font: 400 20px "newtemplate", "Times New Roman", serif;
+  cursor: pointer;
+  transition: opacity 0.2s ease-in-out;
+}
+.submit:hover { opacity: 0.9; }
+.submit:disabled { opacity: 0.6; cursor: default; }
+.submit i {
+  position: absolute;
+  top: 0;
+  left: 30px;
+  width: 45px;
+  height: 100%;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.4));
+  transform: translateX(-85px) skewX(-45deg);
+  animation: sweep 3s linear infinite;
+}
+@keyframes sweep { 30%, 100% { transform: translateX(560px) skewX(-45deg); } }
+@media (prefers-reduced-motion: reduce) { .submit i { animation: none; display: none; } }
+.success { padding: 20px; margin-bottom: 20px; text-align: center; font-size: 20px; line-height: 1.55; color: #fff; background: #62c584; }
+
+@media (max-width: 480px) { .panel { padding: 40px 25px; } .note { font-size: 18px; } }
