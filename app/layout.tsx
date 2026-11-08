@@ -16,6 +16,7 @@ import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import { ClarityScript } from "@/features/analytics/clarity-script";
 import { InstallAppBanner } from "@/features/pwa/install-app-banner";
 import { ServiceWorkerRegister } from "@/features/pwa/service-worker-register";
+import { ChunkErrorReload } from "@/features/pwa/chunk-error-reload";
 import { TopProgressBar } from "@/components/layout/top-progress-bar";
 import { ConciergeHelpBanner } from "@/features/concierge/concierge-help-banner";
 import { MediaProtection } from "@/components/media/media-protection";
@@ -78,6 +79,7 @@ export default function RootLayout({
         {children}
         <ClarityScript />
         <ServiceWorkerRegister />
+        <ChunkErrorReload />
         <InstallAppBanner />
         <MediaProtection />
       </body>
