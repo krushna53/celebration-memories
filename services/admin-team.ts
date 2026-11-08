@@ -106,6 +106,32 @@ export async function getClientLoginsByEvent(
   return byEvent;
 }
 
+/**
+ * Puts each event's customer owner (events.owner_user_id) first in its
+ * login list. That account may be a platform owner or have no admins row
+ * at all, so getClientLoginsByEvent alone never shows it.
+ */
+export async function addEventOwners(
+  events: { id: string; ownerUserId: string | null }[],
+  admins: { id: string; email: string }[],
+  byEvent: Map<string, EventLogin[]>,
+): Promise<void> {
+  const emails = new Map(admins.map((a) => [a.id, a.email]));
+  const missing = [...new Set(events.flatMap((e) => (e.ownerUserId && !emails.has(e.ownerUserId) ? [e.ownerUserId] : [])))];
+  await Promise.all(
+    missing.map(async (id) => {
+      const { data } = await supabaseAdmin().auth.admin.getUserById(id);
+      if (data.user?.email) emails.set(id, data.user.email);
+    }),
+  );
+  for (const event of events) {
+    const email = event.ownerUserId ? emails.get(event.ownerUserId) : undefined;
+    if (!email) continue;
+    const others = (byEvent.get(event.id) ?? []).filter((login) => login.email.toLowerCase() !== email.toLowerCase());
+    byEvent.set(event.id, [{ email, isOwner: true }, ...others.map((login) => ({ ...login, isOwner: false }))]);
+  }
+}
+
 async function countMembers(eventId: string): Promise<number> {
   const { count, error } = await supabaseAdmin()
     .from("admin_event_memberships")

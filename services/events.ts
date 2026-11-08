@@ -198,6 +198,8 @@ export interface EventSummary {
   category: EventRecord["category"];
   visibility: "public" | "private";
   createdAt: string;
+  /** events.owner_user_id — the customer account that owns this event, if any. */
+  ownerUserId: string | null;
 }
 
 /**
@@ -212,7 +214,7 @@ export interface EventSummary {
 export async function listAllActiveEvents(): Promise<EventSummary[]> {
   const { data, error } = await supabaseAdmin()
     .from("events")
-    .select("id, slug, honoree_name, event_title, category, visibility, created_at")
+    .select("id, slug, honoree_name, event_title, category, visibility, created_at, owner_user_id")
     .eq("status", "active")
     .order("created_at", { ascending: false });
 
@@ -226,6 +228,7 @@ export async function listAllActiveEvents(): Promise<EventSummary[]> {
       category: EventRecord["category"];
       visibility: "public" | "private";
       created_at: string;
+      owner_user_id: string | null;
     }[]
   ).map((row) => ({
     id: row.id,
@@ -235,6 +238,7 @@ export async function listAllActiveEvents(): Promise<EventSummary[]> {
     category: row.category,
     visibility: row.visibility,
     createdAt: row.created_at,
+    ownerUserId: row.owner_user_id,
   }));
 }
 

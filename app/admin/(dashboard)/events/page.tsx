@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { getCurrentAdmin } from "@/services/admin-auth";
 import { listAllActiveEvents } from "@/services/events";
 import { listAdmins } from "@/services/admin-users";
-import { getClientLoginsByEvent } from "@/services/admin-team";
+import { addEventOwners, getClientLoginsByEvent } from "@/services/admin-team";
 import { EventList } from "@/features/admin/events/event-list";
 import { createOwnerEventAction } from "@/features/admin/events/actions";
 
@@ -29,6 +29,7 @@ export default async function AdminEventsPage() {
       : [],
   );
   const membersByEvent = await getClientLoginsByEvent(owners);
+  await addEventOwners(events, admins, membersByEvent);
 
   return (
     <div>
