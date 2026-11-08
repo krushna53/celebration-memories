@@ -66,8 +66,11 @@ function AudioField({ value, onChange }) {
   </div>;
 }
 
-/** Video at the bottom of the page: the sample reel, an uploaded file, a link, or none (empty = the couple photo). */
-function VideoField({ value, onChange }) {
+/**
+ * A video: an uploaded file, a link, the sample (when there is one), or none.
+ * sample: the sample video's path, or null for none. empty: the hint while no video is set; reset: the button that clears it.
+ */
+function VideoField({ value, onChange, sample = SAMPLE_CLOSING_VIDEO, empty = "No video: the couple photo is shown.", reset = "Remove" }) {
   const [error, setError] = useState("");
   const pick = (e) => {
     const file = e.target.files?.[0];
@@ -80,16 +83,16 @@ function VideoField({ value, onChange }) {
     reader.readAsDataURL(file);
   };
   const uploaded = value.startsWith("data:");
-  const sample = value === SAMPLE_CLOSING_VIDEO;
+  const isSample = Boolean(sample) && value === sample;
   return <div className={s.imageField}>
-    <p className={s.hint}>{sample ? "Showing the sample video." : uploaded ? "Your uploaded video." : value ? "Video from your link." : "No video: the couple photo is shown."}</p>
+    <p className={s.hint}>{isSample ? "Showing the sample video." : uploaded ? "Your uploaded video." : value ? "Video from your link." : empty}</p>
     {value && <video className={s.thumb} src={value} muted playsInline controls preload="metadata" />}
     <div className={s.row}>
-      <label className={s.fileBtn}>{uploaded ? "Change video" : "Upload video"}<input type="file" accept="video/mp4,video/webm,video/*" hidden onChange={pick} /></label>
-      {!sample && <button type="button" className={s.linkBtn} onClick={() => { onChange(SAMPLE_CLOSING_VIDEO); setError(""); }}>Use the sample video</button>}
-      {value && <button type="button" className={s.linkBtn} onClick={() => onChange("")}>Remove</button>}
+      <label className={s.fileBtn}>{uploaded ? "Change video" : "Upload video"}<input type="file" accept="video/mp4,video/quicktime,video/webm" hidden onChange={pick} /></label>
+      {sample && !isSample && <button type="button" className={s.linkBtn} onClick={() => { onChange(sample); setError(""); }}>Use the sample video</button>}
+      {value && <button type="button" className={s.linkBtn} onClick={() => { onChange(""); setError(""); }}>{reset}</button>}
     </div>
-    {!uploaded && <input className={s.input} placeholder="…or paste a video link (MP4)" value={sample ? "" : value} onChange={(e) => onChange(e.target.value)} />}
+    {!uploaded && <input className={s.input} placeholder="…or paste a video link (MP4)" value={isSample ? "" : value} onChange={(e) => onChange(e.target.value)} />}
     {error && <p className={s.error}>{error}</p>}
   </div>;
 }
@@ -155,8 +158,8 @@ export default function CreateInvitation({ draftToken = null, initialForm = form
     : key.startsWith("font") ? { fontFamily: `"${form[key]}", serif` } : null);
 
   const slug = slugFor(form);
-  // Grok re-letters our envelope film whenever the couple's initials change
-  const grok = useGrokFilm(c.monogram, form.envelopeLetters, (film, letters) => setForm((f) => ({ ...f, envelopeFilm: film, envelopeLetters: letters })));
+  // Grok re-letters our envelope film whenever the couple's initials change (not needed while their own opening video is used)
+  const grok = useGrokFilm(c.monogram, form.introVideo ? c.monogram : form.envelopeLetters, (film, letters) => setForm((f) => ({ ...f, envelopeFilm: film, envelopeLetters: letters })));
 
   // Publish: upload the couple's files, save the design on the draft event, then on to the next wizard step
   const publishSite = async () => {
@@ -199,6 +202,10 @@ export default function CreateInvitation({ draftToken = null, initialForm = form
   const field = ([key, label, type = "text", choices]) => {
     if (type === "slug") return <div key={key} className={s.label}><span>{label}</span><SlugField value={form.slug} onChange={set("slug")} options={slugOptions(form)} current={slug} /></div>;
     if (type === "image") return <div key={key} className={s.label}><span>{label}</span><ImageField value={form[key]} onChange={set(key)} /></div>;
+    if (key === "introVideoDesktop") return <div key={key} className={s.label}><span>{label}</span>
+      <VideoField value={form[key] ?? ""} onChange={set(key)} sample={null} empty="None: computers show the phone video." /></div>;
+    if (key === "introVideo") return <div key={key} className={s.label}><span>{label}</span>
+      <VideoField value={form[key] ?? ""} onChange={set(key)} sample={null} empty={`The design's wax-seal envelope (${c.monogram}).`} reset="Use the design's envelope" /></div>;
     if (type === "video") return <div key={key} className={s.label}><span>{label}</span><VideoField value={form[key]} onChange={set(key)} /></div>;
     if (type === "audio") return <div key={key} className={s.label}><span>{label}</span><AudioField value={form[key]} onChange={set(key)} /></div>;
     if (type === "color") return <label key={key} className={s.colorRow}>
@@ -263,6 +270,6 @@ export default function CreateInvitation({ draftToken = null, initialForm = form
     <main className={s.previewPane}>
       <div className={s.previewGarden}><SacredGardenInvitation c={c} rsvp={rsvp} /></div>
     </main>
-    {envelope && <SgEnvelope video={c.envelope.video} music={c.music || undefined} monogram={c.monogram} sealTrack={c.envelope.sealTrack} sealImage={c.envelope.sealImage} tapLabel={c.envelope.tapLabel} onDone={() => setEnvelope(false)} />}
+    {envelope && <SgEnvelope video={c.envelope.video} desktopVideo={c.envelope.desktopVideo} music={c.music || undefined} monogram={c.monogram} sealTrack={c.envelope.sealTrack} sealImage={c.envelope.sealImage} tapLabel={c.envelope.tapLabel} onDone={() => setEnvelope(false)} />}
   </InviteShell>;
 }

@@ -34,6 +34,10 @@ export const FORM_GROUPS = [
     ["colorTime", "Schedule times", "color"],
     ["colorButton", "Buttons (RSVP & music)", "color"],
   ] },
+  { title: "Opening video", hint: "What guests see first, before \"Tap to open\". Keep the design's wax-seal envelope, or upload your own (MP4, MOV or WebM). Add a wide video too for computers; without one they show the phone video.", fields: [
+    ["introVideo", "Phone video (upright 9:16)", "video"],
+    ["introVideoDesktop", "Computer video (wide 16:9, optional)", "video"],
+  ] },
   { title: "Music", hint: "Plays when the guest opens the envelope.", fields: [["music", "Background music", "audio"]] },
 ];
 
@@ -65,6 +69,10 @@ export const formDefaults = {
   // The sample names start with the K & A film we already have, so nothing is made for them.
   envelopeFilm: "/invite-art/sacred/envelope-k-a.mp4",
   envelopeLetters: "K & A",
+  // the couple's own opening video, shown instead of the envelope film; empty = the envelope film
+  introVideo: "",
+  // a wide version for computers; empty = the phone video (or envelope film) there too
+  introVideoDesktop: "",
   fontScript: DEFAULT_FONTS.script,
   fontNames: DEFAULT_FONTS.names,
   fontBody: DEFAULT_FONTS.body,
@@ -114,8 +122,8 @@ export function buildInvitation(f) {
   const bride = f.bride.trim() || "Bride";
   const venueName = f.venueName.trim() || "Venue";
   const monogram = `${groom[0]} & ${bride[0]}`.toUpperCase();
-  // Grok's film, only while it still shows these initials (in it the old letters are gone and the new ones are part of the film)
-  const film = f.envelopeFilm && f.envelopeLetters === monogram ? f.envelopeFilm : "";
+  // the couple's own opening video; else Grok's film, only while it still shows these initials (in it the old letters are gone and the new ones are part of the film)
+  const film = f.introVideo || (f.envelopeFilm && f.envelopeLetters === monogram ? f.envelopeFilm : "");
   const c = sacredGardenFrom({
     groom, bride, monogram,
     blessing: f.blessing.trim(),
@@ -132,6 +140,9 @@ export function buildInvitation(f) {
     fonts: { script: f.fontScript, names: f.fontNames, body: f.fontBody, bodyStyle: f.fontBodyStyle },
     colors: { accent: f.colorAccent, text: f.colorText, background: f.colorBackground, detail: f.colorDetail, time: f.colorTime, button: f.colorButton },
   }, { venue: f.venueImage || undefined, couple: f.couplePhoto || undefined, closingVideo: f.closingVideo || undefined });
-  // never letters drawn over a film by code: the envelope is shown only once Grok's film is ready
-  return { ...c, envelope: { ...c.envelope, ready: Boolean(film) } };
+  // computers: the wide video, else the phone one; phones: the phone video or film, else the wide one
+  const desktopVideo = f.introVideoDesktop || film;
+  const video = film || desktopVideo;
+  // never letters drawn over a film by code: the envelope is shown only once Grok's film (or the couple's own video) is ready
+  return { ...c, envelope: { ...c.envelope, ...(video ? { video, desktopVideo } : {}), ready: Boolean(video) } };
 }

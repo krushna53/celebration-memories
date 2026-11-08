@@ -168,10 +168,27 @@ export function paintSeal(x, w, h, film, sx, sealTrack, monogram) {
   return true;
 }
 
-/** sealImage: a re-lettered seal close-up (see sealCloseUp), e.g. from Grok; laid over the seal instead of painted letters. */
-export default function SgEnvelope({ video, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, theme, onOpen, onDone }) {
+// screens that get the wide (16:9) opening video, when there is one
+const WIDE = "(min-width: 768px) and (orientation: landscape)";
+
+/**
+ * sealImage: a re-lettered seal close-up (see sealCloseUp), e.g. from Grok; laid over the seal instead of painted letters.
+ * desktopVideo: a wide (16:9) video played instead of `video` on computer screens; no letters are painted on it.
+ */
+export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, theme, onOpen, onDone }) {
   const [phase, setPhase] = useState("closed"); // closed → playing → leaving → done
   const [playing, setPlaying] = useState(false);
+  const [wideScreen, setWideScreen] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia(WIDE);
+    const update = () => setWideScreen(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  const wide = wideScreen && Boolean(desktopVideo) && desktopVideo !== video;
+  // the seal track belongs to our envelope film, never to the couple's wide video
+  const track = wide ? null : sealTrack;
   const film = useRef(null);
   const paint = useRef(null);
   const audio = useRef(null);
@@ -212,7 +229,7 @@ export default function SgEnvelope({ video, music, tapLabel = "Tap to open", mon
   // put the couple's letters on the seal, frame by frame: Grok's seal face when there is one, else painted letters
   useEffect(() => {
     const v = film.current, c = paint.current;
-    if (!v || !c || !(monogram || sealImage) || !sealTrack?.length || phase === "done") return undefined;
+    if (!v || !c || !(monogram || sealImage) || !track?.length || phase === "done") return undefined;
     const sample = document.createElement("canvas");
     sample.width = 180; sample.height = 320;
     const sx = sample.getContext("2d", { willReadFrequently: true });
@@ -234,20 +251,20 @@ export default function SgEnvelope({ video, music, tapLabel = "Tap to open", mon
       if (c.width !== Math.round(box.width * dpr)) { c.width = Math.round(box.width * dpr); c.height = Math.round(box.height * dpr); }
       x.clearRect(0, 0, c.width, c.height);
       if (v.readyState < 2) return;
-      if (sealImage) { if (face) paintSealFace(x, c.width, c.height, v, sx, sealTrack, face, state); }
-      else if (fontReady) paintSeal(x, c.width, c.height, v, sx, sealTrack, monogram);
+      if (sealImage) { if (face) paintSealFace(x, c.width, c.height, v, sx, track, face, state); }
+      else if (fontReady) paintSeal(x, c.width, c.height, v, sx, track, monogram);
     };
     draw();
     return () => { stopped = true; cancelAnimationFrame(raf); };
-  }, [monogram, sealImage, sealTrack, phase]);
+  }, [monogram, sealImage, track, phase]);
 
   return <>
     {music && <audio ref={audio} src={music} loop preload="auto" />}
     {phase !== "done" && <div className={`${s.stage} ${phase === "leaving" ? s.out : ""}`} onClick={open} onTouchStart={prime}>
-      <div className={s.box}>
-        <video ref={film} className={s.film} src={video} muted playsInline preload="auto" onTimeUpdate={onTime} onEnded={finish}
+      <div className={`${s.box} ${wide ? s.wide : ""}`}>
+        <video ref={film} className={s.film} src={wide ? desktopVideo : video} muted playsInline preload="auto" onTimeUpdate={onTime} onEnded={finish}
           onError={phase === "playing" ? finish : undefined} aria-label="Open your invitation" />
-        {(monogram || sealImage) && sealTrack && <canvas ref={paint} className={s.paint} aria-hidden="true" />}
+        {(monogram || sealImage) && track && <canvas ref={paint} className={s.paint} aria-hidden="true" />}
       </div>
       {phase === "closed" && <div className={s.tap}><i className={s.chev} aria-hidden="true" /><span>{tapLabel}</span></div>}
     </div>}
