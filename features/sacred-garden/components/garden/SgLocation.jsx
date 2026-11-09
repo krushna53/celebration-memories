@@ -19,7 +19,7 @@ export default function SgLocation({ id = "sg-location", title = "Location", nam
   const up = { style: "fadeinup", dur: 2, dist: 40 };
   return <Artboard id={id} height={421} pt={30} label="Location">
     <El x={175} y={81} w={96} h={30} appear={{ style: "zoomin", dur: 3, scale: 0.9 }}><img src={SG_ART.decor} alt="" /></El>
-    {image && <El x={35} y={174} w={380} h={253} appear={{ style: "zoomin", dur: 1, scale: 0.9 }}><img className={vignette ? s.photo : s.drawing} src={image} alt={name ?? ""} loading="lazy" /></El>}
+    {image && <El x={35} y={174} w={380} h={253} appear={{ style: "zoomin", dur: 1, scale: 0.9 }}><img className={vignette ? s.photo : s.drawing} src={image} alt="" loading="lazy" /></El>}
     {PETALS.map(([x, y, w, h, m, path], i) => <El key={i} x={x} y={y} w={w} h={h} m={m} z={4}
       steps={{ ev: "blockintoview", trg: 1, list: [{}, ...path] }}>
       <img src={petals[i % petals.length]} alt="" />

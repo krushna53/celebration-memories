@@ -36,6 +36,12 @@ export async function authorizeMedia(bucket: string, path: string, support = fal
   }
   // Never grant a visitor a raw folder listing or an unpublished upload.
   const db = supabaseAdmin();
+  // Pictures, video and music from the Sacred Garden design (events.design_config "media:<bucket>/<path>" refs).
+  if ((bucket === "gallery" || bucket === "audio") && path.startsWith(`${eventId}/design/`)) {
+    const { data, error } = await db.from("events").select("design_config").eq("id", eventId).single();
+    const design = (data?.design_config ?? {}) as Record<string, unknown>;
+    if (!error && Object.values(design).includes(`media:${bucket}/${path}`)) return { ttl: 60, eventId, support: false };
+  }
   if (["photos", "videos", "audio"].includes(bucket)) {
     const { data, error } = await db.from(bucket).select("id").eq("event_id", eventId)
       .eq("storage_path", path).eq("approved", true).is("deleted_at", null).limit(1);
