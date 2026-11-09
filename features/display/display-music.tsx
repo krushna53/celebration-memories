@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
 /** Normal volume, and the level it drops to while a slide has its own sound. */
@@ -10,7 +10,7 @@ const FADE_MS = 900;
 
 interface DisplayMusicProps {
   /** Track chosen on the admin dashboard (services/display-music.ts); null = no music. */
-  url: string | null;
+  urls: string[];
   /** True once the display's "Start" tap has happened, while it isn't paused or muted. */
   playing: boolean;
   /** True while the current slide plays its own sound (guest video, voice message, highlight reel). */
@@ -25,7 +25,16 @@ interface DisplayMusicProps {
  * so there it pauses under those slides instead. Renders nothing when no
  * track is chosen.
  */
-export function DisplayMusic({ url, playing, duck }: DisplayMusicProps) {
+export function DisplayMusic({ urls, playing, duck }: DisplayMusicProps) {
+  // Remount only when the playlist changes, not on each slide refresh.
+  return <PlaylistMusic key={JSON.stringify(urls)} urls={urls} playing={playing} duck={duck} />;
+}
+
+function PlaylistMusic({ urls, playing, duck }: DisplayMusicProps) {
+  const [index, setIndex] = useState(0);
+  const [failed, setFailed] = useState(false);
+  const failures = useRef(new Set<number>());
+  const url = urls[index];
   const audioRef = useRef<HTMLAudioElement>(null);
   const volumeWorks = useRef<boolean | null>(null);
 
@@ -38,7 +47,7 @@ export function DisplayMusic({ url, playing, duck }: DisplayMusicProps) {
       audio.volume = VOLUME;
     }
     // Without volume control, "ducking" means pausing.
-    const shouldPlay = playing && (volumeWorks.current || !duck);
+    const shouldPlay = !failed && playing && (volumeWorks.current || !duck);
     if (shouldPlay) void audio.play().catch(() => undefined);
     else audio.pause();
     if (!volumeWorks.current) return;
@@ -54,10 +63,24 @@ export function DisplayMusic({ url, playing, duck }: DisplayMusicProps) {
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
-  }, [playing, duck, url]);
+  }, [playing, duck, url, failed]);
 
   if (!url) return null;
-  return <audio ref={audioRef} src={url} loop preload="auto" />;
+  function advance() {
+    for (let offset = 1; offset <= urls.length; offset++) {
+      const next = (index + offset) % urls.length;
+      if (!failures.current.has(next)) { setIndex(next); return; }
+    }
+    setFailed(true);
+  }
+  return <audio ref={audioRef} src={url} loop={urls.length === 1} preload="auto"
+    onEnded={() => {
+      const remaining = urls.filter((_, i) => !failures.current.has(i)).length;
+      if (remaining === 1) {
+        if (audioRef.current && playing) { audioRef.current.currentTime = 0; void audioRef.current.play().catch(() => undefined); }
+      } else advance();
+    }}
+    onError={() => { failures.current.add(index); advance(); }} />;
 }
 
 /** Mute button for the display's control row. */

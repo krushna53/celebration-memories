@@ -1,3 +1,4 @@
+import { CONSENT_VERSION } from "@/lib/privacy-consent";
 import { z } from "zod";
 
 export const MEAL_PREFERENCES = [
@@ -60,6 +61,7 @@ export const rsvpFormSchema = z.object({
   children: z.coerce.number().int().min(0).max(20),
   mealPreference: z.enum(MEAL_PREFERENCES),
   comments: z.string().trim().max(1000).optional().or(z.literal("")),
+  consentVersion: z.literal(CONSENT_VERSION).optional(),
   consent: z.boolean().refine((v) => v === true, {
     message: "Please agree to the privacy notice to submit your RSVP.",
   }),

@@ -31,7 +31,7 @@ export default async function AdminTimelinePage() {
       console.error("listPendingSubmissions failed:", err);
       return [];
     }),
-    getDisplayMusic(event.id).catch(() => ({ choice: "none" as const, path: null })),
+    getDisplayMusic(event.id),
   ]);
 
   return (
@@ -53,9 +53,7 @@ export default async function AdminTimelinePage() {
         <div className="mt-8">
           <DisplayMusicPicker
             eventId={event.id}
-            initialChoice={displayMusic.choice}
-            // Stored as "<event>/slideshow-music/<uuid>-<name>" — show just the name.
-            initialCustomName={displayMusic.path?.split("/").pop()?.replace(/^[0-9a-f-]{36}-/, "") ?? null}
+            initialTracks={displayMusic}
           />
           <p className="mt-2 text-xs text-navy-700/50">
             The Big Screen Display (<a href={`/events/${event.slug}/display`} target="_blank" rel="noopener noreferrer" className="underline">open it</a>)

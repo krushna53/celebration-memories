@@ -1,4 +1,5 @@
 "use server";
+import { CONSENT_VERSION } from "@/lib/privacy-consent";
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
@@ -64,7 +65,9 @@ export async function getQuickRsvpGuestAction(eventSlug: string): Promise<Result
 }
 
 /** Yes / Maybe / No from a guest signed in with Google — matched to the guest list by email or phone, or added to it. */
-export async function quickRsvpSignedInAction(eventSlug: string, coming: AttendanceOption): Promise<Result<QuickRsvpGuest>> {
+export async function quickRsvpSignedInAction(eventSlug: string, coming: AttendanceOption, consent?: boolean, consentVersion?: string): Promise<Result<QuickRsvpGuest>> {
+  if (consent !== true) return { success: false, error: "Please agree to the privacy notice before replying." };
+  if (consentVersion !== CONSENT_VERSION) return { success: false, error: "Refresh and review the current privacy notice." };
   const parsedComing = comingSchema.safeParse(coming);
   if (!parsedComing.success) return { success: false, error: "Please choose one of the options." };
   const event = await getEventForPublicRsvp(eventSlug);
@@ -74,7 +77,7 @@ export async function quickRsvpSignedInAction(eventSlug: string, coming: Attenda
 
   try {
     const invitee = await findOrCreateInviteeForGuest(event.id, guest);
-    await recordAttendance(invitee.id, parsedComing.data);
+    await recordAttendance(invitee.id, parsedComing.data, consentVersion);
     await notify(event, invitee.name, parsedComing.data);
     revalidatePath("/admin/invitees");
     return { success: true, data: { name: invitee.name, email: guest.email, phone: invitee.phone ?? guest.phone, coming: parsedComing.data } };
@@ -94,9 +97,13 @@ export async function quickRsvpNameOnlyAction(
   name: string,
   coming: AttendanceOption,
   honeypot?: string,
+  consent?: boolean,
+  consentVersion?: string,
 ): Promise<Result> {
   if (honeypot) return { success: true, data: undefined };
+  if (consent !== true) return { success: false, error: "Please agree to the privacy notice before replying." };
   if (coming === "coming") return { success: false, error: "Please confirm with Google to say yes." };
+  if (consentVersion !== CONSENT_VERSION) return { success: false, error: "Refresh and review the current privacy notice." };
   const parsedComing = comingSchema.safeParse(coming);
   const parsedName = nameSchema.safeParse(name);
   if (!parsedComing.success) return { success: false, error: "Please choose one of the options." };
@@ -111,7 +118,7 @@ export async function quickRsvpNameOnlyAction(
 
   try {
     const invitee = await createNameOnlyInvitee(event.id, parsedName.data);
-    await recordAttendance(invitee.id, parsedComing.data);
+    await recordAttendance(invitee.id, parsedComing.data, consentVersion);
     await recordFailure("quick-rsvp", ipHash);
     await notify(event, invitee.name, parsedComing.data);
     revalidatePath("/admin/invitees");
@@ -131,7 +138,7 @@ export async function saveQuickRsvpDetailsAction(eventSlug: string, values: Conf
 
   const config = await getRsvpConfig(event.id);
   // The email is the Google account's, whatever the form sent.
-  const parsed = buildRsvpSchema(config).safeParse({ ...values, email: guest.email, consent: true });
+  const parsed = buildRsvpSchema(config).safeParse({ ...values, email: guest.email });
   if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Please check the form and try again." };
 
   try {

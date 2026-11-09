@@ -1,4 +1,5 @@
 "use client";
+import { CONSENT_VERSION, GUESTBOOK_CONSENT } from "@/lib/privacy-consent";
 
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -40,6 +41,7 @@ export function GuestbookForm({ token }: GuestbookFormProps) {
   });
 
   async function onSubmit(values: GuestbookFormValues) {
+    values.consentVersion = CONSENT_VERSION;
     setServerError(null);
     setIsSubmitting(true);
 
@@ -201,8 +203,7 @@ export function GuestbookForm({ token }: GuestbookFormProps) {
             {...register("consent")}
           />
           <span>
-            I agree that this message (and photo, if added) may be stored and
-            shown publicly on this site&rsquo;s Memory Wall. See the{" "}
+            {GUESTBOOK_CONSENT} See the{" "}
             <a
               href="/privacy"
               target="_blank"

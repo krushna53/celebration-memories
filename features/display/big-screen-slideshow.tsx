@@ -22,7 +22,7 @@ import type { DisplaySlide } from "@/types/display";
 interface BigScreenSlideshowProps {
   slides: DisplaySlide[];
   /** Background music chosen on the admin dashboard (services/display-music.ts); null = none. */
-  musicUrl?: string | null;
+  musicUrls?: string[];
 }
 
 /** How long a non-media slide stays up before auto-advancing. */
@@ -115,7 +115,7 @@ function slideLabel(s: DisplaySlide): string {
  * (which also best-effort requests fullscreen) is simpler and more
  * reliable than trying to route around autoplay policies per slide.
  */
-export function BigScreenSlideshow({ slides, musicUrl = null }: BigScreenSlideshowProps) {
+export function BigScreenSlideshow({ slides, musicUrls = [] }: BigScreenSlideshowProps) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const indexRef = useRef(0);
@@ -270,7 +270,7 @@ export function BigScreenSlideshow({ slides, musicUrl = null }: BigScreenSlidesh
       </AnimatePresence>
 
       <DisplayMusic
-        url={musicUrl}
+        urls={musicUrls}
         playing={started && !paused && !musicMuted}
         duck={slide.kind === "memory-video" || slide.kind === "memory-audio" || slide.kind === "highlight-reel"}
       />
@@ -369,7 +369,7 @@ export function BigScreenSlideshow({ slides, musicUrl = null }: BigScreenSlidesh
               <span>~{formatHMS(totalEstimatedMs)}</span>
             </div>
 
-            {musicUrl ? <MusicToggleButton muted={musicMuted} onToggle={() => setMusicMuted((m) => !m)} /> : null}
+            {musicUrls.length > 0 ? <MusicToggleButton muted={musicMuted} onToggle={() => setMusicMuted((m) => !m)} /> : null}
 
             <button
               type="button"

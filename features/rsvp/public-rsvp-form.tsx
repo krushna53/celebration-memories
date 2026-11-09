@@ -1,4 +1,5 @@
 "use client";
+import { CONSENT_VERSION, RSVP_CONSENT } from "@/lib/privacy-consent";
 
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -92,6 +93,7 @@ export function PublicRsvpForm({
   const coming = watch("coming");
 
   async function onSubmit(values: ConfiguredRsvpValues) {
+    values.consentVersion = CONSENT_VERSION;
     setServerError(null);
     if (!values.phone) {
       setError("phone", { type: "manual", message: "Please enter your phone number." });
@@ -209,9 +211,7 @@ export function PublicRsvpForm({
             {...register("consent")}
           />
           <span>
-            I agree that the details I provide here (name, contact info, and
-            RSVP) may be stored and used by the host to plan this event. See
-            the{" "}
+            {RSVP_CONSENT} See the{" "}
             <a
               href="/privacy"
               target="_blank"

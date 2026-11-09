@@ -1,4 +1,5 @@
 import "server-only";
+import { CONSENT_VERSION } from "@/lib/privacy-consent";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { RsvpFormValues } from "@/types/rsvp";
@@ -16,6 +17,8 @@ export async function submitRsvp(
   /** Answers to the event's custom RSVP questions (lib/rsvp-config.ts pickAnswers) — omitted for events without any. */
   answers?: Record<string, string> | null,
 ) {
+  if (values.consent !== true) throw new Error("RSVP consent is required.");
+  if (values.consentVersion !== CONSENT_VERSION) throw new Error("Please refresh and review the current privacy notice.");
   const client = supabaseAdmin();
 
   const { error: rsvpError } = await client.from("rsvps").upsert(
@@ -28,6 +31,7 @@ export async function submitRsvp(
       comments: values.comments || null,
       submitted_at: new Date().toISOString(),
       consent_at: new Date().toISOString(),
+      consent_version: CONSENT_VERSION,
       ...(answers !== undefined ? { answers } : {}),
     },
     { onConflict: "invitee_id" },

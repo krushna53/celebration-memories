@@ -10,7 +10,7 @@ import { getMemoryWallItems } from "@/services/memory-wall";
 import { publicMediaUrl } from "@/services/uploads";
 import { buildDisplaySlides } from "@/lib/build-display-slides";
 import { BigScreenSlideshow } from "@/features/display/big-screen-slideshow";
-import { getDisplayMusicUrl } from "@/services/display-music";
+import { getDisplayMusicUrls } from "@/services/display-music";
 
 // Always dynamic: this is meant to be left open on a TV/projector for
 // hours, so it should always reflect the latest approved memories, not
@@ -56,11 +56,11 @@ export default async function BigScreenDisplayPage({ params }: BigScreenDisplayP
 
   // Same photo set as the event page for this viewer — see seesPrivatePhotos.
   const full = await canSeePrivatePhotos(event.id).catch(() => false);
-  const [galleryPhotos, milestones, memories, musicUrl] = await Promise.all([
+  const [galleryPhotos, milestones, memories, musicUrls] = await Promise.all([
     listGalleryPhotos(event.id, { publicOnly: !full }).catch(() => []),
     listMilestones(event.id, { coversOnly: !full }).catch(() => []),
     getMemoryWallItems(event.id, 100).catch(() => []),
-    getDisplayMusicUrl(event.id),
+    getDisplayMusicUrls(event.id),
   ]);
 
   const highlightReelUrl = event.highlightReelPath
@@ -69,5 +69,5 @@ export default async function BigScreenDisplayPage({ params }: BigScreenDisplayP
 
   const slides = buildDisplaySlides({ event, galleryPhotos, milestones, memories, highlightReelUrl });
 
-  return <BigScreenSlideshow slides={slides} musicUrl={musicUrl} />;
+  return <BigScreenSlideshow slides={slides} musicUrls={musicUrls} />;
 }

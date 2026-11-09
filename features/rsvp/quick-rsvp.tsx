@@ -1,4 +1,5 @@
 "use client";
+import { CONSENT_VERSION, RSVP_CONSENT } from "@/lib/privacy-consent";
 
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -27,7 +28,7 @@ const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-4 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70";
 
-/** Survives the Google round-trip, so coming back from sign-in finishes the "Yes" without another tap. */
+/** Remembers the selected option across Google sign-in, without submitting it. */
 const intentKey = (eventId: string) => `quick-rsvp-intent:${eventId}`;
 
 interface QuickRsvpProps {
@@ -48,6 +49,7 @@ interface QuickRsvpProps {
 export function QuickRsvp({ eventSlug, eventId, honoreeName, rsvpConfig, segment = "family" }: QuickRsvpProps) {
   const config = rsvpConfig ?? DEFAULT_RSVP_CONFIG;
   const options = attendanceOptions(config, segment);
+  const [consent, setConsent] = useState(false);
   const [ready, setReady] = useState(false);
   const [guest, setGuest] = useState<QuickRsvpGuest | null>(null);
   const [choice, setChoice] = useState<AttendanceOption | null>(null);
@@ -69,7 +71,7 @@ export function QuickRsvp({ eventSlug, eventId, honoreeName, rsvpConfig, segment
   async function answerSignedIn(value: AttendanceOption) {
     setSaving(true);
     setError(null);
-    const result = await quickRsvpSignedInAction(eventSlug, value);
+    const result = await quickRsvpSignedInAction(eventSlug, value, consent, CONSENT_VERSION);
     setSaving(false);
     if (!result.success) {
       setError(result.error);
@@ -99,7 +101,8 @@ export function QuickRsvp({ eventSlug, eventId, honoreeName, rsvpConfig, segment
           // Storage blocked — the guest just taps Yes once more after signing in.
         }
         if (result.data && pending === "coming") {
-          await answerSignedIn("coming");
+          // Sign-in verifies identity; it does not grant fresh RSVP consent.
+          setChoice("coming");
         } else if (result.data?.coming) {
           setAnswered(result.data.coming);
           setChoice(result.data.coming);
@@ -111,11 +114,10 @@ export function QuickRsvp({ eventSlug, eventId, honoreeName, rsvpConfig, segment
     return () => {
       active = false;
     };
-    // answerSignedIn only reads stable values; run once per event.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventSlug, eventId]);
 
   function choose(value: AttendanceOption) {
+    if (!consent) return;
     trackStarted();
     setError(null);
     setChoice(value);
@@ -136,7 +138,7 @@ export function QuickRsvp({ eventSlug, eventId, honoreeName, rsvpConfig, segment
     if (!choice || choice === "coming") return;
     setSaving(true);
     setError(null);
-    const result = await quickRsvpNameOnlyAction(eventSlug, name, choice, honeypot);
+    const result = await quickRsvpNameOnlyAction(eventSlug, name, choice, honeypot, consent, CONSENT_VERSION);
     setSaving(false);
     if (result.success) setAnswered(choice);
     else setError(result.error);
@@ -162,7 +164,11 @@ export function QuickRsvp({ eventSlug, eventId, honoreeName, rsvpConfig, segment
 
   return (
     <div className="rounded-3xl border border-gold-500/25 bg-white p-5 text-left shadow-sm sm:p-8">
-      <fieldset disabled={!ready || saving} className="space-y-3">
+      <label className="mb-4 flex items-start gap-2 text-sm text-navy-700">
+        <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1" />
+        <span>{RSVP_CONSENT} <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Notice and withdrawal options</a>.</span>
+      </label>
+      <fieldset disabled={!ready || saving || !consent} className="space-y-3">
         <legend className="sr-only">Will you be joining us?</legend>
         {options.map(({ value, label }) => {
           const Icon = ICONS[value];
@@ -202,7 +208,7 @@ export function QuickRsvp({ eventSlug, eventId, honoreeName, rsvpConfig, segment
 
       {ready && !guest && choice === "coming" ? (
         <div className="mt-5 space-y-3">
-          <GoogleAuthButton redirectTo={redirectTo} label="Confirm with Google" />
+          {consent ? <GoogleAuthButton redirectTo={redirectTo} label="Confirm with Google" /> : null}
           <p className="text-center text-xs text-navy-700/80">
             Your name and email come from your Google account. By confirming you agree they may be stored and used by the
             host to plan this event (
@@ -228,7 +234,7 @@ export function QuickRsvp({ eventSlug, eventId, honoreeName, rsvpConfig, segment
             <input className={inputClasses} value={name} maxLength={120} autoComplete="name" onChange={(e) => setName(e.target.value)} />
           </label>
           <p className="text-xs text-navy-700/70">Your name and reply are shared with the host only.</p>
-          <Button type="button" onClick={sendNameOnly} disabled={saving} className="w-full sm:w-auto">
+          <Button type="button" onClick={sendNameOnly} disabled={saving || !consent} className="w-full sm:w-auto">
             Send my reply
           </Button>
         </div>
@@ -291,11 +297,12 @@ function DetailsBlock({
       adults: 1,
       children: 0,
       mealPreference: "no_preference",
-      consent: true,
+      consent: false,
     },
   });
 
   async function onSubmit(values: ConfiguredRsvpValues) {
+    values.consentVersion = CONSENT_VERSION;
     setMessage(null);
     const result = await saveQuickRsvpDetailsAction(eventSlug, values);
     setMessage(result.success ? { ok: true, text: "Details saved — thank you!" } : { ok: false, text: result.error });
@@ -329,6 +336,11 @@ function DetailsBlock({
             segment === "corporate" ? "Questions, accessibility needs, anything else we should know..." : `Dietary needs, well-wishes for ${honoreeName}, anything else...`
           }
         />
+        <label className="flex items-start gap-2 text-sm text-navy-700">
+          <input type="checkbox" {...register("consent")} className="mt-1" />
+          <span>{RSVP_CONSENT} <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Notice and withdrawal options</a>.</span>
+        </label>
+        {errors.consent ? <p role="alert" className="text-sm text-red-600">Please agree before saving your details.</p> : null}
         {message ? (
           <p className={message.ok ? "text-sm text-green-700" : "text-sm text-red-600"} role="status">
             {message.text}

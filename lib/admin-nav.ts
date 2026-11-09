@@ -121,6 +121,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/delete-account", label: "Delete Account", icon: Trash2, group: "Account" },
   { href: "/admin/branding", label: "Branding", icon: BadgeCheck, group: "Account" },
   { href: "/admin/referrals", label: "Referrals", icon: Gift, group: "Account" },
+  { href: "/admin/privacy-requests", label: "Privacy Requests", icon: ShieldCheck, group: "Platform" },
   { href: "/admin/inquiries", label: "Inquiries", icon: Inbox, group: "Platform" },
   { href: "/admin/payment-settings", label: "Payment Settings", icon: QrCode, group: "Payments" },
   { href: "/admin/payments", label: "Payments", icon: Wallet, group: "Payments" },

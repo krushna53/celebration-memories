@@ -8,11 +8,12 @@ import { createSignedSlideshowMusicUpload, UploadValidationError } from "@/servi
 
 /** Big Screen Display music — see services/display-music.ts. */
 
-export async function setDisplayMusicAction(eventId: string, choice: string, path: string | null) {
+export async function setDisplayMusicAction(eventId: string, tracks: unknown) {
   try {
     await requireAdminForEvent(eventId);
-    await setDisplayMusic(eventId, choice, path);
+    await setDisplayMusic(eventId, tracks);
     revalidatePath("/admin");
+    revalidatePath("/admin/timeline");
     return { success: true as const };
   } catch (err) {
     return { success: false as const, error: err instanceof Error ? err.message : "Failed." };
