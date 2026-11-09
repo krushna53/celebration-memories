@@ -6,7 +6,7 @@ import { demoInvitation } from "./demo-invitation";
 const MEDIA = "https://assets.webgencyinvitations.com/";
 export const DEFAULT_WELCOME_TITLE = "Two Hearts\nOne Journey\nA Lifetime Together";
 export const ENVELOPE_VIDEO = "/invite-art/sacred/envelope-light-burst.mp4";
-export const CLOSING_REEL = "/invite-art/sacred/closing-reel.mp4"; // sample video at the bottom of the page
+export const CLOSING_REEL = "/invite-art/sacred/closing-reel.mp4"; // default sample video at the bottom of the page
 export const DEFAULT_MUSIC ="https://pub-4dc8201144ca418fb604349c73e8c724.r2.dev/Einaudi_%20Divenire%20(1)%20(1).mp3";
 
 // Fonts a couple can pick. The first of each list is the design's own (files in /public/fonts/sacred);
@@ -97,7 +97,7 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
 
     schedule: {
       title: "Schedule of Events",
-      items: d.program.map(({ time, title }) => ({ time, title })),
+      items: d.program.map(({ time, title, day, labelShift }) => ({ time, title, day, labelShift })),
     },
 
     location: {

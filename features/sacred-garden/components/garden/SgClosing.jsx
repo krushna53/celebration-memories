@@ -17,17 +17,17 @@ function ClosingVideo({ src, label }) {
     seen.observe(v);
     return () => seen.disconnect();
   }, [src]);
-  return <video ref={ref} className={g.cover} src={src} muted loop playsInline preload="none" aria-label={label} />;
+  return <video ref={ref} className={`${g.cover} ${s.video}`} src={src} muted loop playsInline preload="none" aria-label={label} />;
 }
 
 /** Closing photo (or video) that fades up into the paper, "Hope to see you there!", the names and bouquets at the foot. */
 export default function SgClosing({ id = "sg-closing", title = "Hope to see you there!", names, photo = SG_ART.couple, video, flowers = SG_ART.flowersClosing }) {
   return <Artboard id={id} height={673} label={title}>
-    {video ? <El x={0} y={0} w={450} h={675}><ClosingVideo src={video} label={names ?? ""} /></El>
+    {video ? <El x={0} y={0} w={450} h={675} className={s.media}><ClosingVideo src={video} label={names ?? ""} /></El>
       : photo && <El x={0} y={0} w={450} h={675}><img className={g.cover} src={photo} alt={names ?? ""} loading="lazy" /></El>}
     <El x={0} y={-1} w={451} h={237} className={s.fade} />
-    <El x={-55} y={12} w={560} h={64} appear={{ style: "fadein", dur: 1 }}><h2 className={`${g.text} ${g.title}`}>{title}</h2></El>
-    <El x={-43} y={173} w={537} h={537} steps={breathe} className={s.flowers}><img src={flowers} alt="" /></El>
-    {names && <El x={45} y={73} w={360} h={45} appear={{ style: "fadeinup", dur: 2, dist: 40 }}><p className={`${g.text} ${s.names}`}>{names}</p></El>}
+    {!video && <El x={-55} y={12} w={560} h={64} z={4} appear={{ style: "fadein", dur: 1 }}><h2 className={`${g.text} ${g.title}`}>{title}</h2></El>}
+    <El x={-43} y={173} w={537} h={537} z={3} steps={breathe} className={s.flowers}><img src={flowers} alt="" /></El>
+    {!video && names && <El x={45} y={73} w={360} h={45} z={4} appear={{ style: "fadeinup", dur: 2, dist: 40 }}><p className={`${g.text} ${s.names}`}>{names}</p></El>}
   </Artboard>;
 }
