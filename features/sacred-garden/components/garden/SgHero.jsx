@@ -39,8 +39,8 @@ export default function SgHero({ id = "sg-hero", first, second, date, weddingDay
     <El x={230} y={547} w={236} h={359} m={{ x: 263, y: 586, w: 210, h: 319 }} steps={swayR}><img src={bouquets[1]} alt="" /></El>
     {title && <El x={-55} y={899} w={560} h={129} appear={{ style: "fadein", dur: 1 }}><h2 className={`${g.text} ${g.title} ${s.welcomeTitle}`}>{title}</h2></El>}
     {message && <El x={72} y={1050} w={307} appear={{ style: "fadein", dur: 2, delay: 0.2 }}><p className={`${g.text} ${g.body}`}>{message}</p></El>}
-    <El x={213} y={558} w={25} h={16} steps={bob}><Chevron /></El>
-    <El x={67} y={518} w={316} h={35}><a className={`${g.link} ${g.text} ${s.scroll}`} href={nextId ? `#${nextId}` : undefined}>{scrollLabel}</a></El>
+    <El x={213} y={520} w={25} h={16} steps={bob}><Chevron /></El>
+    <El x={67} y={480} w={316} h={35}><a className={`${g.link} ${g.text} ${s.scroll}`} href={nextId ? `#${nextId}` : undefined}>{scrollLabel}</a></El>
     {blessingImage
       ? <El x={84} y={813} w={283} h={86}><img src={blessingImage} alt={blessing ?? ""} /></El>
       : blessing && <El x={44} y={813} w={363} h={86} className={g.fill}><p className={`${g.text} ${s.blessing}`}>{blessing}</p></El>}

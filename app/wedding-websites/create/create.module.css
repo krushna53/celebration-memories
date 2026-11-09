@@ -93,6 +93,7 @@ textarea.input { min-height: 86px; resize: vertical; font-size: 13.5px; line-hei
 
 .imageField { display: grid; gap: 8px; }
 .thumb { width: 100%; max-height: 160px; object-fit: cover; border-radius: 10px; border: 1px solid #e8d5c4; }
+.imageField video.thumb { display: block; position: relative; z-index: 0; width: 100%; height: auto; min-height: 120px; max-height: 220px; aspect-ratio: 16 / 9; object-fit: contain; background: #171717; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .row .input { flex: 1; min-width: 0; }
 .fileBtn {

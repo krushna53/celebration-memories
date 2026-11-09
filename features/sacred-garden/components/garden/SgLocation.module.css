@@ -6,9 +6,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 18px;
-  -webkit-mask: radial-gradient(ellipse 56% 58% at 50% 50%, #000 70%, transparent 100%);
-  mask: radial-gradient(ellipse 56% 58% at 50% 50%, #000 70%, transparent 100%);
+  border-radius: 4px;
+  -webkit-mask: none;
+  mask: none;
 }
 /* a drawing with a transparent background sits straight on the paper */
 .drawing { display: block; width: 100%; height: 100%; object-fit: contain; }

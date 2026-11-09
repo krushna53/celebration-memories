@@ -1,7 +1,7 @@
 // Sample content for the wedding website demo (/wedding-websites/demo).
 // Every section reads its props from here, so a real invitation only needs a new object like this.
 
-const venueQuery = "The Leela Palace Udaipur";
+const venueQuery = "Bel-La Monde, NH8, Delhi";
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
 export const demoInvitation = {
@@ -13,7 +13,7 @@ export const demoInvitation = {
   date: "2026-11-23T18:30:00+05:30",
   endDate: "2026-11-23T23:30:00+05:30",
   dateLabel: "23 · 11 · 2026",
-  place: "Udaipur, Rajasthan",
+  place: "Delhi",
   heroImage: "/art/couples/couple-rosewood-vows.webp",
 
   welcome: {
@@ -33,17 +33,19 @@ export const demoInvitation = {
   ],
 
   program: [
-    { time: "5:30 PM", title: "Baraat Arrival", detail: "Dhol, dancing and a grand welcome", icon: "dhol" },
-    { time: "6:30 PM", title: "Varmala", detail: "Exchange of garlands", icon: "flower" },
-    { time: "7:15 PM", title: "Pheras", detail: "Seven vows around the sacred fire", icon: "diya" },
-    { time: "8:30 PM", title: "Dinner", detail: "Royal Rajasthani feast", icon: "plate" },
-    { time: "10:30 PM", title: "Vidaai", detail: "A heartfelt farewell", icon: "heart" },
+    { time: "5pm", title: "Sagan Ceremony", day: "Monday, 23rd Nov" },
+    { time: "5:30pm", title: "Engagement" },
+    { time: "8:00pm onwards", title: "Cocktail Dinner" },
+    { time: "11am onwards", title: "Haldi Ceremony", day: "Tuesday, 24th Nov" },
+    { time: "5pm onwards", title: "Baraat" },
+    { time: "6pm onwards", title: "Pheras" },
+    { time: "8:30pm onwards", title: "Reception Dinner" },
   ],
 
   venue: {
-    name: "The Leela Palace",
-    address: "Lake Pichola, Udaipur, Rajasthan 313001",
-    mapQuery: venueQuery,
+    name: "Bel-La Monde",
+    address: "NH8, Delhi",
+    mapQuery: "Bel-La Monde, NH8, Delhi",
     image: "/wedding-demo-royal.webp",
   },
 
