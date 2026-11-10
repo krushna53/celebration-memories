@@ -198,6 +198,8 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     return () => query.removeEventListener("change", update);
   }, []);
   const wide = wideScreen && Boolean(desktopVideo) && desktopVideo !== video;
+  // our own wide envelope films fill the whole screen; a couple's own wide video is shown whole
+  const fill = wide && desktopVideo.startsWith("/invite-art/");
   // the seal track belongs to our envelope film, never to the couple's wide video
   const track = wide ? null : sealTrack;
   const film = useRef(null);
@@ -319,7 +321,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     {music && <audio ref={audio} src={music} loop preload="auto" />}
     {phase !== "done" && <div className={`${s.stage} ${phase === "leaving" ? s.out : ""}`} onClick={open}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }} role="button" tabIndex={0} aria-label={tapLabel}>
-      <div className={`${s.box} ${wide ? s.wide : ""}`}>
+      <div className={`${s.box} ${wide ? s.wide : ""} ${fill ? s.fill : ""}`}>
         <video ref={film} className={s.film} src={wide ? desktopVideo : video} muted playsInline preload="auto" onTimeUpdate={onTime} onEnded={finish}
           onError={phase === "playing" ? finish : undefined} aria-label="Open your invitation" />
         {(monogram || sealImage) && track && <canvas ref={paint} className={s.paint} aria-hidden="true" />}

@@ -13,6 +13,7 @@ import SgDressGift from "./SgDressGift";
 import SgRsvp from "./SgRsvp";
 import SgClosing from "./SgClosing";
 import g from "./garden.module.css";
+import d from "./desktop.module.css";
 
 /**
  * The Sacred Garden invitation: cover film with the names, welcome on torn paper, countdown,
@@ -41,7 +42,10 @@ export default function SacredGardenInvitation({ c, rsvp = true, autoScroll = fa
   useArtboardMotion(root, true, c);
   useAutoScroll(autoScroll, root, onScrollTakeover);
   const theme = gardenTheme(c);
-  return <div ref={root} className={`${g.vars} ${g.page}`} style={theme}>
+  // computers: the invitation as a framed card on a soft garden (desktop.module.css; phones see the page as is)
+  return <div className={`${g.vars} ${d.card}`} style={{ ...theme, "--desk-art": `url("${c.hero.photo || SG_ART.couple}")` }}>
+    <div className={d.backdrop} aria-hidden="true"><img src={SG_ART.bouquetHeroLeft} alt="" /><img src={SG_ART.bouquetHeroRight} alt="" /></div>
+  <div ref={root} className={`${g.page} ${d.sheet}`}>
     <SgHero first={c.couple.first} second={c.couple.second} firstParents={c.couple.firstParents} secondParents={c.couple.secondParents} date={c.hero.date} weddingDay={c.hero.weddingDay} scrollLabel={c.hero.scrollLabel}
       video={c.hero.video} photo={c.hero.photo} blessing={c.welcome.blessing} blessingImage={c.welcome.blessingImage} title={c.welcome.title} message={c.welcome.message} nextId="sg-countdown" />
     <SgCountdown title={c.countdown.title} date={c.countdown.date} labels={c.countdown.labels} />
@@ -52,5 +56,6 @@ export default function SacredGardenInvitation({ c, rsvp = true, autoScroll = fa
     {rsvp !== true ? rsvp || null : <SgRsvp title={c.rsvp.title} text={c.rsvp.text} openLabel={c.rsvp.openLabel} note={c.rsvp.note} fields={c.rsvp.fields} endpoint={c.rsvp.endpoint}
       submit={c.rsvp.submit} required={c.rsvp.required} success={c.rsvp.success} failure={c.rsvp.failure} theme={theme} />}
     <SgClosing title={c.closing.title} names={c.couple.joined} date={c.hero.date} layout={c.closing.layout} photo={c.closing.photo || undefined} video={c.closing.video || undefined} />
+  </div>
   </div>;
 }

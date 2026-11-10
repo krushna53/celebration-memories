@@ -19,6 +19,9 @@
 .box { position: relative; width: min(100%, 440px, calc(100svh * 9 / 16)); aspect-ratio: 9 / 16; }
 /* the couple's wide video on a computer: 16:9, as large as the screen allows */
 .box.wide { width: min(100%, calc(100svh * 16 / 9)); aspect-ratio: 16 / 9; }
+/* our wide envelope film: edge to edge, cropped rather than letterboxed */
+.box.fill { width: 100%; height: 100%; aspect-ratio: auto; }
+.box.fill .film { object-fit: cover; }
 .film { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
 .paint { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 

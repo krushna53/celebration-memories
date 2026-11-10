@@ -1,0 +1,39 @@
+/* Computers only: the 450px invitation column gets a setting around it instead of empty paper. Phones are untouched. */
+.backdrop { display: none; }
+
+@media (min-width: 1024px) {
+  /* card: the invitation as a framed card resting on a soft garden */
+  .card { position: relative; padding: 56px 0 72px; }
+  .card .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 70% at 50% 45%, rgba(255, 252, 244, 0.9), transparent 70%),
+      var(--sg-bg, #f9f0e0);
+  }
+  .card .backdrop::before {
+    content: "";
+    position: absolute;
+    inset: -40px;
+    background: var(--desk-art) center / cover no-repeat;
+    filter: blur(28px) sepia(0.4) saturate(0.8);
+    opacity: 0.2;
+  }
+  .card .backdrop img { position: absolute; width: min(34vw, 520px); opacity: 0.95; }
+  .card .backdrop img:first-of-type { left: -2vw; bottom: -4vh; }
+  .card .backdrop img:last-of-type { right: -2vw; top: -4vh; transform: rotate(180deg); }
+  .card .sheet {
+    position: relative;
+    z-index: 1;
+    width: 450px;
+    margin: 0 auto;
+    overflow: clip;
+    border-radius: 6px;
+    box-shadow: 0 40px 90px -40px rgba(108, 81, 63, 0.55), 0 0 0 1px rgba(166, 125, 43, 0.28);
+    outline: 1px solid rgba(166, 125, 43, 0.35);
+    outline-offset: 12px;
+  }
+}

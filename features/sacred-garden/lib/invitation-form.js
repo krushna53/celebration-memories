@@ -117,6 +117,9 @@ export const slugFor = (f) => slugPart(f.slug) || slugOptions(f)[0];
 export const SAMPLE_CLOSING_VIDEO = CLOSING_REEL;
 
 // Two ready-made websites from the sample (Kunal & Aanchal), at /wedding/sample-photo and /wedding/sample-video.
+// A 16:9 version of an envelope film for computers: the phone film widened to fill the screen, seal kept round.
+const WIDE_FILMS = { "/invite-art/sacred/envelope-k-a.mp4": "/invite-art/sacred/envelope-k-a-wide-full.mp4" };
+
 // Their envelope film already carries K & A (made once, the same way the create page makes it).
 const sampleSite = formDefaults;
 export const SAMPLE_SITES = {
@@ -163,7 +166,7 @@ export function buildInvitation(f) {
     colors: { accent: f.colorAccent, text: f.colorText, background: f.colorBackground, detail: f.colorDetail, time: f.colorTime, button: f.colorButton },
   }, { venue: f.venueImage || undefined, couple: f.couplePhoto || undefined, closingVideo: f.closingVideo || undefined, hero: f.heroPhoto || undefined });
   // computers: the wide video, else the phone one; phones: the phone video or film, else the wide one
-  const desktopVideo = f.introVideoDesktop || film;
+  const desktopVideo = f.introVideoDesktop || WIDE_FILMS[film] || film;
   const video = film || desktopVideo;
   // never letters drawn over a film by code: the envelope is shown only once Grok's film (or the couple's own video) is ready
   return { ...c, envelope: { ...c.envelope, ...(video ? { video, desktopVideo } : {}), ready: Boolean(video), autoOpen: Number(f.autoOpen) || 0 }, autoScroll: f.autoScroll === "on" };
