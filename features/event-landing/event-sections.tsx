@@ -12,6 +12,7 @@ import { EventDayHomepageSection } from "@/features/event-day/event-day-homepage
 import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
 import { WishMessageSection } from "@/features/event-landing/wish-message-section";
 import { MemoryWallSection } from "@/features/memory-wall/memory-wall-section";
+import { ShareWishesSection } from "@/features/memory-wall/share-wishes-section";
 import { DatePollSection } from "@/features/date-poll/date-poll-section";
 import { PageViewBeacon } from "@/features/analytics/page-view-beacon";
 import { normalizeSectionConfig, type SectionKey } from "@/lib/section-registry";
@@ -39,6 +40,11 @@ export interface EventSectionsProps {
   renderHero?: (relive: HeroRelive | null, extras: HeroExtras) => ReactNode;
   /** Sections this template never shows, whatever the event's section_config says — e.g. "countdown" when the template's own hero already has one. */
   omitSections?: readonly SectionKey[];
+  /**
+   * The template's own hero has a place for the RSVP (e.g. Sacred Garden): RSVP and every section the admin set after
+   * it go to renderHero as `extras.rsvpSlot` instead of below the hero; sections before RSVP still render below it.
+   */
+  rsvpInHero?: boolean;
 }
 
 /**
@@ -64,6 +70,7 @@ export async function EventSections({
   milestones,
   renderHero,
   omitSections = [],
+  rsvpInHero = false,
 }: EventSectionsProps) {
   // Banner image under the hero title — from the invitation card or uploaded by the host (services/card-artwork.ts).
   const [artworkUrl, whatsappContact] = event
@@ -111,6 +118,8 @@ export async function EventSections({
         />
       </>
     ),
+    shareWishes:
+      event?.publicMemoriesEnabled ? <ShareWishesSection eventSlug={event.slug} honoreeName={event.honoreeName} /> : null,
     wishMessage: <WishMessageSection data={data} />,
     memoryWall: event ? (
       <MemoryWallSection
@@ -122,20 +131,25 @@ export async function EventSections({
     ) : null,
   };
 
+  const renderItems = (items: typeof config) =>
+    items
+      .filter((item) => item.visible)
+      .map((item) => <Fragment key={item.key}>{sectionsByKey[item.key]}</Fragment>);
+  // split where RSVP sits (shown or hidden), so hiding RSVP doesn't move the sections set after it
+  const rsvpAt = rsvpInHero ? config.findIndex((item) => item.key === "rsvp") : -1;
+  const belowHero = rsvpAt === -1 ? config : config.slice(0, rsvpAt);
+  const rsvpSlot = rsvpAt === -1 ? undefined : renderItems(config.slice(rsvpAt));
+
   return (
     <>
       {event ? <PageViewBeacon eventId={event.id} page="landing" /> : null}
       {renderHero ? (
-        renderHero(relive, { artworkUrl, whatsapp: heroWhatsapp })
+        renderHero(relive, { artworkUrl, whatsapp: heroWhatsapp, rsvpSlot })
       ) : (
         <HeroSection data={data} relive={relive} artworkUrl={artworkUrl} whatsapp={heroWhatsapp} />
       )}
       {event ? <DemoEventStrip eventId={event.id} /> : null}
-      {config
-        .filter((item) => item.visible)
-        .map((item) => (
-          <Fragment key={item.key}>{sectionsByKey[item.key]}</Fragment>
-        ))}
+      {renderItems(belowHero)}
       {/*
         Event Day (schedule + menu) deliberately sits outside the
         reorderable section registry — it's opt-in per event via

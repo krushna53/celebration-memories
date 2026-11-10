@@ -20,6 +20,8 @@ export const SECTION_KEYS = [
   "gallery",
   "timeline",
   "rsvp",
+  // Invites guests (coming or not) to leave a video/voice/written wish; only renders when public memories are on.
+  "shareWishes",
   "wishMessage",
   "memoryWall",
 ] as const;
@@ -41,6 +43,7 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
   gallery: "Gallery",
   timeline: "Timeline",
   rsvp: "RSVP",
+  shareWishes: "Share Wishes",
   wishMessage: "Wish Message",
   memoryWall: "Memory Wall",
 };
