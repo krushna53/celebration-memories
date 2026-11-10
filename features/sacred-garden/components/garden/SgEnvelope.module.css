@@ -51,6 +51,12 @@
   transform: rotate(-45deg);
   animation: chev 2.4s 1.9s ease-in-out infinite;
 }
+/* music the browser held back: the button pulses with a small label beside it until the guest taps */
+.waiting { animation: show 0.3s ease-in-out, beat 1.6s ease-in-out infinite; }
+@keyframes beat { 0%, 100% { box-shadow: 0 0 0 0 rgba(90, 15, 27, 0.45); } 50% { box-shadow: 0 0 0 12px rgba(90, 15, 27, 0); } }
+.hint { position: fixed; left: 92px; bottom: 38px; z-index: 2147483647; padding: 6px 12px; border-radius: 999px; background: rgba(255, 249, 235, 0.92);
+  font-family: "Cinzel", Georgia, serif; font-size: 12px; letter-spacing: 0.12em; color: #6c513f; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  pointer-events: none; animation: show 0.6s ease-in-out; }
 /* "Tap to open" fades away as the film starts instead of vanishing */
 .tap.tapGone { animation: tapOut 0.6s ease forwards; }
 .tap.tapGone span, .tap.tapGone .chev { animation: none; }

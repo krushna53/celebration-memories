@@ -175,13 +175,18 @@ const WIDE = "(min-width: 768px) and (orientation: landscape)";
 /**
  * sealImage: a re-lettered seal close-up (see sealCloseUp), e.g. from Grok; laid over the seal instead of painted letters.
  * desktopVideo: a wide (16:9) video played instead of `video` on computer screens; no letters are painted on it.
- * autoOpen: seconds after which the envelope opens by itself (0 = wait for a tap). Browsers keep music silent until
- *   the guest first touches the page, so then it starts at their first tap.
+ * autoOpen: seconds after which the envelope opens by itself (0 = wait for a tap). Browsers usually keep music silent
+ *   until the guest first touches the page; then the music button pulses with "Tap for music" and the first tap starts it.
+ * onMusic(on): told whenever the music starts or stops (the page's auto-scroll follows it).
  */
-export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, autoOpen = 0, theme, onOpen, onDone }) {
+export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, autoOpen = 0, theme, onOpen, onDone, onMusic }) {
   const [phase, setPhase] = useState("closed"); // closed → playing → leaving → done
   const [playing, setPlaying] = useState(false);
   const [overForm, setOverForm] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false); // the browser held the music back until the guest taps
+  const told = useRef(onMusic);
+  told.current = onMusic;
+  useEffect(() => { told.current?.(playing); }, [playing]);
   const [wideScreen, setWideScreen] = useState(false);
   useEffect(() => {
     const query = window.matchMedia(WIDE);
@@ -220,7 +225,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     onOpen?.();
     if (film.current) film.current.play()?.catch(auto === true ? () => setPhase("closed") : finish);
     else finish();
-    if (audio.current) { audio.current.volume = 1; audio.current.play()?.then(() => setPlaying(true)).catch(() => { heldBack.current = true; }); }
+    if (audio.current) { audio.current.volume = 1; audio.current.play()?.then(() => setPlaying(true)).catch(() => { heldBack.current = true; setNeedsTap(true); }); }
   };
   const onTime = () => {
     const v = film.current;
@@ -230,6 +235,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     const a = audio.current;
     if (!a) return;
     heldBack.current = false;
+    setNeedsTap(false);
     if (a.paused) a.play()?.then(() => setPlaying(true)).catch(() => {});
     else { a.pause(); setPlaying(false); }
   };
@@ -270,6 +276,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     const start = () => {
       if (!heldBack.current || !audio.current) return;
       heldBack.current = false;
+      setNeedsTap(false);
       audio.current.play()?.then(() => setPlaying(true)).catch(() => {});
     };
     document.addEventListener("click", start, true);
@@ -319,10 +326,11 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
       </div>
       {phase !== "leaving" && <div className={`${s.tap} ${phase === "playing" ? s.tapGone : ""}`}><i className={s.chev} aria-hidden="true" /><span>{tapLabel}</span></div>}
     </div>}
-    {music && phase === "done" && <button type="button" className={`${s.audio} ${overForm ? s.away : ""}`} style={theme} onClick={toggle} aria-label={playing ? "Pause music" : "Play music"}>
+    {music && phase === "done" && <button type="button" className={`${s.audio} ${overForm ? s.away : ""} ${needsTap && !playing ? s.waiting : ""}`} style={theme} onClick={toggle} aria-label={playing ? "Pause music" : "Play music"}>
       {playing
         ? <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
         : <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="5,3 19,12 5,21" /></svg>}
     </button>}
+    {music && phase === "done" && needsTap && !playing && !overForm && <span className={s.hint} aria-hidden="true">Tap for music</span>}
   </>;
 }
