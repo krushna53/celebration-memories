@@ -119,7 +119,7 @@ export async function EventSections({
       </>
     ),
     shareWishes:
-      event?.publicMemoriesEnabled ? <ShareWishesSection eventSlug={event.slug} honoreeName={event.honoreeName} /> : null,
+      event?.publicMemoriesEnabled ? <ShareWishesSection eventSlug={event.slug} honoreeName={event.honoreeName} category={event.category} /> : null,
     wishMessage: <WishMessageSection data={data} />,
     memoryWall: event ? (
       <MemoryWallSection
