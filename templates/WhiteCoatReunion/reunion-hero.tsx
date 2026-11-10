@@ -99,9 +99,11 @@ export function ReunionHero({ data, galleryPhotos, relive }: ReunionHeroProps) {
 
           <div className="wcr-rise wcr-rule mt-6 w-28" style={rise(2)} aria-hidden="true" />
 
-          <p className="wcr-rise mt-5 text-base text-navy-700 sm:text-lg" style={rise(3)}>
-            Hosted by <span className="font-medium text-navy-950">{data.hostedBy}</span>
-          </p>
+          {data.hostedBy ? (
+            <p className="wcr-rise mt-5 text-base text-navy-700 sm:text-lg" style={rise(3)}>
+              Hosted by <span className="font-medium text-navy-950">{data.hostedBy}</span>
+            </p>
+          ) : null}
 
           <ul className="wcr-rise mt-6 grid gap-3 text-base text-navy-950 sm:text-[1.0625rem]" style={rise(3)}>
             <li className="flex items-start gap-3">

@@ -547,7 +547,7 @@ function Slide({
   if (slide.kind === "title") {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-6 bg-gradient-to-b from-navy-950 via-navy-900 to-navy-950 px-10 text-center">
-        <SlideEyebrow>{slide.hostedBy} warmly invites you to celebrate</SlideEyebrow>
+        <SlideEyebrow>{slide.hostedBy ? `${slide.hostedBy} warmly invites you to celebrate` : "You're warmly invited to celebrate"}</SlideEyebrow>
         <h1 className="font-display text-7xl text-ivory-50 sm:text-9xl">{slide.honoreeName}</h1>
         <div className="h-px w-24 bg-gold-500/60" />
         <p className="font-display text-2xl text-gold-300 sm:text-3xl">{slide.eventTitle}</p>

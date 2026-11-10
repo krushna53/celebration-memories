@@ -75,10 +75,10 @@ export function buildEventJsonLd(event: EventRecord, coverImage: string | null):
   const url = `${SITE_URL}/events/${event.slug}`;
   const name = data.occasion ? `${data.honoreeName} — ${data.occasion}` : `${data.honoreeName} — ${data.eventTitle}`;
   const description = data.occasion
-    ? `${data.occasion}, hosted by ${data.hostedBy}. ${data.dayOfWeek}, ${data.date} at ${data.startTime}${
+    ? `${data.occasion}${data.hostedBy ? `, hosted by ${data.hostedBy}` : ""}. ${data.dayOfWeek}, ${data.date} at ${data.startTime}${
         data.venueName ? ` — ${data.venueName}` : ""
       }.`
-    : `Hosted by ${data.hostedBy}. ${data.dayOfWeek}, ${data.date} at ${data.startTime}${
+    : `${data.hostedBy ? `Hosted by ${data.hostedBy}. ` : ""}${data.dayOfWeek}, ${data.date} at ${data.startTime}${
         data.venueName ? ` — ${data.venueName}` : ""
       }.`;
 

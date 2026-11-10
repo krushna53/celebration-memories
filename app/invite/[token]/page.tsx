@@ -98,7 +98,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
             <p className="text-xs uppercase tracking-[0.35em] text-gold-500">
               {ended
                 ? guestCopy.thankYou
-                : `${event.hostedBy} warmly invites`}
+                : event.hostedBy ? `${event.hostedBy} warmly invites` : "You're warmly invited"}
             </p>
             <h1 className="mt-4 font-display text-3xl text-navy-950 sm:text-4xl">
               {invitee.name}

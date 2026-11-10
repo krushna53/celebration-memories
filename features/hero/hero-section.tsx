@@ -124,7 +124,7 @@ export function HeroSection({ data, relive = null, artworkUrl = null, whatsapp =
             animate="show"
             className="text-xs uppercase tracking-[0.35em] text-gold-300/90"
           >
-            {relive ? guestCopy.thankYou : `${data.occasion ? `${data.occasion} · ` : ""}Hosted by ${data.hostedBy}`}
+            {relive ? guestCopy.thankYou : [data.occasion, data.hostedBy && `Hosted by ${data.hostedBy}`].filter(Boolean).join(" · ")}
           </motion.p>
 
           <motion.h1

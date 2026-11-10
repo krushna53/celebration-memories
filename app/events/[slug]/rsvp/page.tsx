@@ -97,7 +97,7 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
           <Reveal>
             <p className="text-xs uppercase tracking-[0.35em] text-gold-500">
-              {event.hostedBy} warmly invites
+              {event.hostedBy ? `${event.hostedBy} warmly invites` : "You're warmly invited"}
             </p>
             <h1 className="mt-4 font-display text-3xl text-navy-950 sm:text-4xl">
               {event.honoreeName}&rsquo;s {event.eventTitle || event.occasion}
@@ -140,9 +140,9 @@ export default async function PublicRsvpPage({ params }: PublicRsvpPageProps) {
                   This event uses personal invitations
                 </h3>
                 <p className="max-w-sm text-sm text-navy-700/75">
-                  {event.hostedBy} sends each guest their own invitation link by
+                  {event.hostedBy || "The host"} sends each guest their own invitation link by
                   WhatsApp or email — please use that link to RSVP. If you
-                  haven&rsquo;t received one, reach out to {event.hostedBy}{" "}
+                  haven&rsquo;t received one, reach out to {event.hostedBy || "the host"}{" "}
                   directly.
                 </p>
               </div>

@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: PublicMediaPageProps): Promis
   const title = item.authorName
     ? `A memory from ${item.authorName} — ${data.honoreeName}'s ${data.eventTitle}`
     : `${data.honoreeName}'s ${data.eventTitle}`;
-  const description = `Shared via ${SITE_NAME} · Hosted by ${data.hostedBy}.`;
+  const description = `Shared via ${SITE_NAME}${data.hostedBy ? ` · Hosted by ${data.hostedBy}` : ""}.`;
 
   let ogImage: string | null = (item.kind === "video" || isVideoMedia(item.url)) ? null : item.url;
   if (!ogImage) {
