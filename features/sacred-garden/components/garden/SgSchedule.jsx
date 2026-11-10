@@ -28,7 +28,7 @@ export default function SgSchedule({ id = "sg-schedule", title = "Schedule of Ev
     <ol className={s.list}>
       {items.map((item, i) => <li key={i}>
         {(item.day || i === 0 || i === 3) && <El x={0} y={dotY(i) - 72} w={450} h={30} z={8}>
-          <span className={`${g.text} ${s.day}`}>{item.day || (i === 0 ? "Monday, 23rd Nov" : "Tuesday, 24th Nov")}:</span>
+          <span className={`${g.text} ${s.day}`}>{item.day || (i === 0 ? "Monday, 23rd Nov" : "Tuesday, 24th Nov")}</span>
         </El>}
         <El x={47} y={dotY(i) + 4} w={180} h={0} className={g.row} appear={fade(i)}><span className={`${g.text} ${g.num} ${s.time}`}>{item.time.replace(/\s+onwards$/i, "")} {item.time.toLowerCase().endsWith(" onwards") && <small>onwards</small>}</span></El>
         <El x={266} y={dotY(i) + 4 + (item.labelShift ?? 0)} w={100} h={0} m={{ x: 268 }} className={g.row} appear={fade(i)}><span className={`${g.text} ${g.body} ${s.event}`}>{item.title}</span></El>
