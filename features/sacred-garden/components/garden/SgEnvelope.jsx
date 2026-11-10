@@ -226,6 +226,18 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     else { a.pause(); setPlaying(false); }
   };
 
+  // the music stops once the guest reaches the closing photo at the foot of the page (the music button still turns it back on)
+  useEffect(() => {
+    const end = document.getElementById("sg-closing");
+    if (!end || !music) return undefined;
+    const seen = new IntersectionObserver(([e]) => {
+      const a = audio.current;
+      if (e.isIntersecting && a && !a.paused) { a.pause(); setPlaying(false); }
+    }, { threshold: 0.3 });
+    seen.observe(end);
+    return () => seen.disconnect();
+  }, [music]);
+
   // put the couple's letters on the seal, frame by frame: Grok's seal face when there is one, else painted letters
   useEffect(() => {
     const v = film.current, c = paint.current;
