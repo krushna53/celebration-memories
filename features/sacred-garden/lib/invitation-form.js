@@ -11,6 +11,8 @@ import { sacredGardenFrom, DEFAULT_WELCOME_TITLE, DEFAULT_MUSIC, DEFAULT_FONTS, 
  */
 // how the opening video starts: on the guest's tap, or by itself after a moment (seconds)
 const AUTO_OPEN = [["", "Wait for the guest's tap"], ["2", "Open by itself after 2 seconds"]];
+// after it opens: the guest scrolls, or the page glides through each section until they touch it
+const AUTO_SCROLL = [["", "Guests scroll themselves"], ["on", "Scroll gently through the page (stops when the guest touches it)"]];
 
 // how the closing photo is laid out: the design's bouquets, or full width with no flowers
 const CLOSING_LAYOUTS = [["", "Framed by flowers (design)"], ["bleed", "Full width, no flowers"]];
@@ -46,6 +48,7 @@ export const FORM_GROUPS = [
     ["introVideo", "Phone video (upright 9:16)", "video"],
     ["introVideoDesktop", "Computer video (wide 16:9, optional)", "video"],
     ["autoOpen", "Opening", "select", AUTO_OPEN],
+    ["autoScroll", "After it opens", "select", AUTO_SCROLL],
   ] },
   { title: "Music", hint: "Plays when the guest opens the envelope.", fields: [["music", "Background music", "audio"]] },
 ];
@@ -88,6 +91,7 @@ export const formDefaults = {
   // a wide version for computers; empty = the phone video (or envelope film) there too
   introVideoDesktop: "",
   autoOpen: "",
+  autoScroll: "",
   fontScript: DEFAULT_FONTS.script,
   fontNames: DEFAULT_FONTS.names,
   fontBody: DEFAULT_FONTS.body,
@@ -162,5 +166,5 @@ export function buildInvitation(f) {
   const desktopVideo = f.introVideoDesktop || film;
   const video = film || desktopVideo;
   // never letters drawn over a film by code: the envelope is shown only once Grok's film (or the couple's own video) is ready
-  return { ...c, envelope: { ...c.envelope, ...(video ? { video, desktopVideo } : {}), ready: Boolean(video), autoOpen: Number(f.autoOpen) || 0 } };
+  return { ...c, envelope: { ...c.envelope, ...(video ? { video, desktopVideo } : {}), ready: Boolean(video), autoOpen: Number(f.autoOpen) || 0 }, autoScroll: f.autoScroll === "on" };
 }

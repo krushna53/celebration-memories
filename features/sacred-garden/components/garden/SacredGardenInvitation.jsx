@@ -2,6 +2,7 @@
 import "./sacred-fonts.css";
 import { useRef } from "react";
 import { useArtboardMotion } from "./Artboard";
+import { useAutoScroll } from "./useAutoScroll";
 import { SG_ART } from "./assets";
 import SgHero from "./SgHero";
 import SgCountdown from "./SgCountdown";
@@ -31,10 +32,14 @@ export function gardenTheme(c) {
   };
 }
 
-/** rsvp: true = the design's own RSVP; false = none; or a node shown in its place (the site's live RSVP form). */
-export default function SacredGardenInvitation({ c, rsvp = true }) {
+/**
+ * rsvp: true = the design's own RSVP; false = none; or a node shown in its place (the site's live RSVP form).
+ * autoScroll: glide through the page now (the opening envelope has gone), see useAutoScroll.
+ */
+export default function SacredGardenInvitation({ c, rsvp = true, autoScroll = false }) {
   const root = useRef(null);
   useArtboardMotion(root, true, c);
+  useAutoScroll(autoScroll, root);
   const theme = gardenTheme(c);
   return <div ref={root} className={`${g.vars} ${g.page}`} style={theme}>
     <SgHero first={c.couple.first} second={c.couple.second} firstParents={c.couple.firstParents} secondParents={c.couple.secondParents} date={c.hero.date} weddingDay={c.hero.weddingDay} scrollLabel={c.hero.scrollLabel}
