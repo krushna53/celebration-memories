@@ -71,6 +71,9 @@
   cursor: pointer;
   animation: show 0.3s ease-in-out;
 }
+/* out of the way while the RSVP form is on screen */
+.audio { transition: opacity 0.3s ease, transform 0.3s ease; }
+.away { opacity: 0; transform: scale(0.8); pointer-events: none; }
 .audio svg { width: 30px; height: 30px; fill: #fff; }
 @keyframes show { from { opacity: 0; } }
 

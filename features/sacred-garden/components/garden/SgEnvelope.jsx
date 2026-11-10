@@ -180,6 +180,7 @@ const WIDE = "(min-width: 768px) and (orientation: landscape)";
 export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, autoOpen = 0, theme, onOpen, onDone }) {
   const [phase, setPhase] = useState("closed"); // closed → playing → leaving → done
   const [playing, setPlaying] = useState(false);
+  const [overForm, setOverForm] = useState(false);
   const [wideScreen, setWideScreen] = useState(false);
   useEffect(() => {
     const query = window.matchMedia(WIDE);
@@ -243,6 +244,15 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     return () => seen.disconnect();
   }, [music]);
 
+  // the music button steps aside while the RSVP form is on screen, so it never covers a field or link
+  useEffect(() => {
+    const form = document.getElementById("rsvp");
+    if (!form || !music) return undefined;
+    const seen = new IntersectionObserver(([e]) => setOverForm(e.isIntersecting), { threshold: 0.15 });
+    seen.observe(form);
+    return () => seen.disconnect();
+  }, [music, phase]);
+
   // the envelope opens by itself after `autoOpen` seconds, unless the guest taps first
   useEffect(() => {
     if (!autoOpen || phase !== "closed") return undefined;
@@ -305,7 +315,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
       </div>
       {phase === "closed" && <div className={s.tap}><i className={s.chev} aria-hidden="true" /><span>{tapLabel}</span></div>}
     </div>}
-    {music && phase === "done" && <button type="button" className={s.audio} style={theme} onClick={toggle} aria-label={playing ? "Pause music" : "Play music"}>
+    {music && phase === "done" && <button type="button" className={`${s.audio} ${overForm ? s.away : ""}`} style={theme} onClick={toggle} aria-label={playing ? "Pause music" : "Play music"}>
       {playing
         ? <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
         : <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="5,3 19,12 5,21" /></svg>}

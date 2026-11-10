@@ -7,6 +7,8 @@ import SacredGardenEvent from "./SacredGardenEvent";
 import { EditDesignButton } from "./edit-design-button";
 import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
 import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
+import { TemplateThemeWrapper } from "@/templates/shared/template-theme-wrapper";
+import { gardenSiteTheme } from "./theme";
 
 /** Envelope films we already have, by the initials on their wax seal. */
 const FILMS: Record<string, string> = { "K & A": SAMPLE_SITES["sample-photo"].envelopeFilm };
@@ -43,13 +45,13 @@ export default function SacredGarden({ event, displayData, galleryPhotos, milest
   };
   const letters = `${form.groom[0]} & ${form.bride[0]}`.toUpperCase();
   const film = form.envelopeFilm && form.envelopeLetters === letters ? form.envelopeFilm : FILMS[letters];
-  // the site's live RSVP (answers land in admin) takes the place of the design's own wax-seal RSVP
+  // the site's live RSVP (answers land in admin) takes the place of the design's own wax-seal RSVP, in the garden's colours
   const liveRsvp = (
-    <>
+    <TemplateThemeWrapper theme={gardenSiteTheme(form)}>
       {event ? <WhatsAppContactButton eventId={event.id} eventName={event.eventTitle || event.honoreeName} /> : null}
       <RsvpTeaserSection eventId={event?.id} eventSlug={event?.slug} publicRsvpEnabled={event?.publicRsvpEnabled}
         honoreeName={event?.honoreeName} category={event?.category} />
-    </>
+    </TemplateThemeWrapper>
   );
   // the site's own header and footer, like every template; sample events get the usual "Create your own" strip
   return (
