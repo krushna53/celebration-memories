@@ -53,10 +53,11 @@ export const resolveEventCoverImage = cache(async function resolveEventCoverImag
 
 export async function buildEventMetadata(event: EventRecord | null): Promise<Metadata> {
   const data = toEventDisplayData(event);
-  const title = `${data.honoreeName} — ${data.eventTitle} | ${SITE_NAME}`;
-  const description = data.occasion
-    ? `${data.occasion} · Hosted by ${data.hostedBy} · ${data.dayOfWeek}, ${data.date}`
-    : `Hosted by ${data.hostedBy} · ${data.dayOfWeek}, ${data.date}`;
+  // an event that hides the platform's chrome (events.hide_platform_branding) leaves our name off its title too
+  const title = `${data.honoreeName} — ${data.eventTitle}${event?.hidePlatformBranding ? "" : ` | ${SITE_NAME}`}`;
+  const description = [data.occasion, data.hostedBy.trim() && `Hosted by ${data.hostedBy}`, `${data.dayOfWeek}, ${data.date}`]
+    .filter(Boolean)
+    .join(" · ");
 
   const coverImage = await resolveEventCoverImage(event);
   // Event-specific imagery is ideal, but a shared link must never be
