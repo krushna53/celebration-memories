@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import s from "./SgEnvelope.module.css";
 
 /*
-  Opening screen: the envelope film waits on its first frame with "Tap to open". On tap it plays full
-  screen with the music and fades out just before it ends to reveal the page; then a round play / pause
-  button for the music appears.
+  Opening screen: the envelope film waits on its first frame with "Tap to open". On tap (or by itself, see
+  autoOpen) it plays full screen with the music and slowly fades out, drifting closer, just before it ends to
+  reveal the page; then a round play / pause button for the music appears. The music pauses while the guest
+  is away from the page (another tab or app, screen locked) and carries on when they come back.
 
   theme: CSS variables (e.g. the couple's --sg-button colour) for the music button.
   monogram + sealTrack: paints the couple's letters on the film's wax seal. sealTrack lists, for moments
@@ -203,7 +204,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     if (ended.current) return;
     ended.current = true;
     setPhase("leaving");
-    window.setTimeout(() => { setPhase("done"); onDone?.(); }, 1400);
+    window.setTimeout(() => { setPhase("done"); onDone?.(); }, 1800);
   };
   // Android only lets sound start from a click, so the first touch quietly primes the audio
   const prime = () => {
@@ -211,17 +212,19 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     unlocked.current = true;
     audio.current.play()?.then(() => { audio.current.pause(); audio.current.currentTime = 0; }).catch(() => {});
   };
-  const open = () => {
+  // auto: opened by the timer, not a tap. A phone that refuses to play the film by itself (e.g. iPhone Low Power
+  // Mode) then keeps the envelope waiting for a tap instead of cutting straight to the page.
+  const open = (auto) => {
     if (phase !== "closed") return;
     setPhase("playing");
     onOpen?.();
-    if (film.current) film.current.play()?.catch(finish);
+    if (film.current) film.current.play()?.catch(auto === true ? () => setPhase("closed") : finish);
     else finish();
     if (audio.current) { audio.current.volume = 1; audio.current.play()?.then(() => setPlaying(true)).catch(() => { heldBack.current = true; }); }
   };
   const onTime = () => {
     const v = film.current;
-    if (v?.duration && v.currentTime >= v.duration - 0.8) finish();
+    if (v?.duration && v.currentTime >= v.duration - 1.2) finish();
   };
   const toggle = () => {
     const a = audio.current;
@@ -231,17 +234,18 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     else { a.pause(); setPlaying(false); }
   };
 
-  // the music stops once the guest reaches the closing photo at the foot of the page (the music button still turns it back on)
+  // the music pauses while the guest is away from the page and picks up again when they return
   useEffect(() => {
-    const end = document.getElementById("sg-closing");
-    if (!end || !music) return undefined;
-    const seen = new IntersectionObserver(([e]) => {
+    if (!music) return undefined;
+    let resume = false;
+    const onVisibility = () => {
       const a = audio.current;
-      if (e.isIntersecting) heldBack.current = false;
-      if (e.isIntersecting && a && !a.paused) { a.pause(); setPlaying(false); }
-    }, { threshold: 0.3 });
-    seen.observe(end);
-    return () => seen.disconnect();
+      if (!a) return;
+      if (document.hidden) { resume = !a.paused; if (resume) a.pause(); }
+      else if (resume) { resume = false; a.play()?.catch(() => setPlaying(false)); }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [music]);
 
   // the music button steps aside while the RSVP form is on screen, so it never covers a field or link
@@ -256,7 +260,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
   // the envelope opens by itself after `autoOpen` seconds, unless the guest taps first
   useEffect(() => {
     if (!autoOpen || phase !== "closed") return undefined;
-    const timer = window.setTimeout(open, autoOpen * 1000);
+    const timer = window.setTimeout(() => open(true), autoOpen * 1000);
     return () => window.clearTimeout(timer);
   });
 
@@ -313,7 +317,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
           onError={phase === "playing" ? finish : undefined} aria-label="Open your invitation" />
         {(monogram || sealImage) && track && <canvas ref={paint} className={s.paint} aria-hidden="true" />}
       </div>
-      {phase === "closed" && <div className={s.tap}><i className={s.chev} aria-hidden="true" /><span>{tapLabel}</span></div>}
+      {phase !== "leaving" && <div className={`${s.tap} ${phase === "playing" ? s.tapGone : ""}`}><i className={s.chev} aria-hidden="true" /><span>{tapLabel}</span></div>}
     </div>}
     {music && phase === "done" && <button type="button" className={`${s.audio} ${overForm ? s.away : ""}`} style={theme} onClick={toggle} aria-label={playing ? "Pause music" : "Play music"}>
       {playing
