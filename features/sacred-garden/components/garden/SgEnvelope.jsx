@@ -175,8 +175,10 @@ const WIDE = "(min-width: 768px) and (orientation: landscape)";
 /**
  * sealImage: a re-lettered seal close-up (see sealCloseUp), e.g. from Grok; laid over the seal instead of painted letters.
  * desktopVideo: a wide (16:9) video played instead of `video` on computer screens; no letters are painted on it.
- * autoOpen: seconds after which the envelope opens by itself (0 = wait for a tap). Browsers usually keep music silent
- *   until the guest first touches the page; then the music button pulses with "Tap for music" and the first tap starts it.
+ * autoOpen: seconds after which the envelope opens by itself (0 = wait for a tap).
+ * Music: tried as the page loads and again at any sign of the guest (hover, focus, scroll, swipe, key, tap), so it starts
+ *   the moment the browser allows. Phones allow sound only after a tap or key press (not a hover, scroll or swipe); until
+ *   then the opened page's music button pulses with "Tap for music".
  * onMusic(on): told whenever the music starts or stops (the page's auto-scroll follows it).
  */
 export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, autoOpen = 0, theme, onOpen, onDone, onMusic }) {
@@ -201,21 +203,14 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
   const film = useRef(null);
   const paint = useRef(null);
   const audio = useRef(null);
-  const unlocked = useRef(false);
   const ended = useRef(false);
-  const heldBack = useRef(false); // music the browser would not start without a tap
+  const userPaused = useRef(false); // the guest paused the music themselves; nothing starts it again but the play button
 
   const finish = () => {
     if (ended.current) return;
     ended.current = true;
     setPhase("leaving");
     window.setTimeout(() => { setPhase("done"); onDone?.(); }, 1800);
-  };
-  // Android only lets sound start from a click, so the first touch quietly primes the audio
-  const prime = () => {
-    if (unlocked.current || !audio.current) return;
-    unlocked.current = true;
-    audio.current.play()?.then(() => { audio.current.pause(); audio.current.currentTime = 0; }).catch(() => {});
   };
   // auto: opened by the timer, not a tap. A phone that refuses to play the film by itself (e.g. iPhone Low Power
   // Mode) then keeps the envelope waiting for a tap instead of cutting straight to the page.
@@ -225,7 +220,10 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     onOpen?.();
     if (film.current) film.current.play()?.catch(auto === true ? () => setPhase("closed") : finish);
     else finish();
-    if (audio.current) { audio.current.volume = 1; audio.current.play()?.then(() => setPlaying(true)).catch(() => { heldBack.current = true; setNeedsTap(true); }); }
+    if (audio.current && audio.current.paused && !userPaused.current) {
+      audio.current.volume = 1;
+      audio.current.play()?.then(() => setPlaying(true)).catch(() => setNeedsTap(true));
+    }
   };
   const onTime = () => {
     const v = film.current;
@@ -234,8 +232,8 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
   const toggle = () => {
     const a = audio.current;
     if (!a) return;
-    heldBack.current = false;
     setNeedsTap(false);
+    userPaused.current = !a.paused;
     if (a.paused) a.play()?.then(() => setPlaying(true)).catch(() => {});
     else { a.pause(); setPlaying(false); }
   };
@@ -270,19 +268,20 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     return () => window.clearTimeout(timer);
   });
 
-  // music held back by the browser starts at the guest's first tap anywhere
+  // the music starts as soon as the browser lets it: on load, then at any sign of the guest (a few tries a second at most)
   useEffect(() => {
-    if (!music) return undefined;
+    if (!music || playing) return undefined;
+    let lastTry = 0;
     const start = () => {
-      if (!heldBack.current || !audio.current) return;
-      heldBack.current = false;
-      setNeedsTap(false);
-      audio.current.play()?.then(() => setPlaying(true)).catch(() => {});
+      const a = audio.current, now = Date.now();
+      if (!a || !a.paused || userPaused.current || now - lastTry < 300) return;
+      lastTry = now;
+      a.play()?.then(() => { setPlaying(true); setNeedsTap(false); }).catch(() => {});
     };
-    document.addEventListener("click", start, true);
-    document.addEventListener("touchend", start, true);
-    return () => { document.removeEventListener("click", start, true); document.removeEventListener("touchend", start, true); };
-  }, [music]);
+    start();
+    ACTIVITY.forEach((type) => window.addEventListener(type, start, { capture: true, passive: true }));
+    return () => ACTIVITY.forEach((type) => window.removeEventListener(type, start, true));
+  }, [music, playing]);
 
   // put the couple's letters on the seal, frame by frame: Grok's seal face when there is one, else painted letters
   useEffect(() => {
@@ -318,7 +317,8 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
 
   return <>
     {music && <audio ref={audio} src={music} loop preload="auto" />}
-    {phase !== "done" && <div className={`${s.stage} ${phase === "leaving" ? s.out : ""}`} onClick={open} onTouchStart={prime}>
+    {phase !== "done" && <div className={`${s.stage} ${phase === "leaving" ? s.out : ""}`} onClick={open}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }} role="button" tabIndex={0} aria-label={tapLabel}>
       <div className={`${s.box} ${wide ? s.wide : ""}`}>
         <video ref={film} className={s.film} src={wide ? desktopVideo : video} muted playsInline preload="auto" onTimeUpdate={onTime} onEnded={finish}
           onError={phase === "playing" ? finish : undefined} aria-label="Open your invitation" />
@@ -334,3 +334,6 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     {music && phase === "done" && needsTap && !playing && !overForm && <span className={s.hint} aria-hidden="true">Tap for music</span>}
   </>;
 }
+
+// what counts as the guest being there; browsers only let sound start on some of these (a tap, click or key press)
+const ACTIVITY = ["pointerdown", "pointerup", "touchstart", "touchend", "touchmove", "click", "keydown", "mousemove", "focusin", "wheel", "scroll"];

@@ -5,6 +5,8 @@ import { formDefaults, SAMPLE_SITES } from "@/features/sacred-garden/lib/invitat
 import { resolveDesignMedia } from "@/features/sacred-garden/lib/design";
 import SacredGardenEvent from "./SacredGardenEvent";
 import { EditDesignButton } from "./edit-design-button";
+import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
+import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
 import { TemplateThemeWrapper } from "@/templates/shared/template-theme-wrapper";
 import { gardenSiteTheme } from "./theme";
 
@@ -43,26 +45,26 @@ export default function SacredGarden({ event, displayData, galleryPhotos, milest
   };
   const letters = `${form.groom[0]} & ${form.bride[0]}`.toUpperCase();
   const film = form.envelopeFilm && form.envelopeLetters === letters ? form.envelopeFilm : FILMS[letters];
+  // the site's live RSVP (answers land in admin) takes the place of the design's own wax-seal RSVP, in the garden's colours
+  const liveRsvp = (
+    <TemplateThemeWrapper theme={gardenSiteTheme(form)}>
+      {event ? <WhatsAppContactButton eventId={event.id} eventName={event.eventTitle || event.honoreeName} /> : null}
+      <RsvpTeaserSection eventId={event?.id} eventSlug={event?.slug} publicRsvpEnabled={event?.publicRsvpEnabled}
+        honoreeName={event?.honoreeName} category={event?.category} />
+    </TemplateThemeWrapper>
+  );
   // the site's own header and footer, like every template; sample events get the usual "Create your own" strip
   return (
     <SiteShell honoreeName={`${form.groom} & ${form.bride}`} transparentUntilScroll>
-      {/* The garden design is the hero; the design already shows the countdown, invitation and details, so those are
-          left out. The site's live RSVP (answers land in admin) and every section set after it in Event Settings →
-          Homepage Sections (Share Wishes, Memory Wall…) take the design's own wax-seal RSVP spot, in the garden's
-          colours; sections set before RSVP come after the garden. */}
+      {/* The garden design (with its own RSVP) is the hero; after it come the site's own sections (sample strip, gallery…).
+          The design already shows the countdown, invitation, details and RSVP, so those are left out. */}
       <EventSections
         event={event}
         displayData={displayData}
         galleryPhotos={galleryPhotos}
         milestones={milestones}
-        omitSections={["countdown", "invitation", "eventDetails", "gallery"]}
-        rsvpInHero
-        renderHero={(_relive, { rsvpSlot }) => (
-          <SacredGardenEvent
-            form={film ? { ...form, envelopeFilm: film, envelopeLetters: letters } : form}
-            rsvp={<TemplateThemeWrapper theme={gardenSiteTheme(form)}>{rsvpSlot}</TemplateThemeWrapper>}
-          />
-        )}
+        omitSections={["countdown", "invitation", "eventDetails", "rsvp", "gallery", "memoryWall"]}
+        renderHero={() => <SacredGardenEvent form={film ? { ...form, envelopeFilm: film, envelopeLetters: letters } : form} rsvp={liveRsvp} />}
       />
       {event ? <EditDesignButton eventId={event.id} /> : null}
     </SiteShell>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 
@@ -32,8 +32,6 @@ export interface HeroRelive {
 export interface HeroExtras {
   artworkUrl: string | null;
   whatsapp: { href: string; label: string } | null;
-  /** With EventSections' `rsvpInHero`: RSVP and every section set after it (in the admin's order and visibility), for the template's hero to place where its own RSVP goes. */
-  rsvpSlot?: ReactNode;
 }
 
 interface HeroSectionProps {
