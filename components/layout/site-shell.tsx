@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { PlatformFooter } from "@/components/layout/platform-chrome";
+import { PlatformChrome } from "@/components/layout/platform-chrome";
 import { SupportChatWidget } from "@/features/support/support-chat-widget";
 
 interface NavLink {
@@ -53,18 +53,20 @@ export function SiteShell({
 }: SiteShellProps) {
   return (
     <>
-      <Navbar
-        honoreeName={honoreeName}
-        navLinks={navLinks}
-        showLogin={showLogin}
-        transparentUntilScroll={transparentUntilScroll}
-        homeHref={homeHref}
-      />
+      <PlatformChrome>
+        <Navbar
+          honoreeName={honoreeName}
+          navLinks={navLinks}
+          showLogin={showLogin}
+          transparentUntilScroll={transparentUntilScroll}
+          homeHref={homeHref}
+        />
+      </PlatformChrome>
       <main>{children}</main>
-      <PlatformFooter>
+      <PlatformChrome>
         <Footer designerCredit={designerCredit} variant={footerVariant} />
-      </PlatformFooter>
-      {hideChatWidget ? null : <SupportChatWidget />}
+        {hideChatWidget ? null : <SupportChatWidget />}
+      </PlatformChrome>
     </>
   );
 }

@@ -9,8 +9,15 @@ import { sacredGardenFrom, DEFAULT_WELCOME_TITLE, DEFAULT_MUSIC, DEFAULT_FONTS, 
  * "video" (upload or link), "select" (choices: [[value, label], …]), "color", "slug" (the published link, with suggestions from the names).
  * A group with `presets` also shows one-click themes that fill its colour fields.
  */
+// how the opening video starts: on the guest's tap, or by itself after a moment (seconds)
+const AUTO_OPEN = [["", "Wait for the guest's tap"], ["2", "Open by itself after 2 seconds"]];
+
+// how the closing photo is laid out: the design's bouquets, or full width with no flowers
+const CLOSING_LAYOUTS = [["", "Framed by flowers (design)"], ["bleed", "Full width, no flowers"]];
+
 export const FORM_GROUPS = [
-  { title: "Couple", fields: [["blessing", "God's name / blessing line (e.g. ॥ श्री गणेशाय नमः ॥)"], ["groom", "Groom's name"], ["bride", "Bride's name"], ["date", "Wedding date & time", "datetime-local"], ["dateFormat", "Date style on the cover", "select", DATE_FORMATS]] },
+  { title: "Couple", fields: [["blessing", "God's name / blessing line (e.g. ॥ श्री गणेशाय नमः ॥)"], ["groom", "Groom's name"], ["bride", "Bride's name"], ["date", "Wedding date & time", "datetime-local"], ["dateFormat", "Date style on the cover", "select", DATE_FORMATS],
+    ["coverDate", "Date on the cover in your own words (optional, e.g. 23rd–24th Nov 2026)"], ["heroPhoto", "Photo shown faintly behind the names (optional)", "image"]] },
   { title: "Website link", hint: "Pick a link made from the names, or type your own. Publish puts your website there.", fields: [["slug", "Link", "slug"]] },
   { title: "Welcome", fields: [["welcomeTitle", "Welcome heading (one line each)", "textarea"], ["welcome", "Welcome message", "textarea"]] },
   { title: "Schedule of events", hint: "One per line: Time | Event", fields: [["program", "Schedule", "textarea"]] },
@@ -19,6 +26,7 @@ export const FORM_GROUPS = [
   { title: "Closing", hint: "A photo or a video at the bottom of the page — pick one.", closingChoice: true, fields: [
     ["couplePhoto", "Photo (upload to replace the sample)", "image"],
     ["closingVideo", "Video", "video"],
+    ["closingLayout", "Photo style", "select", CLOSING_LAYOUTS],
   ] },
   { title: "Fonts", fields: [
     ["fontScript", "Headings font", "select", FONT_CHOICES.script],
@@ -37,6 +45,7 @@ export const FORM_GROUPS = [
   { title: "Opening video", hint: "What guests see first, before \"Tap to open\". Keep the design's wax-seal envelope, or upload your own (MP4). Add a wide video too for computers; without one they show the phone video.", fields: [
     ["introVideo", "Phone video (upright 9:16)", "video"],
     ["introVideoDesktop", "Computer video (wide 16:9, optional)", "video"],
+    ["autoOpen", "Opening", "select", AUTO_OPEN],
   ] },
   { title: "Music", hint: "Plays when the guest opens the envelope.", fields: [["music", "Background music", "audio"]] },
 ];
@@ -52,6 +61,8 @@ export const formDefaults = {
   bride: demo.bride,
   date: "2026-11-23T18:30",
   dateFormat: "dots",
+  coverDate: "",
+  heroPhoto: "",
   slug: "",
   welcomeTitle: DEFAULT_WELCOME_TITLE,
   welcome: demo.welcome.message,
@@ -65,6 +76,7 @@ export const formDefaults = {
   rsvpDeadline: demo.rsvp.deadline, // only the older /wedding/<slug> sites use the design's own RSVP; events use the site's live RSVP
   couplePhoto: "",
   closingVideo: "",
+  closingLayout: "",
   // Grok's re-lettered envelope film and the letters it shows; set by the create page.
   // The sample names start with the K & A film we already have, so nothing is made for them.
   envelopeFilm: "/invite-art/sacred/envelope-k-a.mp4",
@@ -73,6 +85,7 @@ export const formDefaults = {
   introVideo: "",
   // a wide version for computers; empty = the phone video (or envelope film) there too
   introVideoDesktop: "",
+  autoOpen: "",
   fontScript: DEFAULT_FONTS.script,
   fontNames: DEFAULT_FONTS.names,
   fontBody: DEFAULT_FONTS.body,
@@ -135,14 +148,16 @@ export function buildInvitation(f) {
     guestInfo: f.gifts.trim() ? [{ icon: "gift", text: f.gifts.trim() }] : [],
     rsvp: { deadline: f.rsvpDeadline.trim() },
     dateFormat: f.dateFormat,
+    coverDate: f.coverDate?.trim(),
+    closingLayout: f.closingLayout,
     envelopeFilm: film || undefined,
     music: f.music.trim(),
     fonts: { script: f.fontScript, names: f.fontNames, body: f.fontBody, bodyStyle: f.fontBodyStyle },
     colors: { accent: f.colorAccent, text: f.colorText, background: f.colorBackground, detail: f.colorDetail, time: f.colorTime, button: f.colorButton },
-  }, { venue: f.venueImage || undefined, couple: f.couplePhoto || undefined, closingVideo: f.closingVideo || undefined });
+  }, { venue: f.venueImage || undefined, couple: f.couplePhoto || undefined, closingVideo: f.closingVideo || undefined, hero: f.heroPhoto || undefined });
   // computers: the wide video, else the phone one; phones: the phone video or film, else the wide one
   const desktopVideo = f.introVideoDesktop || film;
   const video = film || desktopVideo;
   // never letters drawn over a film by code: the envelope is shown only once Grok's film (or the couple's own video) is ready
-  return { ...c, envelope: { ...c.envelope, ...(video ? { video, desktopVideo } : {}), ready: Boolean(video) } };
+  return { ...c, envelope: { ...c.envelope, ...(video ? { video, desktopVideo } : {}), ready: Boolean(video), autoOpen: Number(f.autoOpen) || 0 } };
 }

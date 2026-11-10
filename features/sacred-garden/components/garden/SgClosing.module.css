@@ -3,3 +3,7 @@
 .media { overflow: hidden; isolation: isolate; }
 .names { font-family: var(--sg-serif); font-weight: 300; font-size: 28px; line-height: 1.59; color: var(--sg-gold); }
 .flowers { pointer-events: none; }
+/* full-width closing photo: faces sit a little above the middle; the lower edge melts into the paper */
+.bleedPhoto { object-position: 50% 35%; }
+.fadeUp { background: linear-gradient(180deg, transparent 0%, var(--sg-bg) 92%); }
+.date { font-size: 18px; letter-spacing: 0.12em; }

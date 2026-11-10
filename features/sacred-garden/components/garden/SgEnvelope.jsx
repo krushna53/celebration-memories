@@ -174,8 +174,10 @@ const WIDE = "(min-width: 768px) and (orientation: landscape)";
 /**
  * sealImage: a re-lettered seal close-up (see sealCloseUp), e.g. from Grok; laid over the seal instead of painted letters.
  * desktopVideo: a wide (16:9) video played instead of `video` on computer screens; no letters are painted on it.
+ * autoOpen: seconds after which the envelope opens by itself (0 = wait for a tap). Browsers keep music silent until
+ *   the guest first touches the page, so then it starts at their first tap.
  */
-export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, theme, onOpen, onDone }) {
+export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, autoOpen = 0, theme, onOpen, onDone }) {
   const [phase, setPhase] = useState("closed"); // closed → playing → leaving → done
   const [playing, setPlaying] = useState(false);
   const [wideScreen, setWideScreen] = useState(false);
@@ -194,6 +196,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
   const audio = useRef(null);
   const unlocked = useRef(false);
   const ended = useRef(false);
+  const heldBack = useRef(false); // music the browser would not start without a tap
 
   const finish = () => {
     if (ended.current) return;
@@ -213,7 +216,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     onOpen?.();
     if (film.current) film.current.play()?.catch(finish);
     else finish();
-    if (audio.current) { audio.current.volume = 1; audio.current.play()?.then(() => setPlaying(true)).catch(() => {}); }
+    if (audio.current) { audio.current.volume = 1; audio.current.play()?.then(() => setPlaying(true)).catch(() => { heldBack.current = true; }); }
   };
   const onTime = () => {
     const v = film.current;
@@ -222,6 +225,7 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
   const toggle = () => {
     const a = audio.current;
     if (!a) return;
+    heldBack.current = false;
     if (a.paused) a.play()?.then(() => setPlaying(true)).catch(() => {});
     else { a.pause(); setPlaying(false); }
   };
@@ -232,10 +236,31 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     if (!end || !music) return undefined;
     const seen = new IntersectionObserver(([e]) => {
       const a = audio.current;
+      if (e.isIntersecting) heldBack.current = false;
       if (e.isIntersecting && a && !a.paused) { a.pause(); setPlaying(false); }
     }, { threshold: 0.3 });
     seen.observe(end);
     return () => seen.disconnect();
+  }, [music]);
+
+  // the envelope opens by itself after `autoOpen` seconds, unless the guest taps first
+  useEffect(() => {
+    if (!autoOpen || phase !== "closed") return undefined;
+    const timer = window.setTimeout(open, autoOpen * 1000);
+    return () => window.clearTimeout(timer);
+  });
+
+  // music held back by the browser starts at the guest's first tap anywhere
+  useEffect(() => {
+    if (!music) return undefined;
+    const start = () => {
+      if (!heldBack.current || !audio.current) return;
+      heldBack.current = false;
+      audio.current.play()?.then(() => setPlaying(true)).catch(() => {});
+    };
+    document.addEventListener("click", start, true);
+    document.addEventListener("touchend", start, true);
+    return () => { document.removeEventListener("click", start, true); document.removeEventListener("touchend", start, true); };
   }, [music]);
 
   // put the couple's letters on the seal, frame by frame: Grok's seal face when there is one, else painted letters

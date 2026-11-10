@@ -62,8 +62,10 @@ const formatDate = (iso = "", lang = "en", style = "dots") => {
 
 /**
  * d: invitation object (groom, bride, monogram?, blessing, date, welcome { title?, message }, program, venue, dressCode, guestInfo, rsvp,
- *    dateFormat? (a DATE_FORMATS value), envelopeFilm? (Grok's re-lettered envelope film), sealImage? (Grok's re-lettered seal close-up, laid over our film's seal), music? (URL, "" for none), fonts? { script, names, body, bodyStyle }, colors? { accent, text, background, detail, time, button }).
- * photos: optional { venue, couple } pictures that replace the design's own, and closingVideo (shown instead of the couple photo).
+ *    dateFormat? (a DATE_FORMATS value), coverDate? (the cover's date in the couple's own words, e.g. "23rd–24th Nov 2026"; wins over dateFormat), envelopeFilm? (Grok's re-lettered envelope film), sealImage? (Grok's re-lettered seal close-up, laid over our film's seal), music? (URL, "" for none), fonts? { script, names, body, bodyStyle }, colors? { accent, text, background, detail, time, button }).
+ * photos: optional { venue, couple } pictures that replace the design's own, closingVideo (shown instead of the couple photo)
+ *   and hero (a photo shown faintly behind the names).
+ * d.closingLayout: "bleed" = the closing photo full width with no bouquets (see SgClosing); empty = the design's bouquets.
  */
 export function sacredGardenFrom(d, photos = {}, lang = "en") {
   const mapQuery = d.venue.mapQuery || [d.venue.name, d.venue.address].filter(Boolean).join(", ");
@@ -84,7 +86,8 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
     hero: {
       video: `${MEDIA}Swans2_1_qwzsod.mov`,
       weddingDay: "Wedding Day",
-      date: formatDate(d.date, lang, d.dateFormat),
+      date: d.coverDate || formatDate(d.date, lang, d.dateFormat),
+      photo: photos.hero,
       scrollLabel: "Scroll down",
     },
     welcome: {
@@ -131,7 +134,7 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
       failure: "Sorry, your RSVP could not be sent. Please try again.",
     },
 
-    closing: { title: "Hope to see you there!", photo: photos.couple, video: photos.closingVideo },
+    closing: { title: "Hope to see you there!", photo: photos.couple, video: photos.closingVideo, layout: d.closingLayout },
   };
 }
 

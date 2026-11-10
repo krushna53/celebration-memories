@@ -18,11 +18,11 @@ export function Chevron({ up = false }) {
 
 /**
  * Cover film (or picture) with the names, then the welcome on torn paper below it.
- * video: looping cover film; art: picture used when there is no film.
+ * video: looping cover film; art: picture used when there is no film; photo: the couple's photo, shown faintly in the arch behind the names.
  * blessing: a line above the welcome; blessingImage: the same as a picture (e.g. calligraphy).
  */
 export default function SgHero({ id = "sg-hero", first, second, date, weddingDay = "Wedding Day", scrollLabel = "Scroll down", blessing, blessingImage, title, message, nextId,
-  video, art, bouquets = [SG_ART.bouquetHeroLeft, SG_ART.bouquetHeroRight] }) {
+  video, art, photo, bouquets = [SG_ART.bouquetHeroLeft, SG_ART.bouquetHeroRight] }) {
   return <Artboard id={id} height={1240} label={`${first} and ${second}`}>
     <El x={0} y={0} w={450}>
       {video
@@ -30,6 +30,7 @@ export default function SgHero({ id = "sg-hero", first, second, date, weddingDay
         : art && <img className={s.film} src={art} alt="" />}
     </El>
     <El x={0} y={0} w={450} h={676} className={s.glow} />
+    {photo && <El x={60} y={40} w={330} h={520}><img className={s.photo} src={photo} alt="" /></El>}
     <El x={-147} y={753} w={744} h={487} m={{ y: 763 }}><img className={g.stretch} src={SG_ART.paperHero} alt="" /></El>
     <El x={-55} y={294} w={560} h={168} appear={rise}><h1 className={`${g.text} ${s.names}`}>{first}{"\n\n"}{second}</h1></El>
     <El x={-55} y={154} w={560} h={37} appear={rise}><p className={`${g.text} ${s.day}`}>{weddingDay}</p></El>
@@ -39,8 +40,8 @@ export default function SgHero({ id = "sg-hero", first, second, date, weddingDay
     <El x={230} y={547} w={236} h={359} m={{ x: 263, y: 586, w: 210, h: 319 }} steps={swayR}><img src={bouquets[1]} alt="" /></El>
     {title && <El x={-55} y={899} w={560} h={129} appear={{ style: "fadein", dur: 1 }}><h2 className={`${g.text} ${g.title} ${s.welcomeTitle}`}>{title}</h2></El>}
     {message && <El x={72} y={1050} w={307} appear={{ style: "fadein", dur: 2, delay: 0.2 }}><p className={`${g.text} ${g.body}`}>{message}</p></El>}
-    <El x={213} y={520} w={25} h={16} steps={bob}><Chevron /></El>
-    <El x={67} y={480} w={316} h={35}><a className={`${g.link} ${g.text} ${s.scroll}`} href={nextId ? `#${nextId}` : undefined}>{scrollLabel}</a></El>
+    <El x={213} y={782} w={25} h={16} steps={bob}><Chevron /></El>
+    <El x={67} y={742} w={316} h={35}><a className={`${g.link} ${g.text} ${s.scroll}`} href={nextId ? `#${nextId}` : undefined}>{scrollLabel}</a></El>
     {blessingImage
       ? <El x={84} y={813} w={283} h={86}><img src={blessingImage} alt={blessing ?? ""} /></El>
       : blessing && <El x={44} y={813} w={363} h={86} className={g.fill}><p className={`${g.text} ${s.blessing}`}>{blessing}</p></El>}

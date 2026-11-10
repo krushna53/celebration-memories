@@ -3,10 +3,10 @@
 import { createContext, useContext, useEffect, useSyncExternalStore } from "react";
 
 /**
- * An event page without EveryMoment's own footer or "Install the app"
- * prompt (events.hide_platform_branding). EventLandingPage wraps the
- * template in PlatformChromeProvider, so every template's SiteShell
- * footer hides through context without each template passing a prop.
+ * An event page without EveryMoment's own header, footer, chat bubble or
+ * "Install the app" prompt (events.hide_platform_branding). EventLandingPage
+ * wraps the template in PlatformChromeProvider, so every template's SiteShell
+ * chrome hides through context without each template passing a prop.
  */
 const HiddenContext = createContext(false);
 
@@ -36,7 +36,7 @@ export function PlatformChromeProvider({ hidden, children }: { hidden: boolean; 
   return <HiddenContext.Provider value={hidden}>{children}</HiddenContext.Provider>;
 }
 
-/** Renders the site footer unless the event page hides the platform's chrome. */
-export function PlatformFooter({ children }: { children: React.ReactNode }) {
+/** Renders a piece of the site's chrome (header, footer, chat) unless the event page hides it. */
+export function PlatformChrome({ children }: { children: React.ReactNode }) {
   return useContext(HiddenContext) ? null : children;
 }

@@ -13,7 +13,7 @@ export default function SacredGardenEvent({ form, rsvp = true }) {
   const c = useMemo(() => buildInvitation(form), [form]);
   return <InviteShell locked={c.envelope.ready && !opened}>
     {c.envelope.ready && <SgEnvelope video={c.envelope.video} desktopVideo={c.envelope.desktopVideo} music={c.music || undefined} tapLabel={c.envelope.tapLabel} monogram={c.monogram} sealTrack={c.envelope.sealTrack}
-      sealImage={c.envelope.sealImage} theme={gardenTheme(c)} onDone={() => setOpened(true)} />}
+      sealImage={c.envelope.sealImage} autoOpen={c.envelope.autoOpen} theme={gardenTheme(c)} onDone={() => setOpened(true)} />}
     <SacredGardenInvitation c={c} rsvp={rsvp} />
   </InviteShell>;
 }

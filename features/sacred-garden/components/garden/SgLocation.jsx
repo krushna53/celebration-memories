@@ -14,12 +14,14 @@ const PETALS = [
   [315, 284, 42, 34, { h: 39 }, [{ mx: -39, my: 73, op: 0, ro: -6, ti: 2000 }]],
 ];
 
-/** Venue name and address under a small ornament, with a picture of the place and falling petals. */
+/** Venue name and address under a small ornament, with a picture of the place (a photo runs the full width) and falling petals. */
 export default function SgLocation({ id = "sg-location", title = "Location", name, address, image, vignette = false, petals = SG_ART.petals }) {
   const up = { style: "fadeinup", dur: 2, dist: 40 };
-  return <Artboard id={id} height={421} pt={30} label="Location">
+  return <Artboard id={id} height={image && vignette ? 484 : 421} pt={30} label="Location">
     <El x={175} y={81} w={96} h={30} appear={{ style: "zoomin", dur: 3, scale: 0.9 }}><img src={SG_ART.decor} alt="" /></El>
-    {image && <El x={35} y={174} w={380} h={253} appear={{ style: "zoomin", dur: 1, scale: 0.9 }}><img className={vignette ? s.photo : s.drawing} src={image} alt="" loading="lazy" /></El>}
+    {image && (vignette
+      ? <El x={0} y={184} w={450} h={300} appear={{ style: "fadein", dur: 1 }}><img className={s.photo} src={image} alt="" loading="lazy" /></El>
+      : <El x={35} y={174} w={380} h={253} appear={{ style: "zoomin", dur: 1, scale: 0.9 }}><img className={s.drawing} src={image} alt="" loading="lazy" /></El>)}
     {PETALS.map(([x, y, w, h, m, path], i) => <El key={i} x={x} y={y} w={w} h={h} m={m} z={4}
       steps={{ ev: "blockintoview", trg: 1, list: [{}, ...path] }}>
       <img src={petals[i % petals.length]} alt="" />

@@ -38,7 +38,7 @@ export default function SacredGardenInvitation({ c, rsvp = true }) {
   const theme = gardenTheme(c);
   return <div ref={root} className={`${g.vars} ${g.page}`} style={theme}>
     <SgHero first={c.couple.first} second={c.couple.second} date={c.hero.date} weddingDay={c.hero.weddingDay} scrollLabel={c.hero.scrollLabel}
-      video={c.hero.video} blessing={c.welcome.blessing} blessingImage={c.welcome.blessingImage} title={c.welcome.title} message={c.welcome.message} nextId="sg-countdown" />
+      video={c.hero.video} photo={c.hero.photo} blessing={c.welcome.blessing} blessingImage={c.welcome.blessingImage} title={c.welcome.title} message={c.welcome.message} nextId="sg-countdown" />
     <SgCountdown title={c.countdown.title} date={c.countdown.date} labels={c.countdown.labels} />
     <SgSchedule title={c.schedule.title} items={c.schedule.items} />
     <SgLocation title={c.location.title} name={c.location.name} address={c.location.address} image={c.location.image || SG_ART.venue} vignette={Boolean(c.location.image)} />
@@ -46,6 +46,6 @@ export default function SacredGardenInvitation({ c, rsvp = true }) {
     <SgDressGift dressTitle={c.dressCode.title} dress={c.dressCode.text} giftTitle={c.gifts.title} gift={c.gifts.text} />
     {rsvp !== true ? rsvp || null : <SgRsvp title={c.rsvp.title} text={c.rsvp.text} openLabel={c.rsvp.openLabel} note={c.rsvp.note} fields={c.rsvp.fields} endpoint={c.rsvp.endpoint}
       submit={c.rsvp.submit} required={c.rsvp.required} success={c.rsvp.success} failure={c.rsvp.failure} theme={theme} />}
-    <SgClosing title={c.closing.title} names={c.couple.joined} photo={c.closing.photo || undefined} video={c.closing.video || undefined} />
+    <SgClosing title={c.closing.title} names={c.couple.joined} date={c.hero.date} layout={c.closing.layout} photo={c.closing.photo || undefined} video={c.closing.video || undefined} />
   </div>;
 }
