@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Download, Share, SquarePlus, X } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
 import { isStandalone } from "@/lib/pwa";
+import { useInstallBannerSuppressed } from "@/components/layout/platform-chrome";
 
 const DISMISS_STORAGE_KEY = "everymoment_install_banner_dismissed_until";
 const DISMISS_MS = 14 * 24 * 60 * 60 * 1000;
@@ -18,6 +19,7 @@ interface BeforeInstallPromptEvent extends Event {
  * the nudge keeps a small launcher; browser install support is optional. */
 export function InstallAppBanner() {
   const pathname = usePathname();
+  const suppressed = useInstallBannerSuppressed();
   const dismissedThisVisit = useRef(false);
   const [platform, setPlatform] = useState<Platform>("other");
   const [mobile, setMobile] = useState(false);
@@ -82,7 +84,7 @@ export function InstallAppBanner() {
     finally { setBusy(false); }
   }
 
-  if (!mobile || installed || /\/display(?:\/|$)/.test(pathname)) return null;
+  if (!mobile || installed || suppressed || /\/display(?:\/|$)/.test(pathname)) return null;
   return <div className="fixed inset-x-4 z-40 flex justify-start pointer-events-none" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)" }}>
     {expanded ? <section id="install-app-panel" aria-label={`Install ${SITE_NAME} app`} className="pointer-events-auto w-full max-w-sm rounded-2xl border border-gold-500/25 bg-navy-950 p-4 text-ivory-50 shadow-xl">
       <div className="flex items-center justify-between gap-3"><h2 className="flex items-center gap-2 font-display text-base"><Download size={18} aria-hidden />Install the {SITE_NAME} app</h2><button type="button" onClick={dismiss} aria-label="Close install instructions" className="flex min-h-11 min-w-11 items-center justify-center rounded-lg hover:bg-white/10"><X size={18} /></button></div>

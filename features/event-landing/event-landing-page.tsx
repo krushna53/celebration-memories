@@ -5,6 +5,7 @@ import { toEventDisplayData } from "@/lib/event-display";
 import { resolveTemplate } from "@/lib/templates";
 import { CustomCssBlock } from "@/features/event-landing/custom-css-block";
 import { AvatarWidgetLoader } from "@/features/event-avatar/avatar-widget-loader";
+import { PlatformChromeProvider } from "@/components/layout/platform-chrome";
 import type { EventRecord } from "@/types/event";
 import type { GalleryPhotoRecord, TimelineMilestoneRecord } from "@/types/content";
 
@@ -48,12 +49,14 @@ export async function EventLandingPage({ event, templateOverride }: EventLanding
   return (
     <>
       <CustomCssBlock css={event?.customCss ?? null} />
-      <TemplateComponent
-        event={event}
-        displayData={displayData}
-        galleryPhotos={galleryPhotos}
-        milestones={milestones}
-      />
+      <PlatformChromeProvider hidden={event?.hidePlatformBranding ?? false}>
+        <TemplateComponent
+          event={event}
+          displayData={displayData}
+          galleryPhotos={galleryPhotos}
+          milestones={milestones}
+        />
+      </PlatformChromeProvider>
       {event && event.aiAvatarEnabled ? (
         <AvatarWidgetLoader eventId={event.id} honoreeName={event.honoreeName} />
       ) : null}

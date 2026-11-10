@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { PlatformFooter } from "@/components/layout/platform-chrome";
 import { SupportChatWidget } from "@/features/support/support-chat-widget";
 
 interface NavLink {
@@ -60,7 +61,9 @@ export function SiteShell({
         homeHref={homeHref}
       />
       <main>{children}</main>
-      <Footer designerCredit={designerCredit} variant={footerVariant} />
+      <PlatformFooter>
+        <Footer designerCredit={designerCredit} variant={footerVariant} />
+      </PlatformFooter>
       {hideChatWidget ? null : <SupportChatWidget />}
     </>
   );

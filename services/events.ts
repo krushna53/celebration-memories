@@ -35,6 +35,7 @@ export interface EventRow {
   invite_message_template: string | null;
   public_rsvp_enabled: boolean;
   public_memories_enabled: boolean;
+  hide_platform_branding: boolean;
   share_image_path: string | null;
   share_video_path: string | null;
   highlight_reel_path: string | null;
@@ -103,6 +104,7 @@ export function mapEvent(row: EventRow): EventRecord {
     inviteMessageTemplate: row.invite_message_template,
     publicRsvpEnabled: row.public_rsvp_enabled ?? false,
     publicMemoriesEnabled: row.public_memories_enabled ?? false,
+    hidePlatformBranding: row.hide_platform_branding ?? false,
     shareImagePath: row.share_image_path,
     shareVideoPath: row.share_video_path,
     highlightReelPath: row.highlight_reel_path,

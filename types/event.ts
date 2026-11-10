@@ -85,6 +85,8 @@ export interface EventRecord {
    * on the public Memory Wall.
    */
   publicMemoriesEnabled: boolean;
+  /** Hides EveryMoment's own footer and "Install the app" prompt on the event page. See components/layout/platform-chrome.tsx. */
+  hidePlatformBranding: boolean;
   /** Storage path (gallery bucket) of the organizer-chosen link-preview image. See lib/event-metadata.ts. */
   shareImagePath: string | null;
   /**
