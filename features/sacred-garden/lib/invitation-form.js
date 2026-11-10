@@ -16,7 +16,7 @@ const AUTO_OPEN = [["", "Wait for the guest's tap"], ["2", "Open by itself after
 const CLOSING_LAYOUTS = [["", "Framed by flowers (design)"], ["bleed", "Full width, no flowers"]];
 
 export const FORM_GROUPS = [
-  { title: "Couple", fields: [["blessing", "God's name / blessing line (e.g. ॥ श्री गणेशाय नमः ॥)"], ["groom", "Groom's name"], ["bride", "Bride's name"], ["date", "Wedding date & time", "datetime-local"], ["dateFormat", "Date style on the cover", "select", DATE_FORMATS],
+  { title: "Couple", fields: [["blessing", "God's name / blessing line (e.g. ॥ श्री गणेशाय नमः ॥)"], ["groom", "Groom's name"], ["groomParents", "Line under the groom's name (optional, e.g. S/O Mrs. … and Mr. …)"], ["bride", "Bride's name"], ["brideParents", "Line under the bride's name (optional, e.g. D/O Mrs. … and Mr. …)"], ["date", "Wedding date & time", "datetime-local"], ["dateFormat", "Date style on the cover", "select", DATE_FORMATS],
     ["coverDate", "Date on the cover in your own words (optional, e.g. 23rd–24th Nov 2026)"], ["heroPhoto", "Photo shown faintly behind the names (optional)", "image"]] },
   { title: "Website link", hint: "Pick a link made from the names, or type your own. Publish puts your website there.", fields: [["slug", "Link", "slug"]] },
   { title: "Welcome", fields: [["welcomeTitle", "Welcome heading (one line each)", "textarea"], ["welcome", "Welcome message", "textarea"]] },
@@ -61,6 +61,8 @@ export const formDefaults = {
   bride: demo.bride,
   date: "2026-11-23T18:30",
   dateFormat: "dots",
+  groomParents: "",
+  brideParents: "",
   coverDate: "",
   heroPhoto: "",
   slug: "",
@@ -139,6 +141,7 @@ export function buildInvitation(f) {
   const film = f.introVideo || (f.envelopeFilm && f.envelopeLetters === monogram ? f.envelopeFilm : "");
   const c = sacredGardenFrom({
     groom, bride, monogram,
+    groomParents: f.groomParents?.trim(), brideParents: f.brideParents?.trim(),
     blessing: f.blessing.trim(),
     date: parseWhen(f.date) || demo.date,
     welcome: { title: f.welcomeTitle.trim(), message: f.welcome },

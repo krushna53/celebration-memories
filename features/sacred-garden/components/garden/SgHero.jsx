@@ -19,9 +19,10 @@ export function Chevron({ up = false }) {
 /**
  * Cover film (or picture) with the names, then the welcome on torn paper below it.
  * video: looping cover film; art: picture used when there is no film; photo: the couple's photo, shown faintly in the arch behind the names.
+ * firstParents / secondParents: a small line under each name (e.g. "S/O Mrs. … and Mr. …"); with them the names sit apart.
  * blessing: a line above the welcome; blessingImage: the same as a picture (e.g. calligraphy).
  */
-export default function SgHero({ id = "sg-hero", first, second, date, weddingDay = "Wedding Day", scrollLabel = "Scroll down", blessing, blessingImage, title, message, nextId,
+export default function SgHero({ id = "sg-hero", first, second, firstParents, secondParents, date, weddingDay = "Wedding Day", scrollLabel = "Scroll down", blessing, blessingImage, title, message, nextId,
   video, art, photo, bouquets = [SG_ART.bouquetHeroLeft, SG_ART.bouquetHeroRight] }) {
   return <Artboard id={id} height={1240} label={`${first} and ${second}`}>
     <El x={0} y={0} w={450}>
@@ -32,10 +33,17 @@ export default function SgHero({ id = "sg-hero", first, second, date, weddingDay
     <El x={0} y={0} w={450} h={676} className={s.glow} />
     {photo && <El x={60} y={40} w={330} h={520}><img className={s.photo} src={photo} alt="" /></El>}
     <El x={-147} y={753} w={744} h={487} m={{ y: 763 }}><img className={g.stretch} src={SG_ART.paperHero} alt="" /></El>
-    <El x={-55} y={294} w={560} h={168} appear={rise}><h1 className={`${g.text} ${s.names}`}>{first}{"\n\n"}{second}</h1></El>
+    {firstParents || secondParents ? <>
+      {/* each name with its parents' line under it, "&" between the two */}
+      <El x={-55} y={250} w={560} h={60} appear={rise}><h1 className={`${g.text} ${s.names}`}>{first}<span className={s.hidden}> and {second}</span></h1></El>
+      {firstParents && <El x={20} y={318} w={410} h={24} appear={rise}><p className={`${g.text} ${s.parents}`}>{firstParents}</p></El>}
+      <El x={-55} y={404} w={560} h={60} appear={rise}><p className={`${g.text} ${s.names}`} aria-hidden="true">{second}</p></El>
+      {secondParents && <El x={20} y={472} w={410} h={24} appear={rise}><p className={`${g.text} ${s.parents}`}>{secondParents}</p></El>}
+    </>
+      : <El x={-55} y={294} w={560} h={168} appear={rise}><h1 className={`${g.text} ${s.names}`}>{first}{"\n\n"}{second}</h1></El>}
     <El x={-55} y={154} w={560} h={37} appear={rise}><p className={`${g.text} ${s.day}`}>{weddingDay}</p></El>
     <El x={-55} y={196} w={560} h={37} appear={rise}><p data-no-translate className={`${g.text} ${g.num} ${s.date}`}>{date}</p></El>
-    <El x={203} y={356} w={55} h={44} appear={rise}><p className={`${g.text} ${s.amp}`} aria-hidden="true">&amp;</p></El>
+    <El x={203} y={firstParents || secondParents ? 352 : 356} w={55} h={44} appear={rise}><p className={`${g.text} ${s.amp}`} aria-hidden="true">&amp;</p></El>
     <El x={-16} y={566} w={224} h={343} m={{ x: -12, y: 568, w: 218, h: 334 }} steps={swayL}><img src={bouquets[0]} alt="" /></El>
     <El x={230} y={547} w={236} h={359} m={{ x: 263, y: 586, w: 210, h: 319 }} steps={swayR}><img src={bouquets[1]} alt="" /></El>
     {title && <El x={-55} y={899} w={560} h={129} appear={{ style: "fadein", dur: 1 }}><h2 className={`${g.text} ${g.title} ${s.welcomeTitle}`}>{title}</h2></El>}

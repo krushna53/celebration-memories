@@ -62,6 +62,7 @@ const formatDate = (iso = "", lang = "en", style = "dots") => {
 
 /**
  * d: invitation object (groom, bride, monogram?, blessing, date, welcome { title?, message }, program, venue, dressCode, guestInfo, rsvp,
+ *    groomParents? / brideParents? (a line under each name on the cover, e.g. "S/O Mrs. … and Mr. …"),
  *    dateFormat? (a DATE_FORMATS value), coverDate? (the cover's date in the couple's own words, e.g. "23rd–24th Nov 2026"; wins over dateFormat), envelopeFilm? (Grok's re-lettered envelope film), sealImage? (Grok's re-lettered seal close-up, laid over our film's seal), music? (URL, "" for none), fonts? { script, names, body, bodyStyle }, colors? { accent, text, background, detail, time, button }).
  * photos: optional { venue, couple } pictures that replace the design's own, closingVideo (shown instead of the couple photo)
  *   and hero (a photo shown faintly behind the names).
@@ -70,7 +71,7 @@ const formatDate = (iso = "", lang = "en", style = "dots") => {
 export function sacredGardenFrom(d, photos = {}, lang = "en") {
   const mapQuery = d.venue.mapQuery || [d.venue.name, d.venue.address].filter(Boolean).join(", ");
   return {
-    couple: { first: d.groom, second: d.bride, joined: `${d.groom} and ${d.bride}` },
+    couple: { first: d.groom, second: d.bride, joined: `${d.groom} and ${d.bride}`, firstParents: d.groomParents, secondParents: d.brideParents },
     monogram: d.monogram || `${d.groom[0]} & ${d.bride[0]}`,
 
     envelope: {

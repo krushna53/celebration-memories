@@ -37,7 +37,7 @@ export default function SacredGardenInvitation({ c, rsvp = true }) {
   useArtboardMotion(root, true, c);
   const theme = gardenTheme(c);
   return <div ref={root} className={`${g.vars} ${g.page}`} style={theme}>
-    <SgHero first={c.couple.first} second={c.couple.second} date={c.hero.date} weddingDay={c.hero.weddingDay} scrollLabel={c.hero.scrollLabel}
+    <SgHero first={c.couple.first} second={c.couple.second} firstParents={c.couple.firstParents} secondParents={c.couple.secondParents} date={c.hero.date} weddingDay={c.hero.weddingDay} scrollLabel={c.hero.scrollLabel}
       video={c.hero.video} photo={c.hero.photo} blessing={c.welcome.blessing} blessingImage={c.welcome.blessingImage} title={c.welcome.title} message={c.welcome.message} nextId="sg-countdown" />
     <SgCountdown title={c.countdown.title} date={c.countdown.date} labels={c.countdown.labels} />
     <SgSchedule title={c.schedule.title} items={c.schedule.items} />
