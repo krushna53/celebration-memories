@@ -90,6 +90,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/template-submissions", label: "Template Submissions", icon: PenTool, group: "Platform" },
   { href: "/admin/invitees", label: "Invitees", icon: Users, group: "Guests" },
   { href: "/admin/rsvp-form", label: "RSVP Form", icon: ClipboardList, group: "Guests" },
+  { href: "/admin/rsvps", label: "RSVPs", icon: CalendarCheck, group: "Guests" },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon, group: "Event" },
   { href: "/admin/timeline", label: "Timeline", icon: Clock, group: "Event" },
   { href: "/admin/event-day", label: "Event Day", icon: CalendarClock, group: "Event" },

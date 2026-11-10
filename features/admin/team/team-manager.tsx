@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Loader2, Mail, KeyRound, UserMinus, UserPlus, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { TeamMember } from "@/services/admin-team";
+import type { TeamMember, TeamRole } from "@/services/admin-team";
 import {
   addTeamMemberWithPasswordAction,
   inviteTeamMemberAction,
@@ -15,6 +15,15 @@ import {
 const inputClasses =
   "w-full rounded-lg border border-navy-950/15 bg-white px-3 py-2.5 text-sm text-navy-950 placeholder:text-navy-700/40 focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/30";
 const labelClasses = "text-xs font-medium uppercase tracking-[0.15em] text-navy-700/70";
+
+const ACCESS_OPTIONS: { value: TeamRole; label: string; description: string }[] = [
+  { value: "client", label: "Full access", description: "Everything on this event — settings, guests, design, memories." },
+  {
+    value: "reviewer",
+    label: "Reviewer",
+    description: "Only views RSVPs and reports, and approves or rejects guest memories.",
+  },
+];
 
 interface TeamManagerProps {
   memberCap: number;
@@ -82,6 +91,11 @@ export function TeamManager({ memberCap, eventId, currentAdminId, initialMembers
                     {member.id === currentAdminId ? (
                       <span className="rounded-full bg-gold-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold-700">
                         You
+                      </span>
+                    ) : null}
+                    {member.role === "reviewer" ? (
+                      <span className="rounded-full bg-navy-950/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-navy-700/70">
+                        Reviewer
                       </span>
                     ) : null}
                   </div>
@@ -183,6 +197,7 @@ function AddMemberForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [makeEventOwner, setMakeEventOwner] = useState(defaultMakeEventOwner);
+  const [access, setAccess] = useState<TeamRole>("client");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -193,8 +208,15 @@ function AddMemberForm({
 
     const result =
       method === "invite"
-        ? await inviteTeamMemberAction(eventId, name, email, isOwner && makeEventOwner)
-        : await addTeamMemberWithPasswordAction(eventId, name, email, password, isOwner && makeEventOwner);
+        ? await inviteTeamMemberAction(eventId, name, email, isOwner && makeEventOwner && access === "client", access)
+        : await addTeamMemberWithPasswordAction(
+            eventId,
+            name,
+            email,
+            password,
+            isOwner && makeEventOwner && access === "client",
+            access,
+          );
 
     setSubmitting(false);
 
@@ -254,6 +276,33 @@ function AddMemberForm({
       </p>
 
       <form onSubmit={onSubmit} className="mt-4 grid gap-3">
+        <fieldset>
+          <legend className={labelClasses}>Access</legend>
+          <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+            {ACCESS_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className={cn(
+                  "flex cursor-pointer items-start gap-2.5 rounded-lg border bg-white p-3 text-sm text-navy-950",
+                  access === option.value ? "border-gold-500" : "border-navy-950/10",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="member-access"
+                  value={option.value}
+                  checked={access === option.value}
+                  onChange={() => setAccess(option.value)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-gold-500"
+                />
+                <span>
+                  {option.label}
+                  <span className="mt-0.5 block text-xs text-navy-700/60">{option.description}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div>
           <label className={labelClasses} htmlFor="member-name">
             Name
@@ -296,7 +345,7 @@ function AddMemberForm({
           </div>
         ) : null}
 
-        {isOwner ? (
+        {isOwner && access === "client" ? (
           <label className="flex items-start gap-2.5 rounded-lg border border-navy-950/10 bg-white p-3 text-sm text-navy-950">
             <input
               type="checkbox"

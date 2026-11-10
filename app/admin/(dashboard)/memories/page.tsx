@@ -28,6 +28,8 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
   }
 
   const items = await listMemoriesForModeration(event.id, showAll ? "all" : "pending");
+  // Reviewer role: approve/reject only — no uploads, bulk downloads, feature/edit/reorder.
+  const reviewOnly = admin?.role === "reviewer";
 
   return (
     <div>
@@ -35,11 +37,13 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
         <div>
           <h1 className="font-display text-2xl text-navy-950">Memory Moderation</h1>
           <p className="mt-1 text-sm text-navy-700/60">
-            Approve, feature, or remove guest photos, videos, audio, and guest book messages.
+            {reviewOnly
+              ? "Approve or reject guest photos, videos, audio, and guest book messages."
+              : "Approve, feature, or remove guest photos, videos, audio, and guest book messages."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <AdminMemoryUploader />
+          {reviewOnly ? null : <AdminMemoryUploader />}
           <Link
             href="/admin/memories"
             className={`rounded-full px-3 py-1.5 ${!showAll ? "bg-gold-500 text-navy-950" : "border border-navy-950/15 text-navy-700/70"}`}
@@ -52,7 +56,9 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
           >
             All
           </Link>
-          {/* Plain <a>, not <Link>: this is a file download served by an API route, not a client-side page navigation — Link would try to soft-navigate/prefetch a zip stream. */}
+{reviewOnly ? null : (
+            <>
+                    {/* Plain <a>, not <Link>: this is a file download served by an API route, not a client-side page navigation — Link would try to soft-navigate/prefetch a zip stream. */}
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a
             href="/api/admin/media-export"
@@ -67,12 +73,14 @@ export default async function AdminMemoriesPage({ searchParams }: PageProps) {
           >
             Download All Videos (.zip)
           </a>
+            </>
+          )}
         </div>
       </div>
 
       {/* key forces a full remount when the filter changes so useState
           inside ModerationList re-initialises with the new item list. */}
-      <ModerationList key={showAll ? "all" : "pending"} items={items} />
+      <ModerationList key={showAll ? "all" : "pending"} items={items} reviewOnly={reviewOnly} />
     </div>
   );
 }

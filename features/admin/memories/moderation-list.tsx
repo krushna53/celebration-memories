@@ -116,10 +116,13 @@ function KindGroup({
   kind,
   initialItems,
   onDelete,
+  reviewOnly,
 }: {
   kind: ModerationKind;
   initialItems: ModerationItem[];
   onDelete: (id: string) => void;
+  /** Reviewer role: approve/reject (and download) only — no feature, edit, reorder. */
+  reviewOnly: boolean;
 }) {
   const [items, setItems] = useState(initialItems);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -203,6 +206,7 @@ function KindGroup({
             )}
           >
             {/* Order controls */}
+            {reviewOnly ? null : (
             <div className="flex items-center justify-between border-b border-navy-950/5 px-2 py-1">
               <span className="text-[10px] font-medium tabular-nums text-navy-700/30">#{idx + 1}</span>
               <div className="flex gap-0.5">
@@ -226,6 +230,7 @@ function KindGroup({
                 </button>
               </div>
             </div>
+            )}
 
             {item.kind === "photo" && item.url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -308,6 +313,8 @@ function KindGroup({
                     <X size={18} />
                   </button>
                 )}
+                {reviewOnly ? null : (
+                <>
                 <button
                   disabled={busyId === item.id}
                   onClick={() => run(item.id, () => toggleFeaturedAction(item.kind, item.id, !item.featured))}
@@ -329,6 +336,8 @@ function KindGroup({
                 >
                   <Pencil size={16} />
                 </button>
+                </>
+                )}
                 {item.url ? (
                   <button
                     disabled={downloadingId === item.id}
@@ -346,8 +355,21 @@ function KindGroup({
               </div>
               <button
                 disabled={busyId === item.id}
-                onClick={() => run(item.id, () => deleteMemoryAction(item.kind, item.id), true)}
-                title="Delete"
+                onClick={() => {
+                  // Reviewers' Reject removes the item; say where it goes, since they can't open the Recycle Bin.
+                  if (
+                    reviewOnly &&
+                    !window.confirm(
+                      item.kind === "guestbook" || item.kind === "instagram"
+                        ? "Reject and remove this? This can't be undone."
+                        : "Reject and remove this? It moves to the host's Recycle Bin for 30 days.",
+                    )
+                  ) {
+                    return;
+                  }
+                  void run(item.id, () => deleteMemoryAction(item.kind, item.id), true);
+                }}
+                title={reviewOnly ? "Reject" : "Delete"}
                 className="tap-target flex items-center justify-center text-navy-700/50 hover:text-red-600"
               >
                 <Trash2 size={18} />
@@ -362,9 +384,10 @@ function KindGroup({
 
 interface ModerationListProps {
   items: ModerationItem[];
+  reviewOnly?: boolean;
 }
 
-export function ModerationList({ items: initialItems }: ModerationListProps) {
+export function ModerationList({ items: initialItems, reviewOnly = false }: ModerationListProps) {
   const [items, setItems] = useState(initialItems);
   const kinds: ModerationKind[] = ["photo", "video", "audio", "guestbook", "instagram"];
 
@@ -387,6 +410,7 @@ export function ModerationList({ items: initialItems }: ModerationListProps) {
             kind={kind}
             initialItems={kindItems}
             onDelete={(id) => setItems((prev) => prev.filter((it) => it.id !== id))}
+            reviewOnly={reviewOnly}
           />
         );
       })}

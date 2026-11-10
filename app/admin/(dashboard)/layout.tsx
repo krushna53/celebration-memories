@@ -86,6 +86,12 @@ export default async function AdminDashboardLayout({
                 Organizer
               </span>
             ) : null}
+            {admin.role === "reviewer" ? (
+              <span className="hidden rounded-full border border-gold-500/30 px-2.5 py-1 text-xs text-gold-300 sm:inline">
+                Reviewer
+              </span>
+            ) : null}
+            {admin.role === "reviewer" ? null : (
             <Link
               href="/admin/simple"
               title="A simpler, single-page view with just the essentials"
@@ -93,6 +99,7 @@ export default async function AdminDashboardLayout({
             >
               <LayoutGrid size={13} /> Simple View
             </Link>
+            )}
             <AdminTourController steps={tourSteps} autoStart={!admin.hasSeenTour} />
             <NotificationBell />
             <form action={signOutAction}>

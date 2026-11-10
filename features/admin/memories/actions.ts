@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdminForEvent } from "@/services/admin-auth";
+import { requireAdminForEvent, requireAdminForReviewerArea } from "@/services/admin-auth";
 import {
   updateMemoryMeta,
   deleteMemory,
@@ -34,14 +34,21 @@ async function requireAdminForMemory(kind: ModerationKind, id: string) {
   await requireAdminForEvent(eventId);
 }
 
+/** Approve/reject only — the one part of moderation a reviewer-role team member may do too. */
+async function requireReviewerForMemory(kind: ModerationKind, id: string) {
+  const eventId = await getMemoryEventId(kind, id);
+  if (!eventId) throw new Error("Memory not found.");
+  await requireAdminForReviewerArea(eventId, "memories");
+}
+
 export async function approveMemoryAction(kind: ModerationKind, id: string) {
-  await requireAdminForMemory(kind, id);
+  await requireReviewerForMemory(kind, id);
   await setMemoryApproval(kind, id, true);
   revalidateMemoryPaths();
 }
 
 export async function rejectMemoryAction(kind: ModerationKind, id: string) {
-  await requireAdminForMemory(kind, id);
+  await requireReviewerForMemory(kind, id);
   await setMemoryApproval(kind, id, false);
   revalidateMemoryPaths();
 }
@@ -87,7 +94,8 @@ export async function reorderMemoriesAction(
 
 /** Photos/videos/audio move to the Recycle Bin (soft delete, 30-day undo window — see services/recycle-bin.ts); guestbook messages are text, not media, and are still removed immediately. */
 export async function deleteMemoryAction(kind: ModerationKind, id: string) {
-  await requireAdminForMemory(kind, id);
+  // Also a reviewer's "Reject" (media goes to the host's Recycle Bin, so it stays recoverable).
+  await requireReviewerForMemory(kind, id);
   if (kind === "guestbook" || kind === "instagram") {
     // Guest-book text and Instagram link embeds have no stored file — removed immediately.
     await deleteMemory(kind, id);

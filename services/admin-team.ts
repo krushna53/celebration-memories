@@ -22,6 +22,18 @@ export async function getTeamMemberCap(eventId: string): Promise<number> {
   return data?.plan === "studio" ? 11 : TEAM_MEMBER_CAP;
 }
 
+/**
+ * What a new team member may do on this event: "client" is full host
+ * access; "reviewer" can only view RSVPs and approve/reject memories
+ * (lib/admin-roles.ts's REVIEWER_ALLOWED_PATHS). Both are membership roles.
+ */
+export type TeamRole = "client" | "reviewer";
+
+/** Never trust a role string from the browser — anything unexpected is full access's narrower sibling, not wider. */
+export function parseTeamRole(value: unknown): TeamRole {
+  return value === "client" ? "client" : "reviewer";
+}
+
 export interface TeamMember {
   id: string;
   name: string | null;
@@ -210,12 +222,13 @@ async function addMembership(
   { id: adminId, alreadyMember }: { id: string; alreadyMember: boolean },
   eventId: string,
   makeEventOwner: boolean,
+  role: TeamRole = "client",
 ): Promise<void> {
   const client = supabaseAdmin();
   if (!alreadyMember) {
     const { error } = await client
       .from("admin_event_memberships")
-      .insert({ admin_id: adminId, event_id: eventId, role: "client" });
+      .insert({ admin_id: adminId, event_id: eventId, role });
     if (error) throw new Error(`Failed to grant dashboard access: ${error.message}`);
   }
   if (makeEventOwner) {
@@ -225,6 +238,32 @@ async function addMembership(
   }
   // Someone with no primary event yet (e.g. their only event was deleted) gets this one.
   await client.from("admins").update({ event_id: eventId }).eq("id", adminId).is("event_id", null);
+}
+
+/**
+ * The admins row (+ membership) for a brand-new login. Full access sets
+ * admins.event_id, which the mirror trigger turns into a "client"
+ * membership and makes them the event's owner. A reviewer gets no primary
+ * event (so they're never listed as its owner) and only a "reviewer"
+ * membership — never a moment of full access.
+ */
+async function insertNewMember(
+  id: string,
+  email: string,
+  name: string,
+  eventId: string,
+  role: TeamRole,
+): Promise<{ error: { message: string } | null }> {
+  const client = supabaseAdmin();
+  const { error } = await client
+    .from("admins")
+    .insert({ id, email, name, role: "client", event_id: role === "client" ? eventId : null });
+  if (error || role === "client") return { error };
+  const { error: membershipError } = await client
+    .from("admin_event_memberships")
+    .insert({ admin_id: id, event_id: eventId, role });
+  if (membershipError) await client.from("admins").delete().eq("id", id);
+  return { error: membershipError };
 }
 
 /** Recover an existing shared Auth account without changing its credentials. */
@@ -256,6 +295,8 @@ export interface InviteTeamMemberInput {
   canMakeEventOwner?: boolean;
   /** Existing accounts only (new ones always get this event as their primary): make this their primary event — see addMembership. Ignored unless canMakeEventOwner. */
   makeEventOwner?: boolean;
+  /** Defaults to full access. A reviewer is never made the event owner. */
+  role?: TeamRole;
 }
 
 /** Whether the person already had a dashboard login (so they were linked, not invited). */
@@ -281,17 +322,18 @@ export async function inviteTeamMemberByEmail({
   canAddExistingAccounts = false,
   canMakeEventOwner = canAddExistingAccounts,
   makeEventOwner = false,
+  role = "client",
 }: InviteTeamMemberInput): Promise<AddTeamMemberOutcome> {
   const trimmedEmail = email.trim().toLowerCase();
   const trimmedName = name.trim();
   if (!trimmedName) throw new Error("Please enter a name.");
   if (!trimmedEmail) throw new Error("Please enter an email.");
 
-  const promote = canMakeEventOwner && makeEventOwner;
+  const promote = canMakeEventOwner && makeEventOwner && role === "client";
   const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail, canAddExistingAccounts, promote);
   if (existingAdmin) {
     // Already has a dashboard login (maybe for another event) — just add this event to it.
-    await addMembership(existingAdmin, eventId, promote);
+    await addMembership(existingAdmin, eventId, promote, role);
     return { existingAccount: true };
   }
 
@@ -310,13 +352,7 @@ export async function inviteTeamMemberByEmail({
     if (resetError) throw new Error(`Failed to send the login email: ${resetError.message}`);
   }
 
-  const { error: insertError } = await client.from("admins").insert({
-    id: user.id,
-    email: trimmedEmail,
-    name: trimmedName,
-    role: "client",
-    event_id: eventId,
-  });
+  const { error: insertError } = await insertNewMember(user.id, trimmedEmail, trimmedName, eventId, role);
 
   if (insertError) {
     // The auth user was created but the allowlist row wasn't — undo the
@@ -337,6 +373,7 @@ export interface AddTeamMemberWithPasswordInput {
   canAddExistingAccounts?: boolean;
   canMakeEventOwner?: boolean;
   makeEventOwner?: boolean;
+  role?: TeamRole;
 }
 
 /**
@@ -354,16 +391,17 @@ export async function addTeamMemberWithPassword({
   canAddExistingAccounts = false,
   canMakeEventOwner = canAddExistingAccounts,
   makeEventOwner = false,
+  role = "client",
 }: AddTeamMemberWithPasswordInput): Promise<AddTeamMemberOutcome> {
   const trimmedEmail = email.trim().toLowerCase();
   const trimmedName = name.trim();
   if (!trimmedName) throw new Error("Please enter a name.");
   if (!trimmedEmail) throw new Error("Please enter an email.");
-  const promote = canMakeEventOwner && makeEventOwner;
+  const promote = canMakeEventOwner && makeEventOwner && role === "client";
   const existingAdmin = await checkRoomAndExisting(eventId, trimmedEmail, canAddExistingAccounts, promote);
   if (existingAdmin) {
     // Already has a dashboard login — add this event to it; their password is left exactly as it was.
-    await addMembership(existingAdmin, eventId, promote);
+    await addMembership(existingAdmin, eventId, promote, role);
     return { existingAccount: true };
   }
   // Only a brand-new account uses the typed password.
@@ -380,13 +418,7 @@ export async function addTeamMemberWithPassword({
   const user = error ? await findExistingAuthUser(trimmedEmail, error) : data.user;
   if (!user) throw new Error("Failed to create the account.");
 
-  const { error: insertError } = await client.from("admins").insert({
-    id: user.id,
-    email: trimmedEmail,
-    name: trimmedName,
-    role: "client",
-    event_id: eventId,
-  });
+  const { error: insertError } = await insertNewMember(user.id, trimmedEmail, trimmedName, eventId, role);
 
   if (insertError) {
     if (!error) await client.auth.admin.deleteUser(user.id).catch(() => {});

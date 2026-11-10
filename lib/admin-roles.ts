@@ -85,6 +85,29 @@ export const ORGANIZER_ALLOWED_PATHS: readonly string[] = [
 ];
 
 /**
+ * A reviewer (added 2026-11-10) is a team member who can only view RSVPs
+ * (the read-only /admin/rsvps list, Overview's RSVP numbers, the printable
+ * /admin/report) and approve or reject guest memories. Unlike the other
+ * lists this one is also enforced centrally: resolveAdminEvent (every
+ * dashboard page resolves its event through it) sends a reviewer on any
+ * other path back to /admin — see isReviewerPathAllowed below. Server
+ * Actions are gated separately by requireAdminForReviewerArea.
+ */
+export const REVIEWER_ALLOWED_PATHS: readonly string[] = [
+  "/admin",
+  "/admin/rsvps",
+  "/admin/memories",
+  "/admin/report",
+  "/admin/help",
+];
+
+/** Whether a reviewer may open `path` (pathname, query string ignored). */
+export function isReviewerPathAllowed(path: string): boolean {
+  const pathname = path.split("?")[0]?.replace(/\/+$/, "") || "/admin";
+  return REVIEWER_ALLOWED_PATHS.includes(pathname);
+}
+
+/**
  * Event-day Check-In for a client host on a corporate event — the host is
  * usually the organiser running the registration desk itself, so Check-In
  * opens up for them there. Family events keep Check-In for owner +
@@ -99,6 +122,7 @@ export function isPathAllowedForRole(path: string, role: AdminRole): boolean {
   if (role === "owner") return true;
   if (role === "session_organizer") return SESSION_ORGANIZER_ALLOWED_PATHS.includes(path);
   if (role === "organizer") return ORGANIZER_ALLOWED_PATHS.includes(path);
+  if (role === "reviewer") return REVIEWER_ALLOWED_PATHS.includes(path);
   return CLIENT_ALLOWED_PATHS.includes(path);
 }
 
