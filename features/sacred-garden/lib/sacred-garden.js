@@ -109,6 +109,7 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
       name: d.venue.name,
       address: d.venue.address ? `Address: ${d.venue.address}` : "",
       mapEmbed: `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`,
+      directions: mapQuery ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQuery)}` : "",
       image: photos.venue,
     },
 
