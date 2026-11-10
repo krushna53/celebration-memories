@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 
 import { getCoverPhoto } from "@/services/gallery-photos";
@@ -36,7 +37,8 @@ import type { EventRecord } from "@/types/event";
  * fallback logic or re-implementing the try/catch-and-never-throw
  * guarantee.
  */
-export async function resolveEventCoverImage(event: EventRecord | null): Promise<string | null> {
+// cached: the event page's metadata and its JSON-LD both ask, for the same event object, in one render
+export const resolveEventCoverImage = cache(async function resolveEventCoverImage(event: EventRecord | null): Promise<string | null> {
   if (!event) return null;
   if (event.shareImagePath) {
     return publicMediaUrl("gallery", event.shareImagePath);
@@ -47,7 +49,7 @@ export async function resolveEventCoverImage(event: EventRecord | null): Promise
     console.error("resolveEventCoverImage failed to load cover photo:", err);
     return null;
   }
-}
+});
 
 export async function buildEventMetadata(event: EventRecord | null): Promise<Metadata> {
   const data = toEventDisplayData(event);

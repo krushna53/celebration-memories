@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { selectEventColumns } from "@/services/event-row";
 import { publicMediaUrl } from "@/services/uploads";
 
 /**
@@ -38,11 +39,7 @@ function normaliseBox(box: ArtworkBox): ArtworkBox | null {
 
 export async function getCardArtworkUrl(eventId: string): Promise<string | null> {
   try {
-    const { data, error } = await supabaseAdmin()
-      .from("events")
-      .select("card_artwork_path")
-      .eq("id", eventId)
-      .maybeSingle<{ card_artwork_path: string | null }>();
+    const { data, error } = await selectEventColumns<{ card_artwork_path: string | null }>(eventId, "card_artwork_path");
     if (error || !data?.card_artwork_path) return null;
     return publicMediaUrl(BUCKET, data.card_artwork_path);
   } catch {

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { selectEventColumns } from "@/services/event-row";
 
 async function isDemoEvent(eventId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabaseAdmin().from("events").select("is_demo").eq("id", eventId).maybeSingle<{ is_demo: boolean }>();
+    const { data, error } = await selectEventColumns<{ is_demo: boolean }>(eventId, "is_demo");
     return !error && Boolean(data?.is_demo);
   } catch {
     return false;

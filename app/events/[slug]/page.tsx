@@ -25,7 +25,7 @@ interface PublicEventPageProps {
 
 const loadEvent = cache(async (slug: string): Promise<EventRecord | null> => {
   try {
-    return await getEventBySlug(slug);
+    return await getEventBySlug(slug, { remember: true });
   } catch (err) {
     console.error("PublicEventPage failed to load event:", err);
     return null;
@@ -49,13 +49,16 @@ export default async function PublicEventPage({ params }: PublicEventPageProps) 
     return <EventUnpublishedScreen eventTitle={event.eventTitle} />;
   }
 
-  const coverImage = await resolveEventCoverImage(event);
-
   return (
     <>
       {/* No schema.org Event while the date is still being voted on — its startDate would be a placeholder. */}
-      {event.datePollOpen ? null : <JsonLd data={buildEventJsonLd(event, coverImage)} />}
+      {event.datePollOpen ? null : <EventJsonLd event={event} />}
       <EventLandingPage event={event} />
     </>
   );
+}
+
+/** Its own component so the cover photo lookup runs alongside the page's, not before it. */
+async function EventJsonLd({ event }: { event: EventRecord }) {
+  return <JsonLd data={buildEventJsonLd(event, await resolveEventCoverImage(event))} />;
 }

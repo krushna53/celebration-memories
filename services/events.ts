@@ -3,6 +3,7 @@ import { canViewEvent } from "@/services/event-access";
 import { randomBytes } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { rememberEventRow } from "@/services/event-row";
 import { isValidSlug } from "@/lib/slug";
 import { EVENT_SLUG } from "@/lib/constants";
 import type { SectionConfigItem } from "@/lib/section-registry";
@@ -162,7 +163,8 @@ export async function getEventById(id: string): Promise<EventRecord | null> {
   return data ? mapEvent(data) : null;
 }
 
-export async function getEventBySlug(slug: string): Promise<EventRecord | null> {
+/** `remember`: keep the row for the rest of this page render (see services/event-row.ts) — public event pages only. */
+export async function getEventBySlug(slug: string, options: { remember?: boolean } = {}): Promise<EventRecord | null> {
   const { data, error } = await supabaseAdmin()
     .from("events")
     .select("*")
@@ -172,6 +174,7 @@ export async function getEventBySlug(slug: string): Promise<EventRecord | null> 
   if (error) {
     throw new Error(`Failed to look up event: ${error.message}`);
   }
+  if (data && options.remember) rememberEventRow(data);
   return data && await canViewEvent(data.id) ? mapEvent(data) : null;
 }
 

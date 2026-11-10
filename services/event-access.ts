@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
+import { selectEventColumns } from "@/services/event-row";
 
 export type ViewingAccess = "public" | "signed_in" | "invited_only";
 export interface EventAccess {
@@ -12,8 +13,8 @@ export interface EventAccess {
 }
 
 export async function getEventAccess(eventId: string): Promise<EventAccess | null> {
-  const { data, error } = await supabaseAdmin().from("events")
-    .select("id,slug,status,page_status,viewing_access,owner_user_id,public_access_pinned,visibility").eq("id", eventId).maybeSingle<EventAccess>();
+  const { data, error } = await selectEventColumns<EventAccess>(eventId,
+    "id,slug,status,page_status,viewing_access,owner_user_id,public_access_pinned,visibility");
   if (error) throw new Error("Event privacy could not be checked.");
   return data;
 }

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { selectEventColumns } from "@/services/event-row";
 import { sanitizeCardTheme, type CardTheme } from "@/lib/card-theme";
 
 /**
@@ -21,11 +22,10 @@ export interface EventWhatsAppContact {
 
 export async function getEventWhatsAppContact(eventId: string): Promise<EventWhatsAppContact | null> {
   try {
-    const { data, error } = await supabaseAdmin()
-      .from("events")
-      .select("whatsapp_contact, whatsapp_contact_label")
-      .eq("id", eventId)
-      .maybeSingle<{ whatsapp_contact: string | null; whatsapp_contact_label: string | null }>();
+    const { data, error } = await selectEventColumns<{ whatsapp_contact: string | null; whatsapp_contact_label: string | null }>(
+      eventId,
+      "whatsapp_contact, whatsapp_contact_label",
+    );
     if (error || !data?.whatsapp_contact) return null;
     return { number: data.whatsapp_contact, label: data.whatsapp_contact_label };
   } catch {
