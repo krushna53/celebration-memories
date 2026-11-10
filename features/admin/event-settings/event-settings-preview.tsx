@@ -206,6 +206,12 @@ export function EventSettingsPreview({ data, scrollable = true }: { data: EventS
         </div>
       </PreviewSectionShell>
     ),
+    shareWishes: (
+      <PreviewSectionShell tone="muted">
+        <p className={previewLabel}>Send Your Wishes</p>
+        <p className="mt-2 text-[11px] text-navy-700/60">Video, voice note or written wish — shown when public memories are on</p>
+      </PreviewSectionShell>
+    ),
     wishMessage: (
       <PreviewSectionShell tone="light">
         {trimmedWish ? (
