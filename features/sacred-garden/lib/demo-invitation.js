@@ -38,8 +38,8 @@ export const demoInvitation = {
     { time: "8:00pm onwards", title: "Cocktail Dinner" },
     { time: "11am onwards", title: "Haldi Ceremony", day: "Tuesday, 24th Nov" },
     { time: "5pm onwards", title: "Baraat" },
-    { time: "6pm onwards", title: "Pheras" },
-    { time: "8:30pm onwards", title: "Reception Dinner" },
+    { time: "7:30pm onwards", title: "Pheras" },
+    { time: "9pm onwards", title: "Reception Dinner" },
   ],
 
   venue: {
