@@ -109,13 +109,13 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
     location: {
       title: "Location",
       name: d.venue.name,
-      address: d.venue.address ? `Address: ${d.venue.address}` : "",
+      address: d.venue.address || "",
       mapEmbed: `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`,
       directions: mapQuery ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQuery)}` : "",
       image: photos.venue,
     },
 
-    dressCode: { title: "Dress Code", text: [d.dressCode.women, d.dressCode.men].filter(Boolean).join(" ") },
+    dressCode: { title: d.dressCode.title || "Dress Code", text: [d.dressCode.women, d.dressCode.men].filter(Boolean).join(" ") },
     gifts: { title: "Gift Preference", text: d.guestInfo.find((item) => item.icon === "gift")?.text },
 
     rsvp: {

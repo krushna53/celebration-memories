@@ -17,17 +17,19 @@ const PETALS = [
 /** Venue name and address under a small ornament, with a picture of the place (a photo runs the full width) and falling petals. */
 export default function SgLocation({ id = "sg-location", title = "Location", name, address, image, vignette = false, petals = SG_ART.petals }) {
   const up = { style: "fadeinup", dur: 2, dist: 40 };
-  return <Artboard id={id} height={image && vignette ? 484 : 421} pt={30} label="Location">
+  // a long address wraps (about 46 letters a line); every line after the first moves the picture down so they never overlap
+  const shift = Math.max(0, Math.ceil((address?.length ?? 0) / 46) - 1) * 21;
+  return <Artboard id={id} height={(image && vignette ? 484 : 421) + shift} pt={30} label="Location">
     <El x={175} y={81} w={96} h={30} appear={{ style: "zoomin", dur: 3, scale: 0.9 }}><img src={SG_ART.decor} alt="" /></El>
     {image && (vignette
-      ? <El x={0} y={184} w={450} h={300} appear={{ style: "fadein", dur: 1 }}><img className={s.photo} src={image} alt="" loading="lazy" /></El>
-      : <El x={35} y={174} w={380} h={253} appear={{ style: "zoomin", dur: 1, scale: 0.9 }}><img className={s.drawing} src={image} alt="" loading="lazy" /></El>)}
+      ? <El x={0} y={184 + shift} w={450} h={300} appear={{ style: "fadein", dur: 1 }}><img className={s.photo} src={image} alt="" loading="lazy" /></El>
+      : <El x={35} y={174 + shift} w={380} h={253} appear={{ style: "zoomin", dur: 1, scale: 0.9 }}><img className={s.drawing} src={image} alt="" loading="lazy" /></El>)}
     {PETALS.map(([x, y, w, h, m, path], i) => <El key={i} x={x} y={y} w={w} h={h} m={m} z={4}
       steps={{ ev: "blockintoview", trg: 1, list: [{}, ...path] }}>
       <img src={petals[i % petals.length]} alt="" />
     </El>)}
     <El x={109} y={111} w={232} h={31} appear={up}><p className={`${g.text} ${g.body} ${s.name}`}>{name}</p></El>
-    <El x={71} y={149} w={308} h={42} appear={up}><p className={`${g.text} ${g.body} ${s.address}`}>{address}</p></El>
+    <El x={35} y={149} w={380} h={42 + shift} appear={up}><p className={`${g.text} ${g.body} ${s.address}`}>{address}</p></El>
     <El x={-55} y={28} w={560} h={64}><h2 className={`${g.text} ${g.title}`}>{title}</h2></El>
   </Artboard>;
 }

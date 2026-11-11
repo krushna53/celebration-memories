@@ -25,7 +25,7 @@ export const FORM_GROUPS = [
   { title: "Welcome", fields: [["welcomeTitle", "Welcome heading (one line each)", "textarea"], ["welcome", "Welcome message", "textarea"]] },
   { title: "Schedule of events", hint: "One per line: Time | Event", fields: [["program", "Schedule", "textarea"]] },
   { title: "Location", fields: [["venueName", "Venue name"], ["venueAddress", "Address"], ["venueMap", "Map search (optional)"], ["venueImage", "Hotel / venue picture", "image"]] },
-  { title: "Dress code & gifts", fields: [["dress", "Dress code", "textarea"], ["gifts", "Gift note", "textarea"]] },
+  { title: "Dress code & gifts", fields: [["dressTitle", "Heading (e.g. Dress Code / Theme)"], ["dress", "Dress code", "textarea"], ["gifts", "Gift note", "textarea"]] },
   { title: "Closing", hint: "A photo or a video at the bottom of the page — pick one.", closingChoice: true, fields: [
     ["couplePhoto", "Photo (upload to replace the sample)", "image"],
     ["closingVideo", "Video", "video"],
@@ -78,6 +78,7 @@ export const formDefaults = {
   venueAddress: demo.venue.address,
   venueMap: demo.venue.mapQuery,
   venueImage: "/wedding-demo-royal.webp",
+  dressTitle: "Dress Code",
   dress: [demo.dressCode.women, demo.dressCode.men].join(" "),
   gifts: demo.guestInfo.find((item) => item.icon === "gift").text,
   rsvpDeadline: demo.rsvp.deadline, // only the older /wedding/<slug> sites use the design's own RSVP; events use the site's live RSVP
@@ -163,7 +164,7 @@ export function buildInvitation(f) {
     welcome: { title: f.welcomeTitle.trim(), message: f.welcome },
     program: lines(f.program).filter((r) => r[1] || r[0]).map(([time = "", title = ""]) => ({ time, title })),
     venue: { name: venueName, address: f.venueAddress.trim(), mapQuery: f.venueMap.trim() },
-    dressCode: { women: f.dress.trim() },
+    dressCode: { title: (f.dressTitle ?? "").trim(), women: f.dress.trim() },
     guestInfo: f.gifts.trim() ? [{ icon: "gift", text: f.gifts.trim() }] : [],
     rsvp: { deadline: f.rsvpDeadline.trim() },
     dateFormat: f.dateFormat,

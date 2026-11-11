@@ -8,10 +8,13 @@
   -webkit-mask-image: radial-gradient(ellipse 50% 50% at center, #000 55%, transparent 100%); mask-image: radial-gradient(ellipse 50% 50% at center, #000 55%, transparent 100%); }
 .glow { opacity: 0.5; background: radial-gradient(circle at center, rgba(255, 249, 235, 1) 0%, rgba(255, 231, 192, 0) 85%); }
 
-.names { font-family: var(--sg-names); font-weight: 400; font-size: 80px; line-height: 0.7; color: var(--sg-gold); }
-.amp { font-family: var(--sg-script); font-size: 40px; line-height: 1.1; color: var(--sg-gold); }
-.day { font-family: var(--sg-script); font-size: 40px; line-height: 0.5; color: var(--sg-gold); }
-.date { font-size: 25px; line-height: 0.5; color: var(--sg-gold); }
+/* the words in the arch sit over the film and the couple's photo: a deeper gold and a soft ivory halo keep them readable */
+.names, .amp, .day, .date { color: color-mix(in srgb, var(--sg-gold) 75%, #2b1a08);
+  text-shadow: 0 0 4px rgba(255, 249, 235, 0.95), 0 0 10px rgba(255, 249, 235, 0.9), 0 0 22px rgba(255, 249, 235, 0.75); }
+.names { font-family: var(--sg-names); font-weight: 400; font-size: 80px; line-height: 0.7; }
+.amp { font-family: var(--sg-script); font-size: 40px; line-height: 1.1; }
+.day { font-family: var(--sg-script); font-size: 40px; line-height: 0.5; }
+.date { font-size: 25px; line-height: 0.5; }
 /* sits on the water under the swans: a soft light behind it keeps it readable */
 .scroll { display: block; font-family: var(--sg-script); font-size: 32px; line-height: 1.1; color: var(--sg-gold);
   background: radial-gradient(ellipse 50% 60% at center, rgba(255, 249, 235, 0.9) 30%, rgba(255, 249, 235, 0) 100%);
@@ -19,6 +22,6 @@
 .welcomeTitle { line-height: 1.05; }
 .blessing { font-family: "Tiro Devanagari Hindi", "Nirmala UI", serif; font-size: 30px; line-height: 1.3; color: var(--sg-gold); }
 /* the line under each name (son / daughter of …), with a soft light behind it so it reads over the photo */
-.parents { font-family: var(--sg-serif); font-style: italic; font-size: 17px; line-height: 1.4; color: var(--sg-ink, #6c513f);
-  text-shadow: 0 0 6px rgba(255, 249, 235, 0.95), 0 0 12px rgba(255, 249, 235, 0.85); }
+.parents { font-family: var(--sg-serif); font-style: italic; font-weight: 500; font-size: 17px; line-height: 1.4; color: color-mix(in srgb, var(--sg-ink, #6c513f) 70%, #1f140b);
+  text-shadow: 0 0 4px rgba(255, 249, 235, 1), 0 0 10px rgba(255, 249, 235, 0.95), 0 0 20px rgba(255, 249, 235, 0.8); }
 .hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
