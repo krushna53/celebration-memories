@@ -1,5 +1,8 @@
 .fade { background: linear-gradient(0turn, transparent 0%, var(--sg-bg) 100%); }
 .video { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center top; background: var(--sg-bg); }
+/* iPhone Low Power Mode won't autoplay muted films and puts Safari's own grey play button over them; never show it */
+.video::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+.video::-webkit-media-controls { display: none !important; }
 .media { overflow: hidden; isolation: isolate; }
 .names { font-family: var(--sg-serif); font-weight: 300; font-size: 28px; line-height: 1.59; color: var(--sg-gold); }
 .flowers { pointer-events: none; }

@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useRef } from "react";
 import { Artboard, El } from "./Artboard";
 import g from "./garden.module.css";
 import { SG_ART } from "./assets";
@@ -16,6 +17,30 @@ export function Chevron({ up = false }) {
   </svg>;
 }
 
+// what counts as a tap: iOS only lets a film start inside one of these when autoplay was refused
+const GESTURES = ["pointerup", "touchend", "click", "keydown"];
+
+/**
+ * The looping cover film. iPhone Low Power Mode refuses autoplay (the poster stays up),
+ * so it tries again on the guest's first tap anywhere on the page.
+ */
+function HeroFilm({ src, poster }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return undefined;
+    const start = () => {
+      if (!v.paused) return stop();
+      v.play()?.then(stop).catch(() => {});
+    };
+    const stop = () => GESTURES.forEach((type) => window.removeEventListener(type, start, true));
+    GESTURES.forEach((type) => window.addEventListener(type, start, { capture: true, passive: true }));
+    start();
+    return stop;
+  }, [src]);
+  return <video ref={ref} className={s.film} autoPlay muted loop playsInline preload="auto" poster={poster}><source src={src} type="video/mp4" /></video>;
+}
+
 /**
  * Cover film (or picture) with the names, then the welcome on torn paper below it.
  * video: looping cover film; art: picture used when there is no film; photo: the couple's photo, shown faintly in the arch behind the names.
@@ -27,7 +52,7 @@ export default function SgHero({ id = "sg-hero", first, second, firstParents, se
   return <Artboard id={id} height={1240} label={`${first} and ${second}`}>
     <El x={0} y={0} w={450}>
       {video
-        ? <video className={s.film} autoPlay muted loop playsInline preload="auto" poster={art}><source src={video} type="video/mp4" /></video>
+        ? <HeroFilm src={video} poster={art} />
         : art && <img className={s.film} src={art} alt="" />}
     </El>
     <El x={0} y={0} w={450} h={676} className={s.glow} />
