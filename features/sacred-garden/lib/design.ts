@@ -82,21 +82,23 @@ export function resolveDesignMedia(design: Design): Design {
 }
 
 /**
- * What the form opens with for a draft: its saved design, else the sample
- * with whatever the wizard already knows (names, date, venue, dress code, link).
+ * What the form opens with (wizard draft or the dashboard's Wedding design page): its saved design, else the sample,
+ * with what the event already knows on top (names, date, venue, dress code, link).
  */
 export function designFormFor(event: EventRecord): Design {
-  const defaults = formDefaults as Design;
-  if (event.designConfig) return { ...defaults, ...resolveDesignMedia(event.designConfig) };
+  // a saved design keeps everything the couple chose; the event's own columns still win, as on the live page,
+  // so the form never opens with the sample's dress code or address over the real ones
+  const design = event.designConfig ? resolveDesignMedia(event.designConfig) : {};
   // a fresh draft is called "New Event" until the host names it
   const named = event.honoreeName.trim() !== "New Event";
   const [groom = "", bride = ""] = named ? event.honoreeName.split(/\s*(?:&|\band\b)\s*/i).map((n) => n.trim()) : [];
   return {
-    ...defaults,
+    ...(formDefaults as Design),
+    ...design,
     ...(groom ? { groom } : {}),
     ...(bride ? { bride } : {}),
     ...(named ? { date: utcIsoToZonedInputValue(event.startAt, event.timezone || DEFAULT_EVENT_TIMEZONE) } : {}),
-    ...(event.venueName ? { venueName: event.venueName, venueMap: [event.venueName, event.venueAddress].filter(Boolean).join(", ") } : {}),
+    ...(event.venueName ? { venueName: event.venueName, venueMap: design.venueMap || [event.venueName, event.venueAddress].filter(Boolean).join(", ") } : {}),
     ...(event.venueAddress ? { venueAddress: event.venueAddress } : {}),
     ...(event.dressCode ? { dress: event.dressCode } : {}),
     slug: event.slug.startsWith("draft-") ? "" : event.slug,
