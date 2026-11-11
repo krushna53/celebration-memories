@@ -2,6 +2,7 @@
 import { Artboard, El } from "./Artboard";
 import g from "./garden.module.css";
 import { SG_ART } from "./assets";
+import SgHashtag from "./SgHashtag";
 import s from "./SgSchedule.module.css";
 
 // y of each marker on the line; rows after the fifth keep the same spacing
@@ -12,8 +13,9 @@ const dotY = (i) => DOTS[i] ?? DOTS[6] + (i - 6) * 85;
  * Order of the day on a torn-paper panel: times left, events right, a line of small diamonds,
  * and a rose that walks down the line as the guest scrolls. items: [{ time, title, labelShift? }]
  * labelShift: nudge one event name up or down (px), e.g. when it wraps onto two lines.
+ * hashtag: the couple's hashtag, under the last event ("Dance with us, post with …").
  */
-export default function SgSchedule({ id = "sg-schedule", title = "Schedule of Events", items = [], rose = SG_ART.rose }) {
+export default function SgSchedule({ id = "sg-schedule", title = "Schedule of Events", items = [], rose = SG_ART.rose, hashtag }) {
   const n = Math.max(1, items.length);
   const extra = Math.max(0, n - 5) * 85 + 170;
   const last = dotY(n - 1);
@@ -35,6 +37,7 @@ export default function SgSchedule({ id = "sg-schedule", title = "Schedule of Ev
         <El x={221} y={dotY(i)} w={8} h={8} m={{ x: 220 }}><i className={s.dot} /></El>
       </li>)}
     </ol>
+    {hashtag && <El x={45} y={last + 55} w={360} h={56} appear={{ style: "fadein", dur: 1.5 }}><SgHashtag tag={hashtag} lead="Dance with us, post with" /></El>}
     <El x={224} y={205} w={2} h={DOTS[3] - 205 - 90} m={{ x: 223 }} className={s.line} />
     <El x={224} y={DOTS[3] + 8} w={2} h={last - DOTS[3] - 8} m={{ x: 223 }} className={s.line} />
     <El x={198} y={185} w={55} h={50} m={{ x: 197 }} z={8} steps={walk}><img src={rose} alt="" /></El>

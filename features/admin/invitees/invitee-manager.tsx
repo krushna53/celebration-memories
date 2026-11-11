@@ -138,6 +138,8 @@ interface InviteeManagerProps {
   thankYouMessageTemplate?: string;
   /** Past the event's end — Bulk Send then defaults to the thank-you + share-your-photos message. */
   eventEnded?: boolean;
+  /** The event's hashtag from its design (e.g. "#AaChalwithKunal"), added to every WhatsApp message; "" = none. */
+  hashtag?: string;
 }
 
 export function InviteeManager({
@@ -150,6 +152,7 @@ export function InviteeManager({
   thankYouMessageTemplate,
   relationshipLabel = "Relationship",
   eventEnded = false,
+  hashtag = "",
 }: InviteeManagerProps) {
   const [invitees, setInvitees] = useState(initialInvitees);
   const [search, setSearch] = useState("");
@@ -384,6 +387,7 @@ export function InviteeManager({
           hostedBy={hostedBy}
           honoreeName={honoreeName}
           messageTemplate={inviteMessageTemplate}
+          hashtag={hashtag}
           thankYouTemplate={thankYouMessageTemplate}
           eventEnded={eventEnded}
           onOpen={markSent}
@@ -603,6 +607,7 @@ export function InviteeManager({
                               hostedBy,
                               honoreeName,
                               messageTemplate: inviteMessageTemplate,
+                              hashtag,
                             })}
                             target="_blank"
                             rel="noopener noreferrer"

@@ -1,7 +1,7 @@
 "use client";
 import "./sacred-fonts.css";
 import { useRef } from "react";
-import { useArtboardMotion } from "./Artboard";
+import { Artboard, El, useArtboardMotion } from "./Artboard";
 import { useAutoScroll } from "./useAutoScroll";
 import { SG_ART } from "./assets";
 import SgHero from "./SgHero";
@@ -12,6 +12,7 @@ import SgMap from "./SgMap";
 import SgDressGift from "./SgDressGift";
 import SgRsvp from "./SgRsvp";
 import SgClosing from "./SgClosing";
+import SgHashtag from "./SgHashtag";
 import g from "./garden.module.css";
 import d from "./desktop.module.css";
 
@@ -47,15 +48,19 @@ export default function SacredGardenInvitation({ c, rsvp = true, autoScroll = fa
     <div className={d.backdrop} aria-hidden="true"><img src={SG_ART.bouquetHeroLeft} alt="" /><img src={SG_ART.bouquetHeroRight} alt="" /></div>
   <div ref={root} className={`${g.page} ${d.sheet}`}>
     <SgHero first={c.couple.first} second={c.couple.second} firstParents={c.couple.firstParents} secondParents={c.couple.secondParents} date={c.hero.date} weddingDay={c.hero.weddingDay} scrollLabel={c.hero.scrollLabel}
-      video={c.hero.video} photo={c.hero.photo} blessing={c.welcome.blessing} blessingImage={c.welcome.blessingImage} title={c.welcome.title} message={c.welcome.message} nextId="sg-countdown" />
+      video={c.hero.video} photo={c.hero.photo} blessing={c.welcome.blessing} blessingImage={c.welcome.blessingImage} title={c.welcome.title} message={c.welcome.message} nextId="sg-countdown" hashtag={c.hashtag} />
     <SgCountdown title={c.countdown.title} date={c.countdown.date} labels={c.countdown.labels} />
-    <SgSchedule title={c.schedule.title} items={c.schedule.items} />
+    <SgSchedule title={c.schedule.title} items={c.schedule.items} hashtag={c.hashtag} />
     <SgLocation title={c.location.title} name={c.location.name} address={c.location.address} image={c.location.image || SG_ART.venue} vignette={Boolean(c.location.image)} />
     <SgMap embedSrc={c.location.mapEmbed} directions={c.location.directions} title={c.location.name} />
     <SgDressGift dressTitle={c.dressCode.title} dress={c.dressCode.text} giftTitle={c.gifts.title} gift={c.gifts.text} />
     {rsvp !== true ? rsvp || null : <SgRsvp title={c.rsvp.title} text={c.rsvp.text} openLabel={c.rsvp.openLabel} note={c.rsvp.note} fields={c.rsvp.fields} endpoint={c.rsvp.endpoint}
       submit={c.rsvp.submit} required={c.rsvp.required} success={c.rsvp.success} failure={c.rsvp.failure} theme={theme} />}
-    <SgClosing title={c.closing.title} names={c.couple.joined} date={c.hero.date} layout={c.closing.layout} photo={c.closing.photo || undefined} video={c.closing.video || undefined} />
+    {/* under the RSVP (the design's own or the site's live form), when guests have just said they're coming */}
+    {c.hashtag && <Artboard id="sg-hashtag" height={90} label="Hashtag">
+      <El x={45} y={14} w={360} h={60}><SgHashtag tag={c.hashtag} lead="Share every moment with" /></El>
+    </Artboard>}
+    <SgClosing title={c.closing.title} names={c.couple.joined} date={c.hero.date} layout={c.closing.layout} photo={c.closing.photo || undefined} video={c.closing.video || undefined} hashtag={c.hashtag} />
   </div>
   </div>;
 }

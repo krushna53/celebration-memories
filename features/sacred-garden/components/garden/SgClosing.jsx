@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { Artboard, El } from "./Artboard";
 import g from "./garden.module.css";
 import { SG_ART } from "./assets";
+import SgHashtag from "./SgHashtag";
 import s from "./SgClosing.module.css";
 
 const breathe = { ev: "blockintoview", trg: 1, loop: true, list: [{}, { sx: 1.02, ro: 1, ti: 2000 }, { ti: 2000 }] };
@@ -21,22 +22,24 @@ function ClosingVideo({ src, label }) {
 }
 
 /** Full-width photo melting into the paper above and below, the title over it; names, date and an ornament under it. No bouquets. */
-function BleedClosing({ id, title, names, date, photo }) {
-  return <Artboard id={id} height={700} label={title}>
+function BleedClosing({ id, title, names, date, photo, hashtag }) {
+  return <Artboard id={id} height={hashtag ? 760 : 700} label={title}>
     <El x={0} y={0} w={450} h={562}><img className={`${g.cover} ${s.bleedPhoto}`} src={photo} alt={names ?? ""} loading="lazy" /></El>
     <El x={-55} y={12} w={560} h={64} appear={{ style: "fadein", dur: 1 }}><h2 className={`${g.text} ${g.title}`}>{title}</h2></El>
     {names && <El x={45} y={552} w={360} h={45} appear={{ style: "fadeinup", dur: 2, dist: 40 }}><p className={`${g.text} ${s.names}`}>{names}</p></El>}
     {date && <El x={45} y={602} w={360} h={30} appear={{ style: "fadeinup", dur: 2, dist: 40 }}><p data-no-translate className={`${g.text} ${g.body} ${s.date}`}>{date}</p></El>}
     <El x={177} y={645} w={96} h={30} appear={{ style: "zoomin", dur: 2, scale: 0.9 }}><img src={SG_ART.decor} alt="" /></El>
+    {hashtag && <El x={45} y={688} w={360} h={56} appear={{ style: "fadeinup", dur: 2, dist: 40 }}><SgHashtag tag={hashtag} lead="Tag your photos and be part of our story" /></El>}
   </Artboard>;
 }
 
 /**
  * Closing photo (or video) that fades up into the paper, "Hope to see you there!", the names and bouquets at the foot.
  * layout "bleed": the photo runs the full width with no bouquets, and the date sits under the names.
+ * hashtag: the couple's hashtag under the names (over the top of a video).
  */
-export default function SgClosing({ id = "sg-closing", title = "Hope to see you there!", names, date, layout, photo = SG_ART.couple, video, flowers = SG_ART.flowersClosing }) {
-  if (layout === "bleed" && photo && !video) return <BleedClosing id={id} title={title} names={names} date={date} photo={photo} />;
+export default function SgClosing({ id = "sg-closing", title = "Hope to see you there!", names, date, layout, photo = SG_ART.couple, video, flowers = SG_ART.flowersClosing, hashtag }) {
+  if (layout === "bleed" && photo && !video) return <BleedClosing id={id} title={title} names={names} date={date} photo={photo} hashtag={hashtag} />;
   return <Artboard id={id} height={673} label={title}>
     {video ? <El x={0} y={0} w={450} h={675} className={s.media}><ClosingVideo src={video} label={names ?? ""} /></El>
       : photo && <El x={0} y={0} w={450} h={675}><img className={g.cover} src={photo} alt={names ?? ""} loading="lazy" /></El>}
@@ -44,5 +47,6 @@ export default function SgClosing({ id = "sg-closing", title = "Hope to see you 
     {!video && <El x={-55} y={12} w={560} h={64} z={4} appear={{ style: "fadein", dur: 1 }}><h2 className={`${g.text} ${g.title}`}>{title}</h2></El>}
     <El x={-43} y={173} w={537} h={537} z={3} steps={breathe} className={s.flowers}><img src={flowers} alt="" /></El>
     {!video && names && <El x={45} y={73} w={360} h={45} z={4} appear={{ style: "fadeinup", dur: 2, dist: 40 }}><p className={`${g.text} ${s.names}`}>{names}</p></El>}
+    {hashtag && <El x={45} y={video ? 16 : 122} w={360} h={34} z={4} appear={{ style: "fadeinup", dur: 2, dist: 40 }}><SgHashtag tag={hashtag} glow /></El>}
   </Artboard>;
 }

@@ -8,6 +8,7 @@ import { InviteeManager } from "@/features/admin/invitees/invitee-manager";
 import { defaultMessageTemplates } from "@/lib/whatsapp";
 import { getEventSegment } from "@/lib/event-segment";
 import { NoEventState } from "@/features/admin/components/no-event-state";
+import { cleanHashtag } from "@/features/sacred-garden/lib/invitation-form";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,7 @@ export default async function AdminInviteesPage() {
           honoreeName={event.honoreeName}
           inviteMessageTemplate={event.inviteMessageTemplate?.trim() || messageDefaults.invite}
           thankYouMessageTemplate={messageDefaults.thankYou}
+          hashtag={cleanHashtag(event.designConfig?.hashtag)}
           relationshipLabel={segment === "corporate" ? "Company / Team" : undefined}
           eventEnded={Date.parse(event.endAt) < Date.now()}
         />

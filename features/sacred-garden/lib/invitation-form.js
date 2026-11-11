@@ -20,6 +20,7 @@ const CLOSING_LAYOUTS = [["", "Framed by flowers (design)"], ["bleed", "Full wid
 export const FORM_GROUPS = [
   { title: "Couple", fields: [["blessing", "God's name / blessing line (e.g. ॥ श्री गणेशाय नमः ॥)"], ["groom", "Groom's name"], ["groomParents", "Line under the groom's name (optional, e.g. S/O Mrs. … and Mr. …)"], ["bride", "Bride's name"], ["brideParents", "Line under the bride's name (optional, e.g. D/O Mrs. … and Mr. …)"], ["date", "Wedding date & time", "datetime-local"], ["dateFormat", "Date style on the cover", "select", DATE_FORMATS],
     ["coverDate", "Date on the cover in your own words (optional, e.g. 23rd–24th Nov 2026)"], ["heroPhoto", "Photo shown faintly behind the names (optional)", "image"]] },
+  { title: "Hashtag", hint: "Optional. Shown on the cover, the schedule, under RSVP, at the closing and in WhatsApp invites. Guests tap it to copy.", fields: [["hashtag", "Wedding hashtag (e.g. #AaChalwithKunal)"]] },
   { title: "Website link", hint: "Pick a link made from the names, or type your own. Publish puts your website there.", fields: [["slug", "Link", "slug"]] },
   { title: "Welcome", fields: [["welcomeTitle", "Welcome heading (one line each)", "textarea"], ["welcome", "Welcome message", "textarea"]] },
   { title: "Schedule of events", hint: "One per line: Time | Event", fields: [["program", "Schedule", "textarea"]] },
@@ -69,6 +70,7 @@ export const formDefaults = {
   coverDate: "",
   heroPhoto: "",
   slug: "",
+  hashtag: "", // empty for every new couple; the samples carry their own
   welcomeTitle: DEFAULT_WELCOME_TITLE,
   welcome: demo.welcome.message,
   program: demo.program.map((p) => [p.time, p.title].join(" | ")).join("\n"),
@@ -121,7 +123,7 @@ export const SAMPLE_CLOSING_VIDEO = CLOSING_REEL;
 const WIDE_FILMS = { "/invite-art/sacred/envelope-k-a.mp4": "/invite-art/sacred/envelope-k-a-wide-full.mp4" };
 
 // Their envelope film already carries K & A (made once, the same way the create page makes it).
-const sampleSite = formDefaults;
+const sampleSite = { ...formDefaults, hashtag: "#AaChalwithKunal" };
 export const SAMPLE_SITES = {
   "sample-photo": sampleSite,
   "sample-video": { ...sampleSite, closingVideo: CLOSING_REEL },
@@ -136,6 +138,13 @@ function parseWhen(value) {
   if (!m) return null;
   const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00+05:30`;
   return Number.isNaN(new Date(iso).getTime()) ? null : iso;
+}
+
+/** "aa chal with kunal" / "#AaChalwithKunal" → "#AaChalwithKunal"; "" when empty. */
+export function cleanHashtag(value) {
+  // hashtags can't hold spaces or punctuation, so keep only letters (any script), digits and _
+  const tag = String(value || "").replace(/[^\p{L}\p{M}\p{N}_]+/gu, "");
+  return tag ? `#${tag}` : "";
 }
 
 /** Turns the form into the Sacred Garden content used by <SacredGardenInvitation>. */
@@ -159,6 +168,7 @@ export function buildInvitation(f) {
     rsvp: { deadline: f.rsvpDeadline.trim() },
     dateFormat: f.dateFormat,
     coverDate: f.coverDate?.trim(),
+    hashtag: cleanHashtag(f.hashtag),
     closingLayout: f.closingLayout,
     envelopeFilm: film || undefined,
     music: f.music.trim(),

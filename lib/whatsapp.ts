@@ -34,17 +34,23 @@ export const INVITE_TEMPLATE_PLACEHOLDERS = [
   { token: "{{link}}", description: "Their unique invitation link" },
   { token: "{{hostedBy}}", description: "Who's hosting (e.g. Jagruti Shah)" },
   { token: "{{honoreeName}}", description: "Who it's for (e.g. Mahesh J. Shah)" },
+  { token: "{{hashtag}}", description: "The event's hashtag (e.g. #AaChalwithKunal), from its design" },
 ] as const;
 
 function interpolateTemplate(
   template: string,
-  values: { name: string; link: string; hostedBy: string; honoreeName: string },
+  values: { name: string; link: string; hostedBy: string; honoreeName: string; hashtag?: string },
 ): string {
-  return template
+  const hashtag = values.hashtag ?? "";
+  // a hashtag the template doesn't place itself goes at the end, on its own line
+  const withTag = hashtag && !template.includes("{{hashtag}}") ? `${template}\n\n{{hashtag}}` : template;
+  return withTag
+    .replaceAll("{{hashtag}}", hashtag)
     .replaceAll("{{name}}", values.name)
     .replaceAll("{{link}}", values.link)
     .replaceAll("{{hostedBy}}", values.hostedBy)
-    .replaceAll("{{honoreeName}}", values.honoreeName);
+    .replaceAll("{{honoreeName}}", values.honoreeName)
+    .trim();
 }
 
 /**
@@ -56,8 +62,9 @@ function interpolateTemplate(
  *
  * If the event has a custom `messageTemplate` (from
  * events.invite_message_template), it's interpolated with
- * {{name}}/{{link}}/{{hostedBy}}/{{honoreeName}}. Otherwise falls back to
- * DEFAULT_INVITE_MESSAGE_TEMPLATE.
+ * {{name}}/{{link}}/{{hostedBy}}/{{honoreeName}}/{{hashtag}}. Otherwise falls back to
+ * DEFAULT_INVITE_MESSAGE_TEMPLATE. A `hashtag` the template doesn't place
+ * with {{hashtag}} is added at the end of the message.
  */
 export function buildWhatsAppInviteUrl(params: {
   guestName: string;
@@ -66,6 +73,7 @@ export function buildWhatsAppInviteUrl(params: {
   hostedBy?: string;
   honoreeName?: string;
   messageTemplate?: string | null;
+  hashtag?: string;
 }): string {
   const {
     guestName,
@@ -74,6 +82,7 @@ export function buildWhatsAppInviteUrl(params: {
     hostedBy = ACTIVE_EVENT.hostedBy,
     honoreeName = ACTIVE_EVENT.honoreeName,
     messageTemplate,
+    hashtag,
   } = params;
 
   const digitsOnly = phone.replace(/[^0-9]/g, "");
@@ -84,6 +93,7 @@ export function buildWhatsAppInviteUrl(params: {
     link: inviteUrl,
     hostedBy,
     honoreeName,
+    hashtag,
   });
 
   return `https://wa.me/${digitsOnly}?text=${encodeURIComponent(message)}`;

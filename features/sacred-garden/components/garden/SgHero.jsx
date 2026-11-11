@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { Artboard, El } from "./Artboard";
 import g from "./garden.module.css";
 import { SG_ART } from "./assets";
+import SgHashtag from "./SgHashtag";
 import s from "./SgHero.module.css";
 
 // the bouquets breathe: grow a little and tilt, then settle, forever
@@ -46,8 +47,9 @@ function HeroFilm({ src, poster }) {
  * video: looping cover film; art: picture used when there is no film; photo: the couple's photo, shown faintly in the arch behind the names.
  * firstParents / secondParents: a small line under each name (e.g. "S/O Mrs. … and Mr. …"); with them the names sit apart.
  * blessing: a line above the welcome; blessingImage: the same as a picture (e.g. calligraphy).
+ * hashtag: the couple's hashtag, small under the names (tap to copy).
  */
-export default function SgHero({ id = "sg-hero", first, second, firstParents, secondParents, date, weddingDay = "Wedding Day", scrollLabel = "Scroll down", blessing, blessingImage, title, message, nextId,
+export default function SgHero({ id = "sg-hero", first, second, firstParents, secondParents, date, weddingDay = "Wedding Day", scrollLabel = "Scroll down", blessing, blessingImage, title, message, nextId, hashtag,
   video, art, photo, bouquets = [SG_ART.bouquetHeroLeft, SG_ART.bouquetHeroRight] }) {
   return <Artboard id={id} height={1240} label={`${first} and ${second}`}>
     <El x={0} y={0} w={450}>
@@ -66,6 +68,7 @@ export default function SgHero({ id = "sg-hero", first, second, firstParents, se
       {secondParents && <El x={20} y={472} w={410} h={24} appear={rise}><p className={`${g.text} ${s.parents}`}>{secondParents}</p></El>}
     </>
       : <El x={-55} y={294} w={560} h={168} appear={rise}><h1 className={`${g.text} ${s.names}`}>{first}{"\n\n"}{second}</h1></El>}
+    {hashtag && <El x={45} y={firstParents || secondParents ? 506 : 492} w={360} h={34} z={5} appear={rise}><SgHashtag tag={hashtag} size="sm" glow /></El>}
     <El x={-55} y={154} w={560} h={37} appear={rise}><p className={`${g.text} ${s.day}`}>{weddingDay}</p></El>
     <El x={-55} y={196} w={560} h={37} appear={rise}><p data-no-translate className={`${g.text} ${g.num} ${s.date}`}>{date}</p></El>
     <El x={203} y={firstParents || secondParents ? 352 : 356} w={55} h={44} appear={rise}><p className={`${g.text} ${s.amp}`} aria-hidden="true">&amp;</p></El>
