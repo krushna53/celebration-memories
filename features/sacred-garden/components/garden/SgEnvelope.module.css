@@ -17,6 +17,12 @@
 .out .box { transform: scale(1.06); }
 /* the film keeps its 9:16 shape and never grows past 440px or the screen height */
 .box { position: relative; width: min(100%, 440px, calc(100svh * 9 / 16)); aspect-ratio: 9 / 16; }
+/* on a portrait screen (a phone) it fills the whole screen instead, cropping the film's edges rather than leaving
+   bands; the box keeps the film's 9:16 shape so the seal letters stay on the seal */
+@media (orientation: portrait) {
+  .stage { overflow: hidden; }
+  .box:not(.wide) { flex: none; width: max(100vw, calc(100svh * 9 / 16)); }
+}
 /* the couple's wide video on a computer: 16:9, as large as the screen allows */
 .box.wide { width: min(100%, calc(100svh * 16 / 9)); aspect-ratio: 16 / 9; }
 /* our wide envelope film: edge to edge, cropped rather than letterboxed */

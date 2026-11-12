@@ -1,7 +1,7 @@
 // Sample content for the wedding website demo (/wedding-websites/demo).
 // Every section reads its props from here, so a real invitation only needs a new object like this.
 
-const venueQuery = "Bel-La Monde, NH8, Delhi";
+const venueQuery = "Bel-La Monde, NH8 Delhi";
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
 export const demoInvitation = {
@@ -45,7 +45,7 @@ export const demoInvitation = {
   venue: {
     name: "Bel-La Monde",
     address: "NH8, Delhi",
-    mapQuery: "Bel-La Monde, NH8, Delhi",
+    mapQuery: "Bel-La Monde, NH8 Delhi",
     image: "/wedding-demo-royal.webp",
   },
 
