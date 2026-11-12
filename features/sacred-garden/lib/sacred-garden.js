@@ -104,7 +104,7 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
 
     schedule: {
       title: "Schedule of Events",
-      items: d.program.map(({ time, title, location, day, labelShift }) => ({ time, title, location, day, labelShift })),
+      items: d.program.map(({ time, title, location, note, day, labelShift }) => ({ time, title, location, note, day, labelShift })),
     },
 
     location: {

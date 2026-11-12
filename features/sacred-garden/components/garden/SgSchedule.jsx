@@ -5,23 +5,26 @@ import { SG_ART } from "./assets";
 import SgHashtag from "./SgHashtag";
 import s from "./SgSchedule.module.css";
 
-// first marker's y; rows are 85px apart (105px when the events show a location) and a day heading adds 30px more
+// first marker's y; rows are 85px apart (105px when the events show a location), a day heading adds 30px more
+// and a note under an event 12px on each side of it
 const FIRST = 215;
-const dayOf = (item, i) => item.day || (i === 0 ? "Monday, 23rd Nov" : i === 3 ? "Tuesday, 24th Nov" : "");
-function dotYs(items) {
+// schedules saved before day headings could be typed get the original two days
+const fixedDay = (i) => (i === 0 ? "Monday, 23rd Nov" : i === 3 ? "Tuesday, 24th Nov" : "");
+function dotYs(items, dayOf) {
   const gap = items.some((item) => item.location) ? 105 : 85;
   let y = FIRST;
-  return items.map((item, i) => (i === 0 ? y : (y += gap + (dayOf(item, i) ? 30 : 0))));
+  return items.map((item, i) => (i === 0 ? y : (y += gap + (dayOf(item, i) ? 30 : 0) + (item.note ? 12 : 0) + (items[i - 1].note ? 12 : 0))));
 }
 
 /**
  * Order of the day on a torn-paper panel: times left, events right, a line of small diamonds,
- * and a rose that walks down the line as the guest scrolls. items: [{ time, title, location?, labelShift? }]
+ * and a rose that walks down the line as the guest scrolls. items: [{ time, title, location?, note?, day?, labelShift? }]
  * labelShift: nudge one event name up or down (px), e.g. when it wraps onto two lines.
  * hashtag: the couple's hashtag, under the last event ("Dance with us, post with …").
  */
 export default function SgSchedule({ id = "sg-schedule", title = "Schedule of Events", items = [], rose = SG_ART.rose, hashtag }) {
-  const ys = dotYs(items);
+  const dayOf = items.some((item) => item.day) ? (item) => item.day || "" : (item, i) => fixedDay(i);
+  const ys = dotYs(items, dayOf);
   const dotY = (i) => ys[i] ?? FIRST;
   const last = dotY(items.length - 1);
   const height = last + 180;
@@ -42,7 +45,7 @@ export default function SgSchedule({ id = "sg-schedule", title = "Schedule of Ev
           <span className={`${g.text} ${s.day}`}>{dayOf(item, i)}</span>
         </El>}
         <El x={47} y={dotY(i) + 4} w={180} h={0} className={g.row} appear={fade(i)}><span className={`${g.text} ${g.num} ${s.time}`}>{item.time.replace(/\s+onwards$/i, "")} {item.time.toLowerCase().endsWith(" onwards") && <small>onwards</small>}</span></El>
-        <El x={244} y={dotY(i) + 4 + (item.labelShift ?? 0)} w={150} h={0} m={{ x: 246 }} className={g.row} appear={fade(i)}><span className={`${g.text} ${g.body} ${s.event}`}>{item.title}{item.location && <small className={s.place}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" /></svg>{item.location}</small>}</span></El>
+        <El x={244} y={dotY(i) + 4 + (item.labelShift ?? 0)} w={150} h={0} m={{ x: 246 }} className={g.row} appear={fade(i)}><span className={`${g.text} ${g.body} ${s.event}`}>{item.title}{item.note && <small className={s.note}>{item.note}</small>}{item.location && <small className={s.place}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" /></svg>{item.location}</small>}</span></El>
         <El x={221} y={dotY(i)} w={8} h={8} m={{ x: 220 }}><i className={s.dot} /></El>
       </li>)}
     </ol>

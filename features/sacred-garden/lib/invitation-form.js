@@ -23,7 +23,7 @@ export const FORM_GROUPS = [
   { title: "Hashtag", hint: "Optional. Shown on the cover, the schedule, under RSVP, at the closing and in WhatsApp invites. Guests tap it to copy.", fields: [["hashtag", "Wedding hashtag (e.g. #AaChalwithKunal)"]] },
   { title: "Website link", hint: "Pick a link made from the names, or type your own. Publish puts your website there.", fields: [["slug", "Link", "slug"]] },
   { title: "Welcome", fields: [["welcomeTitle", "Welcome heading (one line each)", "textarea"], ["welcome", "Welcome message", "textarea"]] },
-  { title: "Schedule of events", hint: "One per line: Time | Event | Location (optional)", fields: [["program", "Schedule", "textarea"]] },
+  { title: "Schedule of events", hint: "One per line: Time | Event | Location (optional) | Note (optional, e.g. Cocktail followed by Dinner). A line with only a day (e.g. Tuesday, 24th Nov) starts that day.", fields: [["program", "Schedule", "textarea"]] },
   { title: "Location", fields: [["venueName", "Venue name"], ["venueAddress", "Address"], ["venueMap", "Map search (optional)"], ["venueImage", "Hotel / venue picture", "image"]] },
   { title: "Dress code & gifts", fields: [["dressTitle", "Heading (e.g. Dress Code / Theme)"], ["dress", "Dress code", "textarea"], ["gifts", "Gift note", "textarea"]] },
   { title: "Closing", hint: "A photo or a video at the bottom of the page — pick one.", closingChoice: true, fields: [
@@ -59,6 +59,18 @@ export const colorFields = (k) => ({ colorAccent: k.accent, colorText: k.text, c
 
 const lines = (text) => (text || "").split("\n").map((l) => l.split("|").map((p) => p.trim())).filter((r) => r.some(Boolean));
 
+/** Schedule text → items: "Time | Event | Location? | Note?" per line; a line with no "|" is the day heading of the event after it. */
+function programItems(text) {
+  const items = [];
+  let day = "";
+  for (const [time = "", title = "", location = "", note = ""] of lines(text)) {
+    if (!title && !location && !note) { day = time; continue; }
+    items.push({ time, title, ...(location && { location }), ...(note && { note }), ...(day && { day }) });
+    day = "";
+  }
+  return items;
+}
+
 export const formDefaults = {
   blessing: demo.blessing,
   groom: "Kunal",
@@ -73,7 +85,7 @@ export const formDefaults = {
   hashtag: "", // empty for every new couple; the samples carry their own
   welcomeTitle: DEFAULT_WELCOME_TITLE,
   welcome: demo.welcome.message,
-  program: demo.program.map((p) => [p.time, p.title, p.location].filter(Boolean).join(" | ")).join("\n"),
+  program: demo.program.flatMap((p) => [...(p.day ? [p.day] : []), [p.time, p.title, p.location].filter(Boolean).join(" | ")]).join("\n"),
   venueName: demo.venue.name,
   venueAddress: demo.venue.address,
   venueMap: demo.venue.mapQuery,
@@ -162,7 +174,7 @@ export function buildInvitation(f) {
     blessing: f.blessing.trim(),
     date: parseWhen(f.date) || demo.date,
     welcome: { title: f.welcomeTitle.trim(), message: f.welcome },
-    program: lines(f.program).filter((r) => r[1] || r[0]).map(([time = "", title = "", location = ""]) => ({ time, title, ...(location && { location }) })),
+    program: programItems(f.program),
     venue: { name: venueName, address: f.venueAddress.trim(), mapQuery: f.venueMap.trim() },
     dressCode: { title: (f.dressTitle ?? "").trim(), women: f.dress.trim() },
     guestInfo: f.gifts.trim() ? [{ icon: "gift", text: f.gifts.trim() }] : [],
