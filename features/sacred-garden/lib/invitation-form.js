@@ -23,7 +23,7 @@ export const FORM_GROUPS = [
   { title: "Hashtag", hint: "Optional. Shown on the cover, the schedule, under RSVP, at the closing and in WhatsApp invites. Guests tap it to copy.", fields: [["hashtag", "Wedding hashtag (e.g. #AaChalwithKunal)"]] },
   { title: "Website link", hint: "Pick a link made from the names, or type your own. Publish puts your website there.", fields: [["slug", "Link", "slug"]] },
   { title: "Welcome", fields: [["welcomeTitle", "Welcome heading (one line each)", "textarea"], ["welcome", "Welcome message", "textarea"]] },
-  { title: "Schedule of events", hint: "One per line: Time | Event", fields: [["program", "Schedule", "textarea"]] },
+  { title: "Schedule of events", hint: "One per line: Time | Event | Location (optional)", fields: [["program", "Schedule", "textarea"]] },
   { title: "Location", fields: [["venueName", "Venue name"], ["venueAddress", "Address"], ["venueMap", "Map search (optional)"], ["venueImage", "Hotel / venue picture", "image"]] },
   { title: "Dress code & gifts", fields: [["dressTitle", "Heading (e.g. Dress Code / Theme)"], ["dress", "Dress code", "textarea"], ["gifts", "Gift note", "textarea"]] },
   { title: "Closing", hint: "A photo or a video at the bottom of the page — pick one.", closingChoice: true, fields: [
@@ -73,7 +73,7 @@ export const formDefaults = {
   hashtag: "", // empty for every new couple; the samples carry their own
   welcomeTitle: DEFAULT_WELCOME_TITLE,
   welcome: demo.welcome.message,
-  program: demo.program.map((p) => [p.time, p.title].join(" | ")).join("\n"),
+  program: demo.program.map((p) => [p.time, p.title, p.location].filter(Boolean).join(" | ")).join("\n"),
   venueName: demo.venue.name,
   venueAddress: demo.venue.address,
   venueMap: demo.venue.mapQuery,
@@ -162,7 +162,7 @@ export function buildInvitation(f) {
     blessing: f.blessing.trim(),
     date: parseWhen(f.date) || demo.date,
     welcome: { title: f.welcomeTitle.trim(), message: f.welcome },
-    program: lines(f.program).filter((r) => r[1] || r[0]).map(([time = "", title = ""]) => ({ time, title })),
+    program: lines(f.program).filter((r) => r[1] || r[0]).map(([time = "", title = "", location = ""]) => ({ time, title, ...(location && { location }) })),
     venue: { name: venueName, address: f.venueAddress.trim(), mapQuery: f.venueMap.trim() },
     dressCode: { title: (f.dressTitle ?? "").trim(), women: f.dress.trim() },
     guestInfo: f.gifts.trim() ? [{ icon: "gift", text: f.gifts.trim() }] : [],
