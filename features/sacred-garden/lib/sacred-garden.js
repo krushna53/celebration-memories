@@ -1,9 +1,8 @@
 // Content of "The Sacred Garden" invitation. sacredGardenFrom() turns any invitation in the shape of
 // lib/demo-invitation.js (the demo, or the create form) into the garden's content.
-// Media (films, envelope picture, music) is served from our own assets host.
+// Films and pictures are served from /public/invite-art/sacred.
 import { demoInvitation } from "./demo-invitation";
 
-const MEDIA = "https://assets.webgencyinvitations.com/";
 export const DEFAULT_WELCOME_TITLE = "Two Hearts\nOne Journey\nA Lifetime Together";
 export const ENVELOPE_VIDEO = "/invite-art/sacred/envelope-light-burst.mp4";
 export const CLOSING_REEL = "/invite-art/sacred/closing-reel.mp4"; // default sample video at the bottom of the page
@@ -87,7 +86,9 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
     colors: { ...DEFAULT_COLORS, ...d.colors },
 
     hero: {
-      video: `${MEDIA}Swans2_1_qwzsod.mov`,
+      // H.264 with its index up front, so every phone plays it and it starts before it has fully downloaded
+      video: "/invite-art/sacred/hero-swans.mp4",
+      poster: "/invite-art/sacred/hero-swans-poster.webp",
       weddingDay: "Wedding Day",
       date: d.coverDate || formatDate(d.date, lang, d.dateFormat),
       photo: photos.hero,

@@ -48,7 +48,7 @@ export default function SacredGardenInvitation({ c, rsvp = true, autoScroll = fa
     <div className={d.backdrop} aria-hidden="true"><img src={SG_ART.bouquetHeroLeft} alt="" /><img src={SG_ART.bouquetHeroRight} alt="" /></div>
   <div ref={root} className={`${g.page} ${d.sheet}`}>
     <SgHero first={c.couple.first} second={c.couple.second} firstParents={c.couple.firstParents} secondParents={c.couple.secondParents} date={c.hero.date} weddingDay={c.hero.weddingDay} scrollLabel={c.hero.scrollLabel}
-      video={c.hero.video} photo={c.hero.photo} blessing={c.welcome.blessing} blessingImage={c.welcome.blessingImage} title={c.welcome.title} message={c.welcome.message} nextId="sg-countdown" hashtag={c.hashtag} />
+      video={c.hero.video} art={c.hero.poster} photo={c.hero.photo} blessing={c.welcome.blessing} blessingImage={c.welcome.blessingImage} title={c.welcome.title} message={c.welcome.message} nextId="sg-countdown" hashtag={c.hashtag} />
     <SgCountdown title={c.countdown.title} date={c.countdown.date} labels={c.countdown.labels} />
     <SgSchedule title={c.schedule.title} items={c.schedule.items} hashtag={c.hashtag} />
     <SgLocation title={c.location.title} name={c.location.name} address={c.location.address} image={c.location.image || SG_ART.venue} vignette={Boolean(c.location.image)} />
