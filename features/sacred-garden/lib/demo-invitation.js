@@ -34,12 +34,12 @@ export const demoInvitation = {
 
   program: [
     { time: "5pm", title: "Sagan Ceremony", day: "Monday, 23rd Nov" },
-    { time: "5:30pm", title: "Engagement" },
-    { time: "8:00pm onwards", title: "Cocktail Dinner" },
-    { time: "11am onwards", title: "Haldi Ceremony", day: "Tuesday, 24th Nov" },
-    { time: "5pm onwards", title: "Baraat" },
-    { time: "7:30pm onwards", title: "Pheras" },
-    { time: "9pm onwards", title: "Reception Dinner" },
+    { time: "5:30pm", title: "Engagement", location: "Pool Deck" },
+    { time: "8:00pm onwards", title: "Cocktail Dinner", location: "Pool Deck" },
+    { time: "11am onwards", title: "Haldi Ceremony", location: "Orchid Lawn", day: "Tuesday, 24th Nov" },
+    { time: "5pm onwards", title: "Baraat", location: "Carnation Lawn" },
+    { time: "7:30pm onwards", title: "Pheras", location: "Carnation Lawn" },
+    { time: "9pm onwards", title: "Reception Dinner", location: "Carnation Lawn" },
   ],
 
   venue: {
