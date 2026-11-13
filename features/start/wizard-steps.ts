@@ -149,6 +149,16 @@ const STEP_REGISTRY = {
       "The envelope film is re-lettered with your initials; wait for it to finish before you save.",
     ],
   },
+  "ai-reel": {
+    slug: "ai-reel",
+    label: "AI Reel",
+    description: "Create an animated wedding video",
+    tips: [
+      "Upload one couple photo, then choose your ceremonies or tell your relationship story scene by scene.",
+      "You will always see the estimated API credits and a final confirmation before a video generation starts.",
+    ],
+    optional: true,
+  },
   "rsvp-form": {
     slug: "rsvp-form",
     label: "RSVP Form",
@@ -270,10 +280,12 @@ function resolveWizardStepList(goals: string[] | null | undefined, category?: Ev
   const wantsSlideshow = !hasGoals || goals!.includes("slideshow");
 
   steps.push(STEP_REGISTRY.card, STEP_REGISTRY.basics);
-  if (wantsWebsite && category === "wedding") steps.push(STEP_REGISTRY.design);
   if (wantsWebsite) steps.push(STEP_REGISTRY["rsvp-form"]);
   if (wantsWebsite || wantsSlideshow) steps.push(STEP_REGISTRY.timeline, STEP_REGISTRY.gallery);
   steps.push(STEP_REGISTRY.template);
+  // Wedding Design deliberately follows Template: the selected look is visible
+  // before editing the site, and the optional AI Reel follows the design.
+  if (wantsWebsite && category === "wedding") steps.push(STEP_REGISTRY.design, STEP_REGISTRY["ai-reel"]);
   if (wantsWebsite || wantsCard) steps.push(STEP_REGISTRY["ai-image"]);
   if (wantsWebsite || wantsSlideshow) steps.push(STEP_REGISTRY.slideshow);
   steps.push(STEP_REGISTRY.review);
