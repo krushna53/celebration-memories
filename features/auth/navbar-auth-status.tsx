@@ -64,6 +64,13 @@ export function NavbarAuthStatus({ variant, onNavigate, adminLinkOnly = false }:
   useEffect(() => {
     let cancelled = false;
 
+    // Let a fresh local checkout render public pages before its Supabase
+    // project has been connected. Production still supplies these values.
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      setEmail(null);
+      return () => { cancelled = true; };
+    }
+
     async function load() {
       // Any failure here (flaky network in the installed app's WebView,
       // a stale session) must fall back to "signed out" — leaving email
