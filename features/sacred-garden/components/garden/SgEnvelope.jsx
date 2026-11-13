@@ -203,6 +203,14 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
   // the seal track belongs to our envelope film, never to the couple's wide video
   const track = wide ? null : sealTrack;
   const film = useRef(null);
+  // the opening video's own shape (width / height); the box takes it so the video fills it with no side bands
+  const [ratio, setRatio] = useState(null);
+  const readRatio = () => {
+    const v = film.current;
+    if (v?.videoWidth && v.videoHeight) setRatio(v.videoWidth / v.videoHeight);
+  };
+  // the video may already know its size before React listens (e.g. from the cache)
+  useEffect(readRatio, [wide, video, desktopVideo]);
   const paint = useRef(null);
   const audio = useRef(null);
   const ended = useRef(false);
@@ -321,8 +329,8 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     {music && <audio ref={audio} src={music} loop preload="auto" />}
     {phase !== "done" && <div className={`${s.stage} ${phase === "leaving" ? s.out : ""}`} onClick={open}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }} role="button" tabIndex={0} aria-label={tapLabel}>
-      <div className={`${s.box} ${wide ? s.wide : ""} ${fill ? s.fill : ""}`}>
-        <video ref={film} className={s.film} src={wide ? desktopVideo : video} muted playsInline preload="auto" onTimeUpdate={onTime} onEnded={finish}
+      <div className={`${s.box} ${wide ? s.wide : ""} ${fill ? s.fill : ""}`} style={ratio && !fill ? { "--ar": ratio } : undefined}>
+        <video ref={film} className={s.film} src={wide ? desktopVideo : video} muted playsInline preload="auto" onTimeUpdate={onTime} onEnded={finish} onLoadedMetadata={readRatio}
           onError={phase === "playing" ? finish : undefined} aria-label="Open your invitation" />
         {(monogram || sealImage) && track && <canvas ref={paint} className={s.paint} aria-hidden="true" />}
       </div>
