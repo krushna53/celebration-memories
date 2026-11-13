@@ -4,6 +4,7 @@ import { getDraftEventByToken } from "@/services/event-drafts";
 import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
 import AiWeddingVideoStudio from "@/app/wedding-websites/create/AiWeddingVideoStudio";
+import { SkipStepLink } from "@/features/start/skip-step-link";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function WizardAiReelPage({ params }: { params: Promise<{ t
       category={event.category}
       title="Create your animated reel"
       description="Upload one couple photo and make either a wedding reel or a scene-by-scene journey video."
+      headerAction={<SkipStepLink token={token} slug="ai-reel" goals={event.wizardGoals} category={event.category} />}
     >
       <AiWeddingVideoStudio />
     </WizardStepShell>

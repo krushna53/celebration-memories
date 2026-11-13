@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SkipForward } from "lucide-react";
 
 import { nextWizardStep, wizardStepHref } from "@/features/start/wizard-steps";
+import type { EventCategory } from "@/types/event";
 
 /**
  * "Skip for now" link rendered as a WizardStepShell `headerAction` on
@@ -16,12 +17,14 @@ export function SkipStepLink({
   token,
   slug,
   goals,
+  category,
 }: {
   token: string;
   slug: string;
   goals?: string[] | null;
+  category?: EventCategory | null;
 }) {
-  const next = nextWizardStep(slug, goals);
+  const next = nextWizardStep(slug, goals, category);
   if (!next) return null;
 
   return (

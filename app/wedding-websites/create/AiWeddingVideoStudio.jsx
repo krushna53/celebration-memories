@@ -2,19 +2,32 @@
 
 import { useEffect, useMemo, useState } from "react";
 import s from "./create.module.css";
+import AiReelFinishing from "./AiReelFinishing";
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
 
 const WEDDING_SCENES = [
-  { title: "Mehendi", description: "Mehendi is being drawn on her palms while family smile in a flower-filled courtyard.", venue: "", brideOutfit: "Green floral lehenga", groomOutfit: "Light green kurta" },
-  { title: "Haldi", description: "Family gently apply haldi with marigolds, laughter and a warm yellow celebration.", venue: "", brideOutfit: "Yellow saree with flower jewellery", groomOutfit: "White kurta-pyjama" },
-  { title: "Wedding", description: "The couple meet beneath a floral mandap and exchange warm, emotional smiles.", venue: "", brideOutfit: "Traditional wedding saree or lehenga", groomOutfit: "Traditional sherwani" },
+  { title: "Mehendi", description: "Mehendi is being drawn on her palms while family smile in a flower-filled courtyard.", venue: "", brideOutfit: "Green floral lehenga", groomOutfit: "Light green kurta", date: "", time: "", text: "Mehendi" },
+  { title: "Haldi", description: "Family gently apply haldi with marigolds, laughter and a warm yellow celebration.", venue: "", brideOutfit: "Yellow saree with flower jewellery", groomOutfit: "White kurta-pyjama", date: "", time: "", text: "Haldi" },
+  { title: "Wedding", description: "The couple meet beneath a floral mandap and exchange warm, emotional smiles.", venue: "", brideOutfit: "Traditional wedding saree or lehenga", groomOutfit: "Traditional sherwani", date: "", time: "", text: "Wedding Ceremony" },
 ];
 
+const CEREMONY_PRESETS = {
+  Sagan: { description: "A warm Sagan ceremony with close family, blessings and joyful smiles.", brideOutfit: "Pastel embroidered suit or saree", groomOutfit: "Pastel kurta jacket" },
+  Engagement: { description: "The couple exchange rings while family clap and celebrate around them.", brideOutfit: "Elegant embellished gown or lehenga", groomOutfit: "Smart bandhgala or suit" },
+  Cocktail: { description: "A stylish evening cocktail celebration with warm lights, music and joyful movement.", brideOutfit: "Evening gown or embellished saree", groomOutfit: "Formal suit or bandhgala" },
+  Mehendi: { description: "Mehendi is being drawn on her palms while family smile in a flower-filled courtyard.", brideOutfit: "Green floral lehenga", groomOutfit: "Light green kurta" },
+  Haldi: { description: "Family gently apply haldi with marigolds, laughter and a warm yellow celebration.", brideOutfit: "Yellow saree with flower jewellery", groomOutfit: "White kurta-pyjama" },
+  Sangeet: { description: "A happy Sangeet evening with family dancing, dhol beats and sparkling lights.", brideOutfit: "Bright festive lehenga", groomOutfit: "Festive kurta jacket" },
+  Baraat: { description: "A lively Baraat arrives with dancing family, flowers and celebration.", brideOutfit: "Traditional bridal attire", groomOutfit: "Sherwani with safa" },
+  Pheras: { description: "The couple take their sacred pheras around the fire beneath a flower-filled mandap.", brideOutfit: "Traditional bridal saree or lehenga", groomOutfit: "Traditional sherwani" },
+  Reception: { description: "The couple make a graceful reception entrance as family welcome them with applause.", brideOutfit: "Reception gown or elegant saree", groomOutfit: "Formal bandhgala or tuxedo" },
+};
+
 const JOURNEY_SCENES = [
-  { title: "How we met", description: "They meet for the first time, exchange a shy smile and the moment becomes warm and easy.", venue: "", brideOutfit: "Smart casual outfit", groomOutfit: "Smart casual outfit" },
-  { title: "A favourite memory", description: "They share a relaxed, joyful moment together with natural laughter and soft eye contact.", venue: "", brideOutfit: "Elegant day outfit", groomOutfit: "Elegant day outfit" },
-  { title: "The proposal", description: "A romantic proposal moment with happy surprise, warm smiles and a gentle camera pullback.", venue: "", brideOutfit: "Evening outfit", groomOutfit: "Evening outfit" },
+  { title: "How we met", description: "They meet for the first time, exchange a shy smile and the moment becomes warm and easy.", venue: "", brideOutfit: "Smart casual outfit", groomOutfit: "Smart casual outfit", date: "", time: "", text: "How we met" },
+  { title: "A favourite memory", description: "They share a relaxed, joyful moment together with natural laughter and soft eye contact.", venue: "", brideOutfit: "Elegant day outfit", groomOutfit: "Elegant day outfit", date: "", time: "", text: "A favourite memory" },
+  { title: "The proposal", description: "A romantic proposal moment with happy surprise, warm smiles and a gentle camera pullback.", venue: "", brideOutfit: "Evening outfit", groomOutfit: "Evening outfit", date: "", time: "", text: "The proposal" },
 ];
 
 function cloneScenes(scenes) { return scenes.map((scene) => ({ ...scene })); }
@@ -35,6 +48,11 @@ function SceneEditor({ scene, index, onChange, onRemove, canRemove, journey }) {
     <label className={s.label}><span>{journey ? "Moment" : "Ceremony"}</span><input className={s.input} value={scene.title} onChange={(e) => set("title", e.target.value)} /></label>
     <label className={s.label}><span>What happens in this scene?</span><textarea className={s.input} rows={3} value={scene.description} onChange={(e) => set("description", e.target.value)} placeholder="Describe one clear moment" /></label>
     <label className={s.label}><span>Location (optional)</span><input className={s.input} value={scene.venue} onChange={(e) => set("venue", e.target.value)} placeholder="Courtyard, beach, venue…" /></label>
+    <div className={s.aiTwoCol}>
+      <label className={s.label}><span>Date shown in reel</span><input className={s.input} type="date" value={scene.date || ""} onChange={(e) => set("date", e.target.value)} /></label>
+      <label className={s.label}><span>Time shown in reel</span><input className={s.input} type="time" value={scene.time || ""} onChange={(e) => set("time", e.target.value)} /></label>
+    </div>
+    <label className={s.label}><span>{journey ? "Text shown for this story moment" : "Text shown for this ceremony"}</span><input className={s.input} value={scene.text || ""} onChange={(e) => set("text", e.target.value)} placeholder={journey ? "For example: Our first coffee date" : "For example: Haldi · 24 Nov · 11 AM"} /></label>
     <div className={s.aiTwoCol}>
       <label className={s.label}><span>Bride outfit</span><input className={s.input} value={scene.brideOutfit} onChange={(e) => set("brideOutfit", e.target.value)} /></label>
       <label className={s.label}><span>Groom outfit</span><input className={s.input} value={scene.groomOutfit} onChange={(e) => set("groomOutfit", e.target.value)} /></label>
@@ -92,7 +110,16 @@ export default function AiWeddingVideoStudio() {
   };
   const addScene = (which) => {
     const setter = which === "own" ? setScenes : setJourneyScenes;
-    setter((old) => [...old, { title: which === "own" ? "Other ritual" : "Another memory", description: "Describe this moment in a few simple lines.", venue: "", brideOutfit: "", groomOutfit: "" }]);
+    setter((old) => [...old, { title: which === "own" ? "Other ritual" : "Another memory", description: "Describe this moment in a few simple lines.", venue: "", brideOutfit: "", groomOutfit: "", date: "", time: "", text: "" }]);
+    setQuote(null);
+  };
+  const toggleCeremony = (name) => {
+    setScenes((old) => {
+      const found = old.findIndex((scene) => scene.title === name);
+      if (found >= 0) return old.filter((_, index) => index !== found);
+      const preset = CEREMONY_PRESETS[name];
+      return [...old, { title: name, ...preset, venue: "", date: "", time: "", text: name }];
+    });
     setQuote(null);
   };
   const pickPhoto = (event) => {
@@ -141,7 +168,9 @@ export default function AiWeddingVideoStudio() {
     </div>
     {preview && <img className={s.aiPhotoPreview} src={preview} alt="Uploaded couple preview" />}
 
-    {tab === "own" && <label className={s.label}><span>Wedding style</span><select className={s.input} value={weddingStyle} onChange={(e) => { setWeddingStyle(e.target.value); setQuote(null); }}><option>Marathi wedding</option><option>Marwadi wedding</option><option>Bengali wedding</option><option>Gujarati wedding</option><option>South Indian wedding</option><option>Christian wedding</option><option>Sikh wedding</option><option>Muslim wedding</option></select></label>}
+    {tab === "own" && <><label className={s.label}><span>Wedding style</span><select className={s.input} value={weddingStyle} onChange={(e) => { setWeddingStyle(e.target.value); setQuote(null); }}><option>Marathi wedding</option><option>Marwadi wedding</option><option>Bengali wedding</option><option>Gujarati wedding</option><option>South Indian wedding</option><option>Christian wedding</option><option>Sikh wedding</option><option>Muslim wedding</option></select></label>
+      <div className={s.aiCeremonyPicker}><strong>Choose ceremonies for your video</strong><span>Select only the rituals you want. Tap again to remove one.</span><div>{Object.keys(CEREMONY_PRESETS).map((name) => <button key={name} type="button" className={scenes.some((scene) => scene.title === name) ? s.aiCeremonyOn : ""} onClick={() => toggleCeremony(name)}>{scenes.some((scene) => scene.title === name) ? "✓ " : "+ "}{name}</button>)}</div></div>
+    </>}
     <div className={s.aiScenes}>{activeScenes.map((scene, index) => <SceneEditor key={`${tab}-${index}`} scene={scene} index={index} journey={tab === "journey"} canRemove={activeScenes.length > 1} onChange={(i, value) => updateScenes(tab, i, value)} onRemove={(i) => removeScene(tab, i)} />)}</div>
     <button type="button" className={s.aiSmallButton} onClick={() => addScene(tab)}>+ Add {tab === "own" ? "a ceremony" : "a memory"}</button>
 
@@ -155,6 +184,6 @@ export default function AiWeddingVideoStudio() {
     {!quote ? <button type="button" className={s.aiPrimary} onClick={requestQuote}>Review generation</button> : <div className={s.aiConfirm}><strong>${quote.estimate} estimated API credits</strong><span>{quote.summary}</span><button type="button" className={s.aiPrimary} disabled={!config.ready} onClick={generate}>Confirm and generate</button><button type="button" className={s.aiSmallButton} onClick={() => setQuote(null)}>Change details</button></div>}
     {status && <p className={s.hint} role="status">{status}</p>}
     {error && <p className={s.error}>{error}</p>}
-    {result?.videoUrl && <div className={s.aiResult}><video controls playsInline src={result.videoUrl} /><a href={result.videoUrl} target="_blank" rel="noreferrer">Open / save generated MP4 →</a></div>}
+    {result?.videoUrl && <div className={s.aiResult}><AiReelFinishing videoUrl={result.videoUrl} scenes={activeScenes} /><a href={result.videoUrl} target="_blank" rel="noreferrer">Open original generated MP4 →</a></div>}
   </section>;
 }
