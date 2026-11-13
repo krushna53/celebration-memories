@@ -15,16 +15,17 @@
 /* while it fades the envelope drifts a little closer, into the light */
 .box { transition: transform 1.8s cubic-bezier(0.4, 0, 0.2, 1); }
 .out .box { transform: scale(1.06); }
-/* the film keeps its 9:16 shape and never grows past 440px or the screen height */
-.box { position: relative; width: min(100%, 440px, calc(100svh * 9 / 16)); aspect-ratio: 9 / 16; }
+/* the box takes the video's own shape (--ar = width / height, set once the video loads; 9:16 until then),
+   so a video that isn't exactly 9:16 still fills it with no bands; never past 440px or the screen height */
+.box { position: relative; width: min(100%, 440px, calc(100svh * var(--ar, 0.5625))); aspect-ratio: var(--ar, 9 / 16); }
 /* on a portrait screen (a phone) it fills the whole screen instead, cropping the film's edges rather than leaving
-   bands; the box keeps the film's 9:16 shape so the seal letters stay on the seal */
+   bands; the box keeps the video's shape so the seal letters stay on the seal */
 @media (orientation: portrait) {
   .stage { overflow: hidden; }
-  .box:not(.wide) { flex: none; width: max(100vw, calc(100svh * 9 / 16)); }
+  .box:not(.wide) { flex: none; width: max(100vw, calc(100svh * var(--ar, 0.5625))); }
 }
 /* the couple's wide video on a computer: 16:9, as large as the screen allows */
-.box.wide { width: min(100%, calc(100svh * 16 / 9)); aspect-ratio: 16 / 9; }
+.box.wide { width: min(100%, calc(100svh * var(--ar, 1.7778))); aspect-ratio: var(--ar, 16 / 9); }
 /* our wide envelope film: edge to edge, cropped rather than letterboxed */
 .box.fill { width: 100%; height: 100%; aspect-ratio: auto; }
 .box.fill .film { object-fit: cover; }
