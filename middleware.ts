@@ -91,6 +91,13 @@ export async function middleware(request: NextRequest) {
 
   let response = NextResponse.next({ request });
 
+  // A fresh local checkout can be used to preview the public design tools
+  // before Supabase has been connected. Do not attempt to create an invalid
+  // Supabase client in that case; production still requires its normal keys.
+  if (process.env.NODE_ENV !== "production" && (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+    return finish(response);
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

@@ -46,18 +46,24 @@ function rowToSettings(row: PlatformVideoSettingsRow): PlatformVideoSettings {
  * missing, so the homepage never crashes on this.
  */
 export async function getPlatformVideoSettings(): Promise<PlatformVideoSettings> {
-  const { data, error } = await supabaseAdmin()
-    .from("platform_video_settings")
-    .select("enabled, source_type, video_url, storage_path, title")
-    .eq("id", "default")
-    .maybeSingle();
+  try {
+    const { data, error } = await supabaseAdmin()
+      .from("platform_video_settings")
+      .select("enabled, source_type, video_url, storage_path, title")
+      .eq("id", "default")
+      .maybeSingle();
 
-  if (error || !data) {
-    if (error) console.error("getPlatformVideoSettings failed, using defaults:", error.message);
+    if (error || !data) {
+      if (error) console.error("getPlatformVideoSettings failed, using defaults:", error.message);
+      return DEFAULT_SETTINGS;
+    }
+
+    return rowToSettings(data as PlatformVideoSettingsRow);
+  } catch (error) {
+    // Local design/video testing should not require the optional public feature-video record.
+    console.warn("Supabase is unavailable; using default platform video settings.", error);
     return DEFAULT_SETTINGS;
   }
-
-  return rowToSettings(data as PlatformVideoSettingsRow);
 }
 
 export interface PlatformVideoSettingsInput {

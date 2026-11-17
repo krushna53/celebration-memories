@@ -26,6 +26,48 @@
   color: #1e1b4b;
 }
 .head p { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: #625e7e; }
+.aiStudio { margin-top: 26px; padding: 18px; border: 1px solid #ddd8f0; border-radius: 20px; background: linear-gradient(145deg, #fff 0%, #f7f4ff 100%); box-shadow: 0 8px 24px rgba(30, 27, 75, .07); }
+.aiStudioHead p { margin: 0 0 2px; color: #d45a49; font-size: 10px; font-weight: 800; letter-spacing: .18em; }
+.aiStudioHead h2 { margin: 0; color: #251958; font-family: var(--inv-display, Georgia, serif); font-size: 25px; line-height: 1.1; }
+.aiStudioHead span, .aiIntro { display: block; margin: 7px 0 14px; color: #645e7c; font-size: 12px; line-height: 1.55; }
+.aiTabs { display: flex; gap: 7px; margin: 12px 0; }
+.aiTabs button, .aiSmallButton, .aiSceneTitle button { border: 1px solid #d8d3ed; border-radius: 999px; background: #fff; color: #302364; padding: 7px 10px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.aiTabs .aiTabOn { color: #fff; border-color: #302364; background: #302364; }
+.aiPhotoRow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0; font-size: 11px; color: #6c6680; }
+.aiPhotoPreview { display: block; width: 112px; height: 112px; object-fit: cover; border: 2px solid #fff; border-radius: 15px; box-shadow: 0 4px 12px rgba(31, 24, 68, .16); margin: 0 0 12px; }
+.aiScenes { display: grid; gap: 10px; margin: 14px 0 10px; }
+.aiCeremonyPicker { margin: 14px 0; padding: 12px; border: 1px solid #e0dbf1; border-radius: 14px; background: #fbfaff; }
+.aiCeremonyPicker strong { display: block; color: #302364; font-size: 12px; }
+.aiCeremonyPicker > span { display: block; margin: 3px 0 9px; color: #6c6680; font-size: 11px; }
+.aiCeremonyPicker > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.aiCeremonyPicker button { border: 1px solid #d8d3ed; border-radius: 999px; background: #fff; color: #302364; padding: 6px 9px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.aiCeremonyPicker button.aiCeremonyOn { border-color: #302364; background: #302364; color: #fff; }
+.aiScene { padding: 12px; border: 1px solid #e5e0f3; border-radius: 14px; background: rgba(255,255,255,.8); }
+.aiSceneTitle { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: #302364; font-size: 12px; }
+.aiSceneTitle button { padding: 4px 8px; color: #9d3b3b; border-color: #efcdcd; }
+.aiTwoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.aiStudio .label { margin-top: 9px; }
+.aiStudio .label > span { font-size: 11px; }
+.aiStudio .input { min-height: 34px; padding: 7px 9px; font-size: 12px; }
+.aiStudio textarea.input { resize: vertical; }
+.aiEstimate, .aiConfig, .aiConfirm { display: grid; gap: 5px; margin: 14px 0; padding: 11px 12px; border-radius: 12px; font-size: 11px; line-height: 1.45; }
+.aiEstimate { border: 1px solid #dbd5f1; background: #f1effb; color: #2c225e; }
+.aiEstimate span, .aiConfirm span { color: #6c6680; }
+.aiConfig { border: 1px solid #edd7a9; background: #fff7e2; color: #78520c; }
+.aiConfirm { border: 1px solid #d8d3ed; background: #fff; color: #2c225e; }
+.aiPrimary { width: 100%; margin-top: 6px; border: 0; border-radius: 999px; padding: 10px 14px; background: #302364; color: #fff; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.aiPrimary:disabled { opacity: .55; cursor: not-allowed; }
+.aiResult { display: grid; gap: 8px; margin-top: 14px; font-size: 12px; font-weight: 700; }
+.aiResult video { width: 100%; max-height: 420px; border-radius: 15px; background: #15123a; }
+.aiFinish { margin-top: 16px; padding: 14px; border: 1px solid #ddd8f0; border-radius: 16px; background: #fff; }
+.aiFinish h3 { margin: 0; color: #302364; font-size: 16px; }.aiFinish > p { margin: 4px 0 12px; color: #6c6680; font-size: 11px; }
+.aiFinishGrid { display: grid; grid-template-columns: minmax(130px, .75fr) minmax(190px, 1fr); gap: 12px; align-items: start; }
+.aiReelCanvas { width: 100%; aspect-ratio: 9 / 16; border-radius: 12px; background: #15123a; }.aiSourceVideo { display: none; }
+.aiPreviewActions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }.aiPreviewActions button { border: 1px solid #d8d3ed; border-radius: 999px; background: #f5f2ff; color: #302364; padding: 6px 8px; font: inherit; font-size: 10px; font-weight: 700; cursor: pointer; }
+.aiFinishControls { display: grid; gap: 8px; }.aiFinishControls label { display: grid; gap: 3px; color: #302364; font-size: 11px; font-weight: 700; }.aiFinishControls select,.aiFinishControls input { min-height: 32px; border: 1px solid #d8d3ed; border-radius: 8px; padding: 5px 7px; color: #302364; font: inherit; font-size: 11px; background: #fff; }.aiFinishControls small { color: #6c6680; font-size: 10px; line-height: 1.35; }.aiFinishControls > button:not(.aiPrimary) { justify-self: start; border: 0; background: transparent; color: #8f3b45; padding: 0; font: inherit; font-size: 11px; cursor: pointer; }
+.aiActiveScene { margin: 0; padding: 8px; border-radius: 8px; background: #f3f0fc; color: #544b75; font-size: 10px; line-height: 1.4; }
+.aiMusicUpload { min-height: 68px; padding: 10px; border: 1px dashed #8175b5; border-radius: 10px; background: #faf9ff; cursor: pointer; }.aiMusicUpload > span { color: #302364; }.aiMusicUpload input { position: absolute; width: 1px; height: 1px; opacity: 0; }.aiMusicUpload em { overflow: hidden; max-width: 100%; color: #6c6680; font-size: 10px; font-style: normal; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 520px) { .aiTwoCol,.aiFinishGrid { grid-template-columns: 1fr; } .aiStudio { padding: 14px; } .aiReelCanvas { max-width: 240px; } }
 .reset {
   padding: 8px 14px;
   border: 1px solid #e5503c;
