@@ -1,8 +1,8 @@
 import DemoGardenInvitation from "./DemoGardenInvitation";
 
 export const metadata = {
-  title: "Kunal & Aanchal — Wedding Invitation | EveryMoment",
-  description: "Kunal & Aanchal are getting married on 23 November 2026 at The Leela Palace, Udaipur.",
+  title: "Kabir & Aditi — Sample Wedding Invitation | EveryMoment",
+  description: "A sample EveryMoment wedding website for Kabir & Aditi, a fictional couple.",
 };
 
 export default function WeddingWebsiteGardenDemoPage() {

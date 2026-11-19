@@ -22,7 +22,7 @@ export async function serveWebsite(request, store) {
     let body;
     try { body = JSON.parse(text); } catch { return reply(400, { error: "Invalid website data." }); }
     const { slug, form, key } = body || {};
-    if (!validSlug(slug)) return reply(400, { error: "Use 3–60 small letters, numbers or dashes for the link, for example kunal-aanchal." });
+    if (!validSlug(slug)) return reply(400, { error: "Use 3–60 small letters, numbers or dashes for the link, for example kabir-aditi." });
     if (RESERVED.includes(slug)) return reply(409, { error: "This link is already taken. Pick another one." });
     if (!form || typeof form !== "object" || Array.isArray(form) || typeof form.groom !== "string") return reply(400, { error: "Invalid website data." });
     const raw = await store.get(slug);
