@@ -1,0 +1,140 @@
+/* Royal patrika — parchment between wooden rods, a marigold toran, a turning mandala and diyas beside each ceremony. */
+.wrap {
+  --gold: color-mix(in srgb, var(--pg-accent) 70%, #d8a63c);
+  --deep: color-mix(in srgb, var(--pg-button) 80%, #1a0606);
+  position: relative;
+  min-height: 100vh;
+  padding: 70px 10px 60px;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--pg-button) 55%, transparent), transparent 60%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 14px),
+    var(--deep);
+}
+
+/* marigold strings hanging along the top */
+.toran { position: absolute; inset: 0 0 auto; display: flex; justify-content: space-around; height: 120px; pointer-events: none; z-index: 2; }
+.toran i {
+  position: relative;
+  width: 14px;
+  height: var(--h, 70px);
+  background: radial-gradient(circle, #ffb31a 0 45%, #e46b0c 46% 60%, transparent 62%) 0 0 / 14px 14px repeat-y;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.35));
+  transform-origin: top center;
+  animation: sway 4.5s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * -0.6s);
+}
+.toran i::after { content: ""; position: absolute; left: 1px; bottom: -14px; width: 12px; height: 16px; border-radius: 50% 50% 50% 0; background: #3f7a2b; transform: rotate(-45deg); }
+@keyframes sway { to { transform: rotate(4deg); } }
+
+.scroll { position: relative; max-width: 620px; margin: 0 auto; filter: drop-shadow(0 30px 40px rgba(0, 0, 0, 0.5)); }
+.rod {
+  position: relative;
+  z-index: 3;
+  height: 26px;
+  margin: 0 -18px;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #8a5a2b, #4a2a10 55%, #2c1606);
+}
+.rod::before, .rod::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  width: 22px;
+  height: 40px;
+  border-radius: 10px;
+  background: radial-gradient(circle at 40% 35%, #f6d98a, var(--gold) 45%, #6e4c12);
+}
+.rod::before { left: -14px; }
+.rod::after { right: -14px; }
+.bottom { margin-top: -4px; }
+.paper {
+  position: relative;
+  margin-top: -4px;
+  padding: 40px 28px 50px;
+  color: color-mix(in srgb, var(--pg-ink) 85%, #2a160a);
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(120, 70, 20, 0.18), transparent 30%),
+    radial-gradient(ellipse at 50% 100%, rgba(120, 70, 20, 0.2), transparent 30%),
+    radial-gradient(circle at 15% 30%, rgba(160, 110, 40, 0.1), transparent 25%),
+    radial-gradient(circle at 85% 70%, rgba(160, 110, 40, 0.1), transparent 25%),
+    linear-gradient(90deg, #e7d2a6, #f8ecd0 8%, #fbf2dc 50%, #f8ecd0 92%, #e2c993);
+}
+.paper::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 2px solid var(--gold);
+  outline: 1px solid var(--gold);
+  outline-offset: 5px;
+  pointer-events: none;
+}
+.paper section { position: relative; padding: 34px 0; }
+.paper section + section::before { content: "❋"; display: block; margin: -34px auto 24px; font-size: 22px; color: var(--gold); }
+
+.hero { overflow: hidden; padding-top: 18px !important; }
+.mandala { position: absolute; left: 50%; top: 50%; width: 520px; max-width: 140%; translate: -50% -50%; color: var(--gold); opacity: 0.32; animation: spin 80s linear infinite; }
+@keyframes spin { to { rotate: 360deg; } }
+.blessing { position: relative; margin: 0 0 12px; font-size: 20px; color: var(--pg-button); }
+.invite { position: relative; margin: 0; font: 500 11px/1.6 var(--font-poppins), "Poppins", system-ui, sans-serif; font-style: normal; letter-spacing: 0.3em; text-transform: uppercase; }
+.names { position: relative; display: grid; margin: 14px 0 18px; font-family: var(--pg-names); font-weight: 400; font-size: clamp(56px, 15vw, 96px); line-height: 0.95; color: var(--pg-button); }
+.names small { margin: 4px 0; font-family: "Cinzel", var(--pg-serif); font-size: 15px; letter-spacing: 0.5em; color: var(--gold); }
+.parents { position: relative; display: grid; gap: 6px; font-size: 14px; font-style: italic; }
+.parents p { margin: 0; }
+.ribbon {
+  position: relative;
+  display: inline-grid;
+  gap: 2px;
+  margin-top: 22px;
+  padding: 12px 34px;
+  background: var(--pg-button);
+  color: #fff3d6;
+  clip-path: polygon(0 0, 100% 0, 94% 50%, 100% 100%, 0 100%, 6% 50%);
+  font: 500 11px/1.4 var(--font-poppins), "Poppins", system-ui, sans-serif;
+  font-style: normal;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.ribbon b { font-family: "Cinzel", var(--pg-serif); font-size: 19px; letter-spacing: 0.08em; }
+
+.ornament { display: block; margin-bottom: 8px; color: var(--gold); letter-spacing: 0.4em; }
+.welcome h2, .title { margin: 0 0 18px; font-family: var(--pg-script); font-weight: 400; font-size: clamp(36px, 9vw, 54px); line-height: 1.1; color: var(--pg-button); }
+.welcome p, .lead { margin: 0 auto; max-width: 42ch; font-size: 17px; line-height: 1.75; }
+
+.day h3 { display: flex; align-items: center; gap: 12px; margin: 22px 0 10px; font: 600 12px/1 var(--font-poppins), "Poppins", system-ui, sans-serif; font-style: normal; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
+.day h3::before, .day h3::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+.day ul { margin: 0; padding: 0; list-style: none; }
+.day li { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px; padding: 14px 6px; border-bottom: 1px dashed color-mix(in srgb, var(--gold) 55%, transparent); text-align: left; }
+.what { font-size: 19px; }
+.what em { display: block; font-size: 13px; opacity: 0.7; }
+.when { font-family: "Cinzel", var(--pg-serif); font-style: normal; font-size: 16px; color: var(--pg-button); text-align: right; }
+.when small { display: block; font: 500 9px/1 var(--font-poppins), "Poppins", system-ui, sans-serif; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.7; }
+/* a clay diya with a flickering flame */
+.diya { position: relative; justify-self: center; width: 30px; height: 12px; margin-top: 14px; border-radius: 0 0 16px 16px; background: linear-gradient(#b5651d, #6e3810); }
+.diya i { position: absolute; left: 50%; bottom: 10px; width: 9px; height: 16px; margin-left: -4.5px; border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%; background: radial-gradient(circle at 50% 75%, #fff6c8, #ffc23a 45%, #ff6a00 80%); box-shadow: 0 0 12px 4px rgba(255, 170, 40, 0.55); transform-origin: 50% 100%; animation: flicker 1.6s ease-in-out infinite alternate; }
+@keyframes flicker { 30% { transform: scale(1.05, 0.92) rotate(-3deg); } 60% { transform: scale(0.94, 1.08) rotate(2deg); } to { transform: scale(1.02) rotate(-1deg); } }
+
+.windows { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.window { display: grid; gap: 4px; padding: 18px 4px 12px; border: 2px solid var(--gold); border-radius: 999px 999px 10px 10px; background: color-mix(in srgb, var(--pg-button) 8%, transparent); }
+.window b { font-family: "Cinzel", var(--pg-serif); font-style: normal; font-size: clamp(26px, 7vw, 40px); line-height: 1; color: var(--pg-button); font-variant-numeric: tabular-nums; }
+.window span { font: 500 9px/1 var(--font-poppins), "Poppins", system-ui, sans-serif; font-style: normal; letter-spacing: 0.16em; text-transform: uppercase; }
+
+.frame { margin: 0 auto 18px; max-width: 420px; padding: 8px; border: 2px solid var(--gold); background: #fff8e6; }
+.frame img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+.venueName { margin: 0; font-family: "Cinzel", var(--pg-serif); font-style: normal; font-size: 22px; color: var(--pg-button); }
+.address { margin: 6px 0 18px; font-size: 15px; }
+.map { border: 2px solid var(--gold); }
+
+.notes { display: grid; gap: 16px; }
+@media (min-width: 560px) { .notes { grid-template-columns: 1fr 1fr; } }
+.notes article { padding: 22px 18px; border-radius: 50% 50% 14px 14px / 70px 70px 14px 14px; background: color-mix(in srgb, var(--pg-button) 7%, #fff8e6); border: 1px solid var(--gold); }
+.notes h3 { margin: 14px 0 8px; font-family: var(--pg-script); font-weight: 400; font-size: 30px; color: var(--pg-button); }
+.notes p { margin: 0; font-size: 15px; line-height: 1.65; }
+
+.rsvp .lead { margin-bottom: 22px; }
+
+.arch { overflow: hidden; width: min(280px, 80%); margin: 0 auto 18px; aspect-ratio: 3 / 4; border: 3px solid var(--gold); border-radius: 999px 999px 12px 12px; }
+.arch img, .arch video { width: 100%; height: 100%; object-fit: cover; }
+.closing h2 { margin: 0; font-family: var(--pg-script); font-weight: 400; font-size: 44px; color: var(--pg-button); }
+.sign { margin: 6px 0 0; font-family: "Cinzel", var(--pg-serif); font-style: normal; letter-spacing: 0.2em; text-transform: uppercase; }
+.tag { margin: 6px 0 0; font: 600 13px/1 var(--font-poppins), "Poppins", system-ui, sans-serif; color: var(--gold); }

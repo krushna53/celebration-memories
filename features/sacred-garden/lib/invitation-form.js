@@ -20,6 +20,10 @@ const CLOSING_LAYOUTS = [["", "Framed by flowers (design)"], ["bleed", "Full wid
 export const FORM_GROUPS = [
   { title: "Couple", fields: [["blessing", "God's name / blessing line (e.g. ॥ श्री कृष्णाय नमः ॥)"], ["groom", "Groom's name"], ["groomParents", "Line under the groom's name (optional, e.g. S/O Mrs. … and Mr. …)"], ["bride", "Bride's name"], ["brideParents", "Line under the bride's name (optional, e.g. D/O Mrs. … and Mr. …)"], ["date", "Wedding date & time", "datetime-local"], ["dateFormat", "Date style on the cover", "select", DATE_FORMATS],
     ["coverDate", "Date on the cover in your own words (optional, e.g. 23rd–24th Nov 2026)"], ["heroPhoto", "Photo shown faintly behind the names (optional)", "image"]] },
+  // only for the gallery designs (/wedding/webpages) that show a strip of photos or polaroids; empty = sample photos
+  { title: "Photo gallery", hint: "Up to four photos for the photo strip, polaroids and film frames of your design.", gallery: true, fields: [
+    ["galleryPhoto1", "Photo 1", "image"], ["galleryPhoto2", "Photo 2", "image"], ["galleryPhoto3", "Photo 3", "image"], ["galleryPhoto4", "Photo 4", "image"],
+  ] },
   { title: "Hashtag", hint: "Optional. Shown on the cover, the schedule, under RSVP, at the closing and in WhatsApp invites. Guests tap it to copy.", fields: [["hashtag", "Wedding hashtag (e.g. #KabirWedsAditi)"]] },
   { title: "Website link", hint: "Pick a link made from the names, or type your own. Publish puts your website there.", fields: [["slug", "Link", "slug"]] },
   { title: "Welcome", fields: [["welcomeTitle", "Welcome heading (one line each)", "textarea"], ["welcome", "Welcome message", "textarea"]] },
@@ -81,6 +85,10 @@ export const formDefaults = {
   brideParents: "",
   coverDate: "",
   heroPhoto: "",
+  galleryPhoto1: "",
+  galleryPhoto2: "",
+  galleryPhoto3: "",
+  galleryPhoto4: "",
   slug: "",
   hashtag: "", // empty for every new couple; the samples carry their own
   welcomeTitle: DEFAULT_WELCOME_TITLE,
@@ -214,5 +222,7 @@ export function buildInvitation(f) {
   const desktopVideo = f.introVideoDesktop || WIDE_FILMS[film] || film;
   const video = film || desktopVideo;
   // never letters drawn over a film by code: the envelope is shown only once Grok's film (or the couple's own video) is ready
-  return { ...c, envelope: { ...c.envelope, ...(video ? { video, desktopVideo } : {}), ready: Boolean(video), autoOpen: Number(f.autoOpen) || 0 }, autoScroll: f.autoScroll === "on" };
+  return { ...c, envelope: { ...c.envelope, ...(video ? { video, desktopVideo } : {}), ready: Boolean(video), autoOpen: Number(f.autoOpen) || 0 }, autoScroll: f.autoScroll === "on",
+    // the couple's own photos for the gallery designs' photo strips (empty = the design's sample photos)
+    gallery: [f.galleryPhoto1, f.galleryPhoto2, f.galleryPhoto3, f.galleryPhoto4].map((photo) => photo || "") };
 }

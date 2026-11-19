@@ -6,7 +6,7 @@
   z-index: 60;
   overflow: hidden;
   perspective: 2200px;
-  background: #2f3a26;
+  background: var(--opening-dark, #2f3a26);
   pointer-events: auto;
 }
 .gone { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.9s ease, visibility 0s linear 0.9s; }
@@ -16,7 +16,7 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 75% at 50% 50%, #fff8df 0%, #f1e4b8 35%, #7f8c66 80%);
+    radial-gradient(ellipse 60% 75% at 50% 50%, #fff8df 0%, var(--opening-page, #f1e4b8) 35%, var(--opening-main, #7f8c66) 80%);
   opacity: 0;
   transition: opacity 1.6s ease 0.5s;
 }
@@ -27,7 +27,7 @@
   top: 0;
   bottom: 0;
   width: 50.2%;
-  background: #7a8b6c url(/invite-art/wallpaper.svg) 0 0 / 120px 120px;
+  background: var(--opening-main, #7a8b6c) url(/invite-art/wallpaper.svg) 0 0 / 120px 120px;
   transition: transform 1.9s cubic-bezier(0.6, 0, 0.25, 1);
   will-change: transform;
 }
@@ -41,8 +41,8 @@
   transition: opacity 1.9s ease;
   pointer-events: none;
 }
-.left { left: 0; transform-origin: left center; box-shadow: inset -4px 0 0 #c9a95d, inset 0 0 70px rgba(25, 33, 18, 0.45); }
-.right { right: 0; transform-origin: right center; box-shadow: inset 4px 0 0 #c9a95d, inset 0 0 70px rgba(25, 33, 18, 0.45); }
+.left { left: 0; transform-origin: left center; box-shadow: inset -4px 0 0 var(--opening-accent, #c9a95d), inset 0 0 70px rgba(25, 33, 18, 0.45); }
+.right { right: 0; transform-origin: right center; box-shadow: inset 4px 0 0 var(--opening-accent, #c9a95d), inset 0 0 70px rgba(25, 33, 18, 0.45); }
 .right::before { background: linear-gradient(270deg, rgba(20, 28, 14, 0.5), rgba(20, 28, 14, 0.05)); }
 .opening .left { transform: rotateY(74deg); }
 .opening .right { transform: rotateY(-74deg); }

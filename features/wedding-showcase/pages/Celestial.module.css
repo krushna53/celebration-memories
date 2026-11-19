@@ -1,0 +1,79 @@
+/* "Written in the stars" — night sky, crescent moon, constellation, glass cards, progress rings, a moon-like closing photo. */
+.night {
+  --gold: color-mix(in srgb, var(--pg-accent) 45%, #f6e2a8);
+  --midnight: color-mix(in srgb, var(--pg-button) 45%, #05061a);
+  position: relative;
+  min-height: 100vh;
+  color: #eef0ff;
+  background: radial-gradient(ellipse at 70% 0%, color-mix(in srgb, var(--pg-accent) 40%, transparent), transparent 55%), linear-gradient(180deg, var(--midnight), #04040c 85%);
+}
+.sky { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.sky i { position: absolute; border-radius: 50%; background: #fff; box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.7); animation: twinkle 3.2s ease-in-out infinite alternate; }
+@keyframes twinkle { from { opacity: 0.2; transform: scale(0.6); } }
+.shooting { position: absolute; top: 12%; left: 70%; width: 140px; height: 2px; background: linear-gradient(90deg, #fff, transparent); border-radius: 2px; opacity: 0; transform: rotate(-24deg); animation: shoot 7s ease-in 2s infinite; }
+.late { top: 34%; left: 30%; animation-delay: 5.5s; animation-duration: 9s; }
+@keyframes shoot { 0% { opacity: 0; translate: 0 0; } 3% { opacity: 1; } 12% { opacity: 0; translate: -340px 150px; } 100% { opacity: 0; translate: -340px 150px; } }
+.night section { position: relative; z-index: 1; }
+
+.hero { display: grid; justify-items: center; align-content: center; min-height: 100svh; padding: 80px 20px; text-align: center; overflow: hidden; }
+.moon { position: absolute; top: 12%; right: 12%; width: 90px; height: 90px; border-radius: 50%; box-shadow: 18px -6px 0 0 var(--gold); filter: drop-shadow(0 0 22px color-mix(in srgb, var(--gold) 60%, transparent)); transform: rotate(-20deg); }
+.constellation { position: absolute; left: 50%; top: 50%; width: min(620px, 120vw); translate: -50% -50%; opacity: 0.55; }
+.constellation polyline { fill: none; stroke: var(--gold); stroke-width: 0.25; stroke-dasharray: 200; stroke-dashoffset: 200; animation: draw 4s ease-out 0.4s forwards; }
+.constellation circle { fill: #fff; animation: twinkle 2.4s ease-in-out infinite alternate; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.blessing { position: relative; margin: 0 0 12px; font-size: 18px; color: var(--gold); }
+.kicker { position: relative; margin: 0 0 10px; font: 600 11px/1.4 var(--font-poppins), "Poppins", system-ui, sans-serif; font-style: normal; letter-spacing: 0.34em; text-transform: uppercase; color: var(--gold); }
+.names { position: relative; display: grid; margin: 0; font-family: var(--pg-names); font-weight: 400; font-size: clamp(60px, 15vw, 120px); line-height: 0.95; color: #fff; text-shadow: 0 0 30px color-mix(in srgb, var(--gold) 55%, transparent); animation: glow 4s ease-in-out infinite alternate; }
+.names small { font-family: var(--pg-script); font-size: 0.45em; color: var(--gold); }
+@keyframes glow { to { text-shadow: 0 0 46px color-mix(in srgb, var(--gold) 85%, transparent); } }
+.date { position: relative; margin: 18px 0 0; font: 500 13px/1.6 var(--font-poppins), "Poppins", system-ui, sans-serif; font-style: normal; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.85; }
+
+.section { max-width: 900px; margin: 0 auto; padding: 60px 18px; }
+.title { margin: 0 0 24px; text-align: center; font-family: var(--pg-names); font-weight: 400; font-size: clamp(38px, 8vw, 58px); line-height: 1.05; color: var(--gold); }
+.glass { padding: 28px 24px; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 22px; background: rgba(255, 255, 255, 0.06); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 20px 50px -30px rgba(0, 0, 0, 0.8); }
+.text { margin: 0 auto; max-width: 44ch; font-size: 17px; line-height: 1.75; text-align: center; opacity: 0.9; }
+.parents { margin: 18px 0 0; font-size: 14px; font-style: italic; text-align: center; opacity: 0.75; }
+
+.rings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.ring { position: relative; display: grid; place-items: center; aspect-ratio: 1; }
+.ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.track, .fill { fill: none; stroke-width: 4; }
+.track { stroke: rgba(255, 255, 255, 0.1); }
+.fill { stroke: var(--gold); stroke-linecap: round; transition: stroke-dashoffset 0.9s cubic-bezier(0.19, 1, 0.22, 1); filter: drop-shadow(0 0 4px var(--gold)); }
+.ring b { margin-top: -10px; font-family: var(--pg-serif); font-style: normal; font-size: clamp(22px, 6vw, 40px); line-height: 1; font-variant-numeric: tabular-nums; }
+.ring span { position: absolute; bottom: 26%; font: 500 9px/1 var(--font-poppins), "Poppins", system-ui, sans-serif; font-style: normal; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.7; }
+
+.timeline { position: relative; display: grid; gap: 18px; }
+.timeline::before { content: ""; position: absolute; top: 0; bottom: 0; left: 18px; width: 1px; background: linear-gradient(180deg, transparent, var(--gold), transparent); }
+.day { margin: 22px 0 14px 46px; font: 700 12px/1 var(--font-poppins), "Poppins", system-ui, sans-serif; font-style: normal; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
+.event { position: relative; padding-left: 46px; margin-bottom: 16px; }
+.star { position: absolute; left: 8px; top: 22px; color: var(--gold); font-size: 22px; line-height: 1; text-shadow: 0 0 12px var(--gold); animation: twinkle 2.6s ease-in-out infinite alternate; }
+.event .glass { padding: 18px 20px; }
+.event h4 { margin: 2px 0 0; font-family: var(--pg-names); font-weight: 400; font-size: 30px; line-height: 1.1; }
+.time { margin: 0; font: 700 12px/1 var(--font-poppins), "Poppins", system-ui, sans-serif; font-style: normal; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.place { margin: 4px 0 0; font-size: 14px; opacity: 0.7; }
+@media (min-width: 760px) {
+  .timeline::before { left: 50%; }
+  .day { margin-left: 0; text-align: center; }
+  .event { width: 50%; padding: 0 40px 0 0; }
+  .event:nth-of-type(even) { margin-left: 50%; padding: 0 0 0 40px; }
+  .star { left: auto; right: -11px; }
+  .event:nth-of-type(even) .star { left: -11px; right: auto; }
+}
+
+.venue { display: grid; gap: 20px; align-items: center; text-align: left; }
+@media (min-width: 700px) { .venue { grid-template-columns: 1fr 1fr; } }
+.venue img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 14px; }
+.venue .text { margin: 0; text-align: left; }
+.venueName { margin: 0 0 8px; font-family: var(--pg-names); font-weight: 400; font-size: clamp(34px, 7vw, 46px); line-height: 1.05; color: #fff; }
+.map { margin-top: 20px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.16); }
+.map iframe { filter: invert(0.9) hue-rotate(180deg) saturate(0.7); }
+
+.pair { display: grid; gap: 18px; }
+@media (min-width: 700px) { .pair { grid-template-columns: 1fr 1fr; } }
+.pair .kicker { text-align: center; font-size: 22px; }
+.small { margin: 0 0 10px; text-align: center; font-family: var(--pg-names); font-weight: 400; font-size: 32px; color: var(--gold); }
+
+.closing { display: grid; justify-items: center; text-align: center; padding-bottom: 120px; }
+.orb { width: min(280px, 70vw); aspect-ratio: 1; margin-bottom: 26px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.06), 0 0 80px 10px color-mix(in srgb, var(--gold) 45%, transparent); }
+.orb img, .orb video { width: 100%; height: 100%; object-fit: cover; }

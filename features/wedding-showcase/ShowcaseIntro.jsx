@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import s from "./ShowcaseIntro.module.css";
 
 /*
@@ -50,10 +50,12 @@ function Layers({ variant }) {
   }
 }
 
-export default function ShowcaseIntro({ variant, colors = {}, monogram, names, kicker = "The wedding of", date, tapLabel = "Tap to open", onOpen, onDone }) {
+export default function ShowcaseIntro({ variant, colors = {}, monogram, names, kicker = "The wedding of", date, tapLabel = "Tap to open", thumb = false, play = false, onOpen, onDone }) {
   const [state, setState] = useState("closed"); // closed → opening → open
+  // thumbnails (thumb): open while `play` (the card is hovered), close again after
+  useEffect(() => { if (thumb) setState(play ? "opening" : "closed"); }, [thumb, play]);
   const open = () => {
-    if (state !== "closed") return;
+    if (thumb || state !== "closed") return;
     setState("opening");
     onOpen?.();
     window.setTimeout(() => { setState("open"); onDone?.(); }, OPEN_MS[variant] ?? 2400);

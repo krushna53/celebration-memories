@@ -15,5 +15,3 @@
 }
 .back:focus-visible { outline: 2px solid var(--inv-accent, #a67d2b); outline-offset: 3px; }
 .music { bottom: max(18px, env(safe-area-inset-bottom)); }
-/* the envelope film's wax seal in another colour (the cream paper barely changes) */
-.tint video, .tint canvas { filter: hue-rotate(var(--tint, 0deg)); }
