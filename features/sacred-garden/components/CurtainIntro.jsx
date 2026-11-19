@@ -13,7 +13,7 @@ export default function CurtainIntro({ monogram = "K & A", guestLine = "You're i
   const petals = useMemo(() => Array.from({ length: 22 }, (_, i) => {
     const a = (i / 22) * Math.PI * 2;
     const dist = 180 + (i % 4) * 70;
-    return { "--x": `${Math.cos(a) * dist}px`, "--y": `${Math.sin(a) * dist}px`, "--r": `${(i % 2 ? 1 : -1) * (120 + i * 17)}deg`, animationDelay: `${(i % 5) * 40}ms` };
+    return { "--x": `${Math.round(Math.cos(a) * dist)}px`, "--y": `${Math.round(Math.sin(a) * dist)}px`, "--r": `${(i % 2 ? 1 : -1) * (120 + i * 17)}deg`, animationDelay: `${(i % 5) * 40}ms` };
   }), []);
   const open = () => {
     if (state !== "closed") return;

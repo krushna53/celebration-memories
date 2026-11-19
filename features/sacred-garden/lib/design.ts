@@ -4,7 +4,7 @@ import { verifyMediaLink } from "@/lib/media-url";
 import { DEFAULT_EVENT_TIMEZONE, utcIsoToZonedInputValue } from "@/lib/timezone";
 import type { EventRecord } from "@/types/event";
 import { publicMediaUrl } from "@/services/uploads";
-import { FORM_GROUPS, formDefaults } from "@/features/sacred-garden/lib/invitation-form";
+import { FORM_GROUPS, formDefaults, sampleDefaults } from "@/features/sacred-garden/lib/invitation-form";
 
 /**
  * The Sacred Garden create-page design as it is kept on the event
@@ -93,7 +93,8 @@ export function designFormFor(event: EventRecord): Design {
   const named = event.honoreeName.trim() !== "New Event";
   const [groom = "", bride = ""] = named ? event.honoreeName.split(/\s*(?:&|\band\b)\s*/i).map((n) => n.trim()) : [];
   return {
-    ...(formDefaults as Design),
+    // no saved design yet (a fresh draft): the made-up sample couple's schedule and venue, not a real event's
+    ...((event.designConfig ? formDefaults : sampleDefaults) as Design),
     ...design,
     ...(groom ? { groom } : {}),
     ...(bride ? { bride } : {}),

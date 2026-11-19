@@ -18,9 +18,9 @@ const AUTO_SCROLL = [["", "Guests scroll themselves"], ["on", "Scroll gently thr
 const CLOSING_LAYOUTS = [["", "Framed by flowers (design)"], ["bleed", "Full width, no flowers"]];
 
 export const FORM_GROUPS = [
-  { title: "Couple", fields: [["blessing", "God's name / blessing line (e.g. ॥ श्री गणेशाय नमः ॥)"], ["groom", "Groom's name"], ["groomParents", "Line under the groom's name (optional, e.g. S/O Mrs. … and Mr. …)"], ["bride", "Bride's name"], ["brideParents", "Line under the bride's name (optional, e.g. D/O Mrs. … and Mr. …)"], ["date", "Wedding date & time", "datetime-local"], ["dateFormat", "Date style on the cover", "select", DATE_FORMATS],
+  { title: "Couple", fields: [["blessing", "God's name / blessing line (e.g. ॥ श्री कृष्णाय नमः ॥)"], ["groom", "Groom's name"], ["groomParents", "Line under the groom's name (optional, e.g. S/O Mrs. … and Mr. …)"], ["bride", "Bride's name"], ["brideParents", "Line under the bride's name (optional, e.g. D/O Mrs. … and Mr. …)"], ["date", "Wedding date & time", "datetime-local"], ["dateFormat", "Date style on the cover", "select", DATE_FORMATS],
     ["coverDate", "Date on the cover in your own words (optional, e.g. 23rd–24th Nov 2026)"], ["heroPhoto", "Photo shown faintly behind the names (optional)", "image"]] },
-  { title: "Hashtag", hint: "Optional. Shown on the cover, the schedule, under RSVP, at the closing and in WhatsApp invites. Guests tap it to copy.", fields: [["hashtag", "Wedding hashtag (e.g. #AaChalwithKunal)"]] },
+  { title: "Hashtag", hint: "Optional. Shown on the cover, the schedule, under RSVP, at the closing and in WhatsApp invites. Guests tap it to copy.", fields: [["hashtag", "Wedding hashtag (e.g. #KabirWedsAditi)"]] },
   { title: "Website link", hint: "Pick a link made from the names, or type your own. Publish puts your website there.", fields: [["slug", "Link", "slug"]] },
   { title: "Welcome", fields: [["welcomeTitle", "Welcome heading (one line each)", "textarea"], ["welcome", "Welcome message", "textarea"]] },
   { title: "Schedule of events", hint: "One per line: Time | Event | Location (optional) | Note (optional, e.g. Cocktail followed by Dinner). A line with only a day (e.g. Tuesday, 24th Nov) starts that day.", fields: [["program", "Schedule", "textarea"]] },
@@ -115,6 +115,28 @@ export const formDefaults = {
   ...colorFields(DEFAULT_COLORS),
 };
 
+/**
+ * What a new website starts with (the create page, its Reset, the ready-made samples and a fresh wizard draft):
+ * a made-up couple, schedule and venue. Kabir & Aditi keep the K & A envelope film.
+ * Live events fill their unsaved fields from formDefaults instead, so changing this never changes a real event.
+ */
+export const sampleDefaults = {
+  ...formDefaults,
+  blessing: "॥ श्री कृष्णाय नमः ॥",
+  groom: "Kabir",
+  bride: "Aditi",
+  date: "2027-02-13T18:30",
+  program: [
+    "Friday, 12th Feb", "4pm | Mehndi | Garden Courtyard", "8pm onwards | Sangeet | Grand Lawn",
+    "Saturday, 13th Feb", "11am onwards | Haldi | Poolside", "5pm onwards | Baraat | Main Gate", "6:30pm onwards | Pheras | Rose Mandap", "9pm onwards | Reception Dinner | Grand Lawn",
+  ].join("\n"),
+  venueName: "The Rosewood Garden — Sample Venue",
+  venueAddress: "Amer Road, Jaipur, Rajasthan",
+  venueMap: "Jaipur, Rajasthan",
+  dress: "Mehndi: greens and florals. Sangeet: anything that sparkles. Wedding: jewel tones — rani pink, emerald and gold.",
+  gifts: "Your blessings are the greatest gift we could ask for.",
+};
+
 /** "Kunal" → "kunal"; letters outside a–z are dropped (names in other scripts give ""). */
 const slugPart = (text) => String(text || "").normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
@@ -131,12 +153,12 @@ export const slugFor = (f) => slugPart(f.slug) || slugOptions(f)[0];
 
 export const SAMPLE_CLOSING_VIDEO = CLOSING_REEL;
 
-// Two ready-made websites from the sample (Kunal & Aanchal), at /wedding/sample-photo and /wedding/sample-video.
+// Two ready-made websites from the sample (Kabir & Aditi), at /wedding/sample-photo and /wedding/sample-video.
 // A 16:9 version of an envelope film for computers: the phone film widened to fill the screen, seal kept round.
 const WIDE_FILMS = { "/invite-art/sacred/envelope-k-a.mp4": "/invite-art/sacred/envelope-k-a-wide-full.mp4" };
 
 // Their envelope film already carries K & A (made once, the same way the create page makes it).
-const sampleSite = { ...formDefaults, hashtag: "#AaChalwithKunal" };
+const sampleSite = { ...sampleDefaults, hashtag: "#KabirWedsAditi" };
 export const SAMPLE_SITES = {
   "sample-photo": sampleSite,
   "sample-video": { ...sampleSite, closingVideo: CLOSING_REEL },
