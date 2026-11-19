@@ -52,15 +52,18 @@ const STATUS_LABELS: Record<RsvpStatus, string> = {
   pending: "No reply yet",
 };
 
-/** "2026-11-19T09:00:00Z" in the event's timezone → "2026-11-19 14:30", which Sheets reads as a date-time. */
+/**
+ * "2026-11-19T09:00:00Z" in the event's timezone → "19 Nov 2026 · 2:30 PM". Kept as text on purpose:
+ * IMPORTDATA turns anything that looks like a date into a bare serial number (46345.02) with no date format.
+ */
 function sheetDateTime(iso: string | null, timeZone: string): string {
   if (!iso) return "";
   const p = Object.fromEntries(
-    new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    new Intl.DateTimeFormat("en-GB", { timeZone, year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })
       .formatToParts(new Date(iso))
       .map((x) => [x.type, x.value]),
   );
-  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
+  return `${p.day} ${p.month} ${p.year} · ${p.hour}:${p.minute} ${String(p.dayPeriod).toUpperCase()}`;
 }
 
 type SheetRow = Record<string, string | number | null>;
