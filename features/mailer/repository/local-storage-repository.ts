@@ -9,7 +9,16 @@ import type {
   MailerTemplate,
   MailerTemplateInput,
 } from "@/types/mailer";
-import { normalizeRoles } from "@/types/mailer";
+import { AUTOMATION_KINDS, normalizeRoles, type AutomationRunResult, type AutomationSettings } from "@/types/mailer";
+import {
+  automationSettingsOf,
+  defaultAutomationContent,
+  isValidCalendarDate,
+  logEntryFor,
+  mergeLog,
+  planAutomations,
+  todayIn,
+} from "@/lib/mailer/automations";
 import { contactDisplayName, isValidEmail, normalizeEmail } from "@/lib/mailer/email";
 import { resolveAudience } from "@/lib/mailer/audience";
 import { createDemoData } from "@/lib/mailer/seed";
@@ -87,8 +96,12 @@ export class LocalStorageMailerRepository implements MailerRepository {
       try {
         const parsed: unknown = JSON.parse(raw);
         if (looksLikeMailerData(parsed)) {
-          // Contacts saved before roles existed have no `roles` field.
-          for (const c of parsed.contacts) c.roles = normalizeRoles(c.roles);
+          // Contacts saved before roles/dates existed have no such fields.
+          for (const c of parsed.contacts) {
+            c.roles = normalizeRoles(c.roles);
+            c.dateOfBirth ??= "";
+            c.joiningDate ??= "";
+          }
           return parsed;
         }
       } catch {
@@ -132,7 +145,15 @@ export class LocalStorageMailerRepository implements MailerRepository {
 
   // --- contacts -------------------------------------------------------
 
-  private cleanContact(input: MailerContactInput, data: MailerData, id?: string): MailerContactInput {
+  private cleanDate(value: unknown, label: string, notAfterToday: boolean): string {
+    const text = typeof value === "string" ? value.trim() : "";
+    if (!text) return "";
+    if (!isValidCalendarDate(text)) throw new MailerError(`${label} isn't a valid date.`);
+    if (notAfterToday && text > todayIn(this.clock())) throw new MailerError(`${label} can't be in the future.`);
+    return text;
+  }
+
+  private cleanContact(input: MailerContactInput, data: MailerData, id?: string): Omit<MailerContact, "id" | "createdAt" | "updatedAt"> {
     const email = normalizeEmail(input.email);
     if (!email) throw new MailerError("Please enter an email address.");
     if (!isValidEmail(email)) throw new MailerError(`"${input.email.trim()}" isn't a valid email address.`);
@@ -147,6 +168,8 @@ export class LocalStorageMailerRepository implements MailerRepository {
       phone: cleanText(input.phone, 40),
       eventIds: [...new Set(input.eventIds)].filter((e) => eventIds.has(e)),
       roles: normalizeRoles(input.roles),
+      dateOfBirth: this.cleanDate(input.dateOfBirth, "Date of birth", true),
+      joiningDate: this.cleanDate(input.joiningDate, "Joining date", false),
       subscribed: input.subscribed,
     };
   }
@@ -186,7 +209,7 @@ export class LocalStorageMailerRepository implements MailerRepository {
       const created: MailerContact[] = [];
       for (const input of inputs) {
         // Re-checked here too: the CSV analysis may be stale if contacts changed meanwhile.
-        let clean: MailerContactInput;
+        let clean: Omit<MailerContact, "id" | "createdAt" | "updatedAt">;
         try {
           clean = this.cleanContact(input, data);
         } catch {
@@ -359,6 +382,48 @@ export class LocalStorageMailerRepository implements MailerRepository {
 
   async listSenders() {
     return []; // mock mode never sends for real
+  }
+
+  // --- automations (birthdays, work anniversaries) ---------------------
+
+  async saveAutomationSettings(input: AutomationSettings): Promise<AutomationSettings> {
+    return this.update((data) => {
+      const current = automationSettingsOf(data);
+      const next: AutomationSettings = {
+        rules: { ...current.rules },
+        senderId: typeof input?.senderId === "string" && input.senderId ? input.senderId.slice(0, 64) : null,
+        senderName: typeof input?.senderName === "string" ? cleanText(input.senderName, 80) : "",
+      };
+      for (const { kind, label } of AUTOMATION_KINDS) {
+        const rule = input?.rules?.[kind];
+        if (!rule) continue;
+        const c = rule.content ?? defaultAutomationContent(kind);
+        const content = {
+          subject: cleanText(String(c.subject ?? ""), 200),
+          preheader: cleanText(String(c.preheader ?? ""), 200),
+          body: String(c.body ?? "").slice(0, 10_000),
+          ctaLabel: cleanText(String(c.ctaLabel ?? ""), 60),
+          ctaUrl: cleanText(String(c.ctaUrl ?? ""), 500),
+        };
+        if (rule.enabled && (!content.subject || !content.body.trim())) {
+          throw new MailerError(`${label}: add a subject and a message before turning it on.`);
+        }
+        next.rules[kind] = { enabled: Boolean(rule.enabled), content };
+      }
+      data.automations = next;
+      return structuredClone(next);
+    });
+  }
+
+  /** Mock mode: works out what would be sent today (or on `date`) and logs it as simulated — nothing is sent. */
+  async runAutomations(options?: { date?: string | null }): Promise<AutomationRunResult> {
+    return this.update((data) => {
+      const date = options?.date && isValidCalendarDate(options.date) ? options.date : todayIn(this.clock());
+      const at = this.now();
+      const entries = planAutomations(data, date).map((job) => logEntryFor(job, "simulated", null, at));
+      data.automationLog = mergeLog(data.automationLog, entries);
+      return { date, entries };
+    });
   }
 
   async resetDemoData(): Promise<void> {

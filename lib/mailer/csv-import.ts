@@ -2,6 +2,7 @@ import Papa from "papaparse";
 
 import { normalizeRoles, type MailerContactInput } from "@/types/mailer";
 import { isValidEmail, normalizeEmail } from "@/lib/mailer/email";
+import { normalizeDateInput } from "@/lib/mailer/automations";
 
 /**
  * CSV → contacts for the Mailer's import screen. Pure (no storage
@@ -21,6 +22,8 @@ const HEADER_ALIASES: Record<keyof ParsedRow, string[]> = {
   company: ["company", "organisation", "organization", "org", "companyname"],
   phone: ["phone", "mobile", "phonenumber", "phone_number", "whatsapp", "contactnumber"],
   roles: ["role", "roles", "contactrole", "contactroles"],
+  dateOfBirth: ["dob", "dateofbirth", "date_of_birth", "birthday", "birthdate", "birth_date"],
+  joiningDate: ["joiningdate", "joining_date", "dateofjoining", "date_of_joining", "doj", "joindate", "join_date", "startdate", "start_date"],
 };
 
 interface ParsedRow {
@@ -32,6 +35,9 @@ interface ParsedRow {
   phone: string;
   /** One cell, several roles: "Employee; Subscriber" (also , | / separators). Unknown roles are ignored. */
   roles: string;
+  /** Any of 2026-11-19, 19-11-2026, 19/11/2026 — unreadable dates are left empty (the row is still imported). */
+  dateOfBirth: string;
+  joiningDate: string;
 }
 
 export type ImportRowOutcome = "imported" | "invalid_email" | "missing_email" | "duplicate_in_file" | "duplicate_existing";
@@ -96,7 +102,7 @@ export function analyzeContactCsv(
   const rows: ImportRowReport[] = [];
 
   parsed.data.forEach((record, index) => {
-    const row: ParsedRow = { email: "", firstName: "", lastName: "", name: "", company: "", phone: "", roles: "" };
+    const row: ParsedRow = { email: "", firstName: "", lastName: "", name: "", company: "", phone: "", roles: "", dateOfBirth: "", joiningDate: "" };
     for (const [field, key] of mapping) row[key] = String(record[field] ?? "").trim();
 
     const line = index + 2;
@@ -127,6 +133,8 @@ export function analyzeContactCsv(
         phone: row.phone,
         eventIds: [...defaults.eventIds],
         roles: normalizeRoles([...row.roles.split(/[;,|/]/), ...(defaults.roles ?? [])]),
+        dateOfBirth: normalizeDateInput(row.dateOfBirth) ?? "",
+        joiningDate: normalizeDateInput(row.joiningDate) ?? "",
         subscribed: true,
       });
     }
@@ -144,7 +152,8 @@ export const IMPORT_OUTCOME_LABELS: Record<ImportRowOutcome, string> = {
 };
 
 /** A small file people can download to see the expected columns. */
-export const SAMPLE_CONTACTS_CSV = `First Name,Last Name,Email,Company,Phone,Roles
-Ananya,Iyer,ananya.iyer@globex.example,Globex Corp,+91 98200 11111,Client; Partner
-Rahul,Mehta,rahul.mehta@initech.example,Initech,+91 98200 22222,Employee; Subscriber
+export const SAMPLE_CONTACTS_CSV = `First Name,Last Name,Email,Company,Phone,Roles,Date of Birth,Joining Date
+Ananya,Iyer,ananya.iyer@globex.example,Globex Corp,+91 98200 11111,Client; Partner,,
+Rahul,Mehta,rahul.mehta@initech.example,Initech,+91 98200 22222,Employee; Subscriber,1994-08-21,2022-04-01
+Pooja,Nair,pooja.nair@initech.example,Initech,,HR; Employee,15/02/1990,01/06/2019
 `;

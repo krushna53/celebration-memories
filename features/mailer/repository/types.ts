@@ -1,4 +1,6 @@
 import type {
+  AutomationRunResult,
+  AutomationSettings,
   MailerCampaign,
   MailerCampaignInput,
   MailerContact,
@@ -62,6 +64,15 @@ export interface MailerRepository {
   sendCampaign(id: string, options?: { senderId?: string | null }): Promise<MailerCampaign>;
   /** Verified Email Configurations a live campaign can be sent from (always empty in mock mode). */
   listSenders(): Promise<MailerSender[]>;
+
+  /** Birthday / work-anniversary automations: which are on, their email content, and the sender. */
+  saveAutomationSettings(settings: AutomationSettings): Promise<AutomationSettings>;
+  /**
+   * Sends whatever is due today (or on `date`, for testing). Mock mode only
+   * logs it as simulated; live mode sends for real. Already-sent emails are
+   * never sent twice. A daily job does this automatically in live mode.
+   */
+  runAutomations(options?: { date?: string | null }): Promise<AutomationRunResult>;
 
   /** Mock mode only: wipe everything and restore the demo data. */
   resetDemoData(): Promise<void>;

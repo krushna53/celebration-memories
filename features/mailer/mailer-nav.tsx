@@ -12,6 +12,7 @@ export type MailerView =
   | { name: "contacts" }
   | { name: "lists" }
   | { name: "templates" }
+  | { name: "automations" }
   | { name: "campaign"; id: string }
   | { name: "editor"; id?: string; kind?: CampaignKind };
 

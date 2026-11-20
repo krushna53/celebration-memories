@@ -53,7 +53,7 @@ test('CSV import maps loose headers, splits names and reports every problem row'
   assert.equal(r.fatalError, null);
   assert.equal(r.totalRows, 5);
   assert.deepEqual(r.counts, { imported: 1, invalid_email: 1, missing_email: 1, duplicate_in_file: 1, duplicate_existing: 1 });
-  assert.deepEqual(r.toImport, [{ firstName: 'Asha', lastName: 'Patel', email: 'asha@new.example', company: 'New Co', phone: '123', eventIds: ['ev1'], roles: [], subscribed: true }]);
+  assert.deepEqual(r.toImport, [{ firstName: 'Asha', lastName: 'Patel', email: 'asha@new.example', company: 'New Co', phone: '123', eventIds: ['ev1'], roles: [], dateOfBirth: '', joiningDate: '', subscribed: true }]);
   assert.deepEqual(r.rows.map((x) => x.line), [2, 3, 4, 5, 6]);
   assert.match(analyzeContactCsv('Name,Phone\nA,1\n', [], { eventIds: [] }).fatalError, /No email column/);
   // Roles: several per cell, any case, unknown ones dropped, kept in display order.

@@ -5,7 +5,7 @@ import { SITE_URL } from "@/lib/constants";
 import { MailerError } from "@/features/mailer/repository/types";
 import type { MailerCallResult } from "@/features/mailer/repository/server-repository";
 import { configuredBackendName } from "@/services/mailer-email-config/backend";
-import { runMailerMethod, sendCampaignLive } from "@/services/mailer/live-mailer";
+import { runAutomationsLive, runMailerMethod, sendCampaignLive } from "@/services/mailer/live-mailer";
 
 /**
  * The one entry point both live-mode Server Actions share (the admin page's
@@ -15,7 +15,7 @@ import { runMailerMethod, sendCampaignLive } from "@/services/mailer/live-mailer
  */
 
 /** Where this app is reachable, for unsubscribe links: the real site in production, this dev server locally. */
-async function appOrigin(): Promise<string> {
+export async function appOrigin(): Promise<string> {
   if (process.env.NODE_ENV === "production") return SITE_URL.replace(/\/$/, "");
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
@@ -31,6 +31,9 @@ export async function handleMailerCall(tenantId: string, method: unknown, args: 
     if (typeof method !== "string" || !Array.isArray(args)) throw new MailerError("That request isn't valid.");
     if (method === "sendCampaign") {
       return { success: true, data: await sendCampaignLive(tenantId, args[0], args[1] ?? null, await appOrigin()) };
+    }
+    if (method === "runAutomations") {
+      return { success: true, data: await runAutomationsLive(tenantId, { date: args[0] ?? null, origin: await appOrigin() }) };
     }
     const data = await runMailerMethod(tenantId, method, args);
     return { success: true, data: data ?? null };

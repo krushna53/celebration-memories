@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { BarChart3, FlaskConical, LayoutDashboard, LayoutTemplate, ListChecks, Loader2, Mail, Plus, RotateCcw, Settings, Users } from "lucide-react";
+import { BarChart3, Cake, FlaskConical, LayoutDashboard, LayoutTemplate, ListChecks, Loader2, Mail, Plus, RotateCcw, Settings, Users } from "lucide-react";
 
 import type { MailerMode } from "@/lib/mailer/mode";
 import { cn } from "@/lib/utils";
@@ -17,9 +17,10 @@ import { AnalyticsView } from "@/features/mailer/components/analytics-view";
 import { ContactsView } from "@/features/mailer/components/contacts-view";
 import { ListsView } from "@/features/mailer/components/lists-view";
 import { TemplatesView } from "@/features/mailer/components/templates-view";
+import { AutomationsView } from "@/features/mailer/components/automations-view";
 import { ErrorText, Modal, primaryButton, secondaryButton } from "@/features/mailer/components/ui";
 
-type Section = "dashboard" | "campaigns" | "analytics" | "contacts" | "lists" | "templates";
+type Section = "dashboard" | "campaigns" | "analytics" | "contacts" | "lists" | "templates" | "automations";
 
 const SECTIONS: { id: Section; label: string; icon: LucideIcon; title: string; subtitle: string }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, title: "Dashboard", subtitle: "Here's how your email campaigns are doing." },
@@ -28,6 +29,7 @@ const SECTIONS: { id: Section; label: string; icon: LucideIcon; title: string; s
   { id: "contacts", label: "Contacts", icon: Users, title: "Contacts", subtitle: "Everyone you can email, linked to your events." },
   { id: "lists", label: "Lists", icon: ListChecks, title: "Lists", subtitle: "Groups of contacts to send to together." },
   { id: "templates", label: "Templates", icon: LayoutTemplate, title: "Templates", subtitle: "Reusable designs for each kind of email." },
+  { id: "automations", label: "Automations", icon: Cake, title: "Automations", subtitle: "Birthday greetings, HR reminders and work anniversaries — sent automatically." },
 ];
 
 const EMAIL_SETTINGS_HREF = "/admin/mailer/email-settings";
@@ -198,6 +200,7 @@ function MailerShell({ emailSettingsHref }: { emailSettingsHref: string }) {
             {view.name === "contacts" ? <ContactsView /> : null}
             {view.name === "lists" ? <ListsView /> : null}
             {view.name === "templates" ? <TemplatesView /> : null}
+            {view.name === "automations" ? <AutomationsView /> : null}
             {view.name === "campaign" ? <CampaignDetail key={view.id} id={view.id} /> : null}
             {view.name === "editor" ? <CampaignEditor key={view.id ?? `new-${view.kind}`} id={view.id} kind={view.kind} /> : null}
           </main>

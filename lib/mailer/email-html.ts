@@ -1,4 +1,4 @@
-import type { CampaignKind, MailerEmailContent } from "@/types/mailer";
+import type { AutomationKind, CampaignKind, MailerEmailContent } from "@/types/mailer";
 import { escapeHtml, renderTokens, type TokenValues } from "@/lib/mailer/tokens";
 
 /**
@@ -24,7 +24,10 @@ interface Theme {
   eyebrow: string;
 }
 
-const THEMES: Record<CampaignKind, Theme> = {
+/** Campaign types plus the automatic birthday/anniversary emails. */
+export type EmailTheme = CampaignKind | AutomationKind;
+
+const THEMES: Record<EmailTheme, Theme> = {
   diwali: {
     headerBg: "#5b1a1a",
     headerText: "#ffd27a",
@@ -69,6 +72,39 @@ const THEMES: Record<CampaignKind, Theme> = {
     ornament: "📣",
     eyebrow: "Announcement",
   },
+  birthday: {
+    headerBg: "#be185d",
+    headerText: "#ffffff",
+    accent: "#db2777",
+    pageBg: "#fdf2f8",
+    cardBg: "#ffffff",
+    text: "#3b0a24",
+    muted: "#8a5a72",
+    ornament: "🎂 🎈 🎉",
+    eyebrow: "Happy Birthday",
+  },
+  hr_birthday_reminder: {
+    headerBg: "#1e1b4b",
+    headerText: "#ffffff",
+    accent: "#ff6b57",
+    pageBg: "#eef0f8",
+    cardBg: "#ffffff",
+    text: "#1e1b4b",
+    muted: "#6b6a8a",
+    ornament: "🔔",
+    eyebrow: "Birthday reminder",
+  },
+  work_anniversary: {
+    headerBg: "#0f766e",
+    headerText: "#ecfeff",
+    accent: "#0d9488",
+    pageBg: "#effaf8",
+    cardBg: "#ffffff",
+    text: "#123b37",
+    muted: "#5b7d78",
+    ornament: "🎉 🏆 🎉",
+    eyebrow: "Work Anniversary",
+  },
 };
 
 /** Only http(s) links become a button — anything else (javascript:, data:, typos) is dropped. */
@@ -103,7 +139,7 @@ export interface RenderedEmail {
 }
 
 export function renderEmail(
-  kind: CampaignKind,
+  kind: EmailTheme,
   content: MailerEmailContent,
   values: TokenValues,
   /** The recipient's own unsubscribe link (live sends); previews leave it out. */

@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { Monitor, Smartphone } from "lucide-react";
 
-import type { CampaignKind, MailerContact, MailerEmailContent, MailerEvent } from "@/types/mailer";
-import { renderEmail } from "@/lib/mailer/email-html";
+import type { MailerContact, MailerEmailContent, MailerEvent } from "@/types/mailer";
+import { renderEmail, type EmailTheme } from "@/lib/mailer/email-html";
 import { sampleTokenValues, tokenValuesFor } from "@/lib/mailer/tokens";
 import { contactDisplayName } from "@/lib/mailer/email";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ export function EmailPreview({
   event,
   contacts,
 }: {
-  kind: CampaignKind;
+  kind: EmailTheme;
   content: MailerEmailContent;
   senderName: string;
   event: MailerEvent | null;

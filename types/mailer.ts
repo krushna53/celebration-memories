@@ -18,6 +18,7 @@ export interface MailerEvent {
 export type ContactRole =
   | "admin"
   | "manager"
+  | "hr"
   | "employee"
   | "customer"
   | "client"
@@ -31,6 +32,7 @@ export type ContactRole =
 export const CONTACT_ROLES: readonly { role: ContactRole; label: string; description: string }[] = [
   { role: "admin", label: "Admin", description: "Manages the system" },
   { role: "manager", label: "Manager", description: "Manages a team" },
+  { role: "hr", label: "HR", description: "Human resources — gets birthday reminders" },
   { role: "employee", label: "Employee", description: "Company employee" },
   { role: "customer", label: "Customer", description: "Customer" },
   { role: "client", label: "Client", description: "Business client" },
@@ -58,6 +60,10 @@ export interface MailerContact {
   eventIds: string[];
   /** Zero or more roles (CONTACT_ROLES). Contacts saved before roles existed are read back with []. */
   roles: ContactRole[];
+  /** Calendar date YYYY-MM-DD, or "" when unknown — drives the birthday automations. */
+  dateOfBirth: string;
+  /** Calendar date YYYY-MM-DD, or "" when unknown — drives work-anniversary emails. */
+  joiningDate: string;
   /** Unsubscribed contacts stay in the address book but are never sent to. */
   subscribed: boolean;
   createdAt: string;
@@ -67,7 +73,8 @@ export interface MailerContact {
 export type MailerContactInput = Pick<
   MailerContact,
   "firstName" | "lastName" | "email" | "company" | "phone" | "eventIds" | "roles" | "subscribed"
->;
+> &
+  Partial<Pick<MailerContact, "dateOfBirth" | "joiningDate">>;
 
 export interface MailerList {
   id: string;
@@ -188,6 +195,58 @@ export type MailerCampaignInput = Pick<
   | "ctaUrl"
 >;
 
+/**
+ * Automatic emails driven by contact dates (lib/mailer/automations.ts):
+ * - birthday: to the person, on their birthday
+ * - hr_birthday_reminder: to everyone with the HR role, the day before someone's birthday
+ * - work_anniversary: to the person, on each anniversary of their joining date (from year 1)
+ */
+export type AutomationKind = "birthday" | "hr_birthday_reminder" | "work_anniversary";
+
+export const AUTOMATION_KINDS: readonly { kind: AutomationKind; label: string; description: string }[] = [
+  { kind: "birthday", label: "Birthday greeting", description: "Sent to the person on their birthday." },
+  { kind: "hr_birthday_reminder", label: "HR birthday reminder", description: "Sent to everyone with the HR role the day before a birthday." },
+  { kind: "work_anniversary", label: "Work anniversary", description: "Sent to the person on each anniversary of their joining date." },
+];
+
+export interface AutomationRule {
+  enabled: boolean;
+  content: MailerEmailContent;
+}
+
+export interface AutomationSettings {
+  rules: Record<AutomationKind, AutomationRule>;
+  /** Live mode: the verified Email Configuration to send from (null = the default one). */
+  senderId: string | null;
+  /** Shown as {{sender_name}} and as the From name. */
+  senderName: string;
+}
+
+export type AutomationLogStatus = "sending" | "sent" | "failed" | "simulated";
+
+export interface AutomationLogEntry {
+  /** Unique per email, e.g. "birthday:<contactId>:2026" — a key that's already "sent" is never sent again. */
+  key: string;
+  kind: AutomationKind;
+  /** The person whose birthday/anniversary it is. */
+  contactId: string;
+  contactName: string;
+  /** Who the email went to (the person, or an HR contact). */
+  recipientEmail: string;
+  /** The day being celebrated, YYYY-MM-DD. */
+  occasionDate: string;
+  status: AutomationLogStatus;
+  error: string | null;
+  at: string;
+}
+
+export interface AutomationRunResult {
+  /** The day that was processed (YYYY-MM-DD, India time). */
+  date: string;
+  /** What this run did — empty when nothing was due. */
+  entries: AutomationLogEntry[];
+}
+
 /** Everything the Mailer stores, as one snapshot (the LocalStorage repository's on-disk shape). */
 export interface MailerData {
   version: 1;
@@ -196,4 +255,8 @@ export interface MailerData {
   lists: MailerList[];
   templates: MailerTemplate[];
   campaigns: MailerCampaign[];
+  /** Absent in data saved before automations existed — read back with defaults. */
+  automations?: AutomationSettings;
+  /** Newest first, capped (lib/mailer/automations.ts AUTOMATION_LOG_LIMIT). */
+  automationLog?: AutomationLogEntry[];
 }

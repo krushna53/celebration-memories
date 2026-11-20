@@ -1,7 +1,28 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 
-import type { CampaignRecipient, MailerContact, MailerData, MailerEvent, MailerSender } from "@/types/mailer";
+import type {
+  AutomationLogEntry,
+  AutomationRunResult,
+  CampaignRecipient,
+  MailerContact,
+  MailerData,
+  MailerEvent,
+  MailerSender,
+} from "@/types/mailer";
+import type { EmailConfigView } from "@/types/mailer-email-config";
+import {
+  applyAutomationTokens,
+  AUTOMATION_SEND_HOUR,
+  automationSettingsOf,
+  hourIn,
+  isValidCalendarDate,
+  logEntryFor,
+  mergeLog,
+  planAutomations,
+  todayIn,
+  type AutomationJob,
+} from "@/lib/mailer/automations";
 import { contactDisplayName } from "@/lib/mailer/email";
 import { resolveAudience } from "@/lib/mailer/audience";
 import { createDemoData } from "@/lib/mailer/seed";
@@ -113,6 +134,7 @@ const REPOSITORY_METHODS = new Set([
   "deleteTemplate",
   "saveCampaign",
   "deleteCampaign",
+  "saveAutomationSettings",
 ]);
 
 /** Runs one MailerRepository method against the company's Firestore data. */
@@ -149,6 +171,26 @@ export async function listSenders(tenantId: string): Promise<MailerSender[]> {
   return configs
     .filter((c) => canSendWith(c).ok)
     .map((c) => ({ id: c.id, label: c.label, senderName: c.senderName, fromEmail: c.fromEmail, isDefault: c.isDefault }));
+}
+
+/** The verified Email Configuration to send from: the one picked, else the default verified one. */
+async function resolveSender(tenantId: string, senderId: string | null | undefined): Promise<EmailConfigView> {
+  const configs = await guard(() => listEmailConfigs(tenantId));
+  const usable = configs.filter((c) => canSendWith(c).ok);
+  const config = senderId ? configs.find((c) => c.id === senderId) : (usable.find((c) => c.isDefault) ?? usable[0]);
+  if (!config) {
+    throw new MailerError(
+      senderId
+        ? "That email configuration doesn't exist."
+        : "There's no verified email configuration yet. Open Email Settings, test the connection and send a test email first.",
+    );
+  }
+  const allowed = canSendWith(config);
+  if (!allowed.ok) throw new MailerError(allowed.reason);
+  if (!createUnsubscribeToken(tenantId, "check")) {
+    throw new MailerError("Unsubscribe links need MAILER_CREDENTIAL_ENCRYPTION_KEY on the server.");
+  }
+  return config;
 }
 
 // --- live send ------------------------------------------------------------
@@ -203,21 +245,7 @@ export async function sendCampaignLive(tenantId: string, campaignId: unknown, se
   if (typeof campaignId !== "string" || !campaignId) throw new MailerError("That campaign no longer exists.");
   if (senderId !== null && senderId !== undefined && typeof senderId !== "string") throw new MailerError("Pick who the campaign is sent from.");
 
-  const configs = await guard(() => listEmailConfigs(tenantId));
-  const usable = configs.filter((c) => canSendWith(c).ok);
-  const config = senderId ? configs.find((c) => c.id === senderId) : (usable.find((c) => c.isDefault) ?? usable[0]);
-  if (!config) {
-    throw new MailerError(
-      senderId
-        ? "That email configuration doesn't exist."
-        : "There's no verified email configuration yet. Open Email Settings, test the connection and send a test email first.",
-    );
-  }
-  const allowed = canSendWith(config);
-  if (!allowed.ok) throw new MailerError(allowed.reason);
-  if (!createUnsubscribeToken(tenantId, "check")) {
-    throw new MailerError("Unsubscribe links need MAILER_CREDENTIAL_ENCRYPTION_KEY on the server.");
-  }
+  const config = await resolveSender(tenantId, senderId);
 
   const claim = await guard(() =>
     withMailerData(tenantId, (data) => {
@@ -302,6 +330,114 @@ export async function sendCampaignLive(tenantId: string, campaignId: unknown, se
   }
 
   return saveProgress(tenantId, campaign.id, outcomes, true);
+}
+
+// --- birthday / work-anniversary automations --------------------------------
+
+/**
+ * Sends the automatic emails due on `date` (default: today, India time)
+ * for one company. Jobs are claimed first (logged as "sending" in one
+ * transaction), so overlapping runs — the daily job and a "Run now" click —
+ * can't send the same email twice. Failed ones are retried on the next run.
+ */
+export async function runAutomationsLive(tenantId: string, options: { date?: unknown; origin: string }): Promise<AutomationRunResult> {
+  const date = typeof options.date === "string" && isValidCalendarDate(options.date) ? options.date : todayIn(Date.now());
+
+  const claim = await guard(() =>
+    withMailerData(
+      tenantId,
+      (data) => {
+        const settings = automationSettingsOf(data);
+        const jobs = planAutomations(data, date);
+        if (jobs.length) {
+          const at = new Date().toISOString();
+          data.automationLog = mergeLog(data.automationLog, jobs.map((j) => logEntryFor(j, "sending", null, at)));
+        }
+        return { settings, jobs: structuredClone(jobs) as AutomationJob[] };
+      },
+      { create: false },
+    ),
+  );
+  const { settings, jobs } = claim;
+  if (jobs.length === 0) return { date, entries: [] };
+
+  const results: AutomationLogEntry[] = [];
+  const finish = async () => {
+    await guard(() => withMailerData(tenantId, (data) => void (data.automationLog = mergeLog(data.automationLog, results)), { create: false }));
+    return { date, entries: results };
+  };
+  const failAll = (message: string) => {
+    const at = new Date().toISOString();
+    for (const job of jobs) results.push(logEntryFor(job, "failed", message, at));
+  };
+
+  let config: EmailConfigView;
+  try {
+    config = await resolveSender(tenantId, settings.senderId);
+  } catch (err) {
+    failAll(err instanceof MailerError ? err.message : "Couldn't pick the email configuration to send from.");
+    return finish();
+  }
+
+  let loaded: ConfigTransport | null = null;
+  try {
+    try {
+      loaded = await loadTransportForConfig(tenantId, config.id);
+    } catch (err) {
+      failAll(err instanceof EmailDeliveryError || err instanceof EmailConfigError ? err.message : "Couldn't connect to your email server.");
+      return await finish();
+    }
+    const fromName = settings.senderName.trim() || config.senderName;
+    for (const [i, job] of jobs.entries()) {
+      const token = createUnsubscribeToken(tenantId, job.recipient.id)!;
+      const unsubscribeUrl = `${options.origin}/mailer/unsubscribe?t=${encodeURIComponent(token)}`;
+      const content = applyAutomationTokens(settings.rules[job.kind].content, job.tokens);
+      const rendered = renderEmail(job.kind, content, tokenValuesFor(job.recipient, null, fromName), { unsubscribeUrl });
+      const outcome = await sendOne(loaded.transport, {
+        from: { name: fromName, address: config.fromEmail },
+        replyTo: config.replyToEmail ? { name: config.replyToName, address: config.replyToEmail } : null,
+        to: job.recipient.email,
+        subject: rendered.subject,
+        html: rendered.html,
+        text: rendered.text,
+        headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` },
+      });
+      results.push(logEntryFor(job, outcome.status === "sent" ? "sent" : "failed", outcome.error, new Date().toISOString()));
+      if (i + 1 < jobs.length) await sleep(SEND_GAP_MS);
+    }
+  } finally {
+    loaded?.transport.close();
+  }
+  return finish();
+}
+
+/**
+ * The daily job (app/api/cron/mailer-automations): every company with an
+ * automation switched on, once it's past AUTOMATION_SEND_HOUR in India.
+ * Safe to call as often as you like — already-sent emails are skipped.
+ */
+export async function runAutomationsForAllTenants(origin: string, nowMs = Date.now()) {
+  if (hourIn(nowMs) < AUTOMATION_SEND_HOUR) return { ran: false as const, reason: `waiting until ${AUTOMATION_SEND_HOUR}:00 India time`, tenants: 0, sent: 0, failed: 0 };
+  const refs = await mailerFirestore().collection("mailerTenants").listDocuments();
+  let tenants = 0;
+  let sent = 0;
+  let failed = 0;
+  for (const ref of refs) {
+    try {
+      const snap = await dataRef(ref.id).get();
+      if (!snap.exists) continue;
+      const settings = automationSettingsOf(parseData(snap.get("json")));
+      if (!Object.values(settings.rules).some((r) => r.enabled)) continue;
+      tenants += 1;
+      const result = await runAutomationsLive(ref.id, { origin });
+      sent += result.entries.filter((e) => e.status === "sent").length;
+      failed += result.entries.filter((e) => e.status === "failed").length;
+    } catch (err) {
+      // One company's problem mustn't stop the others.
+      console.error("[mailer] automations failed for a tenant", { name: (err as Error)?.name });
+    }
+  }
+  return { ran: true as const, reason: null, tenants, sent, failed };
 }
 
 // --- unsubscribe ----------------------------------------------------------

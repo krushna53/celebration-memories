@@ -1,4 +1,4 @@
-import type { MailerCampaign, MailerContact, MailerData, MailerEvent, MailerList, MailerSender, MailerTemplate } from "@/types/mailer";
+import type { AutomationRunResult, AutomationSettings, MailerCampaign, MailerContact, MailerData, MailerEvent, MailerList, MailerSender, MailerTemplate } from "@/types/mailer";
 import { MailerError, type MailerRepository } from "@/features/mailer/repository/types";
 
 /**
@@ -35,6 +35,8 @@ export class ServerMailerRepository implements MailerRepository {
   deleteCampaign = (id: string) => this.invoke<void>("deleteCampaign", id);
   sendCampaign = (id: string, options?: { senderId?: string | null }) => this.invoke<MailerCampaign>("sendCampaign", id, options?.senderId ?? null);
   listSenders = () => this.invoke<MailerSender[]>("listSenders");
+  saveAutomationSettings = (settings: unknown) => this.invoke<AutomationSettings>("saveAutomationSettings", settings);
+  runAutomations = (options?: { date?: string | null }) => this.invoke<AutomationRunResult>("runAutomations", options?.date ?? null);
   resetDemoData = async () => {
     throw new MailerError("Demo data is only available in mock mode.");
   };

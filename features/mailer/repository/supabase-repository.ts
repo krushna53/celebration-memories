@@ -34,5 +34,7 @@ export class SupabaseMailerRepository implements MailerRepository {
   deleteCampaign = async () => notReady();
   sendCampaign = async () => notReady();
   listSenders = async () => notReady();
+  saveAutomationSettings = async () => notReady();
+  runAutomations = async () => notReady();
   resetDemoData = async () => notReady();
 }

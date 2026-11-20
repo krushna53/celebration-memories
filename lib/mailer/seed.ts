@@ -9,6 +9,7 @@ import type {
 } from "@/types/mailer";
 import { contactDisplayName } from "@/lib/mailer/email";
 import { simulateSend } from "@/lib/mailer/simulate";
+import { addDays, todayIn } from "@/lib/mailer/automations";
 
 /**
  * Demo data for mock mode. The events here stand in for EveryMoment
@@ -69,8 +70,21 @@ const DEMO_ROLES: ContactRole[][] = [
   ["client", "subscriber"],
   ["guest"],
   ["subscriber"],
-  ["employee", "member"],
+  ["hr", "employee"],
 ];
+
+/**
+ * Demo birthdays and joining dates, as [days from today, year] — relative to
+ * "today" so the automations always have something to show: a birthday
+ * today, one tomorrow (HR reminder), a work anniversary today, and a few
+ * coming up. Indexes match DEMO_PEOPLE.
+ */
+const DEMO_BIRTHDAYS: Record<number, [number, number]> = { 0: [0, 1992], 1: [1, 1990], 4: [10, 1995], 7: [21, 1988], 13: [40, 1991] };
+const DEMO_JOINING: Record<number, [number, number]> = { 0: [-200, 2021], 2: [0, 2023], 3: [5, 2024], 4: [-30, 2025], 13: [-90, 2019] };
+
+function demoDate(today: string, [offset, year]: [number, number]): string {
+  return `${year}${addDays(today, offset).slice(4)}`.replace(/-02-29$/, "-02-28");
+}
 
 export const BUILT_IN_TEMPLATE_IDS = {
   diwali: "tpl-diwali",
@@ -139,6 +153,7 @@ function demoTemplates(now: string): MailerTemplate[] {
 export function createDemoData(options: { now?: number; newId?: () => string } = {}): MailerData {
   const nowMs = options.now ?? Date.now();
   const now = new Date(nowMs).toISOString();
+  const today = todayIn(nowMs);
   let counter = 0;
   const newId = options.newId ?? (() => `demo-${(counter += 1).toString().padStart(3, "0")}`);
 
@@ -151,6 +166,8 @@ export function createDemoData(options: { now?: number; newId?: () => string } =
     phone,
     eventIds,
     roles: [...(DEMO_ROLES[i] ?? [])],
+    dateOfBirth: DEMO_BIRTHDAYS[i] ? demoDate(today, DEMO_BIRTHDAYS[i]) : "",
+    joiningDate: DEMO_JOINING[i] ? demoDate(today, DEMO_JOINING[i]) : "",
     subscribed: true,
     createdAt: now,
     updatedAt: now,
