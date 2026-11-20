@@ -49,6 +49,7 @@ import {
   ClipboardCheck,
   ScanFace,
   LogIn,
+  Mail,
 } from "lucide-react";
 import type { EventSegment } from "@/lib/event-segment";
 
@@ -111,6 +112,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/timeline-movie", label: "AI Timeline Movie", icon: Wand2, group: "Create" },
   { href: "/admin/video-editor", label: "Video Editor", icon: Clapperboard, group: "Create" },
   { href: "/admin/domain-search", label: "Domain Search", icon: Globe, group: "Create" },
+  { href: "/admin/mailer", label: "Event Mailer", icon: Mail, group: "Create" },
   { href: "/admin/payment-settings-request", label: "My Payment Method", icon: Landmark, group: "Payments" },
   { href: "/admin/payment-settings-review", label: "Payment Approvals", icon: ShieldCheck, group: "Payments" },
   { href: "/admin/rsvp-payments", label: "RSVP Payments", icon: ReceiptText, group: "Payments" },
