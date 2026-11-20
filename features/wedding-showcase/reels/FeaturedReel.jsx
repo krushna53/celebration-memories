@@ -1,14 +1,9 @@
 "use client";
 import { useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
+import Link from "next/link";
 import { FEATURED_REEL } from "./reel-templates";
-import { startReelAction } from "../actions";
 import s from "./reels.module.css";
 
-function CreateReel() {
-  const { pending } = useFormStatus();
-  return <button type="submit" className={s.use} disabled={pending} aria-busy={pending}>{pending ? "Opening the reel studio…" : "Create your own reel ↗"}</button>;
-}
 
 /** The sample wedding reel in a phone frame: plays muted on its own, tap for sound; below it, make your own. */
 export default function FeaturedReel() {
@@ -34,10 +29,7 @@ export default function FeaturedReel() {
         <li>Your names, photos, ceremonies and music</li>
         <li>Ready for Instagram Reels, WhatsApp Status and YouTube Shorts</li>
       </ul>
-      <form action={startReelAction}>
-        <input type="hidden" name="reel" value={FEATURED_REEL.slug} />
-        <CreateReel />
-      </form>
+      <Link href={`/ai-reel?template=${FEATURED_REEL.slug}`} className={s.use}>Create your own reel ↗</Link>
     </div>
   </div>;
 }

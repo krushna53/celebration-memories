@@ -7,13 +7,14 @@ import { SEAL_TINTS, openingColors } from "./showcase-sites";
 import ShowcaseIntro from "./ShowcaseIntro";
 import EnvelopeIntro from "./EnvelopeIntro";
 import Opening, { OPENINGS } from "./openings/Opening";
+import RealOpening, { REAL_OPENINGS } from "./openings/RealOpening";
 import { photoFor } from "./pages/parts";
 
 const PAPER = ["pocket", "gatefold", "lasercut", "airmail"];
 const DRAWN = ["rise", "sheer", "swag", "double", "marigold", "pearls", "temple", "jali", "haveli", "glass"];
 
 /** Openings that can also be drawn as a small live thumbnail (the others get a static drawing on their card). */
-export const canThumb = (style) => PAPER.includes(style) || DRAWN.includes(style) || OPENINGS.includes(style);
+export const canThumb = (style) => PAPER.includes(style) || DRAWN.includes(style) || OPENINGS.includes(style) || REAL_OPENINGS.includes(style);
 
 /**
  * A sample's opening: its envelope, curtain or doors over the page (none for "none").
@@ -41,6 +42,7 @@ function OpeningFor({ site, c, onOpen, onDone, thumb = false, play = false }) {
   const style = site.style;
   if (style === "none") return null;
   if (PAPER.includes(style)) return <EnvelopeIntro variant={style} autoOpen={thumb ? 0 : c.envelope.autoOpen} {...shared} />;
+  if (REAL_OPENINGS.includes(style)) return <RealOpening variant={style} {...shared} />;
   if (OPENINGS.includes(style)) return <Opening variant={style} photo={photoFor(c, 1)} {...shared} />;
   if (DRAWN.includes(style)) return <ShowcaseIntro variant={style} {...shared} />;
   switch (style) {

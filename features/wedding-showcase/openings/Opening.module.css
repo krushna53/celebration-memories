@@ -292,3 +292,42 @@
 .opening .house, .opening .window, .opening .mandapBg, .opening .dusk, .opening .beach, .opening .night, .opening .satinGlow { opacity: 0; }
 .stage:not(.ribbon).opening { background: transparent; transition: background 0.5s ease 0.2s, opacity 0.6s ease 0.2s; }
 .opening .valance, .opening .proscenium, .opening .pillar, .opening .toranTop, .opening .rod, .opening .bamboo, .opening .fairy, .opening .bulbs { opacity: 0; transition: opacity 0.6s ease 0.9s; }
+
+/* ---------- realism: woven cloth with uneven folds and a moving sheen; drawn curtains gather at the sides ---------- */
+.stage { --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.stageCurtain::before, .drape::before, .lacePanel::before, .linen .cl::before, .linen .cr::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    var(--noise) 0 0 / 28cqmin,
+    linear-gradient(180deg, rgba(0, 0, 0, 0.28), transparent 14%, transparent 86%, rgba(0, 0, 0, 0.22)),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0, transparent 2.3cqw, rgba(255, 255, 255, 0.16) 4.1cqw, transparent 6cqw, rgba(0, 0, 0, 0.12) 9.7cqw),
+    repeating-linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.14) 5.3cqw, transparent 8.9cqw, rgba(255, 255, 255, 0.12) 13.1cqw, transparent 17cqw);
+  mix-blend-mode: soft-light;
+}
+.stageCurtain::after, .drape::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.22) 47%, rgba(255, 255, 255, 0.05) 53%, transparent 62%) 0 0 / 300% 100%;
+  mix-blend-mode: overlay;
+  animation: sheen 7s ease-in-out infinite alternate;
+}
+@keyframes sheen { from { background-position: 0 0; } to { background-position: 100% 0; } }
+/* the hem falls in soft waves where the folds meet the floor */
+.drape { -webkit-mask: linear-gradient(#000, #000) 0 0 / 100% calc(100% - 1.6cqh) no-repeat, radial-gradient(ellipse 50% 100% at 50% 0, #000 98%, transparent) 0 100% / 6.5cqw 1.8cqh repeat-x; mask: linear-gradient(#000, #000) 0 0 / 100% calc(100% - 1.6cqh) no-repeat, radial-gradient(ellipse 50% 100% at 50% 0, #000 98%, transparent) 0 100% / 6.5cqw 1.8cqh repeat-x; }
+.drape, .lacePanel, .linen .cl, .linen .cr { transition: transform 1.5s var(--ease) 0.1s, opacity 0.5s ease 1.25s; }
+.opening .satinL, .opening .satinR, .opening .lL, .opening .lR { transform: scaleX(0.14); opacity: 0; }
+.lL { transform-origin: left center; }
+.lR { transform-origin: right center; }
+.opening .linen .cl, .opening .linen .cr { transform: scaleX(0.22) skewY(var(--lean, -3deg)); opacity: 0; }
+.opening .linen .cr { --lean: 3deg; }
+/* stage curtain: gathers upward like a real fly curtain instead of sliding as one board */
+.opening .stageCurtain { transform: translateY(-62%) scaleY(0.35); transform-origin: top center; }
+.stageCurtain { transform-origin: top center; }
+
+/* paper: fibre and a soft key light on the ribbon envelope */
+.envBack::after, .envFront::after, .flap::after, .envelope .card::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: var(--noise) 0 0 / 22cqmin, linear-gradient(135deg, rgba(255, 255, 255, 0.35), transparent 45%, rgba(0, 0, 0, 0.14));
+  mix-blend-mode: soft-light;
+}
+.envFront::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, transparent 22%, rgba(70, 40, 10, 0.16) 30%, transparent 42%); }
+.envelope::after { content: ""; position: absolute; left: 4%; right: 4%; bottom: -7%; height: 9%; z-index: -1; border-radius: 50%; background: rgba(0, 0, 0, 0.45); filter: blur(2.4cqmin); }

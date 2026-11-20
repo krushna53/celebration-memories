@@ -4,6 +4,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { PLATFORM_NAV_LINKS } from "@/features/platform/platform-marketing-content";
 import { WeddingTabs } from "@/features/wedding-showcase/WeddingTabs";
 import FeaturedReel from "@/features/wedding-showcase/reels/FeaturedReel";
+import ReelGallery from "@/features/wedding-showcase/reels/ReelGallery";
 import { TEMPLATE_STORE_URL } from "@/features/wedding-showcase/reels/reel-templates";
 import { SITE_URL } from "@/lib/constants";
 
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/wedding/reels` },
 };
 
-/** The sample wedding reel, with a button to make your own in the AI reel studio. */
+/** The sample wedding reel and the animated reel templates, each opening the AI reel studio to edit or generate. */
 export default function WeddingReelsPage() {
   return (
     <SiteShell honoreeName="EveryMoment" navLinks={PLATFORM_NAV_LINKS} showLogin>
@@ -31,6 +32,8 @@ export default function WeddingReelsPage() {
           <WeddingTabs active="reels" />
 
           <FeaturedReel />
+
+          <ReelGallery />
 
           <div className="mt-16 rounded-3xl bg-navy-950 px-6 py-10 text-center text-ivory-50 sm:px-10">
             <h2 className="font-display text-2xl sm:text-3xl">Your story, in 15 seconds.</h2>

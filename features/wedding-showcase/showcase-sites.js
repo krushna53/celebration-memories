@@ -16,7 +16,9 @@ export const STYLES = {
   lasercut: ["envelope", "Laser-cut jali envelope over a gold liner"],
   airmail: ["envelope", "Airmail letter that turns over and opens"],
   ribbon: ["envelope", "Envelope tied with a silk ribbon and bow"],
+  waxenvelope: ["envelope", "Real paper envelope: the wax seal breaks and the card slides out"],
   velvet: ["curtain", "Silk drape you drag or tap open"],
+  stagevelvet: ["curtain", "Real velvet stage curtains that gather into folds"],
   theatre: ["curtain", "Theatre stage, spotlights and a marquee sign"],
   sunlit: ["curtain", "Chiffon blowing open in a sunlit window"],
   satin: ["curtain", "Blush satin drapes under swags of pearls"],
@@ -32,6 +34,7 @@ export const STYLES = {
   pearls: ["curtain", "Pearl strings that part"],
   petals: ["curtain", "Stage curtains with a burst of petals"],
   temple: ["doors", "Temple doors with bells and a toran"],
+  teakdoor: ["doors", "Real carved teak doors with brass knockers"],
   jali: ["doors", "Jali screens in a Mughal arch"],
   haveli: ["doors", "Arched haveli doors with brass studs"],
   glass: ["doors", "Frosted chapel doors"],
@@ -122,7 +125,7 @@ const RAW = [
   ["vihaan-ira", "Sapphire Gatefold, Auto-Play", "Sapphire gatefold flaps held by a gold seal swing open by themselves, then the page glides through every section.", "gatefold", {
     groom: "Vihaan", bride: "Ira", date: "2027-01-24T11:00", autoOpen: "2", autoScroll: "on", ...preset("Royal blue"), dateFormat: "day",
     hashtag: "#VihaanKiIra", venueName: "Haveli Sundaram — Sample Venue", venueAddress: "Civil Lines, Jaipur, Rajasthan", venueMap: "Jaipur, Rajasthan" }, { colors: { main: "#2f4a8a", dark: "#0c1530", trim: "#d9b45a", ink: "#2f3a6a" } }],
-  ["arjun-meher", "Laser-Cut Maroon Envelope", "A maroon laser-cut envelope with a gold seal: the flap lifts and the card rises onto a royal patrika scroll.", "lasercut", {
+  ["arjun-meher", "Wax-Sealed Maroon Envelope", "A real maroon paper envelope on a walnut table: the gold wax seal breaks, the flap lifts and the card slides out onto a royal patrika scroll.", "waxenvelope", {
     groom: "Arjun", bride: "Meher", date: "2027-11-27T20:00", ...preset("Maroon"), fontScript: "Great Vibes", fontBody: "Playfair Display",
     blessing: "ੴ ਸਤਿ ਨਾਮੁ", program: [[-1], ["11am", "Akhand Path & Kirtan"], ["3pm", "Mehendi"], ["7pm onwards", "Sangeet & Cocktails"], [0], ["9am", "Anand Karaj"], ["1pm", "Lunch"], ["8pm onwards", "Reception"]],
     venueName: "Golden Fields Estate — Sample Venue", venueAddress: "GT Road, Amritsar, Punjab", venueMap: "Amritsar, Punjab" }, { colors: { main: "#7a1424", dark: "#24050a", trim: "#d9a441", ink: "#5a1020" } }],
@@ -140,7 +143,7 @@ const RAW = [
   ["rohan-ishita", "Ivory Silk Drape", "A real draped silk curtain — guests drag it open or tap the plaque.", "velvet", {
     groom: "Rohan", bride: "Ishita", date: "2027-02-21T19:00", hashtag: "#RoIshTheKnot", heroPhoto: `${P}couple-moonlit-courtyard.webp`,
     venueName: "The Ivory Courtyard — Sample Venue", venueAddress: "MG Road, Pune, Maharashtra", venueMap: "Pune, Maharashtra" }],
-  ["aditya-nisha", "Theatre Marquee", "Spotlights sweep a crimson stage, the marquee sign flashes and the curtain flies up into a premiere night.", "theatre", {
+  ["aditya-nisha", "Velvet Stage Curtains", "Crimson velvet stage curtains under a fringed pelmet gather into deep folds at the sides, opening onto a premiere night.", "stagevelvet", {
     groom: "Aditya", bride: "Nisha", date: "2027-12-12T19:00", ...preset("Royal blue"), fontBody: "Cinzel", fontScript: "Pinyon Script",
     hashtag: "#AdiWedsNisha", venueName: "The Sapphire Ballroom — Sample Venue", venueAddress: "Marine Drive, Mumbai, Maharashtra", venueMap: "Marine Drive, Mumbai" }, { colors: { main: "#2f4a8a", dark: "#121f45", trim: "#e2c27a", ink: "#fff6e2" } }],
   ["vivaan-tara", "Sunlit Chiffon", "Peach chiffon blows open in a golden-hour window under fairy lights, a wooden sign swinging on ropes.", "sunlit", {
@@ -170,7 +173,7 @@ const RAW = [
     dressTitle: "Dress Code", dress: "Black tie / Indo-western glam.", fontBody: "Marcellus",
     venueName: "The Gilded Hall — Sample Venue", venueAddress: "Banjara Hills, Hyderabad, Telangana", venueMap: "Banjara Hills, Hyderabad" },
     { colors: { main: "#1b2a52", dark: "#070d1c", trim: "#d8b35d", ink: "#fff" } }],
-  ["siddharth-pooja", "Temple Doors", "Ivory-and-gold temple doors with brass bells and a mango-leaf toran swing open like a kasavu border.", "temple", {
+  ["siddharth-pooja", "Carved Teak Doors", "Carved teak doors with brass studs and ring knockers, oil lamps lit on either side, swing open onto a kasavu-gold page.", "teakdoor", {
     groom: "Siddharth", bride: "Pooja", date: "2027-02-27T18:30", ...preset("Sage"), heroPhoto: `${P}couple-tamil-jasmine.webp`,
     program: [[0], ["6am", "Muhurtham"], ["11am", "Wedding Lunch"], ["7pm onwards", "Reception"]],
     venueName: "Jasmine Mandapam — Sample Venue", venueAddress: "ECR, Chennai, Tamil Nadu", venueMap: "Chennai, Tamil Nadu", dressTitle: "Dress Code", dress: "Traditional silks — pastel and gold." }, { colors: { main: "#6b3a1e", dark: "#2e170a", trim: "#d9a441", ink: "#fff6e2" } }],

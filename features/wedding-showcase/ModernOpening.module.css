@@ -12,17 +12,18 @@
 .opening .tap { opacity:0; pointer-events:none; }
 
 /* Clean paper envelope. The flap opens first; the invitation rises only after it is visible. */
-.envelopeArt { position:relative; z-index:2; width:min(82vw,390px); aspect-ratio:1.42; filter:drop-shadow(0 24px 24px rgba(25,17,7,.24)); transform-style:preserve-3d; }
+.envelopeArt { position:relative; z-index:2; width:min(82vw,390px); aspect-ratio:1.42; filter:drop-shadow(0 28px 26px rgba(25,17,7,.32)); transform-style:preserve-3d; }
 .envelopeArt > i { position:absolute; display:block; }
 .envelopeBack { inset:0; z-index:1; background:color-mix(in srgb,var(--opening-main) 70%,var(--opening-dark)); border-radius:8px; }
-.envelopeArt .invitation { z-index:2; top:52%; width:84%; padding:24px 18px; transform-origin:center bottom; transition:translate 1s cubic-bezier(.4,0,.2,1) .55s,scale 1s cubic-bezier(.4,0,.2,1) .55s,opacity .3s ease 1.45s; }
+.envelopeArt .invitation { z-index:2; top:52%; width:84%; padding:24px 18px; opacity:0; scale:.88; transform-origin:center bottom; transition:translate 1s cubic-bezier(.4,0,.2,1) .55s,scale 1s cubic-bezier(.4,0,.2,1) .55s,opacity .3s ease .75s; }
 .envelopeFront { inset:0; z-index:4; border-radius:0 0 8px 8px; background:linear-gradient(155deg,color-mix(in srgb,var(--opening-main) 91%,#fff),var(--opening-main)); clip-path:polygon(0 30%,50% 64%,100% 30%,100% 100%,0 100%); }
+.envelopeFront::before { content:""; position:absolute; inset:14% 7% 5%; border:1px solid color-mix(in srgb,var(--opening-trim) 38%,transparent); clip-path:polygon(0 0,50% 50%,100% 0,100% 100%,0 100%); opacity:.76; }
 .flap { inset:0 0 auto; z-index:6; height:61%; background:linear-gradient(180deg,color-mix(in srgb,var(--opening-main) 94%,#fff),var(--opening-main)); clip-path:polygon(0 0,100% 0,50% 100%); transform-origin:top; transition:transform .7s cubic-bezier(.4,0,.2,1),z-index 0s .7s; }
 .seal,.gateSeal { z-index:7; display:grid!important; place-items:center; width:56px; height:56px; border-radius:50%; color:#fff8ed; background:radial-gradient(circle at 34% 28%,color-mix(in srgb,var(--opening-trim) 48%,#fff),var(--opening-trim) 55%,var(--opening-dark)); box-shadow:0 5px 12px rgba(25,17,7,.3); font:21px/1 var(--o-names,"Great Vibes"),cursive; transition:opacity .25s ease,transform .25s ease; }
 .seal { left:50%; top:58%; translate:-50% -50%; }
 .opening .flap { transform:rotateX(180deg); z-index:0; }
 .opening .seal { opacity:0; transform:scale(.6); }
-.opening .envelopeArt .invitation { translate:-50% -84%; scale:1.18; z-index:8; }
+.opening .envelopeArt .invitation { translate:-50% -84%; scale:1.18; opacity:1; z-index:8; }
 
 /* Soft, tailored curtains: panels physically pull sideways, rather than collapsing oddly. */
 .drapeArt { position:absolute; inset:0; z-index:2; overflow:hidden; }
@@ -31,11 +32,11 @@
 .curtain.left { left:0; transform-origin:left center; }
 .curtain.right { right:0; transform-origin:right center; box-shadow:inset 14px 0 22px rgba(0,0,0,.2); }
 .valance { position:absolute; z-index:6; inset:0 0 auto; height:12vh; min-height:58px; display:block; background:linear-gradient(180deg,var(--opening-dark),color-mix(in srgb,var(--opening-dark) 70%,var(--opening-main))); border-bottom:2px solid color-mix(in srgb,var(--opening-trim) 75%,transparent); transition:transform .7s ease .45s,opacity .5s ease .45s; }
-.drapeArt .invitation { transition:opacity .35s ease,transform .35s ease; }
+.drapeArt .invitation { opacity:0; transform:translate(-50%,-50%) scale(.94); transition:opacity .35s ease .65s,transform .35s ease .65s; }
 .opening .curtain.left { transform:translateX(-94%) skewY(3deg); }
 .opening .curtain.right { transform:translateX(94%) skewY(-3deg); }
 .opening .valance { transform:translateY(-115%); opacity:0; }
-.opening .drapeArt .invitation { opacity:0; transform:scale(.94); }
+.opening .drapeArt .invitation { opacity:1; transform:translate(-50%,-50%) scale(1); }
 
 /* A refined floral arch and two carved doors. The full door leaves rotate away from the centre. */
 .gateArt { position:absolute; inset:0; z-index:2; overflow:hidden; perspective:1200px; background:radial-gradient(circle at 50% 43%,color-mix(in srgb,var(--opening-main) 80%,#fff),var(--opening-main)); }
