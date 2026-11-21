@@ -29,6 +29,8 @@ const SPECS: Map<string, FieldSpec> = new Map(
 // set by the create page itself, not typed by the couple
 SPECS.set("envelopeFilm", { type: "url" });
 SPECS.set("envelopeLetters", { type: "text" });
+// the wedding gallery sample this design was started from (/wedding/webpages/<slug>): its opening and page design
+SPECS.set("showcase", { type: "showcase" });
 
 /** A site path ("/invite-art/…") or an https link — never data:, javascript: or a protocol-relative "//". */
 const isLink = (value: string) => /^https:\/\/[^\s]+$/i.test(value) || /^\/(?!\/)[^\s]*$/.test(value);
@@ -56,6 +58,7 @@ export function cleanDesign(input: unknown, eventId: string): Design {
     if (value.length > MAX_TEXT) throw new Error(`"${key}" is too long.`);
     if (spec.type === "select" && !spec.choices?.includes(value)) throw new Error(`Pick one of the choices for "${key}".`);
     if (spec.type === "color" && !/^#[0-9a-f]{6}$/i.test(value)) throw new Error(`"${key}" must be a colour like #b8925a.`);
+    if (spec.type === "showcase" && !/^[a-z0-9-]{0,60}$/.test(value)) throw new Error("Unknown website design.");
     if (["image", "video", "audio", "url"].includes(spec.type) && value) {
       const ref = REF.exec(value);
       if (ref) {

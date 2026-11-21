@@ -42,3 +42,21 @@ export async function envelopeStores() {
     },
   };
 }
+
+/** Short-lived xAI reel jobs. Local development uses files; production uses Netlify Blobs. */
+export async function aiReelStore() {
+  if (onNetlify()) {
+    const jobs = await blobs(`ai-reel-jobs-${process.env.CONTEXT || "production"}`);
+    return {
+      get: (key) => jobs.get(key, { type: "json" }),
+      set: (key, value) => jobs.setJSON(key, value),
+      claim: async (key, value) => (await jobs.setJSON(key, value, { onlyIfNew: true })).modified,
+    };
+  }
+  const dir = folder("ai-reels"), file = (key) => path.join(dir, `${key}.json`);
+  return {
+    get: async (key) => { const text = await readFile(file(key), "utf8").catch(missing); return text ? JSON.parse(text) : null; },
+    set: async (key, value) => { await mkdir(dir, { recursive: true }); await writeFile(file(key), JSON.stringify(value)); },
+    claim: async (key, value) => { await mkdir(dir, { recursive: true }); try { await writeFile(file(key), JSON.stringify(value), { flag: "wx" }); return true; } catch (error) { if (error.code === "EEXIST") return false; throw error; } },
+  };
+}

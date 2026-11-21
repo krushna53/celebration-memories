@@ -1,0 +1,20 @@
+/*
+ * The Google fonts a couple can pick for their wedding website (FONT_CHOICES in sacred-garden/lib/sacred-garden.js),
+ * served from /public/fonts/showcase (Latin subsets from Fontsource, SIL Open Font License — see OFL.txt there)
+ * so pages never wait on Google and builds never download them.
+ */
+@font-face { font-family: "Great Vibes"; src: url("/fonts/showcase/great-vibes-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Pinyon Script"; src: url("/fonts/showcase/pinyon-script-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Parisienne"; src: url("/fonts/showcase/parisienne-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Alex Brush"; src: url("/fonts/showcase/alex-brush-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Allura"; src: url("/fonts/showcase/allura-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Cormorant Garamond"; src: url("/fonts/showcase/cormorant-garamond-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Cormorant Garamond"; src: url("/fonts/showcase/cormorant-garamond-latin-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Cormorant Garamond"; src: url("/fonts/showcase/cormorant-garamond-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Playfair Display"; src: url("/fonts/showcase/playfair-display-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Playfair Display"; src: url("/fonts/showcase/playfair-display-latin-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Playfair Display"; src: url("/fonts/showcase/playfair-display-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Marcellus"; src: url("/fonts/showcase/marcellus-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Italiana"; src: url("/fonts/showcase/italiana-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Cinzel"; src: url("/fonts/showcase/cinzel-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Cinzel"; src: url("/fonts/showcase/cinzel-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }

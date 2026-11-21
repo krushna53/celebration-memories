@@ -1,0 +1,154 @@
+/* Card previews of each opening (OpeningThumb.tsx). --c cloth/paper, --s shade, --t gold, --bg page. Hover = .host:hover. */
+.host { --x: 0; }
+.thumb { position: absolute; inset: 0; overflow: hidden; background: var(--bg); perspective: 600px; }
+.thumb i, .thumb b { position: absolute; display: block; font-style: normal; transition: transform 0.8s cubic-bezier(0.6, 0, 0.3, 1), opacity 0.6s, clip-path 0.8s; }
+.l { left: 0; top: 0; bottom: 0; width: 50.5%; transform-origin: left center; }
+.r { right: 0; top: 0; bottom: 0; width: 50.5%; transform-origin: right center; }
+.wax { display: grid !important; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--t) 50%, #fff), var(--t) 50%, color-mix(in srgb, var(--t) 55%, #000)); color: #fff8e6; font: 17px/1 "Great Vibes", cursive; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); z-index: 3; white-space: nowrap; }
+.center { left: 50%; top: 42%; translate: -50% -50%; }
+
+/* film / seal: classic envelope */
+.film, .wax { background: #f5ecd9; }
+.envBody { inset: 18% 10% 30%; background: #ebdfc4; border-radius: 4px; box-shadow: 0 14px 24px -14px rgba(0, 0, 0, 0.5); }
+.envFlap { inset: 18% 10% 52%; background: #e1d1af; clip-path: polygon(0 0, 100% 0, 50% 100%); transform-origin: top; z-index: 2; }
+.film .wax, .wax .wax { left: 50%; top: 40%; translate: -50% -50%; background: radial-gradient(circle at 35% 30%, #c0394a, #8a1f2c 55%, #4a0d16); }
+.host:hover .envFlap { transform: rotateX(160deg); }
+.host:hover .film .wax, .host:hover .wax .wax { transform: scale(0.6); opacity: 0; }
+
+/* pocket */
+.pocket { background: color-mix(in srgb, var(--s) 85%, #000); }
+.pocketBack { inset: 12% 24% 26%; border-radius: 4px; background: color-mix(in srgb, var(--c) 80%, #000); }
+.pocketCard { inset: 15% 28% 30%; background: #fffdf6; border-radius: 3px; box-shadow: inset 0 0 0 4px #fffdf6, inset 0 0 0 5px var(--t); }
+.pocketFront { inset: 40% 24% 26%; background: var(--c); clip-path: polygon(0 24%, 50% 0, 100% 24%, 100% 100%, 0 100%); z-index: 2; }
+.band { left: 20%; right: 20%; top: 52%; height: 26px; background: linear-gradient(var(--t), color-mix(in srgb, var(--t) 70%, #000)); z-index: 3; }
+.bandSeal { left: 50%; top: calc(52% + 13px); translate: -50% -50%; width: 42px; height: 42px; font-size: 14px; z-index: 4; }
+.host:hover .pocketCard { transform: translateY(-34%); }
+.host:hover .band, .host:hover .bandSeal { transform: translateX(160%); opacity: 0; }
+
+/* gatefold */
+.gatefold { background: color-mix(in srgb, var(--s) 90%, #000); }
+.gateCard { inset: 10% 22% 24%; background: #fffdf6; border-radius: 4px; }
+.gate { top: 10% !important; bottom: 24% !important; width: 28% !important; background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.08) 0 4px, transparent 4px 8px), var(--c); box-shadow: inset 0 0 0 5px var(--c), inset 0 0 0 6px var(--t); z-index: 2; }
+.gate.l { left: 22%; }
+.gate.r { right: 22%; }
+.gatefold .center { top: 43%; }
+.host:hover .gate.l { transform: rotateY(-140deg); }
+.host:hover .gate.r { transform: rotateY(140deg); }
+.host:hover .gatefold .center { transform: scale(0.4); opacity: 0; }
+
+/* lasercut */
+.lasercut { background: color-mix(in srgb, var(--s) 90%, #000); }
+.laser { inset: 26% 8% 36%; border-radius: 4px; background: radial-gradient(circle, var(--t) 0 1.6px, transparent 2px) 0 0 / 10px 10px, repeating-conic-gradient(from 45deg, color-mix(in srgb, var(--t) 35%, transparent) 0 25%, transparent 0 50%) 0 0 / 20px 20px, var(--c); box-shadow: 0 14px 24px -12px rgba(0, 0, 0, 0.6); }
+.laserFlap { inset: 26% 8% 52%; background: color-mix(in srgb, var(--c) 80%, #000); clip-path: polygon(0 0, 100% 0, 50% 100%); transform-origin: top; z-index: 2; }
+.laserSeal { left: 50%; top: 47%; translate: -50% -50%; width: 40px; height: 40px; font-size: 13px; }
+.host:hover .laserFlap { transform: rotateX(170deg); background: var(--t); }
+.host:hover .laserSeal { opacity: 0; }
+
+/* airmail */
+.airmail { background: color-mix(in srgb, var(--s) 88%, #000); }
+.air { inset: 30% 8% 36%; border: 6px solid transparent; border-image: repeating-linear-gradient(45deg, #c8102e 0 6px, #fff 6px 12px, #1d4ea8 12px 18px, #fff 18px 24px) 6; background: #fbf6ea; transform: rotate(-4deg); }
+.stamp { right: 12%; top: 33%; width: 26px; height: 32px; background: var(--t); border: 2px dotted #e8e0cc; transform: rotate(-4deg); }
+.postmark { right: 22%; top: 37%; width: 34px; height: 34px; border: 2px solid rgba(29, 78, 168, 0.6); border-radius: 50%; transform: rotate(-4deg); }
+.lines { left: 18%; width: 40%; top: 50%; height: 16%; background: repeating-linear-gradient(180deg, transparent 0 7px, #b7b0a0 7px 8px); transform: rotate(-4deg); }
+.host:hover .air, .host:hover .stamp, .host:hover .postmark, .host:hover .lines { transform: rotate(3deg) translateY(-6px); }
+
+/* velvet: soft draped folds tied back */
+.velvetP { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--s) 70%, #000) 0 8%, var(--c) 14%, color-mix(in srgb, var(--c) 80%, #fff) 17%, var(--c) 20%, color-mix(in srgb, var(--s) 70%, #000) 26%); box-shadow: inset -12px 0 20px rgba(0, 0, 0, 0.35); }
+.velvetP.l { clip-path: polygon(0 0, 100% 0, 100% 100%, 72% 100%, 64% 62%, 0 60%); }
+.velvetP.r { clip-path: polygon(0 0, 100% 0, 100% 60%, 36% 62%, 28% 100%, 0 100%); box-shadow: inset 12px 0 20px rgba(0, 0, 0, 0.35); }
+.tassels { left: 0; right: 0; top: 58%; height: 10px; background: radial-gradient(circle at 18% 50%, var(--t) 0 5px, transparent 6px), radial-gradient(circle at 82% 50%, var(--t) 0 5px, transparent 6px); }
+.host:hover .velvetP.l { clip-path: polygon(0 0, 60% 0, 30% 100%, 20% 100%, 22% 62%, 0 60%); }
+.host:hover .velvetP.r { clip-path: polygon(40% 0, 100% 0, 100% 60%, 78% 62%, 80% 100%, 70% 100%); }
+
+/* rise: one theatre drape lifting, footlights */
+.drape { inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.3), transparent 25%), repeating-linear-gradient(90deg, var(--s) 0, var(--c) 3%, color-mix(in srgb, var(--c) 75%, #fff) 4.5%, var(--c) 6%, var(--s) 9%); transform-origin: top; }
+.drape::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: repeating-linear-gradient(90deg, var(--t) 0 3px, transparent 3px 6px); }
+.lights { left: 0; right: 0; bottom: 0; height: 18%; background: radial-gradient(ellipse at 50% 100%, rgba(255, 220, 140, 0.6), transparent 70%); z-index: 2; }
+.host:hover .drape { transform: translateY(-55%) scaleY(0.7); }
+
+/* sheer: layered chiffon + fairy lights */
+.thumb.sheer { background: color-mix(in srgb, var(--s) 70%, #000); }
+.sheerA { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 70%, transparent), color-mix(in srgb, var(--c) 30%, transparent)); }
+.sheerB { background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0 4px, transparent 4px 18px); }
+.sheerA.r, .sheerB.r { transform: scaleX(-1); transform-origin: center; }
+.fairy { left: 0; right: 0; top: 4%; height: 22%; background: radial-gradient(circle, #fff6c8 0 2px, rgba(255, 220, 120, 0.4) 3px, transparent 5px) 0 0 / 22px 18px; z-index: 2; }
+.host:hover .sheerA.l, .host:hover .sheerB.l { transform: translateX(-70%) skewY(4deg); opacity: 0.6; }
+.host:hover .sheerA.r, .host:hover .sheerB.r { transform: scaleX(-1) translateX(-70%) skewY(4deg); opacity: 0.6; }
+
+/* swag: drapes gathered into the corners under a pelmet */
+.swagP { background: repeating-linear-gradient(90deg, var(--s) 0 6%, var(--c) 14%, var(--s) 22%); }
+.swagP.l { clip-path: polygon(0 0, 100% 0, 60% 100%, 0 100%); }
+.swagP.r { clip-path: polygon(0 0, 100% 0, 100% 100%, 40% 100%); }
+.pelmet { left: 0; right: 0; top: 0; height: 16%; background: radial-gradient(ellipse at 50% 0, var(--c) 60%, transparent 62%) 0 0 / 33.3% 100%, var(--s); border-bottom: 3px solid var(--t); z-index: 2; }
+.host:hover .swagP.l { clip-path: polygon(0 0, 50% 0, 4% 70%, 0 72%); }
+.host:hover .swagP.r { clip-path: polygon(50% 0, 100% 0, 100% 72%, 96% 70%); }
+
+/* double: velvet over lace */
+.lace { background: radial-gradient(circle, rgba(255, 255, 255, 0.75) 0 1.5px, transparent 2px) 0 0 / 9px 9px, color-mix(in srgb, #fff 80%, var(--c)); }
+.outer { background: repeating-linear-gradient(90deg, var(--s) 0 7%, var(--c) 14%, var(--s) 21%); z-index: 2; box-shadow: inset 0 0 0 3px var(--t); }
+.host:hover .outer.l { transform: translateX(-85%); }
+.host:hover .outer.r { transform: translateX(85%); }
+.host:hover .lace.l { transform: translateX(-40%); opacity: 0.6; }
+.host:hover .lace.r { transform: translateX(40%); opacity: 0.6; }
+
+/* marigold / pearl strings */
+.backdrop { inset: 0; background: radial-gradient(circle at 50% 40%, var(--c), var(--s) 75%); }
+.string { top: 0; width: 10px; translate: -50% 0; background: radial-gradient(circle, #ffb31a 0 40%, #e46b0c 42% 58%, transparent 60%) 0 0 / 10px 10px repeat-y; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.3)); }
+.pearls .string { width: 8px; background: radial-gradient(circle at 40% 40%, #fff, #e6e1d6 50%, #b9b2a2 70%, transparent 72%) 0 0 / 8px 9px repeat-y; }
+.host:hover .string:nth-child(-n + 7) { transform: translateX(-160%) rotate(10deg); opacity: 0.5; }
+.host:hover .string:nth-child(n + 8) { transform: translateX(160%) rotate(-10deg); opacity: 0.5; }
+
+/* petals: stage curtains, valance and petals */
+.stage { background: repeating-linear-gradient(90deg, var(--s) 0 5%, var(--c) 10%, color-mix(in srgb, var(--c) 70%, #fff) 12%, var(--c) 14%, var(--s) 19%); }
+.valance { left: 0; right: 0; top: 0; height: 14%; background: radial-gradient(ellipse at 50% 0, var(--c) 62%, transparent 64%) 0 0 / 25% 100%, var(--s); border-bottom: 3px solid var(--t); z-index: 2; }
+.petals { inset: 0; z-index: 3; background: radial-gradient(ellipse 4px 6px at 20% 30%, #ff9fb4 98%, transparent), radial-gradient(ellipse 4px 6px at 70% 22%, #ffd0d9 98%, transparent), radial-gradient(ellipse 4px 6px at 48% 64%, #ff9fb4 98%, transparent), radial-gradient(ellipse 4px 6px at 84% 70%, #ffd0d9 98%, transparent), radial-gradient(ellipse 4px 6px at 12% 80%, #ff9fb4 98%, transparent); opacity: 0; }
+.host:hover .stage.l { transform: translateX(-80%) skewX(-6deg); }
+.host:hover .stage.r { transform: translateX(80%) skewX(6deg); }
+.host:hover .petals { opacity: 1; transform: scale(1.15); }
+
+/* temple doors */
+.templeFrame { inset: 0; background: repeating-linear-gradient(0deg, color-mix(in srgb, var(--s) 80%, #000) 0 12px, var(--s) 12px 24px); }
+.templeDoor { top: 12% !important; bottom: 0 !important; width: 40% !important; background: linear-gradient(90deg, rgba(0, 0, 0, 0.2), transparent), radial-gradient(circle, var(--t) 0 2px, transparent 2.5px) 6px 6px / 20px 20px, var(--c); box-shadow: inset 0 0 0 4px var(--t), inset 0 0 0 8px var(--c), inset 0 0 0 9px var(--t); }
+.templeDoor.l { left: 10%; }
+.templeDoor.r { right: 10%; }
+.toran { left: 6%; right: 6%; top: 8%; height: 14%; background: radial-gradient(ellipse 6px 10px at 50% 0, #3f7a2b 96%, transparent) 0 0 / 14px 100%, linear-gradient(var(--t), var(--t)) 0 0 / 100% 3px no-repeat; z-index: 3; }
+.host:hover .templeDoor.l { transform: rotateY(-75deg); }
+.host:hover .templeDoor.r { transform: rotateY(75deg); }
+
+/* jali screens in an arch */
+.archWall { inset: 0; background: var(--s); z-index: 2; -webkit-mask: radial-gradient(ellipse 36% 40% at 50% 46%, transparent 98%, #000) , linear-gradient(#000, #000) 0 100% / 100% 34% no-repeat; mask: radial-gradient(ellipse 36% 40% at 50% 46%, transparent 98%, #000), linear-gradient(#000, #000) 0 100% / 100% 34% no-repeat; box-shadow: inset 0 0 0 3px var(--t); }
+.jaliP { background: repeating-conic-gradient(from 45deg, var(--c) 0 25%, color-mix(in srgb, var(--c) 50%, var(--t)) 0 50%) 0 0 / 14px 14px; }
+.host:hover .jaliP.l { transform: translateX(-60%); }
+.host:hover .jaliP.r { transform: translateX(60%); }
+
+/* haveli: arched studded doors */
+.haveliFrame { inset: 0; background: color-mix(in srgb, var(--s) 70%, #e9c9a0); }
+.haveliP { top: 14% !important; bottom: 0 !important; width: 38% !important; background: radial-gradient(circle, var(--t) 0 2.4px, transparent 3px) 8px 8px / 16px 16px, var(--c); box-shadow: inset 0 0 0 3px var(--t); }
+.haveliP.l { left: 12%; border-radius: 999px 0 0 0; }
+.haveliP.r { right: 12%; border-radius: 0 999px 0 0; }
+.host:hover .haveliP.l { transform: rotateY(-80deg); }
+.host:hover .haveliP.r { transform: rotateY(80deg); }
+
+/* glass chapel doors */
+.chapel { inset: 0; background: linear-gradient(180deg, #fffaf0, color-mix(in srgb, var(--c) 30%, #fff)); }
+.glassP { background: linear-gradient(90deg, var(--t) 0 2px, transparent 2px) 0 0 / 33% 100%, linear-gradient(0deg, var(--t) 0 2px, transparent 2px) 0 0 / 100% 25%, color-mix(in srgb, #fff 55%, var(--c)); backdrop-filter: blur(3px); box-shadow: inset 0 0 0 4px var(--t); opacity: 0.92; }
+.host:hover .glassP.l { transform: translateX(-80%); opacity: 0.4; }
+.host:hover .glassP.r { transform: translateX(80%); opacity: 0.4; }
+
+/* sage: embossed doors with oval panels, 3D swing */
+.sageP { background: radial-gradient(ellipse 30% 22% at 50% 30%, color-mix(in srgb, var(--c) 80%, #fff) 96%, transparent), radial-gradient(ellipse 30% 22% at 50% 72%, color-mix(in srgb, var(--c) 80%, #fff) 96%, transparent), var(--c); box-shadow: inset 0 0 0 5px color-mix(in srgb, var(--c) 70%, #000); }
+.host:hover .sageP.l { transform: rotateY(-95deg); }
+.host:hover .sageP.r { transform: rotateY(95deg); }
+
+/* monogram: navy doors with a ring seal */
+.navy { background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent), var(--c); box-shadow: inset 0 0 0 6px var(--c), inset 0 0 0 7px var(--t); }
+.ring { box-shadow: 0 0 0 4px var(--c), 0 0 0 6px var(--t); }
+.host:hover .navy.l { transform: translateX(-90%); }
+.host:hover .navy.r { transform: translateX(90%); }
+.host:hover .ring { transform: scale(0.4); opacity: 0; }
+
+/* no opening: a peek at the page */
+.pagePreview { inset: 10% 14%; border-radius: 6px; background: linear-gradient(var(--t), var(--t)) 50% 18% / 40% 3px no-repeat, repeating-linear-gradient(180deg, transparent 0 14px, color-mix(in srgb, var(--t) 25%, transparent) 14px 16px) 50% 70% / 70% 40% no-repeat, #fff; box-shadow: 0 14px 30px -16px rgba(0, 0, 0, 0.4); }
+.host:hover .pagePreview { transform: translateY(-6%); }
+
+@media (prefers-reduced-motion: reduce) { .thumb i, .thumb b { transition: none; } }

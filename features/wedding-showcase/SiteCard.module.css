@@ -1,0 +1,84 @@
+/* A sample's card on /wedding/webpages (SiteCard.jsx). */
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(15, 18, 40, 0.1);
+  border-radius: 24px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(15, 18, 40, 0.06);
+  transition: transform 0.35s cubic-bezier(0.19, 1, 0.22, 1), box-shadow 0.35s;
+}
+.card:hover { transform: translateY(-4px); box-shadow: 0 26px 44px -26px rgba(15, 18, 40, 0.45); }
+.card:focus-visible { outline: 2px solid #0f1228; outline-offset: 4px; }
+
+.art { position: relative; aspect-ratio: 4 / 5; overflow: hidden; isolation: isolate; }
+.peek {
+  position: absolute;
+  inset: auto 12px 12px;
+  z-index: 0;
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 252, 245, 0.88);
+  color: #0f1228;
+  font-size: 13px;
+  text-align: center;
+}
+.peek b { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #c2410c; }
+.live { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
+.stage { position: absolute; top: 0; left: 0; transform-origin: top left; overflow: hidden; contain: paint; pointer-events: none; }
+.static { position: absolute; inset: 0; z-index: 1; }
+.staticNames {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  display: grid;
+  translate: -50% 0;
+  padding: 8px 16px;
+  border-radius: 14px;
+  background: rgba(20, 14, 10, 0.5);
+  color: #fff7e6;
+  font: 26px/1.1 "Great Vibes", "Pinyon Script", cursive;
+  white-space: nowrap;
+  text-align: center;
+  backdrop-filter: blur(4px);
+  transition: opacity 0.4s;
+}
+.staticNames small { font: 600 9px/1.6 var(--font-poppins), system-ui, sans-serif; letter-spacing: 0.28em; text-transform: uppercase; opacity: 0.8; }
+.card:hover .staticNames { opacity: 0; }
+.num, .hint {
+  position: absolute;
+  z-index: 3;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f1228;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+.num { top: 12px; left: 12px; }
+.hint { top: 12px; right: 12px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0; transition: opacity 0.3s; }
+.card:hover .hint { opacity: 1; }
+
+.body { display: flex; flex: 1; flex-direction: column; padding: 18px 20px 20px; }
+.kind { margin: 0; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #c2410c; }
+.title { margin: 4px 0 0; font-family: var(--font-playfair), Georgia, serif; font-size: 20px; color: #0f1228; }
+.blurb { flex: 1; margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: #3b3f5c; }
+.inside { margin: 12px 0 0; padding: 8px 12px; border-radius: 12px; background: #fbf3e6; font-size: 12px; line-height: 1.45; color: #3b3f5c; }
+.inside b { color: #0f1228; }
+.cta { margin-top: 14px; font-size: 14px; font-weight: 600; color: #0f1228; }
+.card:hover .cta { text-decoration: underline; }
+
+/* the one sample with no opening: a wide banner card */
+.wide { grid-column: 1 / -1; }
+@media (min-width: 760px) {
+  .wide { flex-direction: row; }
+  .wide .art { flex: 0 0 300px; aspect-ratio: auto; min-height: 260px; }
+  .wide .body { justify-content: center; padding: 28px 32px; }
+  .wide .title { font-size: 26px; }
+}
