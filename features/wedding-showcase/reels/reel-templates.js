@@ -7,7 +7,7 @@ export const TEMPLATE_STORE_URL = "https://everymomentwedding.netlify.app/templa
 export const FEATURED_REEL = {
   slug: "wedding-film",
   title: "Wedding Film Reel",
-  src: "/reels/wedding-reel.mp4",
+  src: "/reels/wedding-invitation-reel.mp4",
   poster: "/reels/wedding-reel-poster.jpg",
   length: "1:36",
 };
