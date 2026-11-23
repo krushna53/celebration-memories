@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { eventPermissions, seesPrivatePhotos, supportExpiry } from "@/services/event-access";
+import { isSharedLifeStoryMedia } from "@/services/life-story";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -23,6 +24,11 @@ export async function authorizeMedia(bucket: string, path: string, support = fal
     if (data) return { ttl: 60, eventId, support: false };
   }
   if (permissions.manage) return { ttl: 60, eventId, support: false };
+  // Life Story photos + finished film: readable through the share link only while the host has sharing on
+  // (works for private events too — the link itself is the credential, see services/life-story.ts).
+  if ((bucket === "gallery" || bucket === "videos") && path.startsWith(`${eventId}/life-story/`)) {
+    if (await isSharedLifeStoryMedia(eventId, bucket, path)) return { ttl: 60, eventId, support: false };
+  }
   if (permissions.platformAdmin && (support || !permissions.view)) {
     const expiry = await supportExpiry(eventId, `${bucket}/${path}`);
     const ttl = expiry ? Math.min(60, Math.floor((expiry - Date.now()) / 1000)) : 0;

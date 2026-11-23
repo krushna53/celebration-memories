@@ -34,6 +34,7 @@ export const CLIENT_ALLOWED_PATHS: readonly string[] = [
   "/admin/ai-video",
   "/admin/slideshow",
   "/admin/reels",
+  "/admin/life-story",
   "/admin/video-editor",
   "/admin/domain-search",
   "/admin/payment-settings-request",
