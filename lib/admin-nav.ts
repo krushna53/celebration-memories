@@ -49,6 +49,8 @@ import {
   ClipboardCheck,
   ScanFace,
   LogIn,
+  MessageCircle,
+  MessagesSquare,
 } from "lucide-react";
 import type { EventSegment } from "@/lib/event-segment";
 
@@ -91,6 +93,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/invitees", label: "Invitees", icon: Users, group: "Guests" },
   { href: "/admin/rsvp-form", label: "RSVP Form", icon: ClipboardList, group: "Guests" },
   { href: "/admin/rsvps", label: "RSVPs", icon: CalendarCheck, group: "Guests" },
+  { href: "/admin/event-whatsapp", label: "WhatsApp", icon: MessageCircle, group: "Guests" },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon, group: "Event" },
   { href: "/admin/timeline", label: "Timeline", icon: Clock, group: "Event" },
   { href: "/admin/event-day", label: "Event Day", icon: CalendarClock, group: "Event" },
@@ -130,6 +133,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/billing", label: "Billing", icon: CreditCard, group: "Payments" },
   { href: "/admin/pricing-settings", label: "Pricing Settings", icon: Tags, group: "Platform" },
   { href: "/admin/platform-video", label: "Feature Video", icon: Video, group: "Platform" },
+  { href: "/admin/whatsapp", label: "WhatsApp API", icon: MessagesSquare, group: "Platform" },
   { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareHeart, group: "Platform" },
   { href: "/admin/promo-codes", label: "Promo Codes", icon: Ticket, group: "Payments" },
   { href: "/admin/concierge-inquiries", label: "Concierge Leads", icon: Inbox, group: "Platform" },

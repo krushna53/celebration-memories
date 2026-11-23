@@ -78,14 +78,16 @@ export function RsvpAttendanceField({
  * the event's own questions — each shown, hidden, required or renamed per
  * the event's RSVP config. `publicMode` is the no-link form, where phone is
  * always shown and required (it identifies a returning guest).
+ * `whatsappOptIn` adds the WhatsApp updates checkbox under the phone field.
  */
 export function RsvpDetailFields({
   config,
   register,
   errors,
   publicMode = false,
+  whatsappOptIn = false,
   commentsPlaceholder,
-}: FieldsProps & { publicMode?: boolean; commentsPlaceholder: string }) {
+}: FieldsProps & { publicMode?: boolean; whatsappOptIn?: boolean; commentsPlaceholder: string }) {
   const f = config.fields;
   const showPhone = publicMode || f.phone.visible;
   const phoneRequired = publicMode || f.phone.required;
@@ -134,6 +136,20 @@ export function RsvpDetailFields({
             </div>
           ) : null}
         </div>
+      ) : null}
+
+      {whatsappOptIn && showPhone ? (
+        <label className="-mt-2 flex items-start gap-2.5 text-sm text-navy-700/80">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-navy-950/30 text-gold-500 focus:ring-gold-500/40"
+            {...register("whatsappOptIn")}
+          />
+          <span>
+            Send me updates about this event on WhatsApp (RSVP confirmation, reminders, photo sharing). Reply STOP any time to
+            stop.
+          </span>
+        </label>
       ) : null}
 
       {f.adults.visible || f.children.visible ? (

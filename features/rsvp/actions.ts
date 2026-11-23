@@ -10,6 +10,7 @@ import { buildRsvpSchema, pickAnswers } from "@/lib/rsvp-config";
 import { getRsvpConfig } from "@/services/rsvp-config";
 import type { ConfiguredRsvpValues } from "@/features/rsvp/rsvp-config-fields";
 import { notifyAdminsOfRsvpSubmission } from "@/services/admin-notifications";
+import { recordRsvpWhatsApp } from "@/services/whatsapp";
 
 export type SubmitRsvpResult =
   | { success: true }
@@ -67,6 +68,16 @@ export async function submitRsvpAction(
   // RSVP just came in, both as an in-app notification and by email.
   // Entirely best-effort: never lets a notification/email failure fail
   // the RSVP itself, which is already saved by this point.
+  // WhatsApp opt-in + RSVP confirmation — best-effort, never fails the RSVP.
+  recordRsvpWhatsApp({
+    eventId: found.event.id,
+    inviteeId: found.invitee.id,
+    phone: parsed.data.phone,
+    optIn: parsed.data.whatsappOptIn,
+    source: "rsvp_form",
+    coming: parsed.data.coming,
+  }).catch((err) => console.error("recordRsvpWhatsApp failed:", err));
+
   notifyAdminsOfRsvpSubmission({
     eventId: found.event.id,
     honoreeName: found.event.honoreeName,

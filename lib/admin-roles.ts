@@ -20,6 +20,7 @@ export const CLIENT_ALLOWED_PATHS: readonly string[] = [
   "/admin/templates",
   "/admin/invitees",
   "/admin/rsvp-form",
+  "/admin/event-whatsapp",
   "/admin/gallery",
   "/admin/timeline",
   "/admin/event-day",

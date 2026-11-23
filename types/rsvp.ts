@@ -63,6 +63,8 @@ export const rsvpFormSchema = z.object({
   consent: z.boolean().refine((v) => v === true, {
     message: "Please agree to the privacy notice to submit your RSVP.",
   }),
+  /** Opt-in to event updates on WhatsApp — only shown when the event uses WhatsApp notifications (services/whatsapp.ts). */
+  whatsappOptIn: z.boolean().optional(),
 });
 
 export type RsvpFormValues = z.infer<typeof rsvpFormSchema>;

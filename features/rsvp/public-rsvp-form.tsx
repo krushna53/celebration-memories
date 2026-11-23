@@ -38,6 +38,8 @@ interface PublicRsvpFormProps {
   rsvpConfig?: RsvpConfig;
   /** Corporate-type events get professional default wording (attendance choices, comments hint). */
   segment?: "family" | "corporate";
+  /** Show the "updates on WhatsApp" opt-in (the event has WhatsApp notifications on). */
+  whatsappOptIn?: boolean;
 }
 
 /**
@@ -57,6 +59,7 @@ export function PublicRsvpForm({
   workshopSessions,
   rsvpConfig,
   segment = "family",
+  whatsappOptIn = false,
 }: PublicRsvpFormProps) {
   const config = rsvpConfig ?? DEFAULT_RSVP_CONFIG;
   const [submitted, setSubmitted] = useState(false);
@@ -191,6 +194,7 @@ export function PublicRsvpForm({
         register={register}
         errors={errors}
         publicMode
+        whatsappOptIn={whatsappOptIn}
         commentsPlaceholder={
           segment === "corporate"
             ? "Questions, accessibility needs, anything else we should know..."
