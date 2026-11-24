@@ -40,19 +40,25 @@ function mapRow(row: TestimonialRow): Testimonial {
  * reviews it at /admin/testimonials.
  */
 export async function getApprovedTestimonials(limit = 12): Promise<Testimonial[]> {
-  const { data, error } = await supabaseAdmin()
-    .from("testimonials")
-    .select("*")
-    .eq("approved", true)
-    .order("featured", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  try {
+    const { data, error } = await supabaseAdmin()
+      .from("testimonials")
+      .select("*")
+      .eq("approved", true)
+      .order("featured", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
-  if (error) {
-    console.error("getApprovedTestimonials failed:", error.message);
+    if (error) {
+      console.error("getApprovedTestimonials failed:", error.message);
+      return [];
+    }
+    return (data as TestimonialRow[]).map(mapRow);
+  } catch (error) {
+    // A local UI preview can run before the optional Supabase project is connected.
+    console.warn("Supabase is unavailable; showing no testimonials locally.", error);
     return [];
   }
-  return (data as TestimonialRow[]).map(mapRow);
 }
 
 /** Owner-only — every testimonial regardless of approval, newest first, for the /admin/testimonials moderation queue. */
