@@ -288,10 +288,10 @@ function ContactForm({ contact, onClose }: { contact: MailerContact | null; onCl
         <Field label="Phone" htmlFor="f-phone">
           <input id="f-phone" className={inputClasses} value={form.phone} onChange={(e) => set("phone", e.target.value)} />
         </Field>
-        <Field label="Date of birth" hint="(for birthday emails)" htmlFor="f-dob">
+        <Field label="Date of birth"  htmlFor="f-dob">
           <input id="f-dob" type="date" className={inputClasses} value={form.dateOfBirth ?? ""} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set("dateOfBirth", e.target.value)} />
         </Field>
-        <Field label="Joining date" hint="(for work anniversaries)" htmlFor="f-doj">
+        <Field label="Joining date" htmlFor="f-doj">
           <input id="f-doj" type="date" className={inputClasses} value={form.joiningDate ?? ""} onChange={(e) => set("joiningDate", e.target.value)} />
         </Field>
         <div className="sm:col-span-2">
