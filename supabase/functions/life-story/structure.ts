@@ -12,15 +12,12 @@ export const MAX_STORY_CHARS = 200_000;
 export const MAX_AI_PHOTOS = 80;
 export const MAX_CHAPTERS = 14;
 export const MAX_SCENES = 40;
-export const MAX_MILESTONES = 24;
 
 export interface StructuredStory {
   title: string;
   subtitle: string;
   lifeSpan: string;
-  dedication: string;
-  chapters: { title: string; period: string; epigraph: string; epigraphSource: string; body: string; photoRefs: string[] }[];
-  milestones: { period: string; title: string; description: string; photoRef: string }[];
+  chapters: { title: string; period: string; body: string; photoRefs: string[] }[];
   photos: { ref: string; caption: string; yearLabel: string; description: string }[];
   scenes: { photoRef: string; narration: string; caption: string; motion: Motion; animate: boolean; animationPrompt: string }[];
 }
@@ -34,21 +31,14 @@ const LANGUAGE_NOTE: Record<Language, string> = {
 
 function instructions(params: { subjectName: string; language: Language; maxAnimated: number }): string {
   return [
-    `You are a gifted biographer — the kind whose books become bestsellers — and a documentary scriptwriter. You are writing the life story of ${params.subjectName}.`,
+    `You are a gifted family biographer and documentary scriptwriter. You are writing the life story of ${params.subjectName}.`,
     "Use ONLY facts found in the story text. Never invent names, dates, places, jobs, numbers or events. If the story is vague, write warmly but stay vague — do not fill gaps with made-up detail. You may describe what is visible in a photo.",
     "",
-    "1. Biography chapters (5–12), written the way a bestselling literary biography reads — narrative non-fiction, not a eulogy or a CV. Split the life into chapters in chronological order, as the story supports. Each chapter has:",
-    "   - title: evocative and specific to this life (e.g. \"The Boy Who Sold Newspapers\", not just \"Childhood\");",
-    "   - period: e.g. \"1951 – 1968\", or \"\" if unknown;",
-    "   - epigraph: a short line (max 30 words) that someone in the story actually said or wrote, quoted exactly from the story text, that sets up the chapter — or \"\" if the story has no such line. Never invent or paraphrase a quote. epigraph_source: who said it (e.g. \"Mahesh, on his first day in Mumbai\"), or \"\";",
-    "   - body: 4–8 paragraphs separated by blank lines, third person, past tense, English. Open with a scene or a vivid moment from the story rather than a summary. Weave in the family's own anecdotes, and their exact words as dialogue in quotation marks. Vary sentence length, give the reader a sense of place and time, and end each chapter on a line that carries the reader into the next. Plain prose only — no headings, lists, emoji or markdown. Never repeat the same opening move twice;",
-    "   - photo_refs: the photos that belong with the chapter, in the order they should appear; each photo belongs to at most one chapter.",
+    "1. Biography chapters (4–12): split the life into meaningful chapters in chronological order (childhood, education, marriage, career, family, later years…, as the story supports). Each chapter: a short evocative title, a period label (e.g. \"1951 – 1968\", or \"\" if unknown), and a polished body of 2–6 paragraphs separated by blank lines, written in third person in English. Keep the family's own anecdotes and quotes — they are the heart of it. List the photos that belong with each chapter (photo_refs), in the order they should appear; each photo belongs to at most one chapter.",
     "2. Photos: for every photo you were shown, give a short caption (max 10 words, no invented names unless the story makes the person obvious), a year_label if the story or photo makes it clear (else \"\"), and a one-sentence plain description of what it shows.",
     `3. Film script (8–30 scenes) for a 2–5 minute narrated documentary. Each scene shows one photo (photo_ref, or \"\" for none) with 1–3 sentences of narration (12–40 words) that flow on from the previous scene, plus an on-screen caption (max 6 words, often a year or place, may be \"\"). Use the best photos; a photo may appear at most once. Open with a moment that hooks, close on legacy and love. motion: pick zoom_in, zoom_out, pan_left or pan_right to suit the composition. ${LANGUAGE_NOTE[params.language]}`,
     `4. animate: mark at most ${params.maxAnimated} scenes true — the most emotional photos with clear people, where gentle AI motion would move the viewer (a smile, a turn of the head, wind in hair, a slow push-in). For those, animation_prompt describes subtle, realistic motion in one sentence. Never ask for speech, new people, text, or changes to anyone's face. For all other scenes animate is false and animation_prompt is \"\".`,
     "5. title: the person's name as the family writes it; subtitle: a short heartfelt line (e.g. \"A Life of Love and Service\"); life_span: e.g. \"1951 – present\" if the birth year is known, else \"\".",
-    "6. dedication: one short line for the book's dedication page, naming only people the story mentions (e.g. \"For his grandchildren, Aarav and Myra\"), or \"\" if it's unclear whom the family would dedicate it to.",
-    "7. milestones (5–20): the life's key moments for a timeline, in chronological order — only moments whose time the story states or clearly implies. period: a year or range as the story gives it (e.g. \"1974\" or \"1980s\"); title: max 8 words; description: one sentence; photo_ref: the photo that best shows that moment, or \"\".",
   ].join("\n");
 }
 
@@ -56,28 +46,18 @@ const str = { type: "string" } as const;
 const SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["title", "subtitle", "life_span", "dedication", "chapters", "milestones", "photos", "scenes"],
+  required: ["title", "subtitle", "life_span", "chapters", "photos", "scenes"],
   properties: {
     title: str,
     subtitle: str,
     life_span: str,
-    dedication: str,
     chapters: {
       type: "array",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["title", "period", "epigraph", "epigraph_source", "body", "photo_refs"],
-        properties: { title: str, period: str, epigraph: str, epigraph_source: str, body: str, photo_refs: { type: "array", items: str } },
-      },
-    },
-    milestones: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["period", "title", "description", "photo_ref"],
-        properties: { period: str, title: str, description: str, photo_ref: str },
+        required: ["title", "period", "body", "photo_refs"],
+        properties: { title: str, period: str, body: str, photo_refs: { type: "array", items: str } },
       },
     },
     photos: {
@@ -128,8 +108,6 @@ export function parseStructure(raw: unknown, validRefs: string[], maxAnimated: n
     .map((c) => ({
       title: text(c.title, 160),
       period: text(c.period, 60),
-      epigraph: text(c.epigraph, 400),
-      epigraphSource: text(c.epigraph_source, 120),
       body: text(c.body, 20_000),
       photoRefs: (Array.isArray(c.photo_refs) ? c.photo_refs : [])
         .map((ref) => text(ref, 10))
@@ -169,27 +147,12 @@ export function parseStructure(raw: unknown, validRefs: string[], maxAnimated: n
     .filter((s) => s.narration)
     .slice(0, MAX_SCENES);
 
-  const milestones = asArray(r.milestones)
-    .map((m) => {
-      const photoRef = text(m.photo_ref, 10);
-      return {
-        period: text(m.period, 60),
-        title: text(m.title, 120),
-        description: text(m.description, 500),
-        photoRef: known.has(photoRef) ? photoRef : "",
-      };
-    })
-    .filter((m) => m.period && m.title)
-    .slice(0, MAX_MILESTONES);
-
   if (chapters.length === 0 || scenes.length === 0) return null;
   return {
     title: text(r.title, 160),
     subtitle: text(r.subtitle, 200),
     lifeSpan: text(r.life_span, 60),
-    dedication: text(r.dedication, 600),
     chapters,
-    milestones,
     photos,
     scenes,
   };
@@ -225,7 +188,7 @@ export async function structureStory(params: {
       model: params.model,
       instructions: instructions(params),
       input: [{ role: "user", content }],
-      max_output_tokens: 48_000,
+      max_output_tokens: 24_000,
       text: { format: { type: "json_schema", name: "life_story", schema: SCHEMA, strict: true } },
     }),
   });

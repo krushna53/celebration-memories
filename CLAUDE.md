@@ -380,16 +380,6 @@ opens them to visitors only while shared. Client caps:
 `life_stories.structure_limit` / `film_render_limit`. Full notes:
 `docs/life-story.md`. Tests: `tests/life-story.cjs`.
 
-### Biography events (added 2026-11-25)
-
-Occasion **Biography / Life Story** (`category = biography`): the wizard runs
-just two steps (`/start/<token>/story`, `/start/<token>/book`) using the Life
-Story panels via `LifeStoryActionsProvider`; the event page uses the
-`bestseller` template (book-cover hero → **Read the Book** at
-`/events/<slug>/book`, the AI-drawn life timeline, gallery, memories). The book
-reader (`features/life-story/book-reader.tsx`) paginates like a printed
-bestseller. Film optional. Details: `docs/life-story.md`.
-
 ### Invitation card reading cost
 
 Every AI read in the wizard's "Your Card" step records real OpenAI token

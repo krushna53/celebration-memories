@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Check, Copy, ExternalLink, Loader2, MessageCircle, RotateCcw } from "lucide-react";
+import { Check, Copy, ExternalLink, Loader2, MessageCircle, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { LifeStoryBundle } from "@/types/life-story";
 import { resetShareLinkAction, setSharingAction } from "@/features/admin/life-story/actions";
+import { BiographyView } from "@/features/life-story/biography-view";
 import { card, errorText, hint } from "@/features/admin/life-story/styles";
 
 /**
@@ -15,18 +16,7 @@ import { card, errorText, hint } from "@/features/admin/life-story/styles";
  * with the link can then read it (no login), and resetting the link
  * cuts off everyone who had the old one.
  */
-export function SharePanel({
-  eventId,
-  bundle,
-  shareUrl: initialUrl,
-  bookHref,
-}: {
-  eventId: string;
-  bundle: LifeStoryBundle;
-  shareUrl: string;
-  /** The book reader preview, for the team (works before sharing is on). */
-  bookHref: string;
-}) {
+export function SharePanel({ eventId, bundle, shareUrl: initialUrl }: { eventId: string; bundle: LifeStoryBundle; shareUrl: string }) {
   const router = useRouter();
   const [shared, setShared] = useState(bundle.story.isShared);
   const [shareUrl, setShareUrl] = useState(initialUrl);
@@ -107,20 +97,12 @@ export function SharePanel({
         {error ? <p className={`mt-3 ${errorText}`}>{error}</p> : null}
       </section>
 
-      <section aria-label="Preview" className={card}>
-        <h2 className="font-display text-lg text-navy-950">Preview</h2>
+      <section aria-label="Preview" className="overflow-hidden rounded-xl border border-navy-950/10 shadow-sm">
+        <p className="bg-white px-4 py-2 text-xs uppercase tracking-[0.15em] text-navy-700/60">Preview</p>
         {bundle.chapters.length ? (
-          <>
-            <p className={hint}>Page through the book exactly as readers will see it.</p>
-            <Button asChild variant="outline" className="mt-3">
-              <a href={bookHref} target="_blank" rel="noopener noreferrer">
-                <BookOpen className="h-4 w-4" />
-                Open the book
-              </a>
-            </Button>
-          </>
+          <BiographyView bundle={bundle} />
         ) : (
-          <p className={hint}>Write the biography in step 3 to see it here.</p>
+          <p className="bg-white px-4 pb-6 text-sm text-navy-700/60">Write the biography in step 3 to see it here.</p>
         )}
       </section>
     </div>

@@ -41,7 +41,7 @@ import type {
  */
 
 const STORY_COLUMNS =
-  "id, event_id, subject_name, title, subtitle, life_span, story_text, story_source, dedication, narration_language, music, structure_status, structure_error, structured_at, cover_photo_id, share_token, is_shared, structure_limit, structure_runs, film_render_limit";
+  "id, event_id, subject_name, title, subtitle, life_span, story_text, story_source, narration_language, music, structure_status, structure_error, structured_at, cover_photo_id, share_token, is_shared, structure_limit, structure_runs, film_render_limit";
 const RENDER_COLUMNS = "id, status, progress_note, result_path, duration_seconds, xai_cost_usd, error_message, created_at";
 
 interface StoryRow {
@@ -53,7 +53,6 @@ interface StoryRow {
   life_span: string;
   story_text: string;
   story_source: "paste" | "docx";
-  dedication: string;
   narration_language: LifeStoryLanguage;
   music: LifeStoryMusic;
   structure_status: LifeStory["structureStatus"];
@@ -88,7 +87,6 @@ function toStory(r: StoryRow): LifeStory {
     lifeSpan: r.life_span,
     storyText: r.story_text,
     storySource: r.story_source,
-    dedication: r.dedication,
     narrationLanguage: r.narration_language,
     music: r.music,
     structureStatus: r.structure_status,
@@ -149,7 +147,7 @@ export async function getOrCreateLifeStory(eventId: string, honoreeName: string)
 async function loadBundle(story: LifeStory): Promise<LifeStoryBundle> {
   const db = supabaseAdmin();
   const [chapters, photos, scenes, renders] = await Promise.all([
-    db.from("life_story_chapters").select("id, sort_order, title, period, body, epigraph, epigraph_source").eq("life_story_id", story.id).order("sort_order"),
+    db.from("life_story_chapters").select("id, sort_order, title, period, body").eq("life_story_id", story.id).order("sort_order"),
     db
       .from("life_story_photos")
       .select("id, chapter_id, storage_path, width, height, caption, year_label, sort_order")
@@ -170,15 +168,7 @@ async function loadBundle(story: LifeStory): Promise<LifeStoryBundle> {
 
   return {
     story,
-    chapters: (chapters.data ?? []).map((c) => ({
-      id: c.id,
-      sortOrder: c.sort_order,
-      title: c.title,
-      period: c.period,
-      body: c.body,
-      epigraph: c.epigraph,
-      epigraphSource: c.epigraph_source,
-    })),
+    chapters: (chapters.data ?? []).map((c) => ({ id: c.id, sortOrder: c.sort_order, title: c.title, period: c.period, body: c.body })),
     photos: (photos.data ?? []).map((p) => ({
       id: p.id,
       chapterId: p.chapter_id,
@@ -223,33 +213,12 @@ export async function getSharedLifeStory(shareToken: string): Promise<LifeStoryB
 }
 
 /**
- * A Biography event's book (/events/<slug>/book): the event page is the
- * publication, so whoever can open the event page can read the book — no
- * separate sharing switch. Null until the AI (or the host) has written it.
- */
-export async function getEventBook(eventId: string): Promise<LifeStoryBundle | null> {
-  const story = await getLifeStory(eventId);
-  if (!story) return null;
-  const bundle = await loadBundle(story);
-  return bundle.chapters.length ? bundle : null;
-}
-
-/** For services/media-access.ts: a Biography event's book photos + film follow the event page's own access. */
-export async function isBiographyBookMedia(eventId: string, bucket: string, path: string): Promise<boolean> {
-  const { data } = await supabaseAdmin().from("events").select("category").eq("id", eventId).maybeSingle<{ category: string }>();
-  return data?.category === "biography" && isSharedLifeStoryMedia(eventId, bucket, path, { requireShared: false });
-}
-
-/**
  * For services/media-access.ts: may an anonymous visitor read this file?
- * Only the story's own photos / finished film — and, with `requireShared`,
- * only while the share link is switched on.
+ * Only while the story is shared, and only its own photos / finished film.
  */
-export async function isSharedLifeStoryMedia(eventId: string, bucket: string, path: string, options: { requireShared?: boolean } = {}): Promise<boolean> {
+export async function isSharedLifeStoryMedia(eventId: string, bucket: string, path: string): Promise<boolean> {
   const db = supabaseAdmin();
-  let query = db.from("life_stories").select("id").eq("event_id", eventId);
-  if (options.requireShared !== false) query = query.eq("is_shared", true);
-  const { data: story } = await query.maybeSingle<{ id: string }>();
+  const { data: story } = await db.from("life_stories").select("id").eq("event_id", eventId).eq("is_shared", true).maybeSingle<{ id: string }>();
   if (!story) return false;
   if (bucket === "gallery") {
     const { data } = await db.from("life_story_photos").select("id").eq("life_story_id", story.id).eq("storage_path", path).limit(1);
@@ -275,7 +244,6 @@ export async function updateLifeStory(
     lifeSpan: string;
     storyText: string;
     storySource: "paste" | "docx";
-    dedication: string;
     narrationLanguage: LifeStoryLanguage;
     music: LifeStoryMusic;
     isShared: boolean;
@@ -289,7 +257,6 @@ export async function updateLifeStory(
     lifeSpan: "life_span",
     storyText: "story_text",
     storySource: "story_source",
-    dedication: "dedication",
     narrationLanguage: "narration_language",
     music: "music",
     isShared: "is_shared",
@@ -436,16 +403,6 @@ export async function deleteLifeStoryPhoto(eventId: string, photoId: string): Pr
 // Chapters + scenes (the host's edits after the AI pass)
 // ---------------------------------------------------------------------------
 
-function chapterRow(c: Omit<LifeStoryChapter, "sortOrder">) {
-  return {
-    title: c.title.trim().slice(0, 160),
-    period: c.period.trim().slice(0, 60),
-    body: c.body.slice(0, 20_000),
-    epigraph: c.epigraph.trim().slice(0, 400),
-    epigraph_source: c.epigraphSource.trim().slice(0, 120),
-  };
-}
-
 export async function saveLifeStoryChapters(eventId: string, chapters: Omit<LifeStoryChapter, "sortOrder">[]): Promise<void> {
   const storyId = await storyIdFor(eventId);
   const db = supabaseAdmin();
@@ -459,7 +416,7 @@ export async function saveLifeStoryChapters(eventId: string, chapters: Omit<Life
     keep.map((c) =>
       db
         .from("life_story_chapters")
-        .update({ ...chapterRow(c), sort_order: chapters.indexOf(c), updated_at: now() })
+        .update({ title: c.title.trim().slice(0, 160), period: c.period.trim().slice(0, 60), body: c.body.slice(0, 20_000), sort_order: chapters.indexOf(c), updated_at: now() })
         .eq("id", c.id)
         .eq("life_story_id", storyId),
     ),
@@ -467,7 +424,7 @@ export async function saveLifeStoryChapters(eventId: string, chapters: Omit<Life
   const added = chapters.filter((c) => !known.has(c.id));
   if (added.length) {
     const { error } = await db.from("life_story_chapters").insert(
-      added.map((c) => ({ life_story_id: storyId, ...chapterRow(c), title: c.title.trim().slice(0, 160) || "New chapter", sort_order: chapters.indexOf(c) })),
+      added.map((c) => ({ life_story_id: storyId, title: c.title.trim().slice(0, 160) || "New chapter", period: c.period.trim().slice(0, 60), body: c.body.slice(0, 20_000), sort_order: chapters.indexOf(c) })),
     );
     check(error, "add the chapter");
   }

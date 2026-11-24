@@ -15,8 +15,8 @@ const TABS = [
   { id: "story", label: "1. Story", icon: FileText },
   { id: "photos", label: "2. Photos", icon: Images },
   { id: "biography", label: "3. Biography", icon: BookOpen },
-  { id: "share", label: "4. Share", icon: Share2 },
-  { id: "film", label: "Film (optional)", icon: Clapperboard },
+  { id: "film", label: "4. Film", icon: Clapperboard },
+  { id: "share", label: "5. Share", icon: Share2 },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -24,16 +24,13 @@ export interface LifeStoryEditorProps {
   eventId: string;
   bundle: LifeStoryBundle;
   shareUrl: string;
-  /** The book reader for this event (/events/<slug>/book). */
-  bookHref: string;
   /** Remaining paid runs for a client-role host; null = no cap (platform owner). */
   quota: { writesLeft: number; filmsLeft: number } | null;
   aiConfigured: boolean;
 }
 
 /**
- * The Life Story editor: story, photos, the written biography and sharing,
- * plus the optional narrated film. Each panel saves through its own Server
+ * The five-step Life Story editor. Each panel saves through its own Server
  * Action; panels that depend on AI output (Biography, Film) read the bundle
  * the page re-renders after router.refresh().
  */
@@ -78,11 +75,10 @@ export function LifeStoryEditor(props: LifeStoryEditorProps) {
             bundle={bundle}
             writesLeft={props.quota?.writesLeft ?? null}
             aiConfigured={props.aiConfigured}
-            bookHref={props.bookHref}
           />
         )}
         {tab === "film" && <FilmPanel eventId={props.eventId} bundle={bundle} filmsLeft={props.quota?.filmsLeft ?? null} />}
-        {tab === "share" && <SharePanel eventId={props.eventId} bundle={bundle} shareUrl={props.shareUrl} bookHref={props.bookHref} />}
+        {tab === "share" && <SharePanel eventId={props.eventId} bundle={bundle} shareUrl={props.shareUrl} />}
       </div>
     </div>
   );

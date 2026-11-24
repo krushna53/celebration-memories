@@ -448,19 +448,6 @@ export const TEMPLATE_CATALOG: TemplateSummary[] = [
     occasions: ["celebration"],
   },
   {
-    id: "tpl-bestseller",
-    slug: "bestseller",
-    name: "Bestseller",
-    description: "Cream paper, ink-black type and a gilt-edged book cover — the event page is the biography itself, with a life timeline and a \"Read the Book\" reader typeset like a bestseller.",
-    category: "formal",
-    premium: false,
-    thumbnail: "/templates/bestseller.svg",
-    primaryColor: "#a8812f",
-    secondaryColor: "#1d1a16",
-    fontFamily: "EB Garamond",
-    occasions: ["biography"],
-  },
-  {
     id: "tpl-card-match",
     slug: "card-match",
     name: "Matched to your card",
@@ -507,8 +494,6 @@ export const TEMPLATE_CATALOG: TemplateSummary[] = [
 ];
 
 export const DEFAULT_TEMPLATE_SLUG = "royal-gold";
-/** Picked automatically for a Biography (features/start/wizard-steps.ts occasionWizardDefaults). */
-export const BIOGRAPHY_TEMPLATE_SLUG = "bestseller";
 
 export function getTemplateSummaryBySlug(slug: string | null | undefined): TemplateSummary {
   return (

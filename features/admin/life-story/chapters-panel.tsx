@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, BookOpen, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { LifeStoryBundle, LifeStoryChapter } from "@/types/life-story";
-import { useLifeStoryActions } from "@/features/admin/life-story/actions-context";
+import { getWritingStatusAction, saveChaptersAction, startWritingAction, updatePhotoAction } from "@/features/admin/life-story/actions";
 import { DownloadBookButton } from "@/features/life-story/download-book-button";
 import { card, errorText, hint, input, label } from "@/features/admin/life-story/styles";
 
@@ -24,19 +24,14 @@ export function ChaptersPanel({
   bundle,
   writesLeft,
   aiConfigured,
-  bookHref,
 }: {
   eventId: string;
   bundle: LifeStoryBundle;
   writesLeft: number | null;
   aiConfigured: boolean;
-  /** Where "Read the book" opens — the book reader for this story, when it has one. */
-  bookHref?: string;
 }) {
   const router = useRouter();
-  const actions = useLifeStoryActions();
   const [chapters, setChapters] = useState<EditableChapter[]>(bundle.chapters);
-  const [dedication, setDedication] = useState(bundle.story.dedication);
   const [photos, setPhotos] = useState(bundle.photos);
   const [status, setStatus] = useState(bundle.story.structureStatus);
   const [error, setError] = useState<string | null>(bundle.story.structureStatus === "error" ? bundle.story.structureError : null);
@@ -47,19 +42,19 @@ export function ChaptersPanel({
   useEffect(() => {
     if (status !== "processing") return;
     const timer = setInterval(async () => {
-      const res = await actions.getWritingStatus(eventId);
+      const res = await getWritingStatusAction(eventId);
       if (!res.success || res.data.structureStatus === "processing") return;
       setStatus(res.data.structureStatus);
       if (res.data.structureStatus === "error") setError(res.data.structureError ?? "The AI couldn't write this story.");
       router.refresh();
     }, 4000);
     return () => clearInterval(timer);
-  }, [status, eventId, router, actions]);
+  }, [status, eventId, router]);
 
   async function write() {
     if (chapters.length && !window.confirm("Rewrite with AI? This replaces the current chapters and film script with a fresh draft.")) return;
     setError(null);
-    const res = await actions.startWriting(eventId);
+    const res = await startWritingAction(eventId);
     if (!res.success) {
       setError(res.error);
       return;
@@ -83,7 +78,7 @@ export function ChaptersPanel({
   async function save() {
     setSaving(true);
     setError(null);
-    const res = await actions.saveChapters(eventId, chapters, dedication);
+    const res = await saveChaptersAction(eventId, chapters);
     setSaving(false);
     if (!res.success) {
       setError(res.error);
@@ -95,7 +90,7 @@ export function ChaptersPanel({
 
   async function assignPhoto(photoId: string, chapterId: string | null) {
     setPhotos((list) => list.map((p) => (p.id === photoId ? { ...p, chapterId } : p)));
-    const res = await actions.updatePhoto(eventId, photoId, { chapterId });
+    const res = await updatePhotoAction(eventId, photoId, { chapterId });
     if (!res.success) setError(res.error);
   }
 
@@ -119,14 +114,6 @@ export function ChaptersPanel({
               {status === "processing" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {status === "processing" ? "Writing… (about a minute)" : chapters.length ? "Rewrite with AI" : "Write with AI"}
             </Button>
-            {chapters.length && bookHref ? (
-              <Button asChild variant="outline">
-                <a href={bookHref} target="_blank" rel="noopener noreferrer">
-                  <BookOpen className="h-4 w-4" />
-                  Read the book
-                </a>
-              </Button>
-            ) : null}
             {chapters.length ? <DownloadBookButton bundle={bundle} /> : null}
           </div>
         </div>
@@ -134,25 +121,6 @@ export function ChaptersPanel({
         {tooShort ? <p className={`mt-3 ${hint}`}>Add the story in step 1 first.</p> : null}
         {error ? <p className={`mt-3 ${errorText}`}>{error}</p> : null}
       </section>
-
-      {chapters.length ? (
-        <section className={card}>
-          <label className={label} htmlFor="ls-dedication">
-            Dedication
-          </label>
-          <input
-            id="ls-dedication"
-            className={`mt-1 font-serif italic ${input}`}
-            value={dedication}
-            placeholder="e.g. For our children and grandchildren, so they always know where they come from."
-            onChange={(e) => {
-              setDedication(e.target.value);
-              setDirty(true);
-            }}
-          />
-          <p className={`mt-1 ${hint}`}>Printed on its own page at the front of the book. Leave empty for none.</p>
-        </section>
-      ) : null}
 
       {chapters.map((chapter, i) => {
         const chapterPhotos = photos.filter((p) => p.chapterId === chapter.id);
@@ -198,31 +166,6 @@ export function ChaptersPanel({
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
-              </div>
-            </div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_220px]">
-              <div>
-                <label className={label} htmlFor={`ch-epigraph-${chapter.id}`}>
-                  Opening quote (optional)
-                </label>
-                <input
-                  id={`ch-epigraph-${chapter.id}`}
-                  className={`mt-1 font-serif italic ${input}`}
-                  value={chapter.epigraph}
-                  placeholder="Words from the story that open this chapter"
-                  onChange={(e) => update(i, { epigraph: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className={label} htmlFor={`ch-epigraph-src-${chapter.id}`}>
-                  Who said it
-                </label>
-                <input
-                  id={`ch-epigraph-src-${chapter.id}`}
-                  className={`mt-1 ${input}`}
-                  value={chapter.epigraphSource}
-                  onChange={(e) => update(i, { epigraphSource: e.target.value })}
-                />
               </div>
             </div>
             <label className="sr-only" htmlFor={`ch-body-${chapter.id}`}>
@@ -282,7 +225,7 @@ export function ChaptersPanel({
           type="button"
           variant="outline"
           onClick={() => {
-            setChapters((list) => [...list, { id: crypto.randomUUID(), title: "New chapter", period: "", body: "", epigraph: "", epigraphSource: "" }]);
+            setChapters((list) => [...list, { id: crypto.randomUUID(), title: "New chapter", period: "", body: "" }]);
             setDirty(true);
           }}
         >

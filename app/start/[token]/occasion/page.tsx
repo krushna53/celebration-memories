@@ -30,7 +30,6 @@ export default async function WizardOccasionPage({ params }: { params: Promise<{
         currentCategory={event.category}
         currentOccasion={event.occasion}
         currentGalleryChapterTitles={event.galleryChapterTitles}
-        currentTemplateSlug={event.templateSlug}
         updateAction={draftUpdateEventAction}
       />
     </WizardStepShell>

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { prevWizardStep, wizardStepHref } from "@/features/start/wizard-steps";
-import type { EventCategory } from "@/types/event";
 
 /**
  * Standalone "← Previous Step" link, styled identically to the prev
@@ -19,17 +18,14 @@ export function WizardBackLink({
   token,
   slug,
   goals,
-  category,
   className = "",
 }: {
   token: string;
   slug: string;
   goals?: string[] | null;
-  /** Some occasions have their own steps (e.g. a Biography's Story and Book). */
-  category?: EventCategory | null;
   className?: string;
 }) {
-  const prev = prevWizardStep(slug, goals, category);
+  const prev = prevWizardStep(slug, goals);
   if (!prev) return null;
 
   return (

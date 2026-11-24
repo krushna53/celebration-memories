@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Award,
   Baby,
-  BookOpen,
   Briefcase,
   Building2,
   Cake,
@@ -34,7 +33,7 @@ import {
   type EventSegment,
   type OccasionOption,
 } from "@/lib/event-segment";
-import { nextWizardStep, occasionWizardDefaults, wizardStepHref } from "@/features/start/wizard-steps";
+import { wizardStepHref } from "@/features/start/wizard-steps";
 import type { EventRecord } from "@/types/event";
 import type { DraftUpdateEventAction } from "@/features/start/event-basics-form";
 
@@ -49,7 +48,6 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   live_stream: Radio,
   reunion: Users,
   celebration: Sparkles,
-  biography: BookOpen,
   conference: Mic,
   offsite: Mountain,
   annual_day: Building2,
@@ -71,7 +69,6 @@ export function OccasionPicker({
   currentCategory,
   currentOccasion,
   currentGalleryChapterTitles,
-  currentTemplateSlug,
   updateAction,
 }: {
   token: string;
@@ -79,7 +76,6 @@ export function OccasionPicker({
   currentCategory: EventRecord["category"];
   currentOccasion: string | null;
   currentGalleryChapterTitles: Record<string, string> | null;
-  currentTemplateSlug: string;
   updateAction: DraftUpdateEventAction;
 }) {
   const router = useRouter();
@@ -92,16 +88,14 @@ export function OccasionPicker({
     if (pending) return;
     setSelectedId(option.id);
     setError(null);
-    const wizardDefaults = occasionWizardDefaults(option.category, { category: currentCategory, templateSlug: currentTemplateSlug });
-    const patch = {
-      ...occasionSelectionPatch(option, { occasion: currentOccasion, galleryChapterTitles: currentGalleryChapterTitles }),
-      ...wizardDefaults,
-    };
+    const patch = occasionSelectionPatch(option, {
+      occasion: currentOccasion,
+      galleryChapterTitles: currentGalleryChapterTitles,
+    });
     startTransition(async () => {
       const result = await updateAction(token, eventId, patch);
       if (result.success) {
-        const goals = wizardDefaults.wizardGoals !== undefined ? wizardDefaults.wizardGoals : null;
-        router.push(wizardStepHref(token, nextWizardStep("occasion", goals, option.category)?.slug ?? "goals"));
+        router.push(wizardStepHref(token, "goals"));
       } else {
         setError(result.error);
       }

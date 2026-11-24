@@ -13,8 +13,6 @@ export interface LifeStory {
   lifeSpan: string;
   storyText: string;
   storySource: "paste" | "docx";
-  /** Front matter of the book, e.g. "For the grandchildren". */
-  dedication: string;
   narrationLanguage: LifeStoryLanguage;
   music: LifeStoryMusic;
   structureStatus: LifeStoryStructureStatus;
@@ -34,10 +32,6 @@ export interface LifeStoryChapter {
   title: string;
   period: string;
   body: string;
-  /** A short quote that opens the chapter — only ever words from the family's own story. */
-  epigraph: string;
-  /** Who said it, e.g. "Mahesh, on his first day in Mumbai". */
-  epigraphSource: string;
 }
 
 export interface LifeStoryPhoto {

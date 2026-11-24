@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getSharedLifeStory } from "@/services/life-story";
-import { BookReader } from "@/features/life-story/book-reader";
-import { toBookData } from "@/features/life-story/book-data";
+import { BiographyView } from "@/features/life-story/biography-view";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +29,13 @@ export default async function LifeStoryPage({ params }: Props) {
 
   return (
     <main>
-      <BookReader book={toBookData(bundle)} bundle={bundle} />
+      <BiographyView bundle={bundle} />
+      <footer className="bg-navy-950 px-4 py-8 text-center text-xs text-ivory-100/60">
+        Made with love on{" "}
+        <a href="https://everymoment.in" className="text-gold-300 underline underline-offset-2">
+          EveryMoment
+        </a>
+      </footer>
     </main>
   );
 }
