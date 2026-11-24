@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { Download, ExternalLink, PartyPopper, Sparkles } from "lucide-react";
 
 import { getCurrentSupabaseUser } from "@/features/auth/actions";
@@ -20,13 +21,14 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
   if (!event) notFound();
 
   const user = await getCurrentSupabaseUser();
-  // Logged in, draft not on their account yet: "Create Your Event" adds it and opens What to Build
-  // (createEventFromReviewAction). Once it's on their account (that click, or the login from the Design step),
-  // the button is "Choose a Plan & Publish" instead — otherwise What to Build → … → Review would loop forever.
-  // Not logged in: the Account step as before.
+  // Logged in: the button is always "Create Your Event". The first click adds the draft to their account and opens
+  // What to Build (createEventFromReviewAction, which remembers it in a cookie for this draft); after that it goes
+  // on to choosing a plan, so What to Build → … → Review never loops. Not logged in: the Account step as before.
+  const createdFromReview = (await cookies()).get("em_review_created")?.value === token;
   const admin = user ? await getCurrentAdmin() : null;
   const onAccount = Boolean(admin?.memberships.some((m) => m.eventId === event.id));
-  const createEventAction = user && !onAccount ? createEventFromReviewAction.bind(null, token) : null;
+  const goToPlans = Boolean(user) && createdFromReview && onAccount;
+  const createEventAction = user && !goToPlans ? createEventFromReviewAction.bind(null, token) : null;
   // A wedding website made in the Design step (it's saved on the draft as design_config).
   const hasWeddingDesign = event.category === "wedding" && Boolean(event.designConfig);
   const goals = event.wizardGoals;
@@ -202,8 +204,8 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
                 {user ? (
                   <>
                     You&rsquo;re logged in{user.email ? <> as <strong className="text-navy-950">{user.email}</strong></> : null}.
-                    {onAccount
-                      ? "This event is on your account. Choose a plan to publish it. Your draft and designs are saved."
+                    {goToPlans
+                      ? "This event is on your account. Create your event by choosing a plan to publish it. Your draft and designs are saved."
                       : "Create your event to pick what to build, then choose a plan and publish it. Your draft and designs are saved."}
                   </>
                 ) : (
@@ -220,9 +222,9 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
                       Create Your Event
                     </Button>
                   </form>
-                ) : onAccount ? (
+                ) : goToPlans ? (
                   <Button asChild size="lg">
-                    <Link href={`/start/${token}/payment`}>Choose a Plan &amp; Publish</Link>
+                    <Link href={`/start/${token}/payment`}>Create Your Event</Link>
                   </Button>
                 ) : (
                   <Button asChild size="lg">

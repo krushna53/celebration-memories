@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { requireDraftEvent } from "@/features/start/draft-auth";
 import { updateEvent, type EventUpdateInput } from "@/services/events";
@@ -325,5 +326,16 @@ export async function createEventFromReviewAction(token: string): Promise<void> 
       );
     }
   }
+  // Remembered so Review's "Create Your Event" goes on to choosing a plan next time, not back to What to Build.
+  (await cookies()).set(REVIEW_CREATED_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: `/start/${token}`,
+    maxAge: 60 * 60 * 24 * 30,
+  });
   redirect(wizardStepHref(token, "goals"));
 }
+
+/** Set by createEventFromReviewAction for this draft's pages only (path /start/<token>); its value is the draft token. */
+const REVIEW_CREATED_COOKIE = "em_review_created";
