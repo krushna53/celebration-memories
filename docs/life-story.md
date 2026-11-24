@@ -34,8 +34,9 @@ bad clip never sinks the film.
 ## Security
 
 - Only the Next.js server calls the Edge Function, with the service-role key
-  (after `requireAdminForEvent` + quota checks). Deploy it with
-  `--no-verify-jwt`; any other caller gets 401.
+  (after `requireAdminForEvent` + quota checks). It's deployed with JWT
+  verification ON — the gateway checks the signature, then the function
+  requires the `service_role` claim; any other caller gets 401.
 - The function never takes a URL or script from the caller — it re-reads the
   database and signs every media URL itself.
 - `services/media-access.ts` lets an anonymous visitor read
@@ -50,7 +51,7 @@ bad clip never sinks the film.
 
 ```bash
 supabase db push            # migration 20261124150000_life_story.sql
-supabase functions deploy life-story --no-verify-jwt
+supabase functions deploy life-story
 supabase secrets set XAI_API_KEY=xai-...          # optional — without it every scene uses pan/zoom
 ```
 

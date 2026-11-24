@@ -369,8 +369,8 @@ pasted) plus their photos become a biography page
 (`/life-story/[shareToken]`, off until the host shares it, noindex), a
 printable A4 PDF book (built client-side, `features/life-story/pdf-book.tsx`)
 and a narrated 16:9 film. One `life_stories` row per event, subject =
-honoree. The `life-story` Edge Function (service-role caller only, deploy
-`--no-verify-jwt`) does the paid work: `structure` (one OpenAI call reads
+honoree. The `life-story` Edge Function (service-role JWT only; deployed with
+verify_jwt on) does the paid work: `structure` (one OpenAI call reads
 story + photos → chapters, captions, film script), `film_start` (TTS per
 scene + Grok Imagine image-to-video for ≤6 chosen photos via xAI
 `/v1/videos/generations`) and `film_tick` (polled; copies clips, builds the

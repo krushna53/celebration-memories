@@ -13,8 +13,10 @@
 //
 // Auth: only the Next.js server calls this (services/life-story.ts), with
 // the service-role key, after requireAdminForEvent() and the per-event
-// quota check. Deployed with verify_jwt off; any other caller gets 401, so
-// it can't be used to run up OpenAI / xAI / Shotstack costs. Nothing here
+// quota check. Deployed with verify_jwt on (the gateway checks the JWT
+// signature) and isServiceCaller() then requires the service_role claim, so
+// a guest's or host's own token gets 401 and can't run up OpenAI / xAI /
+// Shotstack costs. Nothing here
 // trusts a URL from the caller — every input is re-read from the database
 // and every media URL is signed here.
 
@@ -489,12 +491,33 @@ async function runFilmTick(db: SupabaseClient, renderId: string): Promise<Respon
 
 // ---------------------------------------------------------------------------
 
+/**
+ * Only the service role may call this. Deployed with verify_jwt ON, so the
+ * Supabase gateway has already checked the JWT's signature before we run —
+ * reading its `role` claim here is then safe. (A plain string compare with
+ * SUPABASE_SERVICE_ROLE_KEY isn't enough: the key injected into functions
+ * can differ from the one the web app holds while still being the same role.)
+ */
+function isServiceCaller(authorization: string | null, serviceRoleKey: string): boolean {
+  if (!authorization?.startsWith("Bearer ")) return false;
+  const token = authorization.slice(7);
+  if (token === serviceRoleKey) return true;
+  const payload = token.split(".")[1];
+  if (!payload) return false;
+  try {
+    const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    return claims?.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ success: false, error: "Method not allowed" }, 405);
   const url = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceRoleKey) return json({ success: false, error: "Not configured" }, 500);
-  if (req.headers.get("authorization") !== `Bearer ${serviceRoleKey}`) return json({ success: false, error: "Unauthorized" }, 401);
+  if (!isServiceCaller(req.headers.get("authorization"), serviceRoleKey)) return json({ success: false, error: "Unauthorized" }, 401);
 
   let body: { action?: string; lifeStoryId?: string; renderId?: string };
   try {
