@@ -45,6 +45,7 @@ export default async function AdminLifeStoryPage() {
           eventId={event.id}
           bundle={bundle}
           shareUrl={`${SITE_URL}/life-story/${bundle.story.shareToken}`}
+          bookHref={`/events/${encodeURIComponent(event.slug)}/book`}
           quota={quota}
           aiConfigured={Boolean(process.env.OPENAI_API_KEY)}
         />

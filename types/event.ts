@@ -20,7 +20,8 @@ export type EventCategory =
   | "education"
   | "live_stream"
   | "reunion"
-  | "celebration";
+  | "celebration"
+  | "biography";
 
 export interface EventRecord {
   id: string;
