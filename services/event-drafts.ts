@@ -7,6 +7,9 @@ import { CORPORATE_GALLERY_CHAPTER_TITLES, SEGMENT_COPY, type EventSegment } fro
 import { mapEvent, type EventRow } from "@/services/events";
 import type { EventRecord } from "@/types/event";
 
+/** A fresh draft's honoree until the host names it (the wizard treats it as "no name yet"). */
+export const DRAFT_HONOREE_PLACEHOLDER = "New Event";
+
 /**
  * Backing service for the no-login onboarding wizard (/start/[token]/...).
  * A draft is a completely ordinary `events` row — every existing
@@ -57,7 +60,7 @@ export async function createDraftEvent(
       status: "draft",
       draft_token: token,
       category: segment === "corporate" ? "corporate" : "birthday",
-      honoree_name: "New Event",
+      honoree_name: DRAFT_HONOREE_PLACEHOLDER,
       event_title: SEGMENT_COPY[segment].draftEventTitle,
       gallery_chapter_titles: segment === "corporate" ? CORPORATE_GALLERY_CHAPTER_TITLES : null,
       hosted_by: "",

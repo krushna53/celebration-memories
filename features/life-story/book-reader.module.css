@@ -1,0 +1,466 @@
+/*
+ * The biography reader — typeset like a hardback bestseller: cream paper,
+ * EB Garamond justified text with hyphenation, Cormorant small-caps
+ * headings, a drop cap and small-caps first line at each chapter opening,
+ * running heads and folios, photo plates, and a gilt-framed cover.
+ */
+
+.reader {
+  --ink: #1f1b16;
+  --ink-soft: #5b5247;
+  --paper: #fbf6ea;
+  --paper-edge: #efe5cf;
+  --gilt: #a8812f;
+  --gilt-light: #d9bd7a;
+  --cloth: #1d1a16;
+  --serif: var(--font-eb-garamond), "EB Garamond", Garamond, Georgia, serif;
+  --display: var(--font-cormorant-garamond), "Cormorant Garamond", Garamond, Georgia, serif;
+
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(120% 90% at 50% 0%, #3a332a 0%, #211d18 55%, #15120f 100%);
+  color: var(--paper);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  font-family: var(--display);
+  letter-spacing: 0.08em;
+}
+
+.toolbarTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-variant: small-caps;
+  color: var(--gilt-light);
+}
+
+.toolButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgb(217 189 122 / 0.35);
+  padding: 6px 14px;
+  font-size: 14px;
+  color: var(--paper);
+  white-space: nowrap;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.toolButton:hover,
+.toolButton:focus-visible {
+  background: rgb(217 189 122 / 0.12);
+  border-color: var(--gilt-light);
+}
+
+.stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px 8px;
+  touch-action: pan-y;
+}
+
+.spread {
+  display: flex;
+  filter: drop-shadow(0 24px 40px rgb(0 0 0 / 0.45));
+}
+
+.page {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--paper-edge) 0%, var(--paper) 6%, var(--paper) 94%, var(--paper-edge) 100%);
+  color: var(--ink);
+  font-family: var(--serif);
+  border-radius: 3px;
+}
+
+/* In a two-page spread the gutter darkens toward the spine. */
+.left {
+  border-radius: 3px 0 0 3px;
+  background: linear-gradient(90deg, var(--paper-edge) 0%, var(--paper) 5%, var(--paper) 90%, #e4d7bb 100%);
+}
+
+.right {
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, #e4d7bb 0%, var(--paper) 10%, var(--paper) 95%, var(--paper-edge) 100%);
+}
+
+.pageInner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.runningHead {
+  height: 28px;
+  flex: none;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.body::-webkit-scrollbar {
+  display: none;
+}
+
+.folio {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.prose > p {
+  margin: 0;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  text-indent: 1.6em;
+  line-height: 1.6;
+  font-feature-settings: "liga", "kern", "onum";
+}
+
+.prose > p.flush {
+  text-indent: 0;
+}
+
+/* The chapter's first paragraph: a three-line drop cap and a small-caps lead-in. */
+.prose > p.opening {
+  text-indent: 0;
+}
+
+.prose > p.opening::first-letter {
+  float: left;
+  margin: 0.06em 0.09em 0 0;
+  font-family: var(--display);
+  font-size: 4.1em;
+  line-height: 0.82;
+  font-weight: 600;
+  color: var(--gilt);
+}
+
+.prose > p.opening::first-line {
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+}
+
+.opener {
+  padding-top: 14%;
+  text-align: center;
+}
+
+.chapterLabel {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gilt);
+}
+
+.chapterTitle {
+  margin: 10px auto 0;
+  max-width: 92%;
+  font-family: var(--display);
+  font-size: 2em;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.chapterPeriod {
+  margin-top: 8px;
+  font-style: italic;
+  font-size: 0.95em;
+  color: var(--ink-soft);
+}
+
+.ornament {
+  margin: 18px auto;
+  width: 84px;
+  height: 12px;
+  color: var(--gilt);
+}
+
+.epigraph {
+  margin: 0 auto 26px;
+  max-width: 82%;
+  font-style: italic;
+  font-size: 0.95em;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.epigraphSource {
+  display: block;
+  margin-top: 6px;
+  font-style: normal;
+  font-family: var(--display);
+  font-size: 0.8em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.centerPage {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.halfTitle {
+  font-family: var(--display);
+  font-size: 2.4em;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+}
+
+.smallCaps {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.dedication {
+  max-width: 78%;
+  font-style: italic;
+  font-size: 1.15em;
+  line-height: 1.6;
+}
+
+.contentsList {
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contentsItem {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 0;
+  text-align: left;
+  font-size: 1em;
+  color: var(--ink);
+}
+
+.contentsItem:hover .contentsTitle,
+.contentsItem:focus-visible .contentsTitle {
+  color: var(--gilt);
+}
+
+.contentsNumber {
+  width: 2.2em;
+  flex: none;
+  font-family: var(--display);
+  color: var(--gilt);
+}
+
+.contentsTitle {
+  transition: color 0.3s ease;
+}
+
+.contentsLeader {
+  flex: 1;
+  border-bottom: 1px dotted rgb(31 27 22 / 0.35);
+  transform: translateY(-4px);
+}
+
+.plate {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.plateImage {
+  max-width: 100%;
+  max-height: 78%;
+  object-fit: contain;
+  border: 1px solid rgb(31 27 22 / 0.18);
+  padding: 6px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgb(31 27 22 / 0.16);
+}
+
+.plateCaption {
+  max-width: 88%;
+  text-align: center;
+  font-style: italic;
+  font-size: 0.92em;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+/* The cover: cloth-bound board with a gilt double rule and an inset photograph. */
+.cover {
+  background: radial-gradient(120% 100% at 30% 20%, #2c2720 0%, var(--cloth) 60%, #110f0c 100%);
+  color: #f3e7c9;
+}
+
+.coverFrame {
+  position: absolute;
+  inset: 4.5%;
+  border: 1px solid rgb(217 189 122 / 0.7);
+  outline: 1px solid rgb(217 189 122 / 0.35);
+  outline-offset: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9% 8% 7%;
+  text-align: center;
+}
+
+.coverEyebrow {
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gilt-light);
+}
+
+.coverTitle {
+  margin-top: 10px;
+  font-family: var(--display);
+  font-size: 2.5em;
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #f7ecd2;
+}
+
+.coverSubtitle {
+  margin-top: 10px;
+  font-style: italic;
+  font-size: 1.05em;
+  color: #e5d5ae;
+}
+
+.coverPhoto {
+  width: 62%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 3px solid var(--gilt-light);
+  box-shadow: 0 0 0 6px var(--cloth), 0 0 0 7px rgb(217 189 122 / 0.5);
+}
+
+.coverByline {
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--gilt-light);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 6px 16px 16px;
+  font-family: var(--display);
+  color: var(--gilt-light);
+}
+
+.navButton {
+  display: inline-flex;
+  height: 44px;
+  width: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgb(217 189 122 / 0.4);
+  color: var(--paper);
+  transition: background 0.3s ease, opacity 0.3s ease;
+}
+
+.navButton:hover:not(:disabled),
+.navButton:focus-visible {
+  background: rgb(217 189 122 / 0.14);
+}
+
+.navButton:disabled {
+  opacity: 0.3;
+}
+
+.progress {
+  width: min(40vw, 260px);
+  height: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(217 189 122 / 0.2);
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--gilt-light);
+  transition: width 0.6s ease;
+}
+
+.readButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  border-radius: 999px;
+  border: 1px solid var(--gilt);
+  padding: 9px 20px;
+  font-family: var(--display);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  transition: background 0.3s ease;
+}
+
+.readButton:hover,
+.readButton:focus-visible {
+  background: rgb(168 129 47 / 0.12);
+}
+
+.film {
+  width: 100%;
+  max-height: 70%;
+  border-radius: 2px;
+  background: #000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressFill,
+  .toolButton,
+  .navButton {
+    transition: none;
+  }
+}

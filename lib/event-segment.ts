@@ -55,6 +55,7 @@ export const SEGMENT_OCCASIONS: Record<EventSegment, OccasionOption[]> = {
     { id: "live_stream", label: "Live Streamed Event", category: "live_stream", occasion: null },
     { id: "obituary", label: "Memorial / Obituary", category: "obituary", occasion: null },
     { id: "celebration", label: "Festival / Other Celebration", category: "celebration", occasion: null },
+    { id: "biography", label: "Biography / Life Story", category: "biography", occasion: "Biography" },
   ],
   corporate: [
     { id: "conference", label: "Conference / Summit", category: "corporate", occasion: "Conference" },
@@ -69,7 +70,7 @@ export const SEGMENT_OCCASIONS: Record<EventSegment, OccasionOption[]> = {
 };
 
 const PRESET_OCCASIONS: ReadonlySet<string> = new Set(
-  SEGMENT_OCCASIONS.corporate.flatMap((o) => (o.occasion ? [o.occasion] : [])),
+  [...SEGMENT_OCCASIONS.family, ...SEGMENT_OCCASIONS.corporate].flatMap((o) => (o.occasion ? [o.occasion] : [])),
 );
 
 /** Which tile is currently selected — the exact preset if the occasion text still matches one, else the category's plain tile. */

@@ -48,6 +48,7 @@ interface StoryRow {
   subtitle: string;
   life_span: string;
   story_text: string;
+  dedication: string;
   narration_language: Language;
   cover_photo_id: string | null;
 }
@@ -125,7 +126,7 @@ async function runStructure(db: SupabaseClient, lifeStoryId: string): Promise<vo
 
     const { data: story, error } = await db
       .from("life_stories")
-      .select("id, event_id, subject_name, title, subtitle, life_span, story_text, narration_language, cover_photo_id")
+      .select("id, event_id, subject_name, title, subtitle, life_span, story_text, dedication, narration_language, cover_photo_id")
       .eq("id", lifeStoryId)
       .single<StoryRow>();
     if (error || !story) throw new Error("Life story not found.");
@@ -164,7 +165,17 @@ async function runStructure(db: SupabaseClient, lifeStoryId: string): Promise<vo
 
     const { data: chapterRows, error: chapterError } = await db
       .from("life_story_chapters")
-      .insert(result.chapters.map((c, i) => ({ life_story_id: lifeStoryId, sort_order: i, title: c.title, period: c.period, body: c.body })))
+      .insert(
+        result.chapters.map((c, i) => ({
+          life_story_id: lifeStoryId,
+          sort_order: i,
+          title: c.title,
+          period: c.period,
+          epigraph: c.epigraph,
+          epigraph_source: c.epigraphSource,
+          body: c.body,
+        })),
+      )
       .select("id, sort_order");
     if (chapterError) throw new Error(`Couldn't save chapters: ${chapterError.message}`);
     const chapterIdByOrder = new Map((chapterRows ?? []).map((c: { id: string; sort_order: number }) => [c.sort_order, c.id]));
@@ -205,6 +216,8 @@ async function runStructure(db: SupabaseClient, lifeStoryId: string): Promise<vo
     );
     if (sceneError) throw new Error(`Couldn't save the film script: ${sceneError.message}`);
 
+    await syncBiographyTimeline(db, story.event_id, result.milestones, new Map(rows.map((p, i) => [`P${i + 1}`, p.storage_path])));
+
     await db
       .from("life_stories")
       .update({
@@ -212,6 +225,7 @@ async function runStructure(db: SupabaseClient, lifeStoryId: string): Promise<vo
         title: story.title || result.title || story.subject_name,
         subtitle: story.subtitle || result.subtitle,
         life_span: story.life_span || result.lifeSpan,
+        dedication: story.dedication || result.dedication,
         cover_photo_id: story.cover_photo_id ?? photos[0]?.id ?? null,
         structure_status: "done",
         structure_error: null,
@@ -223,6 +237,34 @@ async function runStructure(db: SupabaseClient, lifeStoryId: string): Promise<vo
     console.error(`life-story structure ${lifeStoryId}:`, errorText(err));
     await fail(errorText(err));
   }
+}
+
+/**
+ * A Biography event's page shows the life timeline (timeline_milestones),
+ * so every (re)write replaces it with the AI's milestones, each with its
+ * best photo as the cover. Other events keep their own timeline untouched.
+ */
+async function syncBiographyTimeline(
+  db: SupabaseClient,
+  eventId: string,
+  milestones: { period: string; title: string; description: string; photoRef: string }[],
+  pathByRef: Map<string, string>,
+): Promise<void> {
+  const { data: event } = await db.from("events").select("category").eq("id", eventId).maybeSingle<{ category: string }>();
+  if (event?.category !== "biography" || milestones.length === 0) return;
+  const { error: deleteError } = await db.from("timeline_milestones").delete().eq("event_id", eventId);
+  if (deleteError) throw new Error(`Couldn't replace the timeline: ${deleteError.message}`);
+  const { error } = await db.from("timeline_milestones").insert(
+    milestones.map((m, i) => ({
+      event_id: eventId,
+      sort_order: i,
+      period: m.period,
+      title: m.title,
+      description: m.description,
+      image_path: m.photoRef ? pathByRef.get(m.photoRef) ?? null : null,
+    })),
+  );
+  if (error) throw new Error(`Couldn't save the timeline: ${error.message}`);
 }
 
 // ---------------------------------------------------------------------------
