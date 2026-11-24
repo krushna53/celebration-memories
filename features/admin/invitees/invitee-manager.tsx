@@ -138,7 +138,7 @@ interface InviteeManagerProps {
   thankYouMessageTemplate?: string;
   /** Past the event's end — Bulk Send then defaults to the thank-you + share-your-photos message. */
   eventEnded?: boolean;
-  /** The event's hashtag from its design (e.g. "#AaChalwithKunal"), added to every WhatsApp message; "" = none. */
+  /** The event's hashtag from its design (e.g. "#KabirWedsAditi"), added to every WhatsApp message; "" = none. */
   hashtag?: string;
 }
 

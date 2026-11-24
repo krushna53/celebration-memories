@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FileText } from "lucide-react";
 
-import { getCurrentAdmin } from "@/services/admin-auth";
+import { adminForEvent, getCurrentAdmin } from "@/services/admin-auth";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { shouldRedirectSessionOrganizerAway } from "@/lib/admin-roles";
 import { listInviteesWithRsvp } from "@/services/admin-invitees";
@@ -10,6 +10,8 @@ import { getDashboardStats } from "@/services/admin-stats";
 import { StatCard } from "@/features/admin/components/stat-card";
 import { RsvpList } from "@/features/admin/rsvps/rsvp-list";
 import { NoEventState } from "@/features/admin/components/no-event-state";
+import { RsvpSheetCard } from "@/features/admin/rsvp-sheet/rsvp-sheet-card";
+import { getRsvpSheetToken, rsvpSheetUrl } from "@/services/rsvp-sheet";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +28,14 @@ export default async function AdminRsvpsPage() {
     return <NoEventState />;
   }
 
-  const [invitees, stats] = await Promise.all([listInviteesWithRsvp(event.id), getDashboardStats(event.id)]);
+  // the live sheet link is for the event's hosts (the same gate as its Server Actions), not reviewers
+  const role = admin ? adminForEvent(admin, event.id)?.role : undefined;
+  const canShareSheet = role === "owner" || role === "client";
+  const [invitees, stats, sheetToken] = await Promise.all([
+    listInviteesWithRsvp(event.id),
+    getDashboardStats(event.id),
+    canShareSheet ? getRsvpSheetToken(event.id) : null,
+  ]);
   const inv = stats.invitations;
   const comingDetails = invitees.filter((i) => i.rsvpStatus === "coming" && i.rsvpDetail);
   const adults = comingDetails.reduce((sum, i) => sum + (i.rsvpDetail?.adults ?? 0), 0);
@@ -60,6 +69,8 @@ export default async function AdminRsvpsPage() {
         <StatCard label="Declined" value={inv.declined} />
         <StatCard label="Pending" value={inv.pending} />
       </div>
+
+      {canShareSheet ? <RsvpSheetCard eventId={event.id} initialUrl={sheetToken ? rsvpSheetUrl(sheetToken) : null} /> : null}
 
       <RsvpList eventId={event.id} eventSlug={event.slug} invitees={invitees} />
     </div>

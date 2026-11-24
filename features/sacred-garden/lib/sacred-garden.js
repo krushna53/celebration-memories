@@ -1,7 +1,7 @@
 // Content of "The Sacred Garden" invitation. sacredGardenFrom() turns any invitation in the shape of
 // lib/demo-invitation.js (the demo, or the create form) into the garden's content.
 // Films and pictures are served from /public/invite-art/sacred.
-import { demoInvitation } from "./demo-invitation";
+import { sampleInvitation } from "./demo-invitation";
 
 export const DEFAULT_WELCOME_TITLE = "Two Hearts\nOne Journey\nA Lifetime Together";
 export const ENVELOPE_VIDEO = "/invite-art/sacred/envelope-light-burst.mp4";
@@ -62,7 +62,7 @@ const formatDate = (iso = "", lang = "en", style = "dots") => {
 /**
  * d: invitation object (groom, bride, monogram?, blessing, date, welcome { title?, message }, program, venue, dressCode, guestInfo, rsvp,
  *    groomParents? / brideParents? (a line under each name on the cover, e.g. "S/O Mrs. … and Mr. …"),
- *    hashtag? (e.g. "#AaChalwithKunal": cover, schedule, under RSVP, closing; "" = none),
+ *    hashtag? (e.g. "#KabirWedsAditi": cover, schedule, under RSVP, closing; "" = none),
  *    dateFormat? (a DATE_FORMATS value), coverDate? (the cover's date in the couple's own words, e.g. "23rd–24th Nov 2026"; wins over dateFormat), envelopeFilm? (Grok's re-lettered envelope film), sealImage? (Grok's re-lettered seal close-up, laid over our film's seal), music? (URL, "" for none), fonts? { script, names, body, bodyStyle }, colors? { accent, text, background, detail, time, button }).
  * photos: optional { venue, couple } pictures that replace the design's own, closingVideo (shown instead of the couple photo)
  *   and hero (a photo shown faintly behind the names).
@@ -144,7 +144,7 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
 }
 
 export function sacredGardenFor(lang) {
-  return sacredGardenFrom(demoInvitation, {}, lang);
+  return sacredGardenFrom(sampleInvitation, {}, lang);
 }
 
-export const sacredGarden = sacredGardenFrom(demoInvitation);
+export const sacredGarden = sacredGardenFrom(sampleInvitation);

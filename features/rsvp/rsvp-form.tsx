@@ -38,6 +38,8 @@ interface RsvpFormProps {
   rsvpConfig?: RsvpConfig;
   /** Corporate-type events get professional default wording (attendance choices, comments hint). */
   segment?: "family" | "corporate";
+  /** Show the "updates on WhatsApp" opt-in (the event has WhatsApp notifications on). */
+  whatsappOptIn?: boolean;
   guestName: string;
   /** Non-null only when the event is a paid event with pricing configured (lib/rsvp-pricing.ts) — shows the payment step after a "coming" RSVP. */
   rsvpPrice?: RsvpPrice | null;
@@ -64,6 +66,7 @@ export function RsvpForm({
   reelSelfie,
   rsvpConfig,
   segment = "family",
+  whatsappOptIn = false,
 }: RsvpFormProps) {
   const config = rsvpConfig ?? DEFAULT_RSVP_CONFIG;
   const [submitted, setSubmitted] = useState(false);
@@ -248,6 +251,7 @@ export function RsvpForm({
         config={config}
         register={register}
         errors={errors}
+        whatsappOptIn={whatsappOptIn}
         commentsPlaceholder={
           segment === "corporate"
             ? "Questions, accessibility needs, anything else we should know..."

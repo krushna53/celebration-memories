@@ -181,7 +181,7 @@ const WIDE = "(min-width: 768px) and (orientation: landscape)";
  *   then the opened page's music button pulses with "Tap for music".
  * onMusic(on): told whenever the music starts or stops (the page's auto-scroll follows it).
  */
-export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, autoOpen = 0, theme, onOpen, onDone, onMusic }) {
+export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, autoOpen = 0, skip = false, theme, onOpen, onDone, onMusic }) {
   const [phase, setPhase] = useState("closed"); // closed → playing → leaving → done
   const [playing, setPlaying] = useState(false);
   const [overForm, setOverForm] = useState(false);
@@ -239,6 +239,14 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     const v = film.current;
     if (v?.duration && v.currentTime >= v.duration - 1.2) finish();
   };
+  // skip: the guest is coming back to the page (e.g. from Google sign-in), so go straight to it without the film
+  useEffect(() => {
+    if (!skip || ended.current) return;
+    ended.current = true;
+    setPhase("done");
+    onDone?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skip]);
   const toggle = () => {
     const a = audio.current;
     if (!a) return;

@@ -191,7 +191,10 @@ function draw(ctx, W, H, g, t, motion, art, reduced) {
  * Tap the plaque, tap anywhere, or drag sideways to open. onOpen runs on the first interaction
  * (so music can start); onDone runs once the curtain is open.
  */
-export default function VelvetCurtainIntro({ names = "", tapLabel, onOpen, onDone }) {
+// fabric: [valley, crest] RGB pairs for the cloth and its gathered folds, dark: true for light lettering; the default is ivory silk
+const IVORY = { base: [[192, 168, 124], [250, 243, 224]], deep: [[142, 114, 72], [255, 248, 230]] };
+
+export default function VelvetCurtainIntro({ names = "", tapLabel, fabric = IVORY, onOpen, onDone }) {
   const t = useT();
   const label = tapLabel ?? t("tapToOpen");
   const stage = useRef(null);
@@ -205,8 +208,8 @@ export default function VelvetCurtainIntro({ names = "", tapLabel, onOpen, onDon
     const ctx = el.getContext("2d");
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const art = {
-      base: makeStrip([192, 168, 124], [250, 243, 224], 0.16),
-      deep: makeStrip([142, 114, 72], [255, 248, 230], 0.24),
+      base: makeStrip(...fabric.base, 0.16),
+      deep: makeStrip(...fabric.deep, 0.24),
       shadow: makeShadow(),
       pearl: makePearl(),
       tassel: makeTassel(),
@@ -296,7 +299,7 @@ export default function VelvetCurtainIntro({ names = "", tapLabel, onOpen, onDon
 
   return <div
     ref={stage}
-    className={s.stage}
+    className={fabric.dark ? `${s.stage} ${s.dark}` : s.stage}
     data-phase="idle"
     onPointerDown={onPointerDown}
     onPointerMove={onPointerMove}

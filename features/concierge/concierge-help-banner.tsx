@@ -13,7 +13,7 @@ const HIDDEN_ON_PATHS = ["/display"];
 /** Routes where the banner must never appear (exact match). */
 const HIDDEN_ON_EXACT = ["/"];
 /** Route prefixes where the banner must never appear (guest-facing event pages). */
-const HIDDEN_ON_PREFIXES = ["/events/"];
+const HIDDEN_ON_PREFIXES = ["/events/", "/wedding/webpages/"];
 
 const COUNTRY_CODES = [
   { code: "+91", flag: "🇮🇳", label: "India" },

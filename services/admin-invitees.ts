@@ -233,6 +233,8 @@ export interface RsvpExportRow {
   visitCount: number;
   inviteSentAt: string | null;
   inviteChannel: string | null;
+  /** Answers to the host's own RSVP questions, by question id (events.rsvp_config). */
+  answers: Record<string, string> | null;
 }
 
 interface RsvpEmbedRow {
@@ -241,6 +243,7 @@ interface RsvpEmbedRow {
   meal_preference: string;
   comments: string | null;
   submitted_at: string;
+  answers: Record<string, string> | null;
 }
 
 /**
@@ -257,7 +260,7 @@ export async function getRsvpExportRows(eventId: string): Promise<RsvpExportRow[
   const { data, error } = await supabaseAdmin()
     .from("invitees")
     .select(
-      "name, phone, email, relationship, rsvp_status, checked_in, visit_count, invite_sent_at, invite_channel, rsvps(adults, children, meal_preference, comments, submitted_at)",
+      "name, phone, email, relationship, rsvp_status, checked_in, visit_count, invite_sent_at, invite_channel, rsvps(adults, children, meal_preference, comments, submitted_at, answers)",
     )
     .eq("event_id", eventId)
     .order("created_at", { ascending: false });
@@ -297,6 +300,7 @@ export async function getRsvpExportRows(eventId: string): Promise<RsvpExportRow[
       visitCount: row.visit_count,
       inviteSentAt: row.invite_sent_at,
       inviteChannel: row.invite_channel,
+      answers: rsvp?.answers ?? null,
     };
   });
 }

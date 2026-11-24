@@ -3,7 +3,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { InviteShell } from "@/features/sacred-garden/components";
 import { SacredGardenInvitation, SgEnvelope } from "@/features/sacred-garden/components/garden";
-import { FORM_GROUPS, formDefaults, buildInvitation, DESIGN_MUSIC, SAMPLE_CLOSING_VIDEO, colorFields, slugOptions, slugFor } from "@/features/sacred-garden/lib/invitation-form";
+import { FORM_GROUPS, sampleDefaults, buildInvitation, DESIGN_MUSIC, SAMPLE_CLOSING_VIDEO, colorFields, slugOptions, slugFor } from "@/features/sacred-garden/lib/invitation-form";
 import { readImage } from "@/features/sacred-garden/lib/image-upload";
 import useGrokFilm from "./useGrokFilm";
 import { dmSans } from "@/lib/fonts";
@@ -103,7 +103,7 @@ function SelectField({ value, onChange, choices, sample }) {
     <select className={s.input} value={value} onChange={(e) => onChange(e.target.value)}>
       {choices.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
     </select>
-    {sample && <span className={s.fontSample} style={sample}>Kunal &amp; Aanchal — Wedding Day</span>}
+    {sample && <span className={s.fontSample} style={sample}>Kabir &amp; Aditi — Wedding Day</span>}
   </>;
 }
 
@@ -142,7 +142,7 @@ async function uploadDataUrl(requestUpload, dataUrl) {
  * event and stays here.
  * @param {{ draftToken?: string | null, initialForm?: Record<string, string>, inWizard?: boolean, rsvp?: import("react").ReactNode, eventId?: string | null }} props
  */
-export default function CreateInvitation({ draftToken = null, initialForm = formDefaults, inWizard = false, rsvp = null, eventId = null }) {
+export default function CreateInvitation({ draftToken = null, initialForm = sampleDefaults, inWizard = false, rsvp = null, eventId = null }) {
   const router = useRouter();
   const [form, setForm] = useState(initialForm);
   const [envelope, setEnvelope] = useState(false);
@@ -230,7 +230,7 @@ export default function CreateInvitation({ draftToken = null, initialForm = form
         <div className={s.actions}>
           {eventId
             ? <button type="button" className={s.reset} onClick={() => setForm(initialForm)} title="Undo changes since the last save">Undo</button>
-            : <button type="button" className={s.reset} onClick={() => setForm(formDefaults)} title="Reset to sample">Reset</button>}
+            : <button type="button" className={s.reset} onClick={() => setForm(sampleDefaults)} title="Reset to sample">Reset</button>}
           <button type="button" className={s.envelopeBtn} disabled={!c.envelope.ready} onClick={() => setEnvelope(true)}
             title={c.envelope.ready ? "Preview the envelope" : "The envelope film is being made"}>Preview</button>
           <button type="button" className={s.envelopeBtn} disabled={publish.busy || !c.envelope.ready} onClick={publishSite}>{publish.busy ? "Saving…" : eventId ? "Save design" : inWizard ? "Save & Continue" : "Publish"}</button>

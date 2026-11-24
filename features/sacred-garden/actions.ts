@@ -87,7 +87,7 @@ async function applyDesign(event: EventRecord, form: unknown, wizard: boolean): 
   const startAt = zonedInputValueToUtcIso(date, event.timezone || DEFAULT_EVENT_TIMEZONE);
   if (Number.isNaN(new Date(startAt).getTime())) return "Pick the wedding date and time.";
   const slug = (design.slug ?? "").toLowerCase();
-  if (slug && !isValidSlug(slug)) return "Use 3–80 small letters, numbers or single dashes for the link, for example kunal-aanchal.";
+  if (slug && !isValidSlug(slug)) return "Use 3–80 small letters, numbers or single dashes for the link, for example kabir-aditi.";
 
   await assertTemplateAllowed(event.id, TEMPLATE, event.templateSlug);
   const length = wizard ? DEFAULT_HOURS * 60 * 60 * 1000 : Math.max(0, Date.parse(event.endAt) - Date.parse(event.startAt));
