@@ -1,7 +1,7 @@
 // Sample content for the wedding website demo (/wedding-websites/demo).
 // Every section reads its props from here, so a real invitation only needs a new object like this.
 
-const venueQuery = "Bel-La Monde, NH8, Delhi";
+const venueQuery = "Bel-La Monde, NH8 Delhi";
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
 export const demoInvitation = {
@@ -34,18 +34,18 @@ export const demoInvitation = {
 
   program: [
     { time: "5pm", title: "Sagan Ceremony", day: "Monday, 23rd Nov" },
-    { time: "5:30pm", title: "Engagement" },
-    { time: "8:00pm onwards", title: "Cocktail Dinner" },
-    { time: "11am onwards", title: "Haldi Ceremony", day: "Tuesday, 24th Nov" },
-    { time: "5pm onwards", title: "Baraat" },
-    { time: "6pm onwards", title: "Pheras" },
-    { time: "8:30pm onwards", title: "Reception Dinner" },
+    { time: "5:30pm", title: "Engagement", location: "Pool Deck" },
+    { time: "8:00pm onwards", title: "Cocktail Dinner", location: "Pool Deck" },
+    { time: "11am onwards", title: "Haldi Ceremony", location: "Orchid Lawn", day: "Tuesday, 24th Nov" },
+    { time: "5pm onwards", title: "Baraat", location: "Carnation Lawn" },
+    { time: "7:30pm onwards", title: "Pheras", location: "Carnation Lawn" },
+    { time: "9pm onwards", title: "Reception Dinner", location: "Carnation Lawn" },
   ],
 
   venue: {
     name: "Bel-La Monde",
     address: "NH8, Delhi",
-    mapQuery: "Bel-La Monde, NH8, Delhi",
+    mapQuery: "Bel-La Monde, NH8 Delhi",
     image: "/wedding-demo-royal.webp",
   },
 
@@ -91,6 +91,57 @@ export const demoInvitation = {
     contacts: [
       { label: "Groom's family", name: "Rajesh Sharma", phone: "+91 98765 43210" },
       { label: "Bride's family", name: "Vikram Mehta", phone: "+91 91234 56789" },
+    ],
+  },
+};
+
+// The public demo (/wedding-websites/demo-garden): a made-up couple and venue, like sampleDefaults in invitation-form.js.
+// demoInvitation above stays as it is: live events fill their unsaved fields from it (through formDefaults).
+const sampleVenue = "Jaipur, Rajasthan";
+export const sampleInvitation = {
+  ...demoInvitation,
+  groom: "Kabir",
+  bride: "Aditi",
+  blessing: "॥ श्री कृष्णाय नमः ॥",
+  date: "2027-02-13T18:30:00+05:30",
+  endDate: "2027-02-13T23:30:00+05:30",
+  dateLabel: "13 · 02 · 2027",
+  place: "Jaipur",
+  welcome: {
+    ...demoInvitation.welcome,
+    families: [
+      { role: "The Groom", name: "Kabir", parents: "Son of Mrs. Meera & Mr. Sanjay Malhotra" },
+      { role: "The Bride", name: "Aditi", parents: "Daughter of Mrs. Kavya & Mr. Rohan Desai" },
+    ],
+  },
+  events: [
+    { name: "Mehndi", icon: "leaf", date: "12 Feb 2027", time: "4:00 PM", venue: "Garden Courtyard", note: "An afternoon of henna, music and chai.", mapUrl: mapsUrl(sampleVenue) },
+    { name: "Sangeet", icon: "dhol", date: "12 Feb 2027", time: "8:00 PM", venue: "Grand Lawn", note: "Dance the night away with both families.", mapUrl: mapsUrl(sampleVenue) },
+    { name: "Haldi", icon: "flower", date: "13 Feb 2027", time: "11:00 AM", venue: "Poolside", note: "Wear yellow and come ready to get messy!", mapUrl: mapsUrl(sampleVenue) },
+    { name: "Wedding", icon: "diya", date: "13 Feb 2027", time: "6:30 PM", venue: "Rose Mandap", note: "Pheras under the stars in the garden.", mapUrl: mapsUrl(sampleVenue), highlight: true },
+    { name: "Reception", icon: "glass", date: "13 Feb 2027", time: "9:00 PM", venue: "Grand Lawn", note: "Dinner, toasts and our first dance.", mapUrl: mapsUrl(sampleVenue) },
+  ],
+  program: [
+    { time: "4pm", title: "Mehndi", location: "Garden Courtyard", day: "Friday, 12th Feb" },
+    { time: "8pm onwards", title: "Sangeet", location: "Grand Lawn" },
+    { time: "11am onwards", title: "Haldi", location: "Poolside", day: "Saturday, 13th Feb" },
+    { time: "5pm onwards", title: "Baraat", location: "Main Gate" },
+    { time: "6:30pm onwards", title: "Pheras", location: "Rose Mandap" },
+    { time: "9pm onwards", title: "Reception Dinner", location: "Grand Lawn" },
+  ],
+  venue: { ...demoInvitation.venue, name: "The Rosewood Garden — Sample Venue", address: "Amer Road, Jaipur, Rajasthan", mapQuery: sampleVenue },
+  guestInfo: [
+    { icon: "car", title: "Transportation", text: "Shuttles run from Jaipur Airport and the railway station every hour on 12–13 Feb. Share your arrival time in the RSVP.", link: { href: mapsUrl("Jaipur International Airport"), label: "Airport on the map" } },
+    { icon: "bed", title: "Accommodation", text: "Rooms are reserved for our guests at the venue. Mention ‘Kabir & Aditi wedding’ when you book." },
+    demoInvitation.guestInfo.find((item) => item.icon === "gift"),
+  ],
+  rsvp: { deadline: "Kindly reply by 15 January 2027", events: ["Mehndi", "Sangeet", "Haldi", "Wedding", "Reception"] },
+  closing: {
+    ...demoInvitation.closing,
+    hashtag: "#KabirWedsAditi",
+    contacts: [
+      { label: "Groom's family", name: "Sanjay Malhotra", phone: "+91 98765 43210" },
+      { label: "Bride's family", name: "Rohan Desai", phone: "+91 91234 56789" },
     ],
   },
 };

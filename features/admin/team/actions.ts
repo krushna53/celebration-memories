@@ -8,7 +8,9 @@ import {
   inviteTeamMemberByEmail,
   removeTeamMember,
   getTeamMembers,
+  parseTeamRole,
   type TeamMember,
+  type TeamRole,
 } from "@/services/admin-team";
 
 import { getEventAccess } from "@/services/event-access";
@@ -20,7 +22,10 @@ async function requireTeamProvisioning(eventId: string) {
   const admin = await getCurrentAdmin();
   if (admin?.role === "owner") {
     const event = await getEventAccess(eventId);
-    if (!event || event.owner_user_id) throw new Error("Only the customer owner can change this event's team.");
+    // The platform account may set up an unowned event's team, or one it owns itself (Manage on All Events).
+    if (!event || (event.owner_user_id && event.owner_user_id !== admin.id)) {
+      throw new Error("Only the customer owner can change this event's team.");
+    }
     return admin;
   }
   return requireAdminForEvent(eventId);
@@ -57,6 +62,7 @@ export async function inviteTeamMemberAction(
   name: string,
   email: string,
   makeEventOwner = false,
+  role: TeamRole = "client",
 ): Promise<TeamActionResult> {
   try {
     const admin = await requireTeamProvisioning(eventId);
@@ -68,6 +74,7 @@ export async function inviteTeamMemberAction(
       canAddExistingAccounts: true,
       canMakeEventOwner: admin.role === "owner",
       makeEventOwner,
+      role: parseTeamRole(role),
     });
     revalidatePath("/admin/team");
     revalidatePath("/admin/events");
@@ -85,6 +92,7 @@ export async function addTeamMemberWithPasswordAction(
   email: string,
   password: string,
   makeEventOwner = false,
+  role: TeamRole = "client",
 ): Promise<TeamActionResult> {
   try {
     const admin = await requireTeamProvisioning(eventId);
@@ -96,6 +104,7 @@ export async function addTeamMemberWithPasswordAction(
       canAddExistingAccounts: true,
       canMakeEventOwner: admin.role === "owner",
       makeEventOwner,
+      role: parseTeamRole(role),
     });
     revalidatePath("/admin/team");
     revalidatePath("/admin/events");

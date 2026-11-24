@@ -27,7 +27,7 @@ import { clientMayCheckIn } from "@/lib/admin-roles";
  * for the page-level allow-list, and requireAdminForOrganizerArea below
  * for the Server Action gate.
  */
-export type AdminRole = "owner" | "client" | "session_organizer" | "organizer";
+export type AdminRole = "owner" | "client" | "session_organizer" | "organizer" | "reviewer";
 
 /** One event a non-owner admin can manage, and their role on it (admin_event_memberships). */
 export interface EventMembership {
@@ -232,6 +232,9 @@ export async function requireAdminForEvent(eventId: string): Promise<CurrentAdmi
   if (admin.role === "organizer") {
     throw new Error("Organizers have access to Invitees, Gallery, Timeline, and Check-In only — this action isn't available to your account.");
   }
+  if (admin.role === "reviewer") {
+    throw new Error("Reviewers can view RSVPs and approve or reject memories only — this action isn't available to your account.");
+  }
   if (admin.role !== "owner" && admin.eventId !== eventId) {
     throw new Error("You don't have access to this event.");
   }
@@ -269,6 +272,26 @@ export async function requireAdminForOrganizerArea(eventId: string, area: Organi
   if (area === "checkin" && clientMayCheckIn(admin.role, getEventSegment((await getEventById(eventId))?.category))) {
     return admin;
   }
+  throw new Error("You don't have access to this feature.");
+}
+
+export type ReviewerArea = "memories" | "rsvps";
+
+/**
+ * The event-scoped gate for what the "reviewer" role may do: approve or
+ * reject memories, and read RSVPs (CSV export). Admits owner, client and
+ * reviewer; "rsvps" also admits organizer, who already has the full
+ * invitee list. Everything else keeps calling requireAdminForEvent, which
+ * rejects reviewer, so the role can't silently widen.
+ */
+export async function requireAdminForReviewerArea(eventId: string, area: ReviewerArea): Promise<CurrentAdmin> {
+  await requireEventMember(eventId);
+  const signedIn = await getCurrentAdmin();
+  if (!signedIn) throw new Error("Not authorized.");
+  const admin = adminForEvent(signedIn, eventId);
+  if (!admin) throw new Error("You don't have access to this event.");
+  if (admin.role === "owner" || admin.role === "client" || admin.role === "reviewer") return admin;
+  if (area === "rsvps" && admin.role === "organizer") return admin;
   throw new Error("You don't have access to this feature.");
 }
 

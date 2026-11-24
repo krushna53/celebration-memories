@@ -3,6 +3,7 @@ import { canViewEvent } from "@/services/event-access";
 import { randomBytes } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { rememberEventRow } from "@/services/event-row";
 import { isValidSlug } from "@/lib/slug";
 import { EVENT_SLUG } from "@/lib/constants";
 import type { SectionConfigItem } from "@/lib/section-registry";
@@ -35,6 +36,7 @@ export interface EventRow {
   invite_message_template: string | null;
   public_rsvp_enabled: boolean;
   public_memories_enabled: boolean;
+  hide_platform_branding: boolean;
   share_image_path: string | null;
   share_video_path: string | null;
   highlight_reel_path: string | null;
@@ -103,6 +105,7 @@ export function mapEvent(row: EventRow): EventRecord {
     inviteMessageTemplate: row.invite_message_template,
     publicRsvpEnabled: row.public_rsvp_enabled ?? false,
     publicMemoriesEnabled: row.public_memories_enabled ?? false,
+    hidePlatformBranding: row.hide_platform_branding ?? false,
     shareImagePath: row.share_image_path,
     shareVideoPath: row.share_video_path,
     highlightReelPath: row.highlight_reel_path,
@@ -160,7 +163,8 @@ export async function getEventById(id: string): Promise<EventRecord | null> {
   return data ? mapEvent(data) : null;
 }
 
-export async function getEventBySlug(slug: string): Promise<EventRecord | null> {
+/** `remember`: keep the row for the rest of this page render (see services/event-row.ts) — public event pages only. */
+export async function getEventBySlug(slug: string, options: { remember?: boolean } = {}): Promise<EventRecord | null> {
   const { data, error } = await supabaseAdmin()
     .from("events")
     .select("*")
@@ -170,6 +174,7 @@ export async function getEventBySlug(slug: string): Promise<EventRecord | null> 
   if (error) {
     throw new Error(`Failed to look up event: ${error.message}`);
   }
+  if (data && options.remember) rememberEventRow(data);
   return data && await canViewEvent(data.id) ? mapEvent(data) : null;
 }
 

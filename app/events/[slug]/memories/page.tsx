@@ -63,7 +63,7 @@ export default async function PublicMemoriesPage({ params }: PublicMemoriesPageP
             </h1>
             <div className="divider-gold mx-auto mt-6 w-20" />
             <p className="mt-6 text-sm tracking-wide text-navy-700/70">
-              A photo, a video, or a short audio message — {event.hostedBy} would
+              A photo, a video, or a short audio message — {event.hostedBy || "we"} would
               love to have it.
             </p>
           </Reveal>
@@ -82,7 +82,7 @@ export default async function PublicMemoriesPage({ params }: PublicMemoriesPageP
                   This link isn&rsquo;t open right now
                 </h3>
                 <p className="max-w-sm text-sm text-navy-700/75">
-                  If you have a personal invitation link from {event.hostedBy}, you
+                  If you have a personal invitation link from {event.hostedBy || "the host"}, you
                   can {guestCopy.publicUploadClosed} from there instead.
                 </p>
               </div>

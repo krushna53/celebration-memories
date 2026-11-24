@@ -277,6 +277,14 @@ function DetailsBlock({
   segment: "family" | "corporate";
 }) {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  // only name what this event's form actually asks for (a host can hide meal, headcount, phone)
+  const extras = [
+    (config.fields.adults.visible || config.fields.children.visible) && "guests",
+    config.fields.mealPreference.visible && "meal",
+    config.fields.phone.visible && "phone",
+  ]
+    .filter(Boolean)
+    .join(", ");
   const {
     register,
     handleSubmit,
@@ -305,7 +313,7 @@ function DetailsBlock({
     <details className="group mt-5 rounded-2xl border border-navy-950/10">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-navy-950">
         <span>
-          Fill in the form <span className="font-normal text-navy-700/70">(optional — guests, meal, phone)</span>
+          Fill in the form <span className="font-normal text-navy-700/70">(optional{extras ? ` — ${extras}` : ""})</span>
         </span>
         <ChevronDown size={16} className="transition-transform group-open:rotate-180" aria-hidden="true" />
       </summary>

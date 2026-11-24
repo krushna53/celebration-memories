@@ -1,9 +1,8 @@
 // Content of "The Sacred Garden" invitation. sacredGardenFrom() turns any invitation in the shape of
 // lib/demo-invitation.js (the demo, or the create form) into the garden's content.
-// Media (films, envelope picture, music) is served from our own assets host.
-import { demoInvitation } from "./demo-invitation";
+// Films and pictures are served from /public/invite-art/sacred.
+import { sampleInvitation } from "./demo-invitation";
 
-const MEDIA = "https://assets.webgencyinvitations.com/";
 export const DEFAULT_WELCOME_TITLE = "Two Hearts\nOne Journey\nA Lifetime Together";
 export const ENVELOPE_VIDEO = "/invite-art/sacred/envelope-light-burst.mp4";
 export const CLOSING_REEL = "/invite-art/sacred/closing-reel.mp4"; // default sample video at the bottom of the page
@@ -62,14 +61,19 @@ const formatDate = (iso = "", lang = "en", style = "dots") => {
 
 /**
  * d: invitation object (groom, bride, monogram?, blessing, date, welcome { title?, message }, program, venue, dressCode, guestInfo, rsvp,
- *    dateFormat? (a DATE_FORMATS value), envelopeFilm? (Grok's re-lettered envelope film), sealImage? (Grok's re-lettered seal close-up, laid over our film's seal), music? (URL, "" for none), fonts? { script, names, body, bodyStyle }, colors? { accent, text, background, detail, time, button }).
- * photos: optional { venue, couple } pictures that replace the design's own, and closingVideo (shown instead of the couple photo).
+ *    groomParents? / brideParents? (a line under each name on the cover, e.g. "S/O Mrs. … and Mr. …"),
+ *    hashtag? (e.g. "#KabirWedsAditi": cover, schedule, under RSVP, closing; "" = none),
+ *    dateFormat? (a DATE_FORMATS value), coverDate? (the cover's date in the couple's own words, e.g. "23rd–24th Nov 2026"; wins over dateFormat), envelopeFilm? (Grok's re-lettered envelope film), sealImage? (Grok's re-lettered seal close-up, laid over our film's seal), music? (URL, "" for none), fonts? { script, names, body, bodyStyle }, colors? { accent, text, background, detail, time, button }).
+ * photos: optional { venue, couple } pictures that replace the design's own, closingVideo (shown instead of the couple photo)
+ *   and hero (a photo shown faintly behind the names).
+ * d.closingLayout: "bleed" = the closing photo full width with no bouquets (see SgClosing); empty = the design's bouquets.
  */
 export function sacredGardenFrom(d, photos = {}, lang = "en") {
   const mapQuery = d.venue.mapQuery || [d.venue.name, d.venue.address].filter(Boolean).join(", ");
   return {
-    couple: { first: d.groom, second: d.bride, joined: `${d.groom} and ${d.bride}` },
+    couple: { first: d.groom, second: d.bride, joined: `${d.groom} and ${d.bride}`, firstParents: d.groomParents, secondParents: d.brideParents },
     monogram: d.monogram || `${d.groom[0]} & ${d.bride[0]}`,
+    hashtag: d.hashtag || "",
 
     envelope: {
       // Grok's re-lettered film when there is one; else our own film as it is. No letters are drawn over a film by code.
@@ -82,9 +86,12 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
     colors: { ...DEFAULT_COLORS, ...d.colors },
 
     hero: {
-      video: `${MEDIA}Swans2_1_qwzsod.mov`,
+      // H.264 with its index up front, so every phone plays it and it starts before it has fully downloaded
+      video: "/invite-art/sacred/hero-swans.mp4",
+      poster: "/invite-art/sacred/hero-swans-poster.webp",
       weddingDay: "Wedding Day",
-      date: formatDate(d.date, lang, d.dateFormat),
+      date: d.coverDate || formatDate(d.date, lang, d.dateFormat),
+      photo: photos.hero,
       scrollLabel: "Scroll down",
     },
     welcome: {
@@ -97,18 +104,19 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
 
     schedule: {
       title: "Schedule of Events",
-      items: d.program.map(({ time, title, day, labelShift }) => ({ time, title, day, labelShift })),
+      items: d.program.map(({ time, title, location, note, day, labelShift }) => ({ time, title, location, note, day, labelShift })),
     },
 
     location: {
       title: "Location",
       name: d.venue.name,
-      address: d.venue.address ? `Address: ${d.venue.address}` : "",
+      address: d.venue.address || "",
       mapEmbed: `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`,
+      directions: mapQuery ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQuery)}` : "",
       image: photos.venue,
     },
 
-    dressCode: { title: "Dress Code", text: [d.dressCode.women, d.dressCode.men].filter(Boolean).join(" ") },
+    dressCode: { title: d.dressCode.title || "Dress Code", text: [d.dressCode.women, d.dressCode.men].filter(Boolean).join(" ") },
     gifts: { title: "Gift Preference", text: d.guestInfo.find((item) => item.icon === "gift")?.text },
 
     rsvp: {
@@ -127,16 +135,16 @@ export function sacredGardenFrom(d, photos = {}, lang = "en") {
       ],
       submit: "Submit",
       required: "Required field",
-      success: "Thank you! Your RSVP has been received.",
+      success: d.hashtag ? `Thank you! Your RSVP has been received. Share every moment with ${d.hashtag}` : "Thank you! Your RSVP has been received.",
       failure: "Sorry, your RSVP could not be sent. Please try again.",
     },
 
-    closing: { title: "Hope to see you there!", photo: photos.couple, video: photos.closingVideo },
+    closing: { title: "Hope to see you there!", photo: photos.couple, video: photos.closingVideo, layout: d.closingLayout },
   };
 }
 
 export function sacredGardenFor(lang) {
-  return sacredGardenFrom(demoInvitation, {}, lang);
+  return sacredGardenFrom(sampleInvitation, {}, lang);
 }
 
-export const sacredGarden = sacredGardenFrom(demoInvitation);
+export const sacredGarden = sacredGardenFrom(sampleInvitation);

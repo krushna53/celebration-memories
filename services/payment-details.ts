@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { selectEventColumns } from "@/services/event-row";
 import { publicMediaUrl } from "@/services/uploads";
 
 /**
@@ -25,11 +26,10 @@ const IMAGE_MAX_BYTES = 15 * 1024 * 1024;
 
 export async function getPaymentDetails(eventId: string): Promise<PaymentDetails | null> {
   try {
-    const { data, error } = await supabaseAdmin()
-      .from("events")
-      .select("payment_details_text, payment_details_image_path")
-      .eq("id", eventId)
-      .maybeSingle<{ payment_details_text: string | null; payment_details_image_path: string | null }>();
+    const { data, error } = await selectEventColumns<{ payment_details_text: string | null; payment_details_image_path: string | null }>(
+      eventId,
+      "payment_details_text, payment_details_image_path",
+    );
     if (error || !data) return null;
     const text = data.payment_details_text?.trim() || null;
     const imagePath = data.payment_details_image_path || null;

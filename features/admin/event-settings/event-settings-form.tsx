@@ -594,13 +594,13 @@ export function EventSettingsForm({
             />
           </div>
           <div>
-            <label className={labelClasses}>{fieldCopy.hostedByLabel}</label>
+            {/* Optional: wedding sites made on the design page have no host, and a required-but-empty field here blocked the whole Save. */}
+            <label className={labelClasses}>{fieldCopy.hostedByLabel} (optional)</label>
             <input
               className={`${inputClasses} mt-1.5`}
               value={form.hostedBy}
               onChange={(e) => set("hostedBy", e.target.value)}
               placeholder={fieldCopy.hostedByPlaceholder}
-              required
             />
           </div>
           <div>

@@ -28,8 +28,9 @@ export default async function AdminTeamPage({ searchParams }: { searchParams: Pr
     <div>
       <h1 className="font-display text-2xl text-navy-950">Team</h1>
       <p className="mt-1 text-sm text-navy-700/60">
-        Give up to {memberCap} people full dashboard access to {event.honoreeName}&rsquo;s event — a spouse, a
-        sibling, anyone helping plan. Send an invite email they complete themselves, or set a password for them
+        Give up to {memberCap} people dashboard access to {event.honoreeName}&rsquo;s event — a spouse, a
+        sibling, anyone helping plan. Choose full access, or Reviewer for someone who should only see RSVPs and
+        approve or reject memories. Send an invite email they complete themselves, or set a password for them
         directly and share it however works best.
       </p>
       <div className="mt-6">

@@ -10,6 +10,7 @@ import { buildRsvpSchema, pickAnswers } from "@/lib/rsvp-config";
 import { getRsvpConfig } from "@/services/rsvp-config";
 import type { ConfiguredRsvpValues } from "@/features/rsvp/rsvp-config-fields";
 import { notifyAdminsOfRsvpSubmission } from "@/services/admin-notifications";
+import { recordRsvpWhatsApp } from "@/services/whatsapp";
 import { currentIpHash, isLockedOut, recordFailure } from "@/services/abuse-guard";
 import { createNameOnlyInvitee } from "@/services/quick-rsvp";
 
@@ -94,6 +95,16 @@ export async function submitPublicRsvpAction(
       eventUrl,
     }).catch((err) => console.error("sendRsvpConfirmation failed:", err));
   }
+
+  // WhatsApp opt-in + RSVP confirmation — best-effort, never fails the RSVP.
+  recordRsvpWhatsApp({
+    eventId: event.id,
+    inviteeId: inviteeId,
+    phone: parsed.data.phone,
+    optIn: parsed.data.whatsappOptIn,
+    source: "public_rsvp_form",
+    coming: parsed.data.coming,
+  }).catch((err) => console.error("recordRsvpWhatsApp failed:", err));
 
   notifyAdminsOfRsvpSubmission({
     eventId: event.id,

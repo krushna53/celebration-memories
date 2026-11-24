@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdminForOrganizerArea } from "@/services/admin-auth";
+import { requireAdminForOrganizerArea, requireAdminForReviewerArea } from "@/services/admin-auth";
 import {
   bulkImportInvitees,
   createInvitee,
@@ -131,12 +131,12 @@ export type ExportRsvpCsvResult =
  * Returns the CSV as plain text rather than writing a file anywhere —
  * the browser turns it into a download client-side (see
  * invitee-manager.tsx's handleExport, which builds a Blob and clicks a
- * temporary <a download>). Available to owner, client, and organizer,
- * same as the rest of this file, scoped to the caller's own event.
+ * temporary <a download>). Available to owner, client, organizer, and
+ * reviewer (the read-only /admin/rsvps page), scoped to the caller's own event.
  */
 export async function exportRsvpCsvAction(eventId: string, eventSlug: string): Promise<ExportRsvpCsvResult> {
   try {
-    await requireAdminForOrganizerArea(eventId, "invitees");
+    await requireAdminForReviewerArea(eventId, "rsvps");
     const rows = await getRsvpExportRows(eventId);
     const csvRows = rows.map((row) => ({ ...row, inviteChannel: inviteChannelLabel(row.inviteChannel) }));
     const csv = toCsv(csvRows, [

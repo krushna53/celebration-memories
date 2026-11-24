@@ -7,3 +7,7 @@
 @media (max-width: 479px) { .flow { padding-left: 75px; padding-right: 75px; } .title { margin: 0 -130px; } }
 .gift { position: relative; z-index: 0; }
 .copy, .title { position: relative; z-index: 1; }
+/* "Haldi" above "Pink kurtas…": the occasion as a small gold label, its dress code or theme below */
+.block { display: block; }
+.block + .block { margin-top: 26px; }
+.label { display: block; margin-bottom: 4px; font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sg-gold); }

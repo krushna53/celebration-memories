@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
 
   const data = toEventDisplayData(collection.event);
   const title = collection.title || `Photos & Videos — ${data.honoreeName}'s ${data.eventTitle}`;
-  const description = `${collection.items.length} shared via ${SITE_NAME} · Hosted by ${data.hostedBy}.`;
+  const description = `${collection.items.length} shared via ${SITE_NAME}${data.hostedBy ? ` · Hosted by ${data.hostedBy}` : ""}.`;
 
   const firstImage = collection.items.find((it) => IMAGE_KINDS.includes(it.kind));
   const ogImage =

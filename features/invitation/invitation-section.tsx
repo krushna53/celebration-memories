@@ -21,7 +21,7 @@ export function InvitationSection({ data }: InvitationSectionProps) {
           </p>
 
           <h2 className="mt-4 font-display text-3xl text-navy-950 sm:text-4xl">
-            With hearts full of gratitude, {data.hostedBy} invites you to
+            With hearts full of gratitude, {data.hostedBy || "we"} {data.hostedBy ? "invites" : "invite"} you to
             celebrate
           </h2>
 

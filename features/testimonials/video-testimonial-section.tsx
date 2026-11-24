@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, ChevronDown, Star } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronDown, Star } from "lucide-react";
 
 import { Reveal } from "@/components/motion/reveal";
 import { VIDEO_TESTIMONIALS } from "@/lib/video-testimonials";
@@ -79,12 +79,37 @@ export async function VideoTestimonialSection() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:justify-start">
               <StartBuildingButton size="lg" formClassName="w-full min-w-0 sm:w-auto" className="h-auto min-h-13 w-full whitespace-normal px-4 py-3 sm:px-8">Build Your Event Page — Free to Try</StartBuildingButton>
             </div>
-            <p className="mt-4 text-xs text-navy-700/60">
-              Hosted an event with us?{" "}
-              <Link href="/testimonials/share" className="text-gold-600 underline underline-offset-2 hover:text-gold-500">
-                Share your experience
-              </Link>
-            </p>
+
+            <div className="relative mt-6 inline-block max-w-full">
+              {/* Little "spark" lines off the pill's top-right corner. */}
+              <svg
+                viewBox="0 0 24 24"
+                className="pointer-events-none absolute -right-2 -top-4 h-6 w-6 text-gold-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M5 2 L7 8" />
+                <path d="M11 9 L17 4" />
+                <path d="M12 15 L20 14" />
+              </svg>
+              <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-2xl border border-gold-200/70 bg-gold-100/60 px-5 py-3 text-sm text-navy-950 shadow-sm shadow-gold-500/10 sm:flex-nowrap sm:whitespace-nowrap sm:rounded-full">
+                <span className="inline-flex items-center gap-2">
+                  <Star size={18} className="shrink-0 text-gold-500" aria-hidden="true" />
+                  Hosted an event with us?
+                </span>
+                <span className="hidden h-5 w-px bg-gold-500/60 sm:block" aria-hidden="true" />
+                <Link
+                  href="/testimonials/share"
+                  className="inline-flex items-center gap-1.5 font-semibold text-gold-600 hover:text-gold-500"
+                >
+                  <span className="underline underline-offset-4">Share your experience</span>
+                  <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              </p>
+            </div>
           </div>
         </Reveal>
       </div>

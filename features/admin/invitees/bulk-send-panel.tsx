@@ -17,6 +17,8 @@ interface BulkSendPanelProps {
   thankYouTemplate?: string;
   /** True once the event is over — the panel then defaults to the "Thank you + share your photos" message. */
   eventEnded?: boolean;
+  /** The event's hashtag, added to each message (see buildWhatsAppInviteUrl). */
+  hashtag?: string;
   onOpen: (inviteeId: string) => void;
   onClose: () => void;
 }
@@ -42,6 +44,7 @@ export function BulkSendPanel({
   messageTemplate,
   thankYouTemplate = THANK_YOU_MESSAGE_TEMPLATE,
   eventEnded = false,
+  hashtag = "",
   onOpen,
   onClose,
 }: BulkSendPanelProps) {
@@ -71,6 +74,7 @@ export function BulkSendPanel({
       hostedBy,
       honoreeName,
       messageTemplate: mode === "thanks" ? thankYouTemplate : messageTemplate,
+      hashtag,
     });
   }
 

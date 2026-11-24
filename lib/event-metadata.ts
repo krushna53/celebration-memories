@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 
 import { getCoverPhoto } from "@/services/gallery-photos";
@@ -36,7 +37,8 @@ import type { EventRecord } from "@/types/event";
  * fallback logic or re-implementing the try/catch-and-never-throw
  * guarantee.
  */
-export async function resolveEventCoverImage(event: EventRecord | null): Promise<string | null> {
+// cached: the event page's metadata and its JSON-LD both ask, for the same event object, in one render
+export const resolveEventCoverImage = cache(async function resolveEventCoverImage(event: EventRecord | null): Promise<string | null> {
   if (!event) return null;
   if (event.shareImagePath) {
     return publicMediaUrl("gallery", event.shareImagePath);
@@ -47,14 +49,15 @@ export async function resolveEventCoverImage(event: EventRecord | null): Promise
     console.error("resolveEventCoverImage failed to load cover photo:", err);
     return null;
   }
-}
+});
 
 export async function buildEventMetadata(event: EventRecord | null): Promise<Metadata> {
   const data = toEventDisplayData(event);
-  const title = `${data.honoreeName} — ${data.eventTitle} | ${SITE_NAME}`;
-  const description = data.occasion
-    ? `${data.occasion} · Hosted by ${data.hostedBy} · ${data.dayOfWeek}, ${data.date}`
-    : `Hosted by ${data.hostedBy} · ${data.dayOfWeek}, ${data.date}`;
+  // an event that hides the platform's chrome (events.hide_platform_branding) leaves our name off its title too
+  const title = `${data.honoreeName} — ${data.eventTitle}${event?.hidePlatformBranding ? "" : ` | ${SITE_NAME}`}`;
+  const description = [data.occasion, data.hostedBy.trim() && `Hosted by ${data.hostedBy}`, `${data.dayOfWeek}, ${data.date}`]
+    .filter(Boolean)
+    .join(" · ");
 
   const coverImage = await resolveEventCoverImage(event);
   // Event-specific imagery is ideal, but a shared link must never be

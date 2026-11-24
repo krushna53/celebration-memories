@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { selectEventColumns } from "@/services/event-row";
 
 /**
  * Organiser / host branding (table host_brands, migration
@@ -68,11 +69,7 @@ export async function getHostBrand(userId: string): Promise<HostBrand | null> {
 /** The brand an event should show — its owner's, only when the owner has it switched on for their events. */
 export async function getBrandForEvent(eventId: string): Promise<HostBrand | null> {
   try {
-    const { data, error } = await supabaseAdmin()
-      .from("events")
-      .select("owner_user_id")
-      .eq("id", eventId)
-      .maybeSingle<{ owner_user_id: string | null }>();
+    const { data, error } = await selectEventColumns<{ owner_user_id: string | null }>(eventId, "owner_user_id");
     if (error || !data?.owner_user_id) return null;
     const brand = await getHostBrand(data.owner_user_id);
     return brand?.applyToEvents ? brand : null;

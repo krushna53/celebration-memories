@@ -1,0 +1,19 @@
+/* "All designs" pill (top left) and the music button for the curtain / door openings (bottom left) */
+.back {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  top: max(14px, env(safe-area-inset-top));
+  z-index: 56;
+  padding: 9px 15px;
+  border-radius: 999px;
+  background: rgba(255, 251, 242, 0.92);
+  color: #4a3a2c;
+  font: 600 13px/1 var(--inv-sans, "Poppins", system-ui, sans-serif);
+  text-decoration: none;
+  box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+}
+.back:focus-visible { outline: 2px solid var(--inv-accent, #a67d2b); outline-offset: 3px; }
+.music { bottom: max(18px, env(safe-area-inset-bottom)); }
+/* the envelope film's wax seal in another colour (the cream paper barely changes) */
+.tint video, .tint canvas { filter: hue-rotate(var(--tint, 0deg)); }

@@ -23,6 +23,7 @@ import {
   Wallet,
   Globe,
   Film,
+  BookHeart,
   Clapperboard,
   FileClock,
   CreditCard,
@@ -49,6 +50,8 @@ import {
   ClipboardCheck,
   ScanFace,
   LogIn,
+  MessageCircle,
+  MessagesSquare,
 } from "lucide-react";
 import type { EventSegment } from "@/lib/event-segment";
 
@@ -90,6 +93,8 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/template-submissions", label: "Template Submissions", icon: PenTool, group: "Platform" },
   { href: "/admin/invitees", label: "Invitees", icon: Users, group: "Guests" },
   { href: "/admin/rsvp-form", label: "RSVP Form", icon: ClipboardList, group: "Guests" },
+  { href: "/admin/rsvps", label: "RSVPs", icon: CalendarCheck, group: "Guests" },
+  { href: "/admin/event-whatsapp", label: "WhatsApp", icon: MessageCircle, group: "Guests" },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon, group: "Event" },
   { href: "/admin/timeline", label: "Timeline", icon: Clock, group: "Event" },
   { href: "/admin/event-day", label: "Event Day", icon: CalendarClock, group: "Event" },
@@ -108,6 +113,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/slideshow", label: "Slideshow Video", icon: Film, group: "Create" },
   { href: "/admin/reels", label: "Guest Reels", icon: ScanFace, group: "Create" },
   { href: "/admin/timeline-movie", label: "AI Timeline Movie", icon: Wand2, group: "Create" },
+  { href: "/admin/life-story", label: "Life Story", icon: BookHeart, group: "Create" },
   { href: "/admin/video-editor", label: "Video Editor", icon: Clapperboard, group: "Create" },
   { href: "/admin/domain-search", label: "Domain Search", icon: Globe, group: "Create" },
   { href: "/admin/payment-settings-request", label: "My Payment Method", icon: Landmark, group: "Payments" },
@@ -129,6 +135,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/billing", label: "Billing", icon: CreditCard, group: "Payments" },
   { href: "/admin/pricing-settings", label: "Pricing Settings", icon: Tags, group: "Platform" },
   { href: "/admin/platform-video", label: "Feature Video", icon: Video, group: "Platform" },
+  { href: "/admin/whatsapp", label: "WhatsApp API", icon: MessagesSquare, group: "Platform" },
   { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareHeart, group: "Platform" },
   { href: "/admin/promo-codes", label: "Promo Codes", icon: Ticket, group: "Payments" },
   { href: "/admin/concierge-inquiries", label: "Concierge Leads", icon: Inbox, group: "Platform" },

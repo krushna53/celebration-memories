@@ -20,6 +20,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { SiteShell } from "@/components/layout/site-shell";
 import { getEventSegment, getSegmentCopy } from "@/lib/event-segment";
 import { getRsvpConfig } from "@/services/rsvp-config";
+import { getEventWhatsAppSettings, hasWhatsAppConsent } from "@/services/whatsapp";
 import { PoweredByBand } from "@/features/event-landing/powered-by-band";
 import { WhatsAppContactButton } from "@/features/event-landing/whatsapp-contact-button";
 import { TimelineShareCard } from "@/features/timeline-share/timeline-share-card";
@@ -76,6 +77,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   const guestCopy = getSegmentCopy(event.category).guest;
   const rsvpConfig = await getRsvpConfig(event.id);
+  const whatsappOptIn = (await getEventWhatsAppSettings(event.id)).enabled;
+  const whatsappConsented = whatsappOptIn ? await hasWhatsAppConsent(invitee.id) : false;
   const [datePoll, datePollChoices] = event.datePollOpen
     ? await Promise.all([
         getDatePoll(event.id, event.timezone).catch(() => null),
@@ -98,7 +101,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
             <p className="text-xs uppercase tracking-[0.35em] text-gold-500">
               {ended
                 ? guestCopy.thankYou
-                : `${event.hostedBy} warmly invites`}
+                : event.hostedBy ? `${event.hostedBy} warmly invites` : "You're warmly invited"}
             </p>
             <h1 className="mt-4 font-display text-3xl text-navy-950 sm:text-4xl">
               {invitee.name}
@@ -142,6 +145,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
                 reminderMessage={guestCopy.rsvpReminder}
                 rsvpConfig={rsvpConfig}
                 segment={getEventSegment(event.category)}
+                whatsappOptIn={whatsappOptIn}
                 reelSelfie={
                   reelOptIn
                     ? {
@@ -175,10 +179,12 @@ export default async function InvitePage({ params }: InvitePageProps) {
                         answers: existingRsvp.answers ?? undefined,
                         phone: invitee.phone ?? "",
                         email: invitee.email ?? "",
+                        whatsappOptIn: whatsappConsented,
                       }
                     : {
                         phone: invitee.phone ?? "",
                         email: invitee.email ?? "",
+                        whatsappOptIn: whatsappConsented,
                       }
                 }
               />

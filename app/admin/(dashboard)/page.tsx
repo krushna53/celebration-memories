@@ -55,6 +55,8 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
     return <NoEventState />;
   }
 
+  // A reviewer (lib/admin-roles.ts) sees the numbers but none of the settings shortcuts.
+  const reviewer = admin?.role === "reviewer";
   const stats = await getDashboardStats(event.id);
   const funnel = await getVisitorFunnel(event.id, stats.invitations);
   const displayMusic = await getDisplayMusic(event.id).catch(() => ({ choice: "none" as const, path: null }));
@@ -65,6 +67,7 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
         <div>
           <h1 className="font-display text-2xl text-navy-950">Overview</h1>
           <p className="mt-1 text-sm text-navy-700/60">{event.honoreeName} — {event.eventTitle}</p>
+          {reviewer ? null : (
           <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs font-medium text-gold-700">
             <LayoutGrid size={12} />
             <Link href="/admin/simple" className="underline underline-offset-4 hover:text-gold-800">
@@ -75,6 +78,7 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
               Try the app-icon view
             </Link>
           </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
@@ -112,12 +116,14 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
         Display is the chrome-free slideshow for a TV or projector at the venue.
       </p>
 
-      <DisplayMusicPicker
-        eventId={event.id}
-        initialChoice={displayMusic.choice}
-        // Stored as "<event>/slideshow-music/<uuid>-<name>" — show just the name.
-        initialCustomName={displayMusic.path?.split("/").pop()?.replace(/^[0-9a-f-]{36}-/, "") ?? null}
-      />
+      {reviewer ? null : (
+        <DisplayMusicPicker
+          eventId={event.id}
+          initialChoice={displayMusic.choice}
+          // Stored as "<event>/slideshow-music/<uuid>-<name>" — show just the name.
+          initialCustomName={displayMusic.path?.split("/").pop()?.replace(/^[0-9a-f-]{36}-/, "") ?? null}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard label="Total Invitations" value={stats.invitations.total} />

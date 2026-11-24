@@ -8,6 +8,16 @@ const breathe = { ev: "blockintoview", trg: 1, loop: true, list: [{}, { sx: 1.02
 const breatheSmall = { ev: "blockintoview", trg: 1, loop: true, list: [{}, { sx: 1.04, ro: 1, ti: 1500 }, { sx: 0.98, ti: 1500 }, { sx: 0.98, ro: -2, ti: 1500 }, { ti: 1500 }] };
 
 /**
+ * Blocks split by a blank line whose first line is a short heading ("Haldi\nPink kurtas") show that heading as a gold
+ * label above its line; a plain note is shown as typed.
+ */
+function dressBlocks(dress) {
+  const blocks = dress.split(/\n\s*\n/).map((block) => block.split("\n"));
+  if (!blocks.every((lines) => lines.length > 1 && lines[0].trim().length <= 40)) return dress;
+  return blocks.map(([label, ...rest], i) => <span key={i} className={s.block}><span className={s.label}>{label.trim()}</span>{rest.join("\n")}</span>);
+}
+
+/**
  * Dress code and gift note on one torn-paper panel with bouquets at two corners.
  * The panel grows with longer text. Either part can be left out.
  */
@@ -19,7 +29,7 @@ export default function SgDressGift({ id = "sg-dress-gift", dressTitle = "Dress 
     <div className={s.flow}>
       {dress && <>
         <h2 className={`${g.text} ${g.title} ${s.title}`}>{dressTitle}</h2>
-        <El as="p" className={`${g.text} ${g.body} ${s.copy}`} appear={up} style={{ position: "relative", left: 0, top: 0, width: "auto" }}>{dress}</El>
+        <El as="p" className={`${g.text} ${g.body} ${s.copy}`} appear={up} style={{ position: "relative", left: 0, top: 0, width: "auto" }}>{dressBlocks(dress)}</El>
       </>}
       {/* the small bouquet sits beside the gift title however long the dress note is; text stays on top of the flowers */}
       <div className={`${s.gift} ${dress ? s.second : ""}`}>

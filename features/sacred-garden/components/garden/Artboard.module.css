@@ -16,7 +16,8 @@
 }
 /* auto: the section grows with its in-flow content; positioned pieces still sit on the column */
 .auto { height: auto; min-height: var(--h); }
-.auto .col { position: relative; left: auto; margin: 0 auto; min-height: var(--h); }
+/* left/margin centre it like .col; `margin: 0 auto` would pin it left on screens narrower than 450px */
+.auto .col { position: relative; left: 50%; margin: 0 0 0 -225px; min-height: var(--h); }
 
 .el {
   position: absolute;

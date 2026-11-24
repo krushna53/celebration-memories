@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import s from "./SgEnvelope.module.css";
 
 /*
-  Opening screen: the envelope film waits on its first frame with "Tap to open". On tap it plays full
-  screen with the music and fades out just before it ends to reveal the page; then a round play / pause
-  button for the music appears.
+  Opening screen: the envelope film waits on its first frame with "Tap to open". On tap (or by itself, see
+  autoOpen) it plays full screen with the music and slowly fades out, drifting closer, just before it ends to
+  reveal the page; then a round play / pause button for the music appears. The music pauses while the guest
+  is away from the page (another tab or app, screen locked) and carries on when they come back.
 
   theme: CSS variables (e.g. the couple's --sg-button colour) for the music button.
   monogram + sealTrack: paints the couple's letters on the film's wax seal. sealTrack lists, for moments
@@ -174,10 +175,20 @@ const WIDE = "(min-width: 768px) and (orientation: landscape)";
 /**
  * sealImage: a re-lettered seal close-up (see sealCloseUp), e.g. from Grok; laid over the seal instead of painted letters.
  * desktopVideo: a wide (16:9) video played instead of `video` on computer screens; no letters are painted on it.
+ * autoOpen: seconds after which the envelope opens by itself (0 = wait for a tap).
+ * Music: tried as the page loads and again at any sign of the guest (hover, focus, scroll, swipe, key, tap), so it starts
+ *   the moment the browser allows. Phones allow sound only after a tap or key press (not a hover, scroll or swipe); until
+ *   then the opened page's music button pulses with "Tap for music".
+ * onMusic(on): told whenever the music starts or stops (the page's auto-scroll follows it).
  */
-export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, theme, onOpen, onDone }) {
+export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap to open", monogram, sealTrack, sealImage, autoOpen = 0, skip = false, theme, onOpen, onDone, onMusic }) {
   const [phase, setPhase] = useState("closed"); // closed → playing → leaving → done
   const [playing, setPlaying] = useState(false);
+  const [overForm, setOverForm] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false); // the browser held the music back until the guest taps
+  const told = useRef(onMusic);
+  told.current = onMusic;
+  useEffect(() => { told.current?.(playing); }, [playing]);
   const [wideScreen, setWideScreen] = useState(false);
   useEffect(() => {
     const query = window.matchMedia(WIDE);
@@ -187,44 +198,108 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
     return () => query.removeEventListener("change", update);
   }, []);
   const wide = wideScreen && Boolean(desktopVideo) && desktopVideo !== video;
+  // our own wide envelope films fill the whole screen; a couple's own wide video is shown whole
+  const fill = wide && desktopVideo.startsWith("/invite-art/");
   // the seal track belongs to our envelope film, never to the couple's wide video
   const track = wide ? null : sealTrack;
   const film = useRef(null);
+  // the opening video's own shape (width / height); the box takes it so the video fills it with no side bands
+  const [ratio, setRatio] = useState(null);
+  const readRatio = () => {
+    const v = film.current;
+    if (v?.videoWidth && v.videoHeight) setRatio(v.videoWidth / v.videoHeight);
+  };
+  // the video may already know its size before React listens (e.g. from the cache)
+  useEffect(readRatio, [wide, video, desktopVideo]);
   const paint = useRef(null);
   const audio = useRef(null);
-  const unlocked = useRef(false);
   const ended = useRef(false);
+  const userPaused = useRef(false); // the guest paused the music themselves; nothing starts it again but the play button
 
   const finish = () => {
     if (ended.current) return;
     ended.current = true;
     setPhase("leaving");
-    window.setTimeout(() => { setPhase("done"); onDone?.(); }, 1400);
+    window.setTimeout(() => { setPhase("done"); onDone?.(); }, 1800);
   };
-  // Android only lets sound start from a click, so the first touch quietly primes the audio
-  const prime = () => {
-    if (unlocked.current || !audio.current) return;
-    unlocked.current = true;
-    audio.current.play()?.then(() => { audio.current.pause(); audio.current.currentTime = 0; }).catch(() => {});
-  };
-  const open = () => {
+  // auto: opened by the timer, not a tap. A phone that refuses to play the film by itself (e.g. iPhone Low Power
+  // Mode) then keeps the envelope waiting for a tap instead of cutting straight to the page.
+  const open = (auto) => {
     if (phase !== "closed") return;
     setPhase("playing");
     onOpen?.();
-    if (film.current) film.current.play()?.catch(finish);
+    if (film.current) film.current.play()?.catch(auto === true ? () => setPhase("closed") : finish);
     else finish();
-    if (audio.current) { audio.current.volume = 1; audio.current.play()?.then(() => setPlaying(true)).catch(() => {}); }
+    if (audio.current && audio.current.paused && !userPaused.current) {
+      audio.current.volume = 1;
+      audio.current.play()?.then(() => setPlaying(true)).catch(() => setNeedsTap(true));
+    }
   };
   const onTime = () => {
     const v = film.current;
-    if (v?.duration && v.currentTime >= v.duration - 0.8) finish();
+    if (v?.duration && v.currentTime >= v.duration - 1.2) finish();
   };
+  // skip: the guest is coming back to the page (e.g. from Google sign-in), so go straight to it without the film
+  useEffect(() => {
+    if (!skip || ended.current) return;
+    ended.current = true;
+    setPhase("done");
+    onDone?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skip]);
   const toggle = () => {
     const a = audio.current;
     if (!a) return;
+    setNeedsTap(false);
+    userPaused.current = !a.paused;
     if (a.paused) a.play()?.then(() => setPlaying(true)).catch(() => {});
     else { a.pause(); setPlaying(false); }
   };
+
+  // the music pauses while the guest is away from the page and picks up again when they return
+  useEffect(() => {
+    if (!music) return undefined;
+    let resume = false;
+    const onVisibility = () => {
+      const a = audio.current;
+      if (!a) return;
+      if (document.hidden) { resume = !a.paused; if (resume) a.pause(); }
+      else if (resume) { resume = false; a.play()?.catch(() => setPlaying(false)); }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [music]);
+
+  // the music button steps aside while the RSVP form is on screen, so it never covers a field or link
+  useEffect(() => {
+    const form = document.getElementById("rsvp");
+    if (!form || !music) return undefined;
+    const seen = new IntersectionObserver(([e]) => setOverForm(e.isIntersecting), { threshold: 0.15 });
+    seen.observe(form);
+    return () => seen.disconnect();
+  }, [music, phase]);
+
+  // the envelope opens by itself after `autoOpen` seconds, unless the guest taps first
+  useEffect(() => {
+    if (!autoOpen || phase !== "closed") return undefined;
+    const timer = window.setTimeout(() => open(true), autoOpen * 1000);
+    return () => window.clearTimeout(timer);
+  });
+
+  // the music starts as soon as the browser lets it: on load, then at any sign of the guest (a few tries a second at most)
+  useEffect(() => {
+    if (!music || playing) return undefined;
+    let lastTry = 0;
+    const start = () => {
+      const a = audio.current, now = Date.now();
+      if (!a || !a.paused || userPaused.current || now - lastTry < 300) return;
+      lastTry = now;
+      a.play()?.then(() => { setPlaying(true); setNeedsTap(false); }).catch(() => {});
+    };
+    start();
+    ACTIVITY.forEach((type) => window.addEventListener(type, start, { capture: true, passive: true }));
+    return () => ACTIVITY.forEach((type) => window.removeEventListener(type, start, true));
+  }, [music, playing]);
 
   // put the couple's letters on the seal, frame by frame: Grok's seal face when there is one, else painted letters
   useEffect(() => {
@@ -260,18 +335,23 @@ export default function SgEnvelope({ video, desktopVideo, music, tapLabel = "Tap
 
   return <>
     {music && <audio ref={audio} src={music} loop preload="auto" />}
-    {phase !== "done" && <div className={`${s.stage} ${phase === "leaving" ? s.out : ""}`} onClick={open} onTouchStart={prime}>
-      <div className={`${s.box} ${wide ? s.wide : ""}`}>
-        <video ref={film} className={s.film} src={wide ? desktopVideo : video} muted playsInline preload="auto" onTimeUpdate={onTime} onEnded={finish}
+    {phase !== "done" && <div className={`${s.stage} ${phase === "leaving" ? s.out : ""}`} onClick={open}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } }} role="button" tabIndex={0} aria-label={tapLabel}>
+      <div className={`${s.box} ${wide ? s.wide : ""} ${fill ? s.fill : ""}`} style={ratio && !fill ? { "--ar": ratio } : undefined}>
+        <video ref={film} className={s.film} src={wide ? desktopVideo : video} muted playsInline preload="auto" onTimeUpdate={onTime} onEnded={finish} onLoadedMetadata={readRatio}
           onError={phase === "playing" ? finish : undefined} aria-label="Open your invitation" />
         {(monogram || sealImage) && track && <canvas ref={paint} className={s.paint} aria-hidden="true" />}
       </div>
-      {phase === "closed" && <div className={s.tap}><i className={s.chev} aria-hidden="true" /><span>{tapLabel}</span></div>}
+      {phase !== "leaving" && <div className={`${s.tap} ${phase === "playing" ? s.tapGone : ""}`}><i className={s.chev} aria-hidden="true" /><span>{tapLabel}</span></div>}
     </div>}
-    {music && phase === "done" && <button type="button" className={s.audio} style={theme} onClick={toggle} aria-label={playing ? "Pause music" : "Play music"}>
+    {music && phase === "done" && <button type="button" className={`${s.audio} ${overForm ? s.away : ""} ${needsTap && !playing ? s.waiting : ""}`} style={theme} onClick={toggle} aria-label={playing ? "Pause music" : "Play music"}>
       {playing
         ? <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
         : <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="5,3 19,12 5,21" /></svg>}
     </button>}
+    {music && phase === "done" && needsTap && !playing && !overForm && <span className={s.hint} aria-hidden="true">Tap for music</span>}
   </>;
 }
+
+// what counts as the guest being there; browsers only let sound start on some of these (a tap, click or key press)
+const ACTIVITY = ["pointerdown", "pointerup", "touchstart", "touchend", "touchmove", "click", "keydown", "mousemove", "focusin", "wheel", "scroll"];

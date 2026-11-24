@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 
@@ -32,6 +32,8 @@ export interface HeroRelive {
 export interface HeroExtras {
   artworkUrl: string | null;
   whatsapp: { href: string; label: string } | null;
+  /** With EventSections' `rsvpInHero`: RSVP and every section set after it (in the admin's order and visibility), for the template's hero to place where its own RSVP goes. */
+  rsvpSlot?: ReactNode;
 }
 
 interface HeroSectionProps {
@@ -122,7 +124,7 @@ export function HeroSection({ data, relive = null, artworkUrl = null, whatsapp =
             animate="show"
             className="text-xs uppercase tracking-[0.35em] text-gold-300/90"
           >
-            {relive ? guestCopy.thankYou : `${data.occasion ? `${data.occasion} · ` : ""}Hosted by ${data.hostedBy}`}
+            {relive ? guestCopy.thankYou : [data.occasion, data.hostedBy && `Hosted by ${data.hostedBy}`].filter(Boolean).join(" · ")}
           </motion.p>
 
           <motion.h1

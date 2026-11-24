@@ -9,14 +9,30 @@
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 1.4s ease;
+  transition: opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .out { opacity: 0; pointer-events: none; }
-/* the film keeps its 9:16 shape and never grows past 440px or the screen height */
-.box { position: relative; width: min(100%, 440px, calc(100svh * 9 / 16)); aspect-ratio: 9 / 16; }
+/* while it fades the envelope drifts a little closer, into the light */
+.box { transition: transform 1.8s cubic-bezier(0.4, 0, 0.2, 1); }
+.out .box { transform: scale(1.06); }
+/* the box takes the video's own shape (--ar = width / height, set once the video loads; 9:16 until then),
+   so a video that isn't exactly 9:16 still fills it with no bands; never past 440px or the screen height */
+.box { position: relative; width: min(100%, 440px, calc(100svh * var(--ar, 0.5625))); aspect-ratio: var(--ar, 9 / 16); }
+/* on a portrait screen (a phone) it fills the whole screen instead, cropping the film's edges rather than leaving
+   bands; the box keeps the video's shape so the seal letters stay on the seal */
+@media (orientation: portrait) {
+  .stage { overflow: hidden; }
+  .box:not(.wide) { flex: none; width: max(100vw, calc(100svh * var(--ar, 0.5625))); }
+}
 /* the couple's wide video on a computer: 16:9, as large as the screen allows */
-.box.wide { width: min(100%, calc(100svh * 16 / 9)); aspect-ratio: 16 / 9; }
+.box.wide { width: min(100%, calc(100svh * var(--ar, 1.7778))); aspect-ratio: var(--ar, 16 / 9); }
+/* our wide envelope film: edge to edge, cropped rather than letterboxed */
+.box.fill { width: 100%; height: 100%; aspect-ratio: auto; }
+.box.fill .film { object-fit: cover; }
 .film { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+/* iPhone Low Power Mode won't autoplay muted films and puts Safari's own grey play button over them; never show it */
+.film::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+.film::-webkit-media-controls { display: none !important; }
 .paint { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
 .tap {
@@ -48,6 +64,16 @@
   transform: rotate(-45deg);
   animation: chev 2.4s 1.9s ease-in-out infinite;
 }
+/* music the browser held back: the button pulses with a small label beside it until the guest taps */
+.waiting { animation: show 0.3s ease-in-out, beat 1.6s ease-in-out infinite; }
+@keyframes beat { 0%, 100% { box-shadow: 0 0 0 0 rgba(90, 15, 27, 0.45); } 50% { box-shadow: 0 0 0 12px rgba(90, 15, 27, 0); } }
+.hint { position: fixed; left: 92px; bottom: 38px; z-index: 2147483647; padding: 6px 12px; border-radius: 999px; background: rgba(255, 249, 235, 0.92);
+  font-family: "Cinzel", Georgia, serif; font-size: 12px; letter-spacing: 0.12em; color: #6c513f; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  pointer-events: none; animation: show 0.6s ease-in-out; }
+/* "Tap to open" fades away as the film starts instead of vanishing */
+.tap.tapGone { animation: tapOut 0.6s ease forwards; }
+.tap.tapGone span, .tap.tapGone .chev { animation: none; }
+@keyframes tapOut { from { opacity: 1; transform: translateX(-50%); } to { opacity: 0; transform: translateX(-50%) translateY(6px); } }
 @keyframes tapIn { from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 @keyframes pulse { 0%, 100% { opacity: 0.45; letter-spacing: 0.26em; } 50% { opacity: 1; letter-spacing: 0.3em; } }
 @keyframes chev { 0%, 100% { transform: rotate(-45deg) translate(0, 0); opacity: 0.6; } 50% { transform: rotate(-45deg) translate(2px, -2px); opacity: 1; } }
@@ -71,6 +97,9 @@
   cursor: pointer;
   animation: show 0.3s ease-in-out;
 }
+/* out of the way while the RSVP form is on screen */
+.audio { transition: opacity 0.3s ease, transform 0.3s ease; }
+.away { opacity: 0; transform: scale(0.8); pointer-events: none; }
 .audio svg { width: 30px; height: 30px; fill: #fff; }
 @keyframes show { from { opacity: 0; } }
 

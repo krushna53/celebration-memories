@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { selectEventColumns } from "@/services/event-row";
 import { DEFAULT_RSVP_CONFIG, isDefaultRsvpConfig, sanitizeRsvpConfig, type RsvpConfig } from "@/lib/rsvp-config";
 
 /**
@@ -10,11 +11,7 @@ import { DEFAULT_RSVP_CONFIG, isDefaultRsvpConfig, sanitizeRsvpConfig, type Rsvp
  */
 export async function getRsvpConfig(eventId: string): Promise<RsvpConfig> {
   try {
-    const { data, error } = await supabaseAdmin()
-      .from("events")
-      .select("rsvp_config")
-      .eq("id", eventId)
-      .maybeSingle<{ rsvp_config: unknown }>();
+    const { data, error } = await selectEventColumns<{ rsvp_config: unknown }>(eventId, "rsvp_config");
     if (error || !data?.rsvp_config) return DEFAULT_RSVP_CONFIG;
     return sanitizeRsvpConfig(data.rsvp_config);
   } catch {

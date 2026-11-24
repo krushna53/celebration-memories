@@ -10,7 +10,7 @@ import { ADMIN_NAV, GROUP_ORDER, navLabelsForSegment, type NavItem } from "@/lib
 import type { EventSegment } from "@/lib/event-segment";
 
 /** The phone bottom bar's fixed tabs, in priority order — the first four this admin is allowed to see are shown. */
-const PRIMARY_TAB_PREFERENCE = ["/admin", "/admin/invitees", "/admin/memories", "/admin/checkin", "/admin/event-settings", "/admin/session-attendees", "/admin/my-sessions"];
+const PRIMARY_TAB_PREFERENCE = ["/admin", "/admin/invitees", "/admin/memories", "/admin/checkin", "/admin/event-settings", "/admin/session-attendees", "/admin/my-sessions", "/admin/rsvps"];
 
 const SHORT_LABELS: Record<string, string> = {
   "/admin/event-settings": "Settings",

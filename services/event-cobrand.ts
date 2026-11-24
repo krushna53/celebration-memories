@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { selectEventColumns } from "@/services/event-row";
 import { getBrandForEvent } from "@/services/host-brands";
 
 /**
@@ -28,11 +29,7 @@ export const COBRAND_URL_MAX = 200;
 /** Only this event's own co-brand (Event Settings card), ignoring the agency brand. */
 export async function getEventOwnCobrand(eventId: string): Promise<EventCobrand | null> {
   try {
-    const { data, error } = await supabaseAdmin()
-      .from("events")
-      .select("cobrand_name, cobrand_url")
-      .eq("id", eventId)
-      .maybeSingle<{ cobrand_name: string | null; cobrand_url: string | null }>();
+    const { data, error } = await selectEventColumns<{ cobrand_name: string | null; cobrand_url: string | null }>(eventId, "cobrand_name, cobrand_url");
     if (error || !data?.cobrand_name) return null;
     return { name: data.cobrand_name, url: data.cobrand_url, logoUrl: null, source: "event" };
   } catch {
