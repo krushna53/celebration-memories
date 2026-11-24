@@ -5,6 +5,7 @@ import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-step
 import { designFormFor } from "@/features/sacred-garden/lib/design";
 import { getDraftEventByToken } from "@/services/event-drafts";
 import { RsvpTeaserSection } from "@/features/rsvp/rsvp-teaser-section";
+import { getCurrentSupabaseUser } from "@/features/auth/actions";
 import CreateInvitation from "@/app/wedding-websites/create/CreateInvitation";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,8 @@ export const dynamic = "force-dynamic";
  * after Event Details. Full width (form left, live website right) under
  * the step bar, so no sidebar; Save & Continue keeps the design on this
  * draft (features/sacred-garden/actions.ts) and moves to the next step.
+ * Nobody signed in yet: after saving, Save & Continue asks them to log in (features/start/design-login-dialog.tsx),
+ * then sends them to Event Details (?from=design) and back here to finish the design.
  */
 export default async function WizardDesignPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -23,6 +26,7 @@ export default async function WizardDesignPage({ params }: { params: Promise<{ t
   if (!resolveWizardSteps(event.wizardGoals, event.category).some((step) => step.slug === "design")) {
     redirect(wizardStepHref(token, "template"));
   }
+  const signedIn = Boolean(await getCurrentSupabaseUser());
 
   return (
     <div>
@@ -31,6 +35,8 @@ export default async function WizardDesignPage({ params }: { params: Promise<{ t
         draftToken={token}
         initialForm={designFormFor(event)}
         inWizard
+        signedIn={signedIn}
+        draftEventId={event.id}
         rsvp={
           <RsvpTeaserSection eventId={event.id} eventSlug={event.slug} publicRsvpEnabled={event.publicRsvpEnabled}
             honoreeName={event.honoreeName} category={event.category} />

@@ -2,6 +2,7 @@
 "use client";
 
 import { renderWeddingMp4 } from "./render-wedding-mp4";
+import { AiVideoStudio } from "@/features/ai-video/ai-video-studio";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -136,7 +137,6 @@ const DEFAULTS: EditorState = {
   position: "top",
 };
 
-const sampleVideo = "/reels/wedding-invitation-reel.mp4";
 
 type ReelEvent = {
   name: string;
@@ -198,8 +198,13 @@ export function AiReelStudio() {
   const [textDecoration, setTextDecoration] = useState("Royal Frame");
   const [textPosition, setTextPosition] = useState<TextPosition>("top");
 
-  const [videoUrl, setVideoUrl] = useState(sampleVideo);
-  const [videoName, setVideoName] = useState("Wedding Film Reel");
+  // The editor starts blank: no sample video and no template until the user picks a reel style.
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoName, setVideoName] = useState("");
+  // Optional background music for the Edit a reel preview (plays with Play / Pause).
+  const [musicUrl, setMusicUrl] = useState("");
+  const [musicName, setMusicName] = useState("");
+  const musicPlayer = useRef<HTMLAudioElement | null>(null);
 
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoData, setPhotoData] = useState("");
@@ -416,9 +421,8 @@ export function AiReelStudio() {
     const slug = searchParams.get("template");
     const chosen = slug ? reelTemplate(slug) : undefined;
 
-    if (chosen) {
-      applyTemplate(chosen);
-    } else if (slug) {
+    // A template link no longer pre-loads the template: the preview stays blank until a reel style is chosen.
+    if (!chosen && slug) {
       setTab("generate");
     }
   }, [searchParams]);
@@ -540,6 +544,31 @@ export function AiReelStudio() {
       [key]: value,
     }));
   }
+
+  // Upload background music for the Edit a reel preview.
+  function chooseMusic(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    objectUrls.current.push(url);
+    setMusicUrl(url);
+    setMusicName(file.name.replace(/\.[^.]+$/, ""));
+  }
+
+  function removeMusic() {
+    musicPlayer.current?.pause();
+    setMusicUrl("");
+    setMusicName("");
+  }
+
+  // Keep the uploaded music in step with the preview's Play / Pause.
+  useEffect(() => {
+    const audio = musicPlayer.current;
+    if (!audio || !musicUrl) return;
+    if (isPlaying && tab === "edit") void audio.play().catch(() => {});
+    else audio.pause();
+  }, [isPlaying, musicUrl, tab]);
 
   // Upload an existing video for the Edit a reel tab.
   function chooseVideo(event: ChangeEvent<HTMLInputElement>) {
@@ -820,7 +849,7 @@ setJob({ ...result, downloadToken: quote.token });
   }
 
   function togglePlay() {
-    if (template) {
+    if (template || !videoUrl) {
       setIsPlaying((playing) => !playing);
       return;
     }
@@ -893,6 +922,12 @@ setJob({ ...result, downloadToken: quote.token });
           </button>
         </div>
 
+        {tab === "generate" ? (
+          // Create AI video: ceremony scenes on the left, phone preview + reel finishing on the right.
+          <div className="mt-10">
+            <AiVideoStudio embedded />
+          </div>
+        ) : (
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
           <section className="rounded-3xl border border-navy-950/10 bg-white p-5 shadow-sm sm:p-7">
             {tab === "edit" ? (
@@ -911,21 +946,44 @@ setJob({ ...result, downloadToken: quote.token });
                   </div>
 
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-navy-950 px-4 py-2 text-sm font-semibold text-ivory-50">
-                    <Upload size={15} />
-                    Upload MP4
+                    <Music2 size={15} />
+                    Upload music
                     <input
                       className="sr-only"
-                      accept="video/mp4,video/webm,video/quicktime"
+                      accept="audio/*"
                       type="file"
-                      onChange={chooseVideo}
+                      onChange={chooseMusic}
                     />
                   </label>
                 </div>
 
-                <p className="mt-3 text-sm text-navy-700/70">
-                  Currently editing:{" "}
-                  <b className="text-navy-950">{videoName}</b>.
-                </p>
+                {videoName ? (
+                  <p className="mt-3 text-sm text-navy-700/70">
+                    Currently editing:{" "}
+                    <b className="text-navy-950">{videoName}</b>.
+                  </p>
+                ) : (
+                  <p className="mt-3 text-sm text-navy-700/70">
+                    Choose a reel style below to start.
+                  </p>
+                )}
+
+                {musicUrl && (
+                  <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-navy-700/70">
+                    <Music2 size={14} />
+                    Music: <b className="text-navy-950">{musicName}</b>
+                    <button
+                      type="button"
+                      onClick={removeMusic}
+                      className="text-xs font-semibold text-navy-700 underline underline-offset-4"
+                    >
+                      Remove
+                    </button>
+                  </p>
+                )}
+                {musicUrl && (
+                  <audio ref={musicPlayer} src={musicUrl} loop preload="auto" className="hidden" />
+                )}
 
                 <label className="mt-5 block text-xs font-semibold uppercase tracking-[.12em] text-navy-700/70">
                   Reel style
@@ -934,6 +992,7 @@ setJob({ ...result, downloadToken: quote.token });
                     onChange={(event) => chooseLook(event.target.value)}
                     className="mt-2 w-full rounded-xl border border-navy-950/15 bg-white px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-navy-950 focus:border-gold-500 focus:outline-none"
                   >
+                    <option value="">Choose a reel style</option>
                     {REEL_TEMPLATES.map((item) => (
                       <option key={item.slug} value={item.slug}>
                         {item.title} — animated template
@@ -1723,11 +1782,17 @@ setJob({ ...result, downloadToken: quote.token });
                   />
                 ) : (
                   <>
-                    <video
+                    {!videoUrl && (
+                      <div className="absolute inset-0 grid place-items-center bg-ivory-50 px-6 text-center">
+                        <p className="text-sm text-navy-700/60">
+                          Choose a reel style to see your preview here.
+                        </p>
+                      </div>
+                    )}
+                    {videoUrl && <video
                       ref={video}
                       key={videoUrl}
                       src={videoUrl}
-                      poster="/reels/wedding-reel-poster.jpg"
                       className="absolute inset-0 h-full w-full object-cover"
                       loop
                       playsInline
@@ -1747,7 +1812,7 @@ setJob({ ...result, downloadToken: quote.token });
                           event.currentTarget.currentTime
                         );
                       }}
-                    />
+                    />}
 
                     {/* Complete invitation overlay for AI-generated videos. */}
                     {showOverlay && isGeneratedVideo && (
@@ -1897,12 +1962,12 @@ setJob({ ...result, downloadToken: quote.token });
 
             <p className="mx-auto mt-4 max-w-[320px] text-center text-xs leading-relaxed text-navy-700/60">
               <Music2 className="mr-1 inline" size={13} />
-              Keep the original video soundtrack when you upload
-              an existing reel. Music/export can be added with the
-              production render service.
+              Upload music to hear it with the preview. Use songs you
+              have the rights to share.
             </p>
           </aside>
         </div>
+        )}
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import ShowcaseOpening from "@/features/wedding-showcase/ShowcaseOpening";
 import ShowcasePage from "@/features/wedding-showcase/pages/ShowcasePage";
 import { GALLERY_PAGES } from "@/features/wedding-showcase/pages/parts";
 import "@/features/wedding-showcase/showcase-fonts.css";
+import { DesignLoginDialog } from "@/features/start/design-login-dialog";
 import s from "./create.module.css";
 
 // the form's own clean text font (the invitation on the right keeps its design fonts)
@@ -145,13 +146,16 @@ async function uploadDataUrl(requestUpload, dataUrl) {
  * `rsvp`: the site's live RSVP section, shown in the preview where the design's own RSVP was (as on the published event).
  * `eventId`: the dashboard's Wedding Design page (app/admin/(dashboard)/wedding-design) — Save keeps the design on that
  * event and stays here.
- * @param {{ draftToken?: string | null, initialForm?: Record<string, string>, inWizard?: boolean, rsvp?: import("react").ReactNode, eventId?: string | null }} props
+ * `signedIn` / `draftEventId` (wizard only): with nobody signed in, Save & Continue saves the design and then asks them to log in.
+ * @param {{ draftToken?: string | null, initialForm?: Record<string, string>, inWizard?: boolean, rsvp?: import("react").ReactNode, eventId?: string | null, signedIn?: boolean, draftEventId?: string | null }} props
  */
-export default function CreateInvitation({ draftToken = null, initialForm = sampleDefaults, inWizard = false, rsvp = null, eventId = null }) {
+export default function CreateInvitation({ draftToken = null, initialForm = sampleDefaults, inWizard = false, rsvp = null, eventId = null, signedIn = true, draftEventId = null }) {
   const router = useRouter();
   const [form, setForm] = useState(initialForm);
   const [envelope, setEnvelope] = useState(false);
   const [publish, setPublish] = useState({ busy: false, error: "", saved: false });
+  // wizard, nobody signed in: the design is saved, now ask them to log in before Event Details
+  const [askLogin, setAskLogin] = useState(false);
   // files already uploaded (data: URL → "media:" ref), so saving again doesn't upload them twice
   const uploads = useRef(new Map());
   // the draft this design is saved into: the wizard's, or the one the first Publish starts
@@ -205,6 +209,11 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
       }
       const result = await saveWeddingDesignAction(draft, saved);
       if (!result.success) throw new Error(result.error);
+      if (inWizard && !signedIn && draftEventId) {
+        setPublish({ busy: false, error: "", saved: false });
+        setAskLogin(true);
+        return;
+      }
       router.push(result.data.href);
     } catch (e) { setPublish({ busy: false, error: e.message || "Your website could not be saved.", saved: false }); }
   };
@@ -296,5 +305,6 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
     </main>
     {envelope && showcase && !needsFilm && <ShowcaseOpening key={showcase.slug} site={showcase} c={c} onDone={() => setEnvelope(false)} />}
     {envelope && (!showcase || needsFilm) && <SgEnvelope video={c.envelope.video} desktopVideo={c.envelope.desktopVideo} music={c.music || undefined} monogram={c.monogram} sealTrack={c.envelope.sealTrack} sealImage={c.envelope.sealImage} tapLabel={c.envelope.tapLabel} onDone={() => setEnvelope(false)} />}
+    {askLogin && token && draftEventId && <DesignLoginDialog token={token} eventId={draftEventId} onClose={() => setAskLogin(false)} />}
   </InviteShell>;
 }

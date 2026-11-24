@@ -1,0 +1,4 @@
+export const SCENE_DESCRIPTION_LIMIT = 3000;
+export const FULL_PROMPT_LIMIT = 24000;
+export const CONTINUATION_SUMMARY_LIMIT = 3000;
+export const STORY_TEXT_LIMIT = 12000;
