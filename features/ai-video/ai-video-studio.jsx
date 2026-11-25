@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import AiVideoSetup from "@/features/ai-video/components/AiVideoSetup";
+import AiVideoTour from "@/features/ai-video/components/AiVideoTour";
 import { DRAFT_KEY, Segmented, readSavedDetails } from "@/features/ai-video/components/ui-helpers";
 import { generateMusic, prepareUploadedMusic } from "@/features/ai-video/lib/music";
 import "./ai-video.css";
@@ -115,7 +116,10 @@ export function AiVideoStudio({ embedded = false } = {}) {
       <div className="studio-grid">
         <div className="studio-form">
           {embedded && <header className="ai-embedded-head">
-            <p className="ai-embedded-eyebrow">Animated wedding film</p>
+            <div className="ai-embedded-head-row">
+              <p className="ai-embedded-eyebrow">Animated wedding film</p>
+              <AiVideoTour />
+            </div>
             <h2>Create your reel</h2>
           </header>}
           <AiVideoSetup
@@ -126,7 +130,7 @@ export function AiVideoStudio({ embedded = false } = {}) {
             renderEditor={(editor) => (previewHost ? createPortal(editor, previewHost) : null)}
             hideSaved={embedded}
             topFields={
-              <section className="ai-names-card">
+              <section className="ai-names-card" data-tour="ai-names">
                 <h3>Wedding invitation details</h3>
                 <p className="hint small">Enter only the names you want displayed in your invitation.</p>
                 <div className="ai-names-grid">
@@ -137,7 +141,7 @@ export function AiVideoStudio({ embedded = false } = {}) {
             }
           />
 
-          <section className="step">
+          <section className="step" data-tour="ai-music">
             <header><span className="num">04</span><div><small>SOUNDTRACK</small><h2>Music</h2></div></header>
             <Segmented label="Music" value={musicChoice} onChange={setMusicChoice} options={[{ id: "auto", label: "Auto" }, { id: "calm", label: "Soft santoor" }, { id: "festive", label: "Festive dhol" }, { id: "upload", label: "My song" }, { id: "none", label: "No music" }]} />
             {musicChoice === "upload" && (
@@ -152,7 +156,7 @@ export function AiVideoStudio({ embedded = false } = {}) {
           </section>
         </div>
 
-        <aside className="studio-preview ai-preview">
+        <aside className="studio-preview ai-preview" data-tour="ai-preview">
           <div className="preview-sticky">
             <div ref={setPreviewHost} />
           </div>

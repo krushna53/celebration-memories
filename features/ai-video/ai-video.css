@@ -485,3 +485,64 @@
 }
 .ai-video-root.ai-video-embedded .ai-video-setup form > button[type="submit"].primary { width: 100%; min-height: 48px; font-size: 15px; }
 .ai-video-root.ai-video-embedded .ai-video-setup button:disabled { opacity: .45; }
+
+/* ── Ceremony scenes: collapsible rows with a drag handle and a bin, like a sortable list ───────────────── */
+.ai-video-root .ai-scene-list { display: grid; gap: 0; margin: 14px 0; border: 1px solid rgb(229 80 60 / 0.18); border-radius: 16px; overflow: hidden; background: #fff; }
+.ai-video-root .ai-scene { border-top: 1px solid rgb(30 27 75 / 0.08); background: #fff; transition: background .15s ease, box-shadow .15s ease; }
+.ai-video-root .ai-scene:first-child { border-top: 0; }
+.ai-video-root .ai-scene.is-open { background: #fffaf3; }
+.ai-video-root .ai-scene.is-dragging { background: #fff6d6; box-shadow: 0 6px 18px rgb(30 27 75 / 0.14); position: relative; z-index: 1; }
+.ai-video-root .ai-scene-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 10px 12px; }
+.ai-video-root .ai-scene-row > button { min-height: 0; border: 0; background: transparent; padding: 0; border-radius: 10px; color: inherit; }
+.ai-video-root.ai-video-embedded .ai-video-setup .ai-scene-row > button { min-height: 0; padding: 0; }
+.ai-video-root .ai-scene-handle { display: grid; place-items: center; width: 34px; height: 34px; cursor: grab; touch-action: none; color: rgb(30 27 75 / 0.6); }
+.ai-video-root .ai-scene.is-dragging .ai-scene-handle { cursor: grabbing; }
+.ai-video-root .ai-scene-handle:hover, .ai-video-root .ai-scene-handle:focus-visible { background: rgb(30 27 75 / 0.06); color: #1e1b4b; }
+.ai-video-root .ai-scene-title { display: grid; gap: 2px; text-align: left; cursor: pointer; padding: 4px 2px !important; min-width: 0; }
+.ai-video-root .ai-scene-name { font-weight: 600; font-size: 14px; color: #1e1b4b; }
+.ai-video-root .ai-scene-summary { font-size: 12.5px; color: rgb(63 53 138 / 0.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ai-video-root .ai-scene-edit { display: inline-flex !important; align-items: center; gap: 4px; padding: 7px 12px !important; border-radius: 999px !important; background: rgb(30 27 75 / 0.06) !important; font-size: 12.5px; font-weight: 600; color: #1e1b4b; }
+.ai-video-root .ai-scene-edit svg { transition: transform .15s ease; }
+.ai-video-root .ai-scene.is-open .ai-scene-edit svg { transform: rotate(180deg); }
+.ai-video-root .ai-scene-remove { display: grid; place-items: center; width: 34px; height: 34px; color: #b42318; }
+.ai-video-root .ai-scene-remove:hover:not(:disabled), .ai-video-root .ai-scene-remove:focus-visible { background: #fdecea !important; }
+.ai-video-root .ai-scene-remove:disabled { color: rgb(30 27 75 / 0.25); cursor: not-allowed; }
+.ai-video-root .ai-scene-body { padding: 4px 16px 16px 54px; }
+.ai-video-root .ai-scene-body label { margin: 12px 0; }
+.ai-video-root .ai-scene-body textarea { width: 100%; }
+.ai-video-root .ai-inline-icon { display: inline; vertical-align: -2px; }
+.ai-video-root .ai-film-allowance { text-align: center; margin-top: 8px; }
+@media (max-width: 600px) {
+  .ai-video-root .ai-scene-row { padding: 8px; gap: 4px; }
+  .ai-video-root .ai-scene-body { padding: 4px 12px 14px; }
+  .ai-video-root .ai-scene-edit { padding: 6px 10px !important; }
+}
+/* the studio's general button style (filled navy pills) must not reach the scene-row controls */
+.ai-video-root .ai-scene-row > button.ai-scene-handle,
+.ai-video-root .ai-scene-row > button.ai-scene-title,
+.ai-video-root .ai-scene-row > button.ai-scene-remove {
+  background: transparent !important; color: inherit !important; border: 0 !important; box-shadow: none !important;
+  min-height: 0 !important; width: auto; font: inherit; letter-spacing: normal; text-transform: none;
+}
+.ai-video-root .ai-scene-row > button.ai-scene-handle { width: 34px !important; height: 34px !important; padding: 0 !important; border-radius: 10px !important; color: rgb(30 27 75 / 0.6) !important; }
+.ai-video-root .ai-scene-row > button.ai-scene-handle:hover,
+.ai-video-root .ai-scene-row > button.ai-scene-handle:focus-visible { background: rgb(30 27 75 / 0.06) !important; color: #1e1b4b !important; }
+.ai-video-root .ai-scene-row > button.ai-scene-title { padding: 4px 2px !important; border-radius: 8px !important; justify-content: start; }
+.ai-video-root .ai-scene-row > button.ai-scene-remove { width: 34px !important; height: 34px !important; padding: 0 !important; border-radius: 10px !important; color: #b42318 !important; }
+.ai-video-root .ai-scene-row > button.ai-scene-remove:hover:not(:disabled),
+.ai-video-root .ai-scene-row > button.ai-scene-remove:focus-visible { background: #fdecea !important; }
+.ai-video-root .ai-scene-row > button.ai-scene-remove:disabled { color: rgb(30 27 75 / 0.25) !important; opacity: 1; }
+.ai-video-root .ai-scene-row > button.ai-scene-edit {
+  background: rgb(30 27 75 / 0.06) !important; color: #1e1b4b !important; border: 0 !important; box-shadow: none !important;
+  min-height: 0 !important; padding: 7px 12px !important; border-radius: 999px !important; font-size: 12.5px !important; font-weight: 600;
+}
+.ai-video-root .ai-scene-row > button.ai-scene-edit:hover { background: rgb(30 27 75 / 0.1) !important; }
+
+/* "Take the tour" button in the studio header */
+.ai-video-root .ai-embedded-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ai-video-root button.ai-tour-trigger {
+  display: inline-flex !important; align-items: center; gap: 6px; min-height: 0 !important; padding: 7px 14px !important;
+  border: 1px solid rgb(30 27 75 / 0.15) !important; border-radius: 999px !important; background: #fff !important; color: #1e1b4b !important;
+  font-size: 12.5px !important; font-weight: 600; box-shadow: none !important; cursor: pointer;
+}
+.ai-video-root button.ai-tour-trigger:hover { border-color: rgb(30 27 75 / 0.3) !important; background: #fdf6ec !important; }

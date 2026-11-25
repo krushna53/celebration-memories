@@ -48,20 +48,38 @@ function photoBytes(data) {
   return bytes;
 }
 // store provides get/set/claim for per-job artifacts. claim must be atomic.
-export async function serveAiVideo(request, { store, apiKey = "", accessCode = "", allowLocalAccess = false, managementKey = "", teamId = "", fetcher = fetch, now = Date.now() }) {
+/**
+ * visitor (optional): { id, ip, owner } from the route — the logged-in account or a per-browser cookie, the client IP,
+ * and whether this is the site owner. With it the page needs no access code: each visitor gets `freeFilms` paid
+ * generations (one clip holds every scene of the film), counted per visitor AND per IP so clearing cookies doesn't
+ * reset it, with at most `dailyFilmLimit` films a day across all visitors. The owner (or a request carrying the
+ * private access code) is unlimited. Without `visitor`, the original access-code rules apply unchanged.
+ */
+export async function serveAiVideo(request, { store, apiKey = "", accessCode = "", allowLocalAccess = false, managementKey = "", teamId = "", fetcher = fetch, now = Date.now(), visitor = null, freeFilms = 1, dailyFilmLimit = 20, dailySuggestions = 15 }) {
   const url = new URL(request.url); const action = url.pathname.replace(/\/$/, "").split("/").pop();
   const localAccess = allowLocalAccess && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
-  const ready = Boolean(apiKey && (localAccess || accessCode.length >= 16));
+  const visitorMode = Boolean(visitor?.id);
+  const ownerAccess = visitorMode && (visitor.owner === true || (accessCode.length >= 16 && equal(request.headers.get("x-ai-access-code"), accessCode)));
+  const who = visitorMode ? { v: hash(`visitor:${visitor.id}`).slice(0, 40), ip: visitor.ip ? hash(`ip:${apiKey}:${visitor.ip}`).slice(0, 40) : null } : null;
+  const ready = Boolean(apiKey && (visitorMode || localAccess || accessCode.length >= 16));
+  if (request.method === "GET" && action === "config" && visitorMode) {
+    const used = ownerAccess ? 0 : await filmsUsed(store, who);
+    return reply(200, { ready, accessRequired: false, owner: ownerAccess, films: ownerAccess ? { unlimited: true } : { limit: freeFilms, used, left: Math.max(0, freeFilms - used) },
+      message: !ready ? "AI generation is not configured on this server yet." : ownerAccess ? "Site owner: unlimited generations." : used >= freeFilms ? FILM_USED_MESSAGE : "Review estimated credits before sending your photo to xAI." });
+  }
   if (request.method === "GET" && action === "config") return reply(200, { ready, accessRequired: !localAccess, message: ready ? "Review estimated credits before sending your photo to xAI." : !apiKey ? "Server setup is incomplete: the xAI API key is missing. Add it to the server environment and restart." : "Server setup is incomplete: add a private generation access code of at least 16 characters and restart." });
   if (!["quote", "generate", "status", "media", "history", "balance", "suggest-story"].includes(action) || request.method !== "POST") return reply(405, { error: "Unsupported request." });
   if (!ready) return reply(503, { error: "AI generation is not configured on this server yet." });
   if (request.headers.get("origin") && request.headers.get("origin") !== url.origin) return reply(403, { error: "This request must come from the invitation site." });
   if (localAccess && request.headers.get("origin") !== url.origin) return reply(403, { error: "Local generation must be requested from this site." });
-  if (!localAccess && !equal(request.headers.get("x-ai-access-code"), accessCode)) return reply(403, { error: "Enter the generation access code provided by the site owner." });
+  if (visitorMode && request.headers.get("origin") !== url.origin) return reply(403, { error: "This request must come from the invitation site." });
+  if (!visitorMode && !localAccess && !equal(request.headers.get("x-ai-access-code"), accessCode)) return reply(403, { error: "Enter the generation access code provided by the site owner." });
+  if (visitorMode && !ownerAccess && action === "balance") return reply(200, { available: false, reason: "Remaining credits are shown to the site owner only." });
   const secret = hash(`${apiKey}:${accessCode}`);
   try {
     const body = await readJson(request, action === "generate" ? 4600000 : 256000);
     if(action === "suggest-story") {
+      if (visitorMode && !ownerAccess && !await takeDailySlot(store, who, "suggest", dailySuggestions, now)) return reply(429, { error: "You've used today's AI suggestions. You can still edit the scene text yourself." });
       const payload=suggestionRequest(body);
       try {
         const upstream=await fetcher('https://api.x.ai/v1/responses',{method:'POST',headers:{Authorization:'Bearer '+apiKey,'content-type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(20000)});
@@ -81,7 +99,7 @@ export async function serveAiVideo(request, { store, apiKey = "", accessCode = "
     }
     if (action === "history") {
       const records = store.list ? await store.list() : [];
-      const clips = records.filter(({key,job}) => /^job-[a-f0-9-]{36}$/.test(key) && job?.state === "done" && job.videoUrl)
+      const clips = records.filter(({key,job}) => /^job-[a-f0-9-]{36}$/.test(key) && job?.state === "done" && job.videoUrl && (!visitorMode || ownerAccess || job.visitor === who.v))
         .sort((a,b)=>(b.job.created||0)-(a.job.created||0)).map(({key,job})=> {
           const { requestId, ...visible } = job;
           return { ...visible, id:key.slice(4), token:sign({ id:key.slice(4),expires:now+600000 },secret) };
@@ -89,6 +107,7 @@ export async function serveAiVideo(request, { store, apiKey = "", accessCode = "
       return reply(200,{clips});
     }
     if (action === "quote") {
+      if (visitorMode && !ownerAccess && await filmsUsed(store, who) >= freeFilms) return reply(429, { code: "FILM_USED", error: FILM_USED_MESSAGE });
       const estimate = estimateAiVideo(body);
       if (!styles.includes(body.style) || !ceremonies.includes(body.ceremony) || !/^[a-f0-9]{64}$/.test(body.photoHash)) throw new Error("Choose a valid photo, wedding style and ceremony.");
       if (body.promptMode !== undefined && body.promptMode !== "replace") throw new Error("Invalid prompt mode.");
@@ -115,8 +134,13 @@ export async function serveAiVideo(request, { store, apiKey = "", accessCode = "
       if (hash(bytes) !== q.photoHash) return reply(409, { error: "The photo changed. Review the cost again." });
       const current = estimateAiVideo(q);
       if (current.totalCents !== q.totalCents) return reply(409, { error: "Pricing changed. Review the cost again." });
-      job = { state: "starting", estimatedCents: q.totalCents, model: q.model, seconds: q.seconds, resolution: q.resolution, ceremony: q.ceremony, style:q.style, customPrompt:q.customPrompt, promptMode:q.promptMode, storyScene:q.storyScene,weddingScenes:q.weddingScenes,weddingLayout:q.weddingLayout, created: now };
-      if (!await store.claim(key, job)) { const { requestId, ...visible } = await store.get(key) || job; return reply(202, visible); }
+      let allowance = null;
+      if (visitorMode && !ownerAccess) {
+        allowance = await claimFilm(store, who, freeFilms, dailyFilmLimit, now, q.id);
+        if (!allowance.ok) return reply(429, { code: allowance.code, error: allowance.error });
+      }
+      job = { state: "starting", visitor: who?.v, estimatedCents: q.totalCents, model: q.model, seconds: q.seconds, resolution: q.resolution, ceremony: q.ceremony, style:q.style, customPrompt:q.customPrompt, promptMode:q.promptMode, storyScene:q.storyScene,weddingScenes:q.weddingScenes,weddingLayout:q.weddingLayout, created: now };
+      if (!await store.claim(key, job)) { if (allowance) await releaseFilm(store, allowance); const { requestId, ...visible } = await store.get(key) || job; return reply(202, visible); }
       // Never retry this POST automatically: an interrupted response may still be billed.
       try {
         const upstream = await fetcher("https://api.x.ai/v1/videos/generations", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "content-type": "application/json" }, body: JSON.stringify({ model: q.model, prompt: q.promptMode === "replace" ? q.customPrompt : weddingVideoPrompt(q.style, q.ceremony, q.seconds, q.customPrompt), image:{url:body.image}, duration: q.seconds, resolution: q.resolution, aspect_ratio: "9:16" }), signal: AbortSignal.timeout(25000) });
@@ -124,6 +148,8 @@ export async function serveAiVideo(request, { store, apiKey = "", accessCode = "
         const actualCostUsd = providerCostUsd(result);
         if (actualCostUsd !== null) job = { ...job, actualCostUsd };
         if (!upstream.ok) {
+          // xAI refused the request, so nothing was billed: the visitor keeps their free film.
+          if (allowance) await releaseFilm(store, allowance);
           job = { ...job, state: "failed", error: upstream.status === 402 || upstream.status === 429 ? "Provider credits or usage limit reached. Check xAI billing and usage before trying again." : "xAI rejected this generation. Check API permissions, model access and billing. No automatic retry was made." };
         } else if (typeof result.request_id === "string" && /^[A-Za-z0-9_-]{1,150}$/.test(result.request_id)) job = { ...job, state: "pending", requestId: result.request_id };
         else job = { ...job, state: "unknown", error: "Provider response was incomplete. Check xAI usage before starting another paid generation." };
@@ -174,4 +200,68 @@ function networkReason(error) {
   if (error?.name === "TimeoutError" || error?.name === "AbortError") return "timed out";
   const cause = error?.cause;
   return String(cause?.code || cause?.message || error?.message || "network error").slice(0, 80);
+}
+
+
+/* ── One free film per visitor ────────────────────────────────────────────────────────────────────────────────
+   Records live in the same job store. A claim is a record created with store.claim (only-if-new, so two requests
+   can't both take the same slot); a released record ({ released: true }) can be claimed again. */
+const FILM_USED_MESSAGE = "You've already created your free AI film. Your clip stays available in this studio; contact us for more films.";
+const dayStamp = (now) => new Date(now).toISOString().slice(0, 10).replace(/-/g, "");
+const allowanceKeys = (who) => [`allow-v-${who.v}`, ...(who.ip ? [`allow-ip-${who.ip}`] : [])];
+
+async function isTaken(store, key) { const record = await store.get(key); return Boolean(record && !record.released); }
+
+async function takeKey(store, key, value) {
+  if (await store.claim(key, value)) return true;
+  const record = await store.get(key);
+  if (record?.released) { await store.set(key, value); return true; }
+  return false;
+}
+
+/** How many films this visitor has used (by account/cookie or by IP, whichever is higher). */
+async function filmsUsed(store, who) {
+  let used = 0;
+  for (const base of allowanceKeys(who)) {
+    let count = 0;
+    for (let n = 0; n < 5; n++) { if (await isTaken(store, `${base}-${n}`)) count++; else break; }
+    used = Math.max(used, count);
+  }
+  return used;
+}
+
+async function claimFilm(store, who, freeFilms, dailyFilmLimit, now, jobId) {
+  const value = { at: now, job: jobId };
+  const held = [];
+  const giveBack = async () => { for (const key of held) await store.set(key, { released: true, at: now }); };
+  // the visitor's own slot and the IP's slot: both must be free
+  for (const base of allowanceKeys(who)) {
+    let got = false;
+    for (let n = 0; n < freeFilms; n++) { if (await takeKey(store, `${base}-${n}`, value)) { held.push(`${base}-${n}`); got = true; break; } }
+    if (!got) { await giveBack(); return { ok: false, code: "FILM_USED", error: FILM_USED_MESSAGE }; }
+  }
+  // the site-wide daily ceiling, so a flood of new visitors can't run up the bill
+  const day = dayStamp(now);
+  let slot = null;
+  for (let n = 0; n < dailyFilmLimit; n++) { if (await takeKey(store, `allow-day-${day}-${n}`, value)) { slot = `allow-day-${day}-${n}`; break; } }
+  if (!slot) { await giveBack(); return { ok: false, code: "DAILY_LIMIT", error: "Today's AI films are fully booked. Please try again tomorrow." }; }
+  held.push(slot);
+  return { ok: true, keys: held };
+}
+
+async function releaseFilm(store, allowance) { for (const key of allowance.keys) await store.set(key, { released: true }); }
+
+/** Up to `limit` uses a day, counted per visitor and per IP. */
+async function takeDailySlot(store, who, kind, limit, now) {
+  const day = dayStamp(now);
+  const value = { at: now };
+  const bases = [`${kind}-v-${who.v}-${day}`, ...(who.ip ? [`${kind}-ip-${who.ip}-${day}`] : [])];
+  const held = [];
+  for (const base of bases) {
+    let got = null;
+    for (let n = 0; n < limit; n++) { if (await takeKey(store, `${base}-${n}`, value)) { got = `${base}-${n}`; break; } }
+    if (!got) { for (const key of held) await store.set(key, { released: true }); return false; }
+    held.push(got);
+  }
+  return true;
 }
