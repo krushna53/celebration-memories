@@ -166,7 +166,13 @@ export function UnifiedLoginForm() {
       </EmailAuthDisclosure>
 
       <p className="mt-6 text-sm text-ivory-100/60">
-        New here?{" "}
+        Don&rsquo;t have an account?{" "}
+        <Link href="/signup" className="font-medium text-gold-300 underline underline-offset-4 hover:text-gold-200">
+          Create an account
+        </Link>
+      </p>
+      <p className="mt-3 text-sm text-ivory-100/60">
+        Or start without one:{" "}
         <StartBuildingButton plain formClassName="inline" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
           Build your event site
         </StartBuildingButton>
@@ -177,8 +183,8 @@ export function UnifiedLoginForm() {
         {", or "}
         <Link href="/business/signup" className="text-gold-300 underline underline-offset-4 hover:text-gold-200">
           become a partner
-        </Link>{" "}
-        — no account needed to start.
+        </Link>
+        .
       </p>
     </div>
   );

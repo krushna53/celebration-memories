@@ -5,6 +5,8 @@ import { getCurrentAdmin } from "@/services/admin-auth";
 import { getCurrentBusinessAccount } from "@/services/business-auth";
 import { getCurrentFormOwner } from "@/services/custom-forms";
 import { supabaseServer } from "@/lib/supabase/server";
+import { BUSINESS_HOME_PATH, EVENT_OWNER_HOME_PATH, signupRoleOf } from "@/lib/signup-role";
+import { currentSignupRole, ensureBusinessOwnerAccess } from "@/services/signup-role";
 
 /**
  * Backing logic for the unified login page (app/login/page.tsx,
@@ -28,7 +30,23 @@ export type LoginDestination =
 
 export async function resolveLoginDestinationAction(): Promise<LoginDestination> {
   const admin = await getCurrentAdmin();
-  if (admin) return { kind: "admin", path: "/admin?from=login", menuItems: dashboardLinksForRole(admin.role) };
+  if (admin) {
+    // A Business Owner (sign-up Role, lib/signup-role.ts) lands on the Event Mailer dashboard.
+    const path = admin.role === "client" && (await currentSignupRole()) === "business_owner" ? BUSINESS_HOME_PATH : "/admin?from=login";
+    return { kind: "admin", path, menuItems: dashboardLinksForRole(admin.role) };
+  }
+
+  // A Business Owner whose Mailer access wasn't set up at sign-up (e.g. the confirmation
+  // link was opened in another browser) gets it now, then goes straight to the Mailer.
+  const supabase = await supabaseServer();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+  const role = authUser ? signupRoleOf(authUser.user_metadata) : null;
+  if (authUser && role === "business_owner" && (await ensureBusinessOwnerAccess(authUser))) {
+    const created = await getCurrentAdmin();
+    if (created) return { kind: "admin", path: BUSINESS_HOME_PATH, menuItems: dashboardLinksForRole(created.role) };
+  }
 
   const business = await getCurrentBusinessAccount();
   if (business) return { kind: "business", path: "/business/dashboard" };
@@ -36,8 +54,8 @@ export async function resolveLoginDestinationAction(): Promise<LoginDestination>
   const formOwner = await getCurrentFormOwner();
   if (formOwner) return { kind: "forms", path: "/forms/dashboard" };
 
-  const user = await getCurrentSupabaseUser();
-  if (user) return { kind: "account", path: "/account/billing" };
+  // An Event Owner who hasn't created their event yet continues in the event wizard.
+  if (authUser) return { kind: "account", path: role === "event_owner" ? EVENT_OWNER_HOME_PATH : "/account/billing" };
   return { kind: "none" };
 }
 

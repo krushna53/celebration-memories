@@ -84,7 +84,8 @@ export async function middleware(request: NextRequest) {
     return withRefCookie(NextResponse.next({ request: { headers: requestHeaders } }), refCode);
   }
 
-  if (!request.nextUrl.pathname.startsWith("/admin") && request.nextUrl.pathname !== "/login" && !/^\/(events|invite|event-access|event-day|session|share|reels|games|plan|p|media|api)($|\/)/.test(request.nextUrl.pathname)) {
+  // /signup reads the session like /login does.
+  if (!request.nextUrl.pathname.startsWith("/admin") && request.nextUrl.pathname !== "/login" && !/^\/(events|invite|event-access|event-day|session|share|reels|games|plan|p|media|api|signup)($|\/)/.test(request.nextUrl.pathname)) {
     // Every other route: no session to refresh, just carry the referral cookie forward.
     return finish(NextResponse.next({ request }));
   }

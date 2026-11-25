@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { CalendarCheck, FileText, Globe, LayoutGrid, MonitorPlay } from "lucide-react";
 
 import { getCurrentAdmin } from "@/services/admin-auth";
+import { currentSignupRole } from "@/services/signup-role";
+import { BUSINESS_HOME_PATH } from "@/lib/signup-role";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { getDashboardStats, getVisitorFunnel } from "@/services/admin-stats";
 import { StatCard } from "@/features/admin/components/stat-card";
@@ -50,7 +52,8 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
     // offers to link a new draft instead of creating a duplicate
     // account). Owner never hits this in practice.
     if (admin?.role === "client") {
-      redirect("/start");
+      // A Business Owner (sign-up Role) without an event yet works in the Event Mailer dashboard.
+      redirect((await currentSignupRole()) === "business_owner" ? BUSINESS_HOME_PATH : "/start");
     }
     return <NoEventState />;
   }

@@ -4,6 +4,8 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createFormOwnerAccount, getFormByDraftToken } from "@/services/custom-forms";
 import { SITE_URL } from "@/lib/constants";
+import { isSignupRole } from "@/lib/signup-role";
+import { ensureBusinessOwnerAccess, rememberSignupRole } from "@/services/signup-role";
 
 export const dynamic = "force-dynamic";
 
@@ -171,6 +173,14 @@ export async function GET(request: Request): Promise<Response> {
       }
     } else if (error) {
       console.error("auth callback: exchangeCodeForSession failed:", error.message);
+    }
+
+    // The sign-up "Role" (app/signup): email sign-up saved it on the account; Google sign-up
+    // passes it as ?signup_role=. A Business Owner gets the Event Mailer dashboard right away.
+    if (!error && data.user) {
+      const requested = url.searchParams.get("signup_role");
+      const role = await rememberSignupRole(data.user, isSignupRole(requested) ? requested : null);
+      if (role === "business_owner") await ensureBusinessOwnerAccess(data.user);
     }
   }
 
