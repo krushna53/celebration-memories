@@ -1,7 +1,7 @@
 import "server-only";
+import { Resend } from "resend";
 
 import { SITE_NAME, WIZARD_LEAD_NOTIFICATION } from "@/lib/constants";
-import { maskEmail, sendEmail as sendResendEmail } from "@/lib/resend";
 import { buildLeadOutreachWhatsAppUrl } from "@/lib/whatsapp";
 
 /**
@@ -20,25 +20,42 @@ import { buildLeadOutreachWhatsAppUrl } from "@/lib/whatsapp";
  * on this for real guest-facing email. See README for the full setup.
  */
 
+function getClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  return new Resend(apiKey);
+}
+
+function getFromAddress(): string {
+  return process.env.RESEND_FROM_EMAIL || `${SITE_NAME} <onboarding@resend.dev>`;
+}
+
 interface SendEmailParams {
   to: string;
   subject: string;
   html: string;
 }
 
-// Goes through the shared Resend service (lib/resend.ts), which also
-// handles test mode (EMAIL_DELIVERY_MODE). Email failures should never
-// break the Server Action that triggered them (an inquiry/RSVP is
-// already saved in the DB by this point) — log and move on rather than
-// throwing.
 async function sendEmail({ to, subject, html }: SendEmailParams): Promise<void> {
-  const result = await sendResendEmail({ to, subject, html });
-  if (result.success) return;
-  if (result.code === "not_configured") {
-    console.info(`[email skipped — RESEND_API_KEY not set] to=${maskEmail(to)}`);
+  const client = getClient();
+  if (!client) {
+    console.info(`[email skipped — RESEND_API_KEY not set] to=${to} subject="${subject}"`);
     return;
   }
-  console.error(`Failed to send email to ${maskEmail(to)}: ${result.code}: ${result.error}`);
+
+  const { error } = await client.emails.send({
+    from: getFromAddress(),
+    to,
+    subject,
+    html,
+  });
+
+  if (error) {
+    // Email failures should never break the Server Action that
+    // triggered them (an inquiry/RSVP is already saved in the DB by
+    // this point) — log and move on rather than throwing.
+    console.error(`Failed to send email to ${to}:`, error);
+  }
 }
 
 /**
