@@ -2,7 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { eventPermissions, seesPrivatePhotos, supportExpiry } from "@/services/event-access";
-import { isSharedLifeStoryMedia } from "@/services/life-story";
+import { isBiographyBookMedia, isSharedLifeStoryMedia } from "@/services/life-story";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -35,6 +35,10 @@ export async function authorizeMedia(bucket: string, path: string, support = fal
     return ttl > 0 ? { ttl, eventId, support: true } : null;
   }
   if (!permissions.view) return null;
+  // A Biography event's book (/events/<slug>/book) is part of its event page — same access as the page.
+  if ((bucket === "gallery" || bucket === "videos") && path.startsWith(`${eventId}/life-story/`)) {
+    if (await isBiographyBookMedia(eventId, bucket, path)) return { ttl: 60, eventId, support: false };
+  }
   const guestToken = cookieJar.get("em_guest_preview")?.value;
   if (guestToken) {
     const { data: guest } = await supabaseAdmin().from("invitees").select("id").eq("event_id",eventId).eq("token",guestToken).maybeSingle();

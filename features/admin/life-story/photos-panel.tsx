@@ -10,14 +10,7 @@ import { compressImage } from "@/lib/image-compression";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { LIFE_STORY_MAX_PHOTOS, LIFE_STORY_PHOTO_MAX_EDGE } from "@/lib/life-story";
 import type { LifeStoryPhoto } from "@/types/life-story";
-import {
-  confirmPhotoUploadAction,
-  deletePhotoAction,
-  reorderPhotosAction,
-  requestPhotoUploadAction,
-  setCoverPhotoAction,
-  updatePhotoAction,
-} from "@/features/admin/life-story/actions";
+import { useLifeStoryActions } from "@/features/admin/life-story/actions-context";
 import { card, errorText, hint, input } from "@/features/admin/life-story/styles";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif";
@@ -51,6 +44,7 @@ export function PhotosPanel({
   onDone: () => void;
 }) {
   const router = useRouter();
+  const actions = useLifeStoryActions();
   const fileRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState(initial);
   const [coverId, setCoverId] = useState(initialCover);
@@ -68,12 +62,12 @@ export function PhotosPanel({
       try {
         const file = await compressImage(original, { maxDimension: LIFE_STORY_PHOTO_MAX_EDGE, quality: 0.86 });
         if (file.type !== "image/jpeg" && file.type !== "image/png") throw new Error("this format couldn't be converted — try a JPEG");
-        const signed = await requestPhotoUploadAction(eventId, file.type, file.size);
+        const signed = await actions.requestPhotoUpload(eventId, file.type, file.size);
         if (!signed.success) throw new Error(signed.error);
         const { error } = await supabaseBrowser().storage.from("gallery").uploadToSignedUrl(signed.data.path, signed.data.token, file, { contentType: file.type });
         if (error) throw new Error(error.message);
         const size = await dimensions(file);
-        const saved = await confirmPhotoUploadAction(eventId, { path: signed.data.path, fileSize: file.size, ...size, caption: "" });
+        const saved = await actions.confirmPhotoUpload(eventId, { path: signed.data.path, fileSize: file.size, ...size, caption: "" });
         if (!saved.success) throw new Error(saved.error);
         setPhotos((list) => [...list, saved.data]);
         setCoverId((c) => c ?? saved.data.id);
@@ -94,13 +88,13 @@ export function PhotosPanel({
     const next = [...photos];
     [next[index], next[target]] = [next[target]!, next[index]!];
     setPhotos(next);
-    const res = await reorderPhotosAction(eventId, next.map((p) => p.id));
+    const res = await actions.reorderPhotos(eventId, next.map((p) => p.id));
     if (!res.success) setErrors([res.error]);
   }
 
   async function remove(photo: LifeStoryPhoto) {
     if (!window.confirm("Delete this photo from the life story?")) return;
-    const res = await deletePhotoAction(eventId, photo.id);
+    const res = await actions.deletePhoto(eventId, photo.id);
     if (!res.success) {
       setErrors([res.error]);
       return;
@@ -112,13 +106,13 @@ export function PhotosPanel({
   async function saveField(photo: LifeStoryPhoto, field: "caption" | "yearLabel", value: string) {
     if (photo[field] === value) return;
     setPhotos((list) => list.map((p) => (p.id === photo.id ? { ...p, [field]: value } : p)));
-    const res = await updatePhotoAction(eventId, photo.id, { [field]: value });
+    const res = await actions.updatePhoto(eventId, photo.id, { [field]: value });
     if (!res.success) setErrors([res.error]);
   }
 
   async function makeCover(photo: LifeStoryPhoto) {
     setCoverId(photo.id);
-    const res = await setCoverPhotoAction(eventId, photo.id);
+    const res = await actions.setCoverPhoto(eventId, photo.id);
     if (!res.success) setErrors([res.error]);
   }
 

@@ -44,7 +44,7 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
         hideFooter
       >
         <div className="grid gap-6">
-          <WizardBackLink token={token} slug="review" goals={event.wizardGoals} />
+          <WizardBackLink token={token} slug="review" goals={event.wizardGoals} category={event.category} />
           {wantsCard ? (
             <section className="rounded-xl border border-navy-950/10 bg-white p-5">
               <h2 className="font-display text-lg text-navy-950">Invitation Card</h2>
@@ -129,7 +129,7 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
       hideFooter
     >
       <div className="grid gap-6">
-        <WizardBackLink token={token} slug="review" goals={event.wizardGoals} />
+        <WizardBackLink token={token} slug="review" goals={event.wizardGoals} category={event.category} />
         <section className="rounded-xl border border-navy-950/10 bg-white p-5">
           <h2 className="font-display text-lg text-navy-950">Your Event Page</h2>
           <p className="mt-1 text-sm text-navy-700/60">

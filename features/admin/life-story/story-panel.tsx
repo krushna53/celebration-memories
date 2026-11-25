@@ -7,7 +7,7 @@ import { FileUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LIFE_STORY_MAX_STORY_CHARS, LIFE_STORY_MIN_STORY_CHARS } from "@/lib/life-story";
 import type { LifeStory } from "@/types/life-story";
-import { saveStoryAction } from "@/features/admin/life-story/actions";
+import { useLifeStoryActions } from "@/features/admin/life-story/actions-context";
 import { card, errorText, hint, input, label } from "@/features/admin/life-story/styles";
 
 /**
@@ -18,6 +18,7 @@ import { card, errorText, hint, input, label } from "@/features/admin/life-story
  */
 export function StoryPanel({ eventId, story, onDone }: { eventId: string; story: LifeStory; onDone: () => void }) {
   const router = useRouter();
+  const actions = useLifeStoryActions();
   const fileRef = useRef<HTMLInputElement>(null);
   const [values, setValues] = useState({
     subjectName: story.subjectName,
@@ -63,7 +64,7 @@ export function StoryPanel({ eventId, story, onDone }: { eventId: string; story:
   async function save(next: boolean) {
     setSaving(true);
     setError(null);
-    const res = await saveStoryAction(eventId, values);
+    const res = await actions.saveStory(eventId, values);
     setSaving(false);
     if (!res.success) {
       setError(res.error);
