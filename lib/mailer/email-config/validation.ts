@@ -30,7 +30,9 @@ export interface CleanEmailConfig {
 
 export type ValidationResult = { ok: true; value: CleanEmailConfig } | { ok: false; field: keyof EmailConfigInput; error: string };
 
-const PROVIDER_IDS: readonly EmailProviderId[] = ["google", "microsoft", "ses", "sendgrid", "brevo", "local", "custom"];
+const PROVIDER_IDS: readonly EmailProviderId[] = ["google", "microsoft", "ses", "sendgrid", "brevo", "resend", "local", "custom"];
+/** Resend API keys look like re_xxxxxxxx… */
+const RESEND_KEY = /^re_[A-Za-z0-9_-]{8,}$/;
 // Control characters (incl. CR/LF) would let a value smuggle extra email headers.
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
 const HOSTNAME = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
@@ -79,12 +81,16 @@ export function validateEmailConfig(
   if (replyToName.length > 80) return fail("replyToName", "Keep the Reply-To name under 80 characters.");
   if (replyToName && !replyRaw) return fail("replyToEmail", "Add the Reply-To address for this Reply-To name.");
 
-  const smtpHost = text(input.smtpHost).toLowerCase().replace(/\.$/, "");
+  // API providers (Resend) have no SMTP settings to fill in — the preset's values are stored as-is.
+  const api = preset.apiOnly === true;
+  const smtpHost = api ? preset.host : text(input.smtpHost).toLowerCase().replace(/\.$/, "");
   if (!smtpHost) return fail("smtpHost", "Add the SMTP host, e.g. smtp.gmail.com.");
-  const smtpPort = Number(input.smtpPort);
-  const encryption = input.encryption;
+  const smtpPort = api ? preset.port : Number(input.smtpPort);
+  const encryption = api ? preset.encryption : input.encryption;
 
-  if (isLocal) {
+  if (api) {
+    // Nothing to check: fixed values above.
+  } else if (isLocal) {
     // Mailpit: the only place a local address, port 1025 and no TLS are accepted.
     if (!isLocalSmtpHost(smtpHost)) return fail("smtpHost", "Local testing uses 127.0.0.1 (Mailpit running on this computer).");
     if (smtpPort !== LOCAL_SMTP_PORT) return fail("smtpPort", `Mailpit listens on port ${LOCAL_SMTP_PORT}.`);
@@ -98,19 +104,23 @@ export function validateEmailConfig(
     }
   }
 
-  const authEnabled = input.authEnabled !== false;
+  const authEnabled = api || input.authEnabled !== false;
   if (!authEnabled && !preset.allowsNoAuth) return fail("authEnabled", `${preset.label} needs a username and password.`);
 
-  const smtpUsername = text(input.smtpUsername);
+  const smtpUsername = api ? preset.username : text(input.smtpUsername);
   if (smtpUsername.length > 254) return fail("smtpUsername", "The username is too long.");
   if (CONTROL_CHARS.test(smtpUsername)) return fail("smtpUsername", "The username can't contain line breaks or control characters.");
   if (authEnabled && !smtpUsername) return fail("smtpUsername", "Add the SMTP username.");
 
   // Passwords are not trimmed — spaces can be part of one (Google shows app passwords in groups).
   const rawPassword = typeof input.newPassword === "string" ? input.newPassword : "";
-  const newPassword = rawPassword.trim() ? rawPassword : null;
+  // An API key never has spaces, so a copy-paste's stray whitespace is dropped.
+  const newPassword = rawPassword.trim() ? (api ? rawPassword.trim() : rawPassword) : null;
   if (newPassword && newPassword.length > PASSWORD_MAX) return fail("newPassword", "That password is too long.");
   if (authEnabled && !newPassword && !options.hasStoredPassword) return fail("newPassword", `Add the ${preset.passwordLabel.toLowerCase()}.`);
+  if (provider === "resend" && newPassword && !RESEND_KEY.test(newPassword)) {
+    return fail("newPassword", "That doesn't look like a Resend API key — it starts with re_ (Resend → API Keys).");
+  }
 
   const dkimSelector = text(input.dkimSelector);
   if (dkimSelector && !DKIM_SELECTOR.test(dkimSelector)) return fail("dkimSelector", "A DKIM selector is letters, numbers, dots, dashes or underscores (e.g. google, s1).");

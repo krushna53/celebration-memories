@@ -201,3 +201,69 @@ test('contacts saved before roles existed load with an empty roles list', async 
   assert.equal(loaded.contacts.length, old.contacts.length);
   assert.ok(loaded.contacts.every((c) => Array.isArray(c.roles) && c.roles.length === 0));
 });
+
+const { cleanBrandInput, normalizeHex, brandOf, readableTextOn, DEFAULT_PRIMARY_COLOR } = load('lib/mailer/brand');
+
+test('brand colors: HEX codes are normalised and bad ones rejected', () => {
+  assert.equal(normalizeHex('#2563eb'), '#2563EB');
+  assert.equal(normalizeHex('f59e0b'), '#F59E0B');
+  assert.equal(normalizeHex('#fa0'), '#FFAA00');
+  for (const bad of ['', '#12345', '#GGGGGG', 'red', '#1234567', null, 42]) assert.equal(normalizeHex(bad), null, String(bad));
+  assert.match(cleanBrandInput({ primaryColor: 'nope', secondaryColor: '#000000' }).error, /Primary color/);
+  assert.match(cleanBrandInput({ primaryColor: '#000000', secondaryColor: '#12' }).error, /Secondary color/);
+  assert.equal(readableTextOn('#FFFFFF'), '#111111');
+  assert.equal(readableTextOn('#1E2A4A'), '#FFFFFF');
+});
+
+test('brand logo: only the converted PNG or an https URL is accepted', () => {
+  const ok = (logoUrl) => cleanBrandInput({ logoUrl, primaryColor: '#FF6B57', secondaryColor: '#1E2A4A' });
+  assert.equal(ok(null).ok, true);
+  assert.equal(ok('data:image/png;base64,iVBORw0KGgo=').ok, true);
+  assert.equal(ok('https://cdn.example/logo.png').ok, true);
+  for (const bad of ['data:image/svg+xml;base64,PHN2Zz4=', 'javascript:alert(1)', 'http://plain.example/logo.png', 'data:image/png;base64,"><script>']) {
+    assert.equal(ok(bad).ok, false, bad);
+  }
+});
+
+test('emails use the saved brand: logo in the header, primary on button and links, secondary on the heading', () => {
+  const content = { subject: 'Hello', preheader: '', body: 'Hi', ctaLabel: 'RSVP', ctaUrl: 'https://x.example' };
+  const plain = renderEmail('diwali', content, {});
+  assert.doesNotMatch(plain.html, /<img/);
+  assert.match(plain.html, /background:#5b1a1a/);
+  const brand = { logoUrl: 'https://cdn.example/l.png', primaryColor: '#2563EB', secondaryColor: '#F59E0B' };
+  const html = renderEmail('diwali', content, { sender_name: 'Acme' }, { brand, unsubscribeUrl: 'https://u.example/x' }).html;
+  assert.match(html, /<img src="https:\/\/cdn\.example\/l\.png" alt="Acme"/);
+  assert.match(html, /<td style="border-radius:999px;background:#2563EB;">/);
+  assert.match(html, /color:#F59E0B;">Hello<\/h1>/);
+  assert.match(html, /style="color:#2563EB;">Unsubscribe/);
+  assert.doesNotMatch(html, /background:#5b1a1a/);
+  // A logo URL that isn't https never becomes an image.
+  assert.doesNotMatch(renderEmail('diwali', content, {}, { brand: { ...brand, logoUrl: 'javascript:x' } }).html, /<img/);
+});
+
+test('LocalStorage repository: brand settings save, reload and are cleared by Reset demo data', async () => {
+  const store = memoryStore();
+  const repo = new LocalStorageMailerRepository(store);
+  assert.equal(brandOf(await repo.load()), null);
+  await assert.rejects(repo.saveBrandSettings({ logoUrl: null, primaryColor: '#XYZ', secondaryColor: '#000' }), /Primary color/);
+  const logoUrl = await repo.uploadLogo(new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' }));
+  assert.equal(logoUrl, 'data:image/png;base64,iVBORw==');
+  await assert.rejects(repo.uploadLogo(new Blob(['<svg/>'], { type: 'image/svg+xml' })), /couldn't be prepared/);
+  const saved = await repo.saveBrandSettings({ logoUrl, primaryColor: '#2563eb', secondaryColor: 'f59e0b' });
+  assert.equal(saved.primaryColor, '#2563EB');
+  assert.equal(saved.secondaryColor, '#F59E0B');
+  const again = new LocalStorageMailerRepository(store);
+  assert.deepEqual(brandOf(await again.load()), saved);
+  await again.resetDemoData();
+  assert.equal(brandOf(await again.load()), null);
+  assert.equal(DEFAULT_PRIMARY_COLOR, '#FF6B57');
+});
+
+test('campaigns keep a "show logo" choice — on by default, off when unticked, kept for older campaigns', async () => {
+  const repo = new LocalStorageMailerRepository(memoryStore());
+  const base = { name: 'Logo test', kind: 'announcement', templateId: null, senderName: '', eventId: null, audience: { contactIds: [], listIds: [] }, subject: 'S', preheader: '', body: 'B', ctaLabel: '', ctaUrl: '' };
+  assert.equal((await repo.saveCampaign(base)).showLogo, true);
+  const off = await repo.saveCampaign({ ...base, showLogo: false });
+  assert.equal(off.showLogo, false);
+  assert.equal((await repo.saveCampaign({ ...base, showLogo: true }, off.id)).showLogo, true);
+});

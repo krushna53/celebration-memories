@@ -5,6 +5,8 @@ import { Monitor, Smartphone } from "lucide-react";
 
 import type { MailerContact, MailerEmailContent, MailerEvent } from "@/types/mailer";
 import { renderEmail, type EmailTheme } from "@/lib/mailer/email-html";
+import { brandOf } from "@/lib/mailer/brand";
+import { useMailerStatus } from "@/features/mailer/mailer-provider";
 import { sampleTokenValues, tokenValuesFor } from "@/lib/mailer/tokens";
 import { contactDisplayName } from "@/lib/mailer/email";
 import { cn } from "@/lib/utils";
@@ -20,6 +22,7 @@ export function EmailPreview({
   senderName,
   event,
   contacts,
+  showLogo = true,
 }: {
   kind: EmailTheme;
   content: MailerEmailContent;
@@ -27,7 +30,15 @@ export function EmailPreview({
   event: MailerEvent | null;
   /** Contacts the person can preview as; empty = sample values. */
   contacts: MailerContact[];
+  /** Campaigns can leave the Brand Settings logo out. */
+  showLogo?: boolean;
 }) {
+  // The saved Brand Settings — every preview shows the email as it will really go out.
+  const { data } = useMailerStatus();
+  const brand = useMemo(() => {
+    const b = brandOf(data);
+    return b && !showLogo ? { ...b, logoUrl: null } : b;
+  }, [data, showLogo]);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [contactId, setContactId] = useState<string>("");
   const contact = contacts.find((c) => c.id === contactId) ?? contacts[0] ?? null;
@@ -42,8 +53,8 @@ export function EmailPreview({
       if (event) values = { ...values, event_name: real.event_name, event_date: real.event_date, event_venue: real.event_venue };
       if (real.sender_name) values = { ...values, sender_name: real.sender_name };
     }
-    return renderEmail(kind, content, values);
-  }, [kind, content, senderName, event, contact]);
+    return renderEmail(kind, content, values, { brand });
+  }, [kind, content, senderName, event, contact, brand]);
 
   return (
     <div className="flex h-full flex-col">

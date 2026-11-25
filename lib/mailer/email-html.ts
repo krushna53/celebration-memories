@@ -1,5 +1,6 @@
-import type { AutomationKind, CampaignKind, MailerEmailContent } from "@/types/mailer";
+import type { AutomationKind, CampaignKind, MailerBrand, MailerEmailContent } from "@/types/mailer";
 import { escapeHtml, renderTokens, type TokenValues } from "@/lib/mailer/tokens";
+import { isInlineLogo, normalizeHex, readableTextOn } from "@/lib/mailer/brand";
 
 /**
  * Builds the responsive HTML email for a campaign/template — table layout
@@ -10,6 +11,10 @@ import { escapeHtml, renderTokens, type TokenValues } from "@/lib/mailer/tokens"
  * blank lines become paragraphs and single newlines become <br>. Token
  * values are escaped too, so nothing a contact's name or a CSV import
  * contains can inject markup into the email.
+ *
+ * With a saved brand (Brand Settings) the header turns light and carries
+ * the logo, headings use the secondary colour and the button and links the
+ * primary colour; the page tint, ornament and eyebrow of the kind stay.
  */
 
 interface Theme {
@@ -117,6 +122,14 @@ export function safeHttpUrl(url: string): string | null {
   }
 }
 
+/** Only an https URL or the inline PNG the Brand Settings form made can become the logo image. */
+function brandLogoSrc(url: string | null): string | null {
+  if (!url) return null;
+  if (isInlineLogo(url)) return url;
+  const safe = safeHttpUrl(url);
+  return safe && safe.startsWith("https:") ? safe : null;
+}
+
 export function bodyToHtml(body: string, color: string): string {
   return body
     .replace(/\r\n/g, "\n")
@@ -142,11 +155,22 @@ export function renderEmail(
   kind: EmailTheme,
   content: MailerEmailContent,
   values: TokenValues,
-  /** The recipient's own unsubscribe link (live sends); previews leave it out. */
-  options: { unsubscribeUrl?: string | null } = {},
+  options: {
+    /** The recipient's own unsubscribe link (live sends); previews leave it out. */
+    unsubscribeUrl?: string | null;
+    /** The company's saved brand (lib/mailer/brand.ts brandOf); null keeps the kind's own look. */
+    brand?: Pick<MailerBrand, "logoUrl" | "primaryColor" | "secondaryColor"> | null;
+  } = {},
 ): RenderedEmail {
   const unsubscribeHref = options.unsubscribeUrl ? safeHttpUrl(options.unsubscribeUrl) : null;
   const t = THEMES[kind];
+  const primary = options.brand ? normalizeHex(options.brand.primaryColor) : null;
+  const secondary = options.brand ? normalizeHex(options.brand.secondaryColor) : null;
+  const branded = primary !== null && secondary !== null;
+  const logoSrc = branded ? brandLogoSrc(options.brand?.logoUrl ?? null) : null;
+  const buttonBg = branded ? primary : t.accent;
+  const buttonText = branded ? readableTextOn(primary) : "#ffffff";
+  const linkColor = branded ? primary : t.muted;
   const subject = renderTokens(content.subject, values);
   const preheader = renderTokens(content.preheader, values);
   const body = renderTokens(content.body, values);
@@ -157,8 +181,8 @@ export function renderEmail(
   const button =
     ctaLabel && ctaUrl
       ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 8px;">
-          <tr><td style="border-radius:999px;background:${t.accent};">
-            <a href="${escapeHtml(ctaUrl)}" target="_blank" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">${escapeHtml(ctaLabel)}</a>
+          <tr><td style="border-radius:999px;background:${buttonBg};">
+            <a href="${escapeHtml(ctaUrl)}" target="_blank" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:600;color:${buttonText};text-decoration:none;border-radius:999px;">${escapeHtml(ctaLabel)}</a>
           </td></tr>
         </table>`
       : "";
@@ -184,18 +208,28 @@ export function renderEmail(
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${t.pageBg};">
   <tr><td class="em-outer" align="center" style="padding:32px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:${t.cardBg};border-radius:16px;overflow:hidden;">
-      <tr><td class="em-pad" align="center" style="background:${t.headerBg};padding:36px 32px;">
+      ${
+        branded
+          ? `<tr><td style="height:6px;line-height:6px;font-size:0;background:${primary};">&nbsp;</td></tr>
+      <tr><td class="em-pad" align="center" style="background:${t.cardBg};padding:32px 32px 8px;">
+        ${logoSrc ? `<img src="${escapeHtml(logoSrc)}" alt="${escapeHtml(values.sender_name || "Logo")}" height="56" style="display:block;margin:0 auto 18px;height:56px;width:auto;max-width:240px;border:0;outline:none;text-decoration:none;">` : ""}
+        <div style="font-size:22px;line-height:1;">${t.ornament}</div>
+        <div style="margin-top:12px;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:${primary};">${escapeHtml(t.eyebrow)}</div>
+        <h1 class="em-title" style="margin:10px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.25;font-weight:normal;color:${secondary};">${escapeHtml(subject)}</h1>
+      </td></tr>`
+          : `<tr><td class="em-pad" align="center" style="background:${t.headerBg};padding:36px 32px;">
         <div style="font-size:26px;line-height:1;">${t.ornament}</div>
         <div style="margin-top:14px;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:${t.headerText};opacity:0.85;">${escapeHtml(t.eyebrow)}</div>
         <h1 class="em-title" style="margin:10px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.25;font-weight:normal;color:${t.headerText};">${escapeHtml(subject)}</h1>
-      </td></tr>
+      </td></tr>`
+      }
       <tr><td class="em-pad" style="padding:36px 40px 28px;">
         ${bodyToHtml(body, t.text)}
         ${button}
       </td></tr>
       <tr><td class="em-pad" style="padding:20px 40px 32px;border-top:1px solid rgba(0,0,0,0.06);">
         <p style="margin:0;font-size:13px;line-height:1.6;color:${t.muted};">${sentBy}</p>
-        <p style="margin:6px 0 0;font-size:12px;line-height:1.6;color:${t.muted};">Don't want these emails? <a href="${unsubscribeHref ? escapeHtml(unsubscribeHref) : "#"}" target="_blank" style="color:${t.muted};">Unsubscribe</a>.</p>
+        <p style="margin:6px 0 0;font-size:12px;line-height:1.6;color:${t.muted};">Don't want these emails? <a href="${unsubscribeHref ? escapeHtml(unsubscribeHref) : "#"}" target="_blank" style="color:${linkColor};">Unsubscribe</a>.</p>
       </td></tr>
     </table>
   </td></tr>

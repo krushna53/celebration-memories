@@ -6,6 +6,7 @@ import { MailerError } from "@/features/mailer/repository/types";
 import type { MailerCallResult } from "@/features/mailer/repository/server-repository";
 import { configuredBackendName } from "@/services/mailer-email-config/backend";
 import { runAutomationsLive, runMailerMethod, sendCampaignLive } from "@/services/mailer/live-mailer";
+import { createMailerLogoUpload } from "@/services/mailer/brand-logo";
 
 /**
  * The one entry point both live-mode Server Actions share (the admin page's
@@ -31,6 +32,9 @@ export async function handleMailerCall(tenantId: string, method: unknown, args: 
     if (typeof method !== "string" || !Array.isArray(args)) throw new MailerError("That request isn't valid.");
     if (method === "sendCampaign") {
       return { success: true, data: await sendCampaignLive(tenantId, args[0], args[1] ?? null, await appOrigin()) };
+    }
+    if (method === "requestLogoUpload") {
+      return { success: true, data: await createMailerLogoUpload(tenantId, args[0]) };
     }
     if (method === "runAutomations") {
       return { success: true, data: await runAutomationsLive(tenantId, { date: args[0] ?? null, origin: await appOrigin() }) };

@@ -291,6 +291,9 @@ function ConfigEditor({
   const [testRecipient, setTestRecipient] = useState(adminEmail);
 
   const preset = getProvider(form.provider);
+  /** Resend: API key only — no SMTP host, port or username to fill in. */
+  const api = preset.apiOnly === true;
+  const testLabel = api ? "Test Connection" : "Test SMTP Connection";
   const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(saved), [form, saved]);
   const state = config ? emailConfigState(config) : null;
   const set = <K extends keyof EmailConfigInput>(k: K, v: EmailConfigInput[K]) => setForm((f) => ({ ...f, [k]: v }));
@@ -302,10 +305,11 @@ function ConfigEditor({
       ...f,
       provider: id,
       // Replace values that were just the previous provider's defaults; keep anything the admin typed.
-      smtpHost: !f.smtpHost || f.smtpHost === prev.host ? next.host : f.smtpHost,
+      // An API provider (Resend) always uses its own fixed values, and leaving it restores the next provider's.
+      smtpHost: next.apiOnly || prev.apiOnly || !f.smtpHost || f.smtpHost === prev.host ? next.host : f.smtpHost,
       smtpPort: next.port,
       encryption: next.encryption,
-      smtpUsername: !f.smtpUsername || f.smtpUsername === prev.username ? next.username : f.smtpUsername,
+      smtpUsername: next.apiOnly || prev.apiOnly || !f.smtpUsername || f.smtpUsername === prev.username ? next.username : f.smtpUsername,
       dkimSelector: !f.dkimSelector || f.dkimSelector === (prev.dkimSelector ?? "") ? (next.dkimSelector ?? "") : f.dkimSelector,
       // Mailpit has no login; every other provider keeps (or needs) one.
       authEnabled: next.id === "local" ? false : next.allowsNoAuth ? f.authEnabled : true,
@@ -333,7 +337,7 @@ function ConfigEditor({
     setEmailResult(null);
     setSaveNote(
       result.data.connectionStatus === "untested"
-        ? "Saved. These settings aren't verified yet — run Test SMTP Connection next."
+        ? `Saved. These settings aren't verified yet — run ${getProvider(result.data.provider).apiOnly ? "Test Connection" : "Test SMTP Connection"} next.`
         : "Saved.",
     );
     onChanged(result.data);
@@ -467,8 +471,10 @@ function ConfigEditor({
         </Section>
 
         {/* 3. SMTP credentials */}
-        <Section step={3} title="SMTP settings" icon={KeyRound}>
+        <Section step={3} title={api ? `${preset.label} API key` : "SMTP settings"} icon={KeyRound}>
           <div className="grid gap-4 sm:grid-cols-2">
+            {api ? null : (
+              <>
             <Field label="SMTP host" htmlFor="ec-host" className="sm:col-span-2">
               <input id="ec-host" className={inputClasses} value={form.smtpHost} placeholder="smtp.example.com" autoComplete="off" onChange={(e) => set("smtpHost", e.target.value)} />
             </Field>
@@ -506,6 +512,8 @@ function ConfigEditor({
                 )}
               </select>
             </Field>
+              </>
+            )}
             {preset.allowsNoAuth ? (
               <label className="flex items-center gap-2 text-sm text-navy-950 sm:col-span-2">
                 <input type="checkbox" checked={form.authEnabled} onChange={(e) => set("authEnabled", e.target.checked)} className="h-4 w-4 accent-[var(--color-gold-500)]" />
@@ -514,10 +522,12 @@ function ConfigEditor({
             ) : null}
             {form.authEnabled ? (
               <>
-                <Field label="SMTP username" htmlFor="ec-user" className="sm:col-span-2">
-                  <input id="ec-user" className={inputClasses} value={form.smtpUsername} autoComplete="off" onChange={(e) => set("smtpUsername", e.target.value)} />
-                  <p className="mt-1 text-xs text-navy-700/55">{preset.usernameHint}</p>
-                </Field>
+                {api ? null : (
+                  <Field label="SMTP username" htmlFor="ec-user" className="sm:col-span-2">
+                    <input id="ec-user" className={inputClasses} value={form.smtpUsername} autoComplete="off" onChange={(e) => set("smtpUsername", e.target.value)} />
+                    <p className="mt-1 text-xs text-navy-700/55">{preset.usernameHint}</p>
+                  </Field>
+                )}
                 <div className="sm:col-span-2">
                   <p className="text-xs font-medium text-navy-700/75">{preset.passwordLabel}</p>
                   {config?.hasPassword && !replacingPassword ? (
@@ -527,7 +537,7 @@ function ConfigEditor({
                         Saved{config.passwordUpdatedAt ? ` ${formatDateTime(config.passwordUpdatedAt)}` : ""} · never shown again
                       </span>
                       <button type="button" onClick={() => setReplacingPassword(true)} className="ml-auto text-sm font-medium text-gold-600 hover:text-gold-500">
-                        Replace password
+                        Replace {api ? preset.passwordLabel : "password"}
                       </button>
                     </div>
                   ) : (
@@ -611,10 +621,14 @@ function ConfigEditor({
       </form>
 
       {/* 4. Connection test */}
-      <Section step={4} title="Test SMTP connection" icon={Server}>
-        <p className="text-sm text-navy-700/70">Connects to the server, checks TLS and signs in — without sending anything.</p>
+      <Section step={4} title={api ? "Test connection" : "Test SMTP connection"} icon={Server}>
+        <p className="text-sm text-navy-700/70">
+          {api
+            ? "Checks that Resend accepts the API key (and, with a Full-access key, that your From domain is verified) — without sending anything."
+            : "Connects to the server, checks TLS and signs in — without sending anything."}
+        </p>
         <button type="button" onClick={testConnection} disabled={!savedNotDirty || busy !== null} className={cn(secondaryButton, "mt-3")}>
-          {busy === "test" ? <Loader2 size={15} className="animate-spin" /> : <Server size={15} />} Test SMTP Connection
+          {busy === "test" ? <Loader2 size={15} className="animate-spin" /> : <Server size={15} />} {testLabel}
         </button>
         {needsSaveHint ? <p className="mt-2 text-xs text-navy-700/55">{needsSaveHint}</p> : null}
         {testResult ? <Notice ok={testResult.ok}>{testResult.message}</Notice> : null}

@@ -35,6 +35,8 @@ import { mailerFirestore, MailerFirestoreSetupError, mailerTenantDoc } from "@/s
 import { EmailConfigError, listEmailConfigs, loadTransportForConfig, type ConfigTransport } from "@/services/mailer-email-config/store";
 import { EmailDeliveryError, type EmailTransport, type OutgoingEmail } from "@/services/mailer-email-config/transport";
 import { createUnsubscribeToken, verifyUnsubscribeToken } from "@/services/mailer/unsubscribe-token";
+import { ownLogoPath, removeMailerLogo } from "@/services/mailer/brand-logo";
+import { brandOf, cleanBrandInput } from "@/lib/mailer/brand";
 
 /**
  * Live Event Mailer: contacts, lists, templates and campaigns in Firestore
@@ -142,10 +144,41 @@ export async function runMailerMethod(tenantId: string, method: string, args: un
   if (!Array.isArray(args) || args.length > 2) throw new MailerError("That request isn't valid.");
   if (method === "listSenders") return listSenders(tenantId);
   if (method === "resetDemoData") throw new MailerError("Demo data is only available in mock mode.");
+  if (method === "saveBrandSettings") return saveBrandSettingsLive(tenantId, args[0]);
   if (!REPOSITORY_METHODS.has(method)) throw new MailerError("That request isn't valid.");
+  return runRepositoryMethod(tenantId, method, args);
+}
 
+/**
+ * Brand Settings in live mode: same rules as mock mode, plus the logo must
+ * be this company's own Storage upload (never an inline image — Firestore's
+ * document limit, and mail apps block them). The replaced file is deleted.
+ */
+async function saveBrandSettingsLive(tenantId: string, input: unknown): Promise<unknown> {
+  const clean = cleanBrandInput(input);
+  if (!clean.ok) throw new MailerError(clean.error);
+  if (clean.value.logoUrl && !ownLogoPath(tenantId, clean.value.logoUrl)) {
+    throw new MailerError("That logo couldn't be saved — upload it again.");
+  }
+  const seen: { previous: string | null } = { previous: null };
+  const saved = await runRepositoryMethod(tenantId, "saveBrandSettings", [clean.value], (data) => {
+    seen.previous = data.brand?.logoUrl ?? null;
+  });
+  const oldPath = seen.previous !== clean.value.logoUrl ? ownLogoPath(tenantId, seen.previous) : null;
+  if (oldPath) await removeMailerLogo(oldPath);
+  return saved;
+}
+
+async function runRepositoryMethod(
+  tenantId: string,
+  method: string,
+  args: unknown[],
+  /** Sees the data before the method runs (inside the transaction — no side effects). */
+  before?: (data: MailerData) => void,
+): Promise<unknown> {
   return guard(() =>
     withMailerData(tenantId, async (data) => {
+      before?.(data);
       const store = memoryStore();
       store.setItem(MAILER_STORAGE_KEY, JSON.stringify(data));
       const repo = new LocalStorageMailerRepository(store);
@@ -286,11 +319,13 @@ export async function sendCampaignLive(tenantId: string, campaignId: unknown, se
         events: [],
       }));
       const event: MailerEvent | null = data.events.find((e) => e.id === campaign.eventId) ?? null;
-      return { campaign: structuredClone(campaign), contacts: structuredClone(recipients) as MailerContact[], event };
+      const base = liveBrand(data);
+      const brand = base && campaign.showLogo === false ? { ...base, logoUrl: null } : base;
+      return { campaign: structuredClone(campaign), contacts: structuredClone(recipients) as MailerContact[], event, brand };
     }),
   );
 
-  const { campaign, contacts, event } = claim;
+  const { campaign, contacts, event, brand } = claim;
   const delivery = campaign.delivery!;
   const outcomes = new Map<string, Outcome>();
   let loaded: ConfigTransport | null = null;
@@ -308,7 +343,7 @@ export async function sendCampaignLive(tenantId: string, campaignId: unknown, se
     for (const [i, contact] of contacts.entries()) {
       const token = createUnsubscribeToken(tenantId, contact.id)!;
       const unsubscribeUrl = `${origin}/mailer/unsubscribe?t=${encodeURIComponent(token)}`;
-      const rendered = renderEmail(campaign.kind, campaign, tokenValuesFor(contact, event, delivery.fromName), { unsubscribeUrl });
+      const rendered = renderEmail(campaign.kind, campaign, tokenValuesFor(contact, event, delivery.fromName), { unsubscribeUrl, brand });
       outcomes.set(
         contact.id,
         await sendOne(loaded.transport, {
@@ -332,6 +367,13 @@ export async function sendCampaignLive(tenantId: string, campaignId: unknown, se
   return saveProgress(tenantId, campaign.id, outcomes, true);
 }
 
+/** The brand for a real send — an inline (mock-only) logo is dropped, since mail apps block those. */
+function liveBrand(data: MailerData) {
+  const brand = brandOf(data);
+  if (!brand) return null;
+  return brand.logoUrl?.startsWith("data:") ? { ...brand, logoUrl: null } : brand;
+}
+
 // --- birthday / work-anniversary automations --------------------------------
 
 /**
@@ -353,12 +395,12 @@ export async function runAutomationsLive(tenantId: string, options: { date?: unk
           const at = new Date().toISOString();
           data.automationLog = mergeLog(data.automationLog, jobs.map((j) => logEntryFor(j, "sending", null, at)));
         }
-        return { settings, jobs: structuredClone(jobs) as AutomationJob[] };
+        return { settings, jobs: structuredClone(jobs) as AutomationJob[], brand: liveBrand(data) };
       },
       { create: false },
     ),
   );
-  const { settings, jobs } = claim;
+  const { settings, jobs, brand } = claim;
   if (jobs.length === 0) return { date, entries: [] };
 
   const results: AutomationLogEntry[] = [];
@@ -392,7 +434,7 @@ export async function runAutomationsLive(tenantId: string, options: { date?: unk
       const token = createUnsubscribeToken(tenantId, job.recipient.id)!;
       const unsubscribeUrl = `${options.origin}/mailer/unsubscribe?t=${encodeURIComponent(token)}`;
       const content = applyAutomationTokens(settings.rules[job.kind].content, job.tokens);
-      const rendered = renderEmail(job.kind, content, tokenValuesFor(job.recipient, null, fromName), { unsubscribeUrl });
+      const rendered = renderEmail(job.kind, content, tokenValuesFor(job.recipient, null, fromName), { unsubscribeUrl, brand });
       const outcome = await sendOne(loaded.transport, {
         from: { name: fromName, address: config.fromEmail },
         replyTo: config.replyToEmail ? { name: config.replyToName, address: config.replyToEmail } : null,

@@ -27,8 +27,11 @@ export function mailerFirestore(): Firestore {
   if (cached) return cached;
   const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
-  // .env files store the key on one line with literal "\n" sequences.
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  // .env files store the key on one line with literal "\n" sequences; a value
+  // pasted into a dashboard (e.g. Netlify) often keeps the JSON's quotes too.
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim()
+    .replace(/^"([\s\S]*)"$/, "$1")
+    .replace(/\\n/g, "\n");
   if (!projectId || !clientEmail || !privateKey) throw new MailerFirestoreSetupError();
   const existing = getApps().find((a) => a.name === APP_NAME);
   const app = existing ?? initializeApp({ credential: cert({ projectId, clientEmail, privateKey }), projectId }, APP_NAME);

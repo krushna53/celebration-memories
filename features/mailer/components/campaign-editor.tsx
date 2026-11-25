@@ -8,6 +8,7 @@ import { resolveAudience } from "@/lib/mailer/audience";
 import { contactDisplayName } from "@/lib/mailer/email";
 import { MAILER_TOKENS, unknownTokens } from "@/lib/mailer/tokens";
 import { BUILT_IN_TEMPLATE_IDS } from "@/lib/mailer/seed";
+import { brandOf } from "@/lib/mailer/brand";
 import { useMailer } from "@/features/mailer/mailer-provider";
 import { useMailerNav } from "@/features/mailer/mailer-nav";
 import { EmailPreview } from "@/features/mailer/components/email-preview";
@@ -33,7 +34,7 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
   const [form, setForm] = useState<MailerCampaignInput>(() => {
     if (existing) {
       const { name, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl } = existing;
-      return { name, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl };
+      return { name, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl, showLogo: existing.showLogo !== false };
     }
     const kind = initialKind ?? "announcement";
     const template = data.templates.find((t) => t.id === BUILT_IN_TEMPLATE_IDS[kind]) ?? data.templates.find((t) => t.kind === kind);
@@ -50,8 +51,10 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
       body: template?.body ?? "",
       ctaLabel: template?.ctaLabel ?? "",
       ctaUrl: template?.ctaUrl ?? "",
+      showLogo: true,
     };
   });
+  const savedLogo = brandOf(data)?.logoUrl ?? null;
   const [savedId, setSavedId] = useState<string | undefined>(id);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -296,7 +299,25 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
                     {`{{${t.token}}}`}
                   </button>
                 ))}
+                {/* The Brand Settings logo, at the top of the email — on/off per campaign. */}
+                <label
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs",
+                    savedLogo ? "cursor-pointer border-navy-950/10 bg-navy-950/[0.03] text-navy-700 hover:border-gold-500" : "border-navy-950/[0.06] text-navy-700/45",
+                  )}
+                  title={savedLogo ? "Show the Brand Settings logo at the top of this email" : "Upload a logo in Brand Settings first"}
+                >
+                  <input
+                    type="checkbox"
+                    checked={savedLogo ? form.showLogo !== false : false}
+                    disabled={!savedLogo}
+                    onChange={(e) => set("showLogo", e.target.checked)}
+                    className="h-3.5 w-3.5 accent-[var(--color-gold-500)]"
+                  />
+                  Logo
+                </label>
               </div>
+              {savedLogo ? null : <p className="mt-1.5 text-xs text-navy-700/50">Upload a logo in Brand Settings to add it to emails.</p>}
               {unknown.length > 0 ? (
                 <p className="mt-2 text-xs text-amber-700">
                   Unknown token{unknown.length > 1 ? "s" : ""}: {unknown.map((u) => `{{${u}}}`).join(", ")} — {unknown.length > 1 ? "they" : "it"} will appear as typed.
@@ -316,7 +337,7 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
 
         <Card className="xl:sticky xl:top-4 xl:self-start">
           <p className="mb-3 font-medium text-navy-950">Preview</p>
-          <EmailPreview kind={form.kind} content={form} senderName={form.senderName} event={event} contacts={previewContacts} />
+          <EmailPreview kind={form.kind} content={form} senderName={form.senderName} event={event} contacts={previewContacts} showLogo={form.showLogo !== false} />
         </Card>
       </div>
 

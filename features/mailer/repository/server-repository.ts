@@ -1,4 +1,4 @@
-import type { AutomationRunResult, AutomationSettings, MailerCampaign, MailerContact, MailerData, MailerEvent, MailerList, MailerSender, MailerTemplate } from "@/types/mailer";
+import type { AutomationRunResult, AutomationSettings, MailerBrand, MailerCampaign, MailerContact, MailerData, MailerEvent, MailerList, MailerSender, MailerTemplate } from "@/types/mailer";
 import { MailerError, type MailerRepository } from "@/features/mailer/repository/types";
 
 /**
@@ -37,6 +37,19 @@ export class ServerMailerRepository implements MailerRepository {
   listSenders = () => this.invoke<MailerSender[]>("listSenders");
   saveAutomationSettings = (settings: unknown) => this.invoke<AutomationSettings>("saveAutomationSettings", settings);
   runAutomations = (options?: { date?: string | null }) => this.invoke<AutomationRunResult>("runAutomations", options?.date ?? null);
+  saveBrandSettings = (input: unknown) => this.invoke<MailerBrand>("saveBrandSettings", input);
+  /** Gets a one-time upload link from the server, puts the PNG straight into Storage, returns its public URL. */
+  uploadLogo = async (png: Blob) => {
+    const target = await this.invoke<{ signedUrl: string; publicUrl: string }>("requestLogoUpload", png.size);
+    let put: Response;
+    try {
+      put = await fetch(target.signedUrl, { method: "PUT", headers: { "Content-Type": "image/png" }, body: png });
+    } catch {
+      throw new MailerError("The logo upload didn't go through — check your connection and try again.");
+    }
+    if (!put.ok) throw new MailerError("The logo upload didn't go through — please try again.");
+    return target.publicUrl;
+  };
   resetDemoData = async () => {
     throw new MailerError("Demo data is only available in mock mode.");
   };

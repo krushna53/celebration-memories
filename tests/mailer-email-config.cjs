@@ -438,3 +438,91 @@ test('only the company admin account (client) or the owner can use the actions',
   assert.equal((await actions.testEmailConfigConnectionAction('not-a-uuid')).success, false);
   currentAdmin = null;
 });
+
+// ---------------------------------------------------------------------------
+// Resend provider (API key, HTTP API — services/mailer-email-config/resend-transport.ts)
+
+const { sanitizeResendError } = load('lib/mailer/email-config/resend-errors');
+const { createResendTransport } = load('services/mailer-email-config/resend-transport');
+
+test('Resend: only the API key is needed — SMTP fields are fixed, and the key must look like one', () => {
+  const r = validateEmailConfig(
+    input({ provider: 'resend', smtpHost: 'evil.example', smtpPort: 25, encryption: 'starttls', smtpUsername: 'x', authEnabled: false, newPassword: '  re_AbCdEf123456  ', dkimSelector: 'resend' }),
+    { hasStoredPassword: false },
+  );
+  assert.equal(r.ok, true);
+  assert.deepEqual(
+    [r.value.smtpHost, r.value.smtpPort, r.value.encryption, r.value.smtpUsername, r.value.authEnabled, r.value.newPassword],
+    ['smtp.resend.com', 465, 'ssl', 'resend', true, 're_AbCdEf123456'],
+  );
+  const bad = validateEmailConfig(input({ provider: 'resend', newPassword: 'not-a-key' }), { hasStoredPassword: false });
+  assert.equal(bad.ok, false);
+  assert.equal(bad.field, 'newPassword');
+  assert.equal(validateEmailConfig(input({ provider: 'resend', newPassword: '' }), { hasStoredPassword: false }).ok, false);
+  assert.equal(validateEmailConfig(input({ provider: 'resend', newPassword: '' }), { hasStoredPassword: true }).ok, true);
+});
+
+test('Resend errors become our own wording, with the right kind and retry hint', () => {
+  const cases = [
+    [{ name: 'rate_limit_exceeded', message: 'Too many requests', statusCode: 429 }, 'rate_limited', true],
+    [{ name: 'validation_error', message: 'API key is invalid', statusCode: 400 }, 'auth', false],
+    [{ name: 'invalid_api_Key', message: 'x' }, 'auth', false],
+    [{ name: 'validation_error', message: 'You can only send testing emails to your own email address (owner@x.example).' }, 'recipient_rejected', false],
+    [{ name: 'validation_error', message: 'The abc.example domain is not verified. Please, add and verify your domain.' }, 'sender_rejected', false],
+    [{ name: 'internal_server_error', message: 'boom', statusCode: 500 }, 'unknown', true],
+    [new Error('fetch failed'), 'connect', true],
+  ];
+  for (const [err, kind, retryable] of cases) {
+    const s = sanitizeResendError(err);
+    assert.equal(s.kind, kind, JSON.stringify(err));
+    assert.equal(s.retryable, retryable, JSON.stringify(err));
+    assert.doesNotMatch(s.message, /owner@x\.example|boom/);
+  }
+});
+
+function fakeResend({ domains = { data: { data: [] }, error: null }, send = { data: { id: 'em_123' }, error: null } } = {}) {
+  const sent = [];
+  return {
+    sent,
+    client: {
+      emails: { send: async (p) => (sent.push(p), typeof send === 'function' ? send(p) : send) },
+      domains: { list: async () => (typeof domains === 'function' ? domains() : domains) },
+    },
+  };
+}
+
+test('Resend transport: verify checks the key and (with full access) that the From domain is verified', async () => {
+  const restricted = fakeResend({ domains: { data: null, error: { name: 'restricted_api_key', message: 'This API key is restricted to only send emails' } } });
+  await createResendTransport('re_x', 'hr@abc.example', restricted.client).verify(); // sending-only key: fine
+
+  const ok = fakeResend({ domains: { data: { data: [{ name: 'abc.example', status: 'verified' }] }, error: null } });
+  await createResendTransport('re_x', 'hr@abc.example', ok.client).verify();
+  await createResendTransport('re_x', 'hr@mail.abc.example', ok.client).verify();
+
+  const pending = fakeResend({ domains: { data: { data: [{ name: 'abc.example', status: 'pending' }] }, error: null } });
+  await assert.rejects(createResendTransport('re_x', 'hr@abc.example', pending.client).verify(), /isn't verified in Resend yet/);
+  await assert.rejects(createResendTransport('re_x', 'hr@other.example', ok.client).verify(), /isn't added in Resend/);
+  // The onboarding sender needs no domain of your own.
+  await createResendTransport('re_x', 'onboarding@resend.dev', pending.client).verify();
+
+  const badKey = fakeResend({ domains: { data: null, error: { name: 'validation_error', message: 'API key is invalid' } } });
+  await assert.rejects(createResendTransport('re_x', 'hr@abc.example', badKey.client).verify(), (e) => e.safe?.kind === 'auth');
+});
+
+test('Resend transport: sends From/Reply-To/headers and returns the Resend email id; refusals throw safely', async () => {
+  const f = fakeResend();
+  const t = createResendTransport('re_x', 'hr@abc.example', f.client);
+  const r = await t.send({
+    from: { name: 'ABC "HR" Team', address: 'hr@abc.example' },
+    replyTo: { name: 'HR', address: 'reply@abc.example' },
+    to: 'priya@client.example', subject: 'Hi', html: '<p>Hi</p>', text: 'Hi',
+    headers: { 'List-Unsubscribe': '<https://x.example/u>' },
+  });
+  assert.equal(r.messageId, 'em_123');
+  assert.deepEqual(f.sent[0], {
+    from: '"ABC HR Team" <hr@abc.example>', to: ['priya@client.example'], subject: 'Hi', html: '<p>Hi</p>', text: 'Hi',
+    replyTo: '"HR" <reply@abc.example>', headers: { 'List-Unsubscribe': '<https://x.example/u>' },
+  });
+  const refused = fakeResend({ send: { data: null, error: { name: 'rate_limit_exceeded', message: 'slow down' } } });
+  await assert.rejects(createResendTransport('re_x', 'hr@abc.example', refused.client).send({ from: { name: null, address: 'hr@abc.example' }, replyTo: null, to: 'a@b.example', subject: 's', html: 'h', text: 't' }), (e) => e.safe.kind === 'rate_limited' && e.safe.retryable);
+});

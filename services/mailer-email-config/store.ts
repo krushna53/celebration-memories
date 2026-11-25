@@ -15,6 +15,7 @@ import {
   needsReencryption,
 } from "@/services/mailer-email-config/secret-box";
 import { createSmtpTransport, EmailDeliveryError, type EmailTransport, type OutgoingEmail } from "@/services/mailer-email-config/transport";
+import { createResendTransport } from "@/services/mailer-email-config/resend-transport";
 import { checkDomain } from "@/services/mailer-email-config/dns-check";
 import {
   configuredBackendName,
@@ -280,7 +281,11 @@ export async function loadTransportForConfig(tenantId: string, id: string): Prom
     }
   }
 
-  const transport = await createSmtpTransport({ host: row.smtp_host, port: row.smtp_port, encryption: row.smtp_encryption, auth });
+  // Resend: the stored "password" is the company's API key, used with Resend's HTTP API instead of SMTP.
+  const transport =
+    row.provider === "resend"
+      ? createResendTransport(auth?.pass ?? "", row.from_email)
+      : await createSmtpTransport({ host: row.smtp_host, port: row.smtp_port, encryption: row.smtp_encryption, auth });
   return { row, transport, rotateIfNeeded };
 }
 
@@ -315,7 +320,11 @@ export async function testEmailConfigConnection(tenantId: string, actorId: strin
     await loaded.rotateIfNeeded();
     await recordOutcome(tenantId, row, { connection_status: "ok", connection_checked_at: new Date().toISOString(), connection_error: null });
     await audit(tenantId, actorId, "connection.tested", id, { ok: true });
-    return { ok: true, message: "Connected and signed in to the SMTP server successfully.", config: await getView(tenantId, id) };
+    const message =
+      row.provider === "resend"
+        ? "Resend accepted the API key. Send a test email next to confirm the From address."
+        : "Connected and signed in to the SMTP server successfully.";
+    return { ok: true, message, config: await getView(tenantId, id) };
   } catch (err) {
     // Missing settings / setup problems are reported as-is, not recorded as a failed connection.
     if (err instanceof EmailConfigError) throw err;
@@ -336,13 +345,14 @@ function maskEmail(email: string): string {
 
 function testEmail(row: ConfigRow, to: string): OutgoingEmail {
   const provider = getProvider(row.provider).label;
+  const via = row.provider === "resend" ? "Resend API" : `${row.smtp_host}:${row.smtp_port} (${provider})`;
   const sentAt = new Date().toUTCString();
   const text = [
     `This is a test email from the EveryMoment Event Mailer.`,
     ``,
     `It was sent with the "${row.label}" email configuration:`,
     `From: ${row.sender_name} <${row.from_email}>`,
-    `SMTP: ${row.smtp_host}:${row.smtp_port} (${provider})`,
+    `Sent through: ${via}`,
     `Sent: ${sentAt}`,
     ``,
     `If you received this, the sender identity works. Check that it arrived in the inbox, not spam.`,
@@ -353,7 +363,7 @@ function testEmail(row: ConfigRow, to: string): OutgoingEmail {
 <tr><td style="padding:28px 32px;">
 <h1 style="margin:0 0 12px;font-size:20px;">Test email ✓</h1>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">This is a test email from the EveryMoment Event Mailer, sent with the <strong>${esc(row.label)}</strong> email configuration.</p>
-<p style="margin:0;font-size:14px;line-height:1.7;color:#4b4a6b;">From: ${esc(row.sender_name)} &lt;${esc(row.from_email)}&gt;<br>SMTP: ${esc(row.smtp_host)}:${row.smtp_port} (${esc(provider)})<br>Sent: ${esc(sentAt)}</p>
+<p style="margin:0;font-size:14px;line-height:1.7;color:#4b4a6b;">From: ${esc(row.sender_name)} &lt;${esc(row.from_email)}&gt;<br>Sent through: ${esc(via)}<br>Sent: ${esc(sentAt)}</p>
 <p style="margin:16px 0 0;font-size:14px;line-height:1.6;">If you received this, the sender identity works. Check that it arrived in the inbox, not spam.</p>
 </td></tr></table></body></html>`;
   return {
@@ -382,7 +392,7 @@ export async function sendEmailConfigTestEmail(tenantId: string, actorId: string
     await audit(tenantId, actorId, "test_email.sent", id, { ok: true, to: maskEmail(to), message_id: messageId });
     return {
       ok: true,
-      message: `The SMTP server accepted the test email to ${to}. Check that it arrived (and not in spam).`,
+      message: `${row.provider === "resend" ? "Resend" : "The SMTP server"} accepted the test email to ${to}. Check that it arrived (and not in spam).`,
       messageId,
       config: await getView(tenantId, id),
     };

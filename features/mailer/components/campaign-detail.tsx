@@ -76,8 +76,9 @@ export function CampaignDetail({ id }: { id: string }) {
   async function duplicate() {
     if (!campaign) return;
     const { name, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl } = campaign;
+    const showLogo = campaign.showLogo !== false;
     const result = await run((repo) =>
-      repo.saveCampaign({ name: `${name} (copy)`, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl }),
+      repo.saveCampaign({ name: `${name} (copy)`, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl, showLogo }),
     );
     if (result.ok) navigate({ name: "editor", id: result.value.id });
     else setError(result.error);
@@ -200,7 +201,7 @@ export function CampaignDetail({ id }: { id: string }) {
         </div>
 
         {tab === "email" ? (
-          <EmailPreview kind={campaign.kind} content={campaign} senderName={campaign.senderName} event={event} contacts={recipientContacts} />
+          <EmailPreview kind={campaign.kind} content={campaign} senderName={campaign.senderName} event={event} contacts={recipientContacts} showLogo={campaign.showLogo !== false} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">

@@ -7,8 +7,12 @@
  * `hasPassword`, never the password or its ciphertext.
  */
 
-/** "local" = Mailpit on this computer, for development only (lib/mailer/email-config/local-smtp.ts). */
-export type EmailProviderId = "google" | "microsoft" | "ses" | "sendgrid" | "brevo" | "local" | "custom";
+/**
+ * "local" = Mailpit on this computer, for development only (lib/mailer/email-config/local-smtp.ts).
+ * "resend" sends through Resend's HTTP API with the company's own API key
+ * (services/mailer-email-config/resend-transport.ts), not SMTP.
+ */
+export type EmailProviderId = "google" | "microsoft" | "ses" | "sendgrid" | "brevo" | "resend" | "local" | "custom";
 /** "none" (no TLS) is only ever accepted for the local Mailpit provider. */
 export type SmtpEncryption = "ssl" | "starttls" | "none";
 export type ConnectionStatus = "untested" | "ok" | "failed";

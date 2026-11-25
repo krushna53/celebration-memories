@@ -9,6 +9,8 @@ import type {
   MailerEvent,
   MailerList,
   MailerListInput,
+  MailerBrand,
+  MailerBrandInput,
   MailerSender,
   MailerTemplate,
   MailerTemplateInput,
@@ -74,7 +76,16 @@ export interface MailerRepository {
    */
   runAutomations(options?: { date?: string | null }): Promise<AutomationRunResult>;
 
-  /** Mock mode only: wipe everything and restore the demo data. */
+  /** Brand Settings (lib/mailer/brand.ts): logo + colours applied to every email. */
+  saveBrandSettings(input: MailerBrandInput): Promise<MailerBrand>;
+  /**
+   * Stores a logo PNG (already converted in the browser) and returns the URL
+   * to save with saveBrandSettings: an inline data URL in mock mode, a
+   * public Storage URL in live mode. Browser-only.
+   */
+  uploadLogo(png: Blob): Promise<string>;
+
+  /** Mock mode only: wipe everything and restore the demo data (brand included). */
   resetDemoData(): Promise<void>;
 }
 

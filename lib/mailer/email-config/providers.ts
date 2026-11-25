@@ -37,6 +37,12 @@ export interface EmailProviderPreset {
   caution: string | null;
   /** Development-only provider (Mailpit) — hidden unless local SMTP is allowed (local-smtp.ts). */
   localOnly?: boolean;
+  /**
+   * Sends through the provider's HTTP API, not SMTP: the form asks only for
+   * the API key (stored like a password), and host/port/username are fixed
+   * to the preset's values.
+   */
+  apiOnly?: boolean;
 }
 
 /** Development only (Mailpit) — listed just before "custom", which must stay last (getProvider's fallback). */
@@ -163,6 +169,30 @@ export const EMAIL_PROVIDERS: readonly EmailProviderPreset[] = [
     ],
     limitsNote: "Brevo limits daily sends by plan (the free plan has a small daily cap).",
     caution: null,
+  },
+  {
+    id: "resend",
+    label: "Resend",
+    // Kept only so the stored row is complete — Resend configurations send through Resend's API, never SMTP.
+    host: "smtp.resend.com",
+    port: 465,
+    encryption: "ssl",
+    username: "resend",
+    usernameHint: "Not needed — Resend only uses the API key.",
+    passwordLabel: "API key",
+    passwordHint: "A Resend API key (starts with re_) from Resend → API Keys. \"Sending access\" is enough; \"Full access\" also lets the test check that your From domain is verified.",
+    allowsNoAuth: false,
+    // Resend's SPF record lives on a send. subdomain, so the root-domain SPF check doesn't apply.
+    spfInclude: null,
+    dkimSelector: "resend",
+    dnsHelp: [
+      "In Resend → Domains → Add domain, add your domain and publish every record Resend lists exactly as shown — the resend._domainkey TXT record (DKIM) and the records under \"Enable Sending\" (SPF / return path, on the send subdomain) — then click Verify there.",
+      "DMARC: a TXT record at _dmarc.yourdomain, e.g. v=DMARC1; p=none; rua=mailto:dmarc@yourdomain.",
+      "Until a domain is verified you can only send from onboarding@resend.dev, and only to the email address of your own Resend account.",
+    ],
+    limitsNote: "Resend limits sending by plan (the free plan allows 100 emails a day and 3,000 a month) and to a few requests per second.",
+    caution: null,
+    apiOnly: true,
   },
   LOCAL_PROVIDER,
   {

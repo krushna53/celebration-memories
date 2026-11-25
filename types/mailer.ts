@@ -149,6 +149,8 @@ export interface MailerCampaign extends MailerEmailContent {
   senderName: string;
   /** The event used for {{event_*}} tokens; required for invitations. */
   eventId: string | null;
+  /** Show the Brand Settings logo in this campaign's header. Absent (older campaigns) = true. */
+  showLogo?: boolean;
   audience: CampaignAudience;
   status: "draft" | "sent";
   /** True when "sending" was simulated (mock mode) — no real email left the app. */
@@ -193,7 +195,8 @@ export type MailerCampaignInput = Pick<
   | "body"
   | "ctaLabel"
   | "ctaUrl"
->;
+> &
+  Partial<Pick<MailerCampaign, "showLogo">>;
 
 /**
  * Automatic emails driven by contact dates (lib/mailer/automations.ts):
@@ -247,6 +250,26 @@ export interface AutomationRunResult {
   entries: AutomationLogEntry[];
 }
 
+/**
+ * The company's brand (Brand Settings, lib/mailer/brand.ts), applied to
+ * every email: logo in the header, primary colour on buttons and links,
+ * secondary colour on headings.
+ */
+export interface MailerBrand {
+  /**
+   * PNG logo: a `data:image/png;base64,…` URL in mock mode (kept in this
+   * browser only), a public Storage URL in live mode — or null for none.
+   */
+  logoUrl: string | null;
+  /** #RRGGBB, upper-case. */
+  primaryColor: string;
+  /** #RRGGBB, upper-case. */
+  secondaryColor: string;
+  updatedAt: string;
+}
+
+export type MailerBrandInput = Pick<MailerBrand, "logoUrl" | "primaryColor" | "secondaryColor">;
+
 /** Everything the Mailer stores, as one snapshot (the LocalStorage repository's on-disk shape). */
 export interface MailerData {
   version: 1;
@@ -259,4 +282,6 @@ export interface MailerData {
   automations?: AutomationSettings;
   /** Newest first, capped (lib/mailer/automations.ts AUTOMATION_LOG_LIMIT). */
   automationLog?: AutomationLogEntry[];
+  /** Absent until Brand Settings is first saved — emails then keep their per-kind theme. */
+  brand?: MailerBrand;
 }

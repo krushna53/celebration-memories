@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { BarChart3, Cake, FlaskConical, LayoutDashboard, LayoutTemplate, ListChecks, Loader2, Mail, Plus, RotateCcw, Settings, Users } from "lucide-react";
+import { BarChart3, Cake, FlaskConical, LayoutDashboard, LayoutTemplate, ListChecks, Loader2, Mail, Palette, Plus, RotateCcw, Settings, Users } from "lucide-react";
 
 import type { MailerMode } from "@/lib/mailer/mode";
 import { cn } from "@/lib/utils";
@@ -18,9 +18,10 @@ import { ContactsView } from "@/features/mailer/components/contacts-view";
 import { ListsView } from "@/features/mailer/components/lists-view";
 import { TemplatesView } from "@/features/mailer/components/templates-view";
 import { AutomationsView } from "@/features/mailer/components/automations-view";
+import { BrandSettingsView } from "@/features/mailer/components/brand-settings-view";
 import { ErrorText, Modal, primaryButton, secondaryButton } from "@/features/mailer/components/ui";
 
-type Section = "dashboard" | "campaigns" | "analytics" | "contacts" | "lists" | "templates" | "automations";
+type Section = "dashboard" | "campaigns" | "analytics" | "contacts" | "lists" | "templates" | "automations" | "brand";
 
 const SECTIONS: { id: Section; label: string; icon: LucideIcon; title: string; subtitle: string }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, title: "Dashboard", subtitle: "Here's how your email campaigns are doing." },
@@ -31,6 +32,17 @@ const SECTIONS: { id: Section; label: string; icon: LucideIcon; title: string; s
   { id: "templates", label: "Templates", icon: LayoutTemplate, title: "Templates", subtitle: "Reusable designs for each kind of email." },
   { id: "automations", label: "Automations", icon: Cake, title: "Automations", subtitle: "Birthday greetings, HR reminders and work anniversaries — sent automatically." },
 ];
+
+/** Shown in the settings group at the bottom of the sidebar, just above Email Settings. */
+const BRAND_SECTION = {
+  id: "brand" as const,
+  label: "Brand Settings",
+  icon: Palette,
+  title: "Brand Settings",
+  subtitle: "Your logo and colors, used in every email you send.",
+};
+
+const ALL_SECTIONS = [...SECTIONS, BRAND_SECTION];
 
 const EMAIL_SETTINGS_HREF = "/admin/mailer/email-settings";
 
@@ -94,7 +106,7 @@ function MailerShell({ emailSettingsHref }: { emailSettingsHref: string }) {
   }
 
   const active = sectionOf(view);
-  const section = SECTIONS.find((s) => s.id === active)!;
+  const section = ALL_SECTIONS.find((s) => s.id === active)!;
 
   async function resetDemo() {
     if (!confirm("Reset the Mailer to the demo data? Your contacts, lists, templates and campaigns in this browser will be replaced.")) return;
@@ -134,10 +146,25 @@ function MailerShell({ emailSettingsHref }: { emailSettingsHref: string }) {
                     {s.label}
                   </button>
                 ))}
-                {/* Real (server-side) settings — a separate page, not part of the mock data. */}
+                {/* Settings group: Brand Settings (Mailer data, so mock mode keeps it in this browser) … */}
+                <div className="flex shrink-0 md:mt-2 md:border-t md:border-navy-950/[0.06] md:pt-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate({ name: "brand" })}
+                    aria-current={active === "brand" ? "page" : undefined}
+                    className={cn(
+                      "flex w-full shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition",
+                      active === "brand" ? "bg-navy-950/[0.06] font-medium text-navy-950" : "text-navy-700/70 hover:bg-navy-950/[0.03] hover:text-navy-950",
+                    )}
+                  >
+                    <BRAND_SECTION.icon size={16} aria-hidden="true" />
+                    {BRAND_SECTION.label}
+                  </button>
+                </div>
+                {/* … and the real (server-side) Email Settings — a separate page, not part of the mock data. */}
                 <Link
                   href={emailSettingsHref}
-                  className="flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-navy-700/70 transition hover:bg-navy-950/[0.03] hover:text-navy-950 md:mt-2 md:border-t md:border-navy-950/[0.06] md:pt-3"
+                  className="flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-navy-700/70 transition hover:bg-navy-950/[0.03] hover:text-navy-950"
                 >
                   <Settings size={16} aria-hidden="true" />
                   Email Settings
@@ -188,9 +215,11 @@ function MailerShell({ emailSettingsHref }: { emailSettingsHref: string }) {
                   <h1 className="font-display text-2xl text-navy-950 sm:text-3xl">{section.title}</h1>
                   <p className="mt-1 text-sm text-navy-700/60">{section.subtitle}</p>
                 </div>
-                <button type="button" onClick={() => setPicking(true)} className={primaryButton}>
-                  <Plus size={16} /> New Campaign
-                </button>
+                {view.name !== "brand" ? (
+                  <button type="button" onClick={() => setPicking(true)} className={primaryButton}>
+                    <Plus size={16} /> New Campaign
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
@@ -201,6 +230,7 @@ function MailerShell({ emailSettingsHref }: { emailSettingsHref: string }) {
             {view.name === "lists" ? <ListsView /> : null}
             {view.name === "templates" ? <TemplatesView /> : null}
             {view.name === "automations" ? <AutomationsView /> : null}
+            {view.name === "brand" ? <BrandSettingsView /> : null}
             {view.name === "campaign" ? <CampaignDetail key={view.id} id={view.id} /> : null}
             {view.name === "editor" ? <CampaignEditor key={view.id ?? `new-${view.kind}`} id={view.id} kind={view.kind} /> : null}
           </main>

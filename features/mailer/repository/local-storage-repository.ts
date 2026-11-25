@@ -1,4 +1,6 @@
 import type {
+  MailerBrand,
+  MailerBrandInput,
   MailerCampaign,
   MailerCampaignInput,
   MailerContact,
@@ -19,6 +21,7 @@ import {
   planAutomations,
   todayIn,
 } from "@/lib/mailer/automations";
+import { cleanBrandInput, INLINE_LOGO_MAX_CHARS } from "@/lib/mailer/brand";
 import { contactDisplayName, isValidEmail, normalizeEmail } from "@/lib/mailer/email";
 import { resolveAudience } from "@/lib/mailer/audience";
 import { createDemoData } from "@/lib/mailer/seed";
@@ -316,6 +319,7 @@ export class LocalStorageMailerRepository implements MailerRepository {
         templateId: input.templateId && data.templates.some((t) => t.id === input.templateId) ? input.templateId : null,
         senderName: cleanText(input.senderName, 80),
         eventId: input.eventId && data.events.some((e) => e.id === input.eventId) ? input.eventId : null,
+        showLogo: input.showLogo !== false,
         audience: {
           contactIds: [...new Set(input.audience.contactIds)].filter((c) => contactIds.has(c)),
           listIds: [...new Set(input.audience.listIds)].filter((l) => listIds.has(l)),
@@ -424,6 +428,28 @@ export class LocalStorageMailerRepository implements MailerRepository {
       data.automationLog = mergeLog(data.automationLog, entries);
       return { date, entries };
     });
+  }
+
+  // --- brand ------------------------------------------------------------
+
+  async saveBrandSettings(input: MailerBrandInput): Promise<MailerBrand> {
+    const clean = cleanBrandInput(input);
+    if (!clean.ok) throw new MailerError(clean.error);
+    return this.update((data) => {
+      data.brand = { ...clean.value, updatedAt: this.now() };
+      return structuredClone(data.brand);
+    });
+  }
+
+  /** Mock mode: the logo stays in this browser, inline in the saved data. */
+  async uploadLogo(png: Blob): Promise<string> {
+    if (png.type !== "image/png") throw new MailerError("The logo couldn't be prepared — try another image.");
+    const bytes = new Uint8Array(await png.arrayBuffer());
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    const url = `data:image/png;base64,${btoa(binary)}`;
+    if (url.length > INLINE_LOGO_MAX_CHARS) throw new MailerError("That logo is too large to keep in this browser — try a smaller image.");
+    return url;
   }
 
   async resetDemoData(): Promise<void> {
