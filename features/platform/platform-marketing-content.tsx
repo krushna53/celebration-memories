@@ -175,7 +175,7 @@ export const PLATFORM_NAV_LINKS = [
   { label: "Samples", href: "/samples" },
   { label: "Blog", href: "/blog" },
   { label: "Wedding Websites", href: "/wedding/webpages" },
-{ label: "AI Reels Creator", href: "/wedding/reels" },
+{ label: "Wedding Reels", href: "/wedding/reels" },
   { label: "Pricing", href: "/pricing" },
   { label: "Corporate", href: "/corporate" },
   { label: "AI Image Tool", href: "/ai-invitation-image" },
