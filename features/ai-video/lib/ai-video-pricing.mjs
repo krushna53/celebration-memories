@@ -11,3 +11,13 @@ export function estimateAiVideo({ model, resolution, seconds }) {
   return { model: selected.id, label: selected.label, resolution, seconds, outputCents, inputCents: 1, totalCents: outputCents + 1 };
 }
 export const usd = (cents) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+
+// Source media keeps its original duration; these settings are only for a new generation.
+export function generationSettingsForClip(clip) {
+  const model = AI_VIDEO_MODELS.find(item => item.id === clip.model) || AI_VIDEO_MODELS[0];
+  return {
+    model: model.id,
+    resolution: Object.hasOwn(model.rates, clip.resolution) ? clip.resolution : "720p",
+    seconds: [5, 10, 15].includes(clip.seconds) ? clip.seconds : 15,
+  };
+}

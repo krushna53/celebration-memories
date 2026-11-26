@@ -37,9 +37,13 @@ function defaultJourney(kinds, weddingDate, venue) {
 const JOURNEY = ["haldi", "mehndi", "sangeet", "wedding", "reception"];
 const MUSIC_SECONDS = 16;
 
-export function AiVideoStudio({ embedded = false } = {}) {
+/**
+ * embedded: inside /ai-reel's "Create AI video" tab (wedding ceremonies only).
+ * storyOnly: the love story editor (/wedding/stories/create): story mode only, opening ?from=<story id> for editing.
+ */
+export function AiVideoStudio({ embedded = false, storyOnly = false } = {}) {
   const [previewHost, setPreviewHost] = useState(null);
-  const [source, setSource] = useState("ai");
+  const [source, setSource] = useState(storyOnly ? "story" : "ai");
   const [details, setDetails] = useState(DEMO_DETAILS);
   const [events, setEvents] = useState(() => defaultJourney(JOURNEY, DEMO_DETAILS.date, DEMO_DETAILS.venue));
   const [musicChoice, setMusicChoice] = useState("auto");
@@ -103,13 +107,18 @@ export function AiVideoStudio({ embedded = false } = {}) {
 
   return (
     <div className={`ai-video-root ai-reel-page${embedded ? " ai-video-embedded" : ""}`}>
-      {!embedded && <section className="hero compact">
+      {storyOnly && <section className="hero compact">
+        <p className="eyebrow">LOVE STORY REEL</p>
+        <h1>Customize your <em>story.</em></h1>
+        <p>Your chosen story video opens below with its scenes, names, places and dates ready to edit. Change any text on the video, add music, then download a 9:16 MP4 for WhatsApp and Instagram. Editing the text uses no credits.</p>
+      </section>}
+      {!embedded && !storyOnly && <section className="hero compact">
         <p className="eyebrow">AI WEDDING VIDEO</p>
         <h1>Your photo, <em>in motion.</em></h1>
         <p>Upload your couple photo, plan each ceremony scene and review the credits before anything is generated. Finish the reel with names, dates and venues on this device and download a 9:16 MP4 for WhatsApp and Instagram.</p>
       </section>}
 
-      {!embedded && <section className="reel-source-picker" aria-label="Choose how to create your reel">
+      {!embedded && !storyOnly && <section className="reel-source-picker" aria-label="Choose how to create your reel">
         <Segmented label="Reel source" value={source} onChange={setSource} options={[{ id: "ai", label: "Upload my own · AI video" }, { id: "story", label: "Create your own story" }]} />
       </section>}
 

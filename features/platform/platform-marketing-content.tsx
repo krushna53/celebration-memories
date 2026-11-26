@@ -173,6 +173,7 @@ const FEATURE_GROUPS = [
  */
 export const PLATFORM_NAV_LINKS = [
   { label: "Samples", href: "/samples" },
+  { label: "Blog", href: "/blog" },
   { label: "Wedding Websites", href: "/wedding/webpages" },
 { label: "AI Reels Creator", href: "/wedding/reels" },
   { label: "Pricing", href: "/pricing" },

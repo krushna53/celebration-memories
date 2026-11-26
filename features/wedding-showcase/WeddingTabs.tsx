@@ -4,11 +4,12 @@ const TABS = [
   { id: "webpages", label: "Websites", href: "/wedding/webpages" },
   { id: "reels", label: "Reels", href: "/wedding/reels" },
   { id: "card", label: "Cards", href: "/wedding/card" },
+  { id: "stories", label: "Stories", href: "/wedding/stories" },
 ] as const;
 
 export type WeddingTab = (typeof TABS)[number]["id"];
 
-/** Switches between the three wedding galleries: websites, reels and cards. */
+/** Switches between the wedding galleries: websites, reels, cards and love stories. */
 export function WeddingTabs({ active }: { active: WeddingTab }) {
   return (
     <nav aria-label="Wedding designs" className="mx-auto mt-8 flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-navy-950/10 bg-white p-1 shadow-sm">
