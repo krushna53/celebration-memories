@@ -18,10 +18,18 @@ import { safeAuthNext } from "@/lib/auth-redirect";
  * visitor actually used — so prefer the forwarded host, and never hand a
  * deploy permalink back to a real visitor (fall back to SITE_URL).
  */
-function publicOrigin(_request: Request, url: URL): string {
+function publicOrigin(request: Request, url: URL): string {
   if (process.env.NODE_ENV === "development" && ["localhost", "127.0.0.1"].includes(url.hostname)) return url.origin;
+  // A deploy preview or branch deploy of this site (deploy-preview-7--ai-invitation-designer.netlify.app): send the
+  // visitor back to the address they actually used — read from the forwarded host, never request.url's internal
+  // permalink — so a login started on a preview finishes there, logged in, instead of on the live site.
+  const visited = (request.headers.get("x-forwarded-host") ?? "").split(",")[0]!.trim().toLowerCase();
+  if (PREVIEW_HOST.test(visited)) return `https://${visited}`;
   return SITE_URL;
 }
+
+/** This site's own Netlify deploy previews and branch deploys, and nothing else. */
+const PREVIEW_HOST = /^[a-z0-9-]+--ai-invitation-designer\.netlify\.app$/;
 
 /**
  * OAuth callback for Supabase Auth's Google sign-in (Sign In With

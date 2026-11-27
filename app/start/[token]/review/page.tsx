@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { Download, ExternalLink, PartyPopper, Sparkles } from "lucide-react";
 
 import { getCurrentSupabaseUser } from "@/features/auth/actions";
@@ -8,7 +9,8 @@ import { publicMediaUrl } from "@/services/uploads";
 import { Button } from "@/components/ui/button";
 import { WizardStepShell } from "@/features/start/wizard-step-shell";
 import { WizardBackLink } from "@/features/start/wizard-back-link";
-import { draftAddWebsiteGoalAction } from "@/features/start/actions/event";
+import { createEventFromReviewAction, draftAddWebsiteGoalAction } from "@/features/start/actions/event";
+import { getCurrentAdmin } from "@/services/admin-auth";
 import { wizardStepHref } from "@/features/start/wizard-steps";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +21,16 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
   if (!event) notFound();
 
   const user = await getCurrentSupabaseUser();
+  // Logged in: the button is always "Create Your Event". The first click adds the draft to their account and opens
+  // What to Build (createEventFromReviewAction, which remembers it in a cookie for this draft); after that it goes
+  // on to choosing a plan, so What to Build → … → Review never loops. Not logged in: the Account step as before.
+  const createdFromReview = (await cookies()).get("em_review_created")?.value === token;
+  const admin = user ? await getCurrentAdmin() : null;
+  const onAccount = Boolean(admin?.memberships.some((m) => m.eventId === event.id));
+  const goToPlans = Boolean(user) && createdFromReview && onAccount;
+  const createEventAction = user && !goToPlans ? createEventFromReviewAction.bind(null, token) : null;
+  // A wedding website made in the Design step (it's saved on the draft as design_config).
+  const hasWeddingDesign = event.category === "wedding" && Boolean(event.designConfig);
   const goals = event.wizardGoals;
   const wantsWebsite = !goals || goals.includes("website");
   const wantsCard = !goals || goals.includes("invitation_card");
@@ -125,7 +137,11 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
       goals={event.wizardGoals}
       category={event.category}
       title="Review Your Event Page"
-      description="Check your event page, then continue to your account and choose a plan to publish it."
+      description={
+        user
+          ? "Check your event page, then create your event and choose a plan to publish it."
+          : "Check your event page, then continue to your account and choose a plan to publish it."
+      }
       hideFooter
     >
       <div className="grid gap-6">
@@ -137,6 +153,26 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
             then continue below to choose a plan and publish it.
           </p>
         </section>
+
+        {hasWeddingDesign ? (
+          <section className="rounded-xl border border-navy-950/10 bg-white p-5">
+            <h2 className="font-display text-lg text-navy-950">Your Wedding Website</h2>
+            <p className="mt-1 text-sm text-navy-700/60">
+              Your invitation design is saved — names, date, venue, opening and colours. Preview it, or go back and keep
+              editing anytime.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Button asChild variant="outline">
+                <Link href={publicUrl} target="_blank">
+                  Preview Website <ExternalLink size={15} />
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={wizardStepHref(token, "design")}>Edit Design</Link>
+              </Button>
+            </div>
+          </section>
+        ) : null}
 
         {shareImageUrl ? (
           <section className="rounded-xl border border-navy-950/10 bg-white p-5">
@@ -165,13 +201,36 @@ export default async function WizardReviewPage({ params }: { params: Promise<{ t
             <div>
               <h2 className="font-display text-lg text-navy-950">Ready to go live?</h2>
               <p className="mt-1 text-sm text-navy-700/70">
-                Continue to your account to choose a plan and publish this event.
-                Your draft and uploaded invitation card are saved.
+                {user ? (
+                  <>
+                    You&rsquo;re logged in{user.email ? <> as <strong className="text-navy-950">{user.email}</strong></> : null}.
+                    {goToPlans
+                      ? "This event is on your account. Create your event by choosing a plan to publish it. Your draft and designs are saved."
+                      : "Create your event to pick what to build, then choose a plan and publish it. Your draft and designs are saved."}
+                  </>
+                ) : (
+                  <>
+                    Continue to your account to choose a plan and publish this event.
+                    Your draft and uploaded invitation card are saved.
+                  </>
+                )}
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Button asChild size="lg">
-                  <Link href={`/start/${token}/account`}>{user ? "Continue with My Account" : "Create Account & Continue"}</Link>
-                </Button>
+                {createEventAction ? (
+                  <form action={createEventAction}>
+                    <Button type="submit" size="lg">
+                      Create Your Event
+                    </Button>
+                  </form>
+                ) : goToPlans ? (
+                  <Button asChild size="lg">
+                    <Link href={`/start/${token}/payment`}>Create Your Event</Link>
+                  </Button>
+                ) : (
+                  <Button asChild size="lg">
+                    <Link href={`/start/${token}/account`}>Create Account &amp; Continue</Link>
+                  </Button>
+                )}
                 <Button asChild variant="outline" size="lg">
                   <Link href={publicUrl} target="_blank">
                     Preview Event Page <ExternalLink size={15} />

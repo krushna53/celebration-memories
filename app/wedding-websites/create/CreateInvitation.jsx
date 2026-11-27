@@ -9,6 +9,12 @@ import useGrokFilm from "./useGrokFilm";
 import { dmSans } from "@/lib/fonts";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { requestEventDesignUploadAction, requestWeddingMediaUploadAction, saveEventDesignAction, saveWeddingDesignAction, startWeddingDraftAction } from "@/features/sacred-garden/actions";
+import { SHOWCASE_SITES, PAGES, STYLES } from "@/features/wedding-showcase/showcase-sites";
+import ShowcaseOpening from "@/features/wedding-showcase/ShowcaseOpening";
+import ShowcasePage from "@/features/wedding-showcase/pages/ShowcasePage";
+import { GALLERY_PAGES } from "@/features/wedding-showcase/pages/parts";
+import "@/features/wedding-showcase/showcase-fonts.css";
+import { DesignLoginDialog } from "@/features/start/design-login-dialog";
 import s from "./create.module.css";
 
 // the form's own clean text font (the invitation on the right keeps its design fonts)
@@ -18,7 +24,7 @@ const MAX_AUDIO_MB = 15;
 const MAX_VIDEO_MB = 50; // kept in the browser until Publish uploads it to storage
 
 /** One picture: upload from the device, or paste a URL. Empty = the design's own picture. */
-function ImageField({ value, onChange }) {
+function ImageField({ value, onChange, emptyAction = "Upload photo" }) {
   const [error, setError] = useState("");
   const pick = async (e) => {
     const file = e.target.files?.[0];
@@ -30,7 +36,7 @@ function ImageField({ value, onChange }) {
   return <div className={s.imageField}>
     {value ? <img className={s.thumb} src={value} alt="" /> : <p className={s.hint}>Showing the design&apos;s picture.</p>}
     <div className={s.row}>
-      <label className={s.fileBtn}>{value ? "Change photo" : "Upload photo"}<input type="file" accept="image/*" hidden onChange={pick} /></label>
+      <label className={s.fileBtn}>{value ? "Change photo" : emptyAction}<input type="file" accept="image/*" hidden onChange={pick} /></label>
       {value && <button type="button" className={s.linkBtn} onClick={() => onChange("")}>Remove</button>}
     </div>
     {!uploaded && <input className={s.input} placeholder="…or paste an image link" value={value} onChange={(e) => onChange(e.target.value)} />}
@@ -140,18 +146,26 @@ async function uploadDataUrl(requestUpload, dataUrl) {
  * `rsvp`: the site's live RSVP section, shown in the preview where the design's own RSVP was (as on the published event).
  * `eventId`: the dashboard's Wedding Design page (app/admin/(dashboard)/wedding-design) — Save keeps the design on that
  * event and stays here.
- * @param {{ draftToken?: string | null, initialForm?: Record<string, string>, inWizard?: boolean, rsvp?: import("react").ReactNode, eventId?: string | null }} props
+ * `signedIn` / `draftEventId` (wizard only): with nobody signed in, Save & Continue saves the design and then asks them to log in.
+ * @param {{ draftToken?: string | null, initialForm?: Record<string, string>, inWizard?: boolean, rsvp?: import("react").ReactNode, eventId?: string | null, signedIn?: boolean, draftEventId?: string | null }} props
  */
-export default function CreateInvitation({ draftToken = null, initialForm = sampleDefaults, inWizard = false, rsvp = null, eventId = null }) {
+export default function CreateInvitation({ draftToken = null, initialForm = sampleDefaults, inWizard = false, rsvp = null, eventId = null, signedIn = true, draftEventId = null }) {
   const router = useRouter();
   const [form, setForm] = useState(initialForm);
   const [envelope, setEnvelope] = useState(false);
   const [publish, setPublish] = useState({ busy: false, error: "", saved: false });
+  // wizard, nobody signed in: the design is saved, now ask them to log in before Event Details
+  const [askLogin, setAskLogin] = useState(false);
   // files already uploaded (data: URL → "media:" ref), so saving again doesn't upload them twice
   const uploads = useRef(new Map());
   // the draft this design is saved into: the wizard's, or the one the first Publish starts
   const [token, setToken] = useState(draftToken);
   const c = useMemo(() => buildInvitation(form), [form]);
+  // a design picked in the wedding gallery (/wedding/webpages): its opening and page; else the Sacred Garden page and envelope film
+  const showcase = SHOWCASE_SITES.find((site) => site.slug === form.showcase) ?? null;
+  // only the envelope film needs Grok to re-letter it with the couple's initials
+  const needsFilm = !showcase || ["film", "seal"].includes(showcase.style);
+  const openingReady = !needsFilm || c.envelope.ready;
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
   const fontSample = (key) => (key === "fontBodyStyle"
     ? { fontFamily: `"${form.fontBody}", serif`, fontStyle: form.fontBodyStyle }
@@ -159,12 +173,12 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
 
   const slug = slugFor(form);
   // Grok re-letters our envelope film whenever the couple's initials change (not needed while their own opening video is used)
-  const grok = useGrokFilm(c.monogram, form.introVideo ? c.monogram : form.envelopeLetters, (film, letters) => setForm((f) => ({ ...f, envelopeFilm: film, envelopeLetters: letters })));
+  const grok = useGrokFilm(c.monogram, form.introVideo || !needsFilm ? c.monogram : form.envelopeLetters, (film, letters) => setForm((f) => ({ ...f, envelopeFilm: film, envelopeLetters: letters })));
 
   // Publish: upload the couple's files, save the design on the draft event, then on to the next wizard step
   const publishSite = async () => {
     if (publish.busy) return;
-    if (!c.envelope.ready) { setPublish({ busy: false, error: `Wait until Grok has put ${c.monogram} on the envelope film, then save.`, saved: false }); return; }
+    if (!openingReady) { setPublish({ busy: false, error: `Wait until Grok has put ${c.monogram} on the envelope film, then save.`, saved: false }); return; }
     setPublish({ busy: true, error: "", saved: false });
     const upload = async (requestUpload, value) => {
       if (!uploads.current.has(value)) uploads.current.set(value, await uploadDataUrl(requestUpload, value));
@@ -195,13 +209,18 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
       }
       const result = await saveWeddingDesignAction(draft, saved);
       if (!result.success) throw new Error(result.error);
+      if (inWizard && !signedIn && draftEventId) {
+        setPublish({ busy: false, error: "", saved: false });
+        setAskLogin(true);
+        return;
+      }
       router.push(result.data.href);
     } catch (e) { setPublish({ busy: false, error: e.message || "Your website could not be saved.", saved: false }); }
   };
 
   const field = ([key, label, type = "text", choices]) => {
     if (type === "slug") return <div key={key} className={s.label}><span>{label}</span><SlugField value={form.slug} onChange={set("slug")} options={slugOptions(form)} current={slug} /></div>;
-    if (type === "image") return <div key={key} className={s.label}><span>{label}</span><ImageField value={form[key]} onChange={set(key)} /></div>;
+    if (type === "image") return <div key={key} className={s.label}><span>{key === "heroPhoto" && showcase?.style === "flowerdoor" ? "Photo on the invitation and door-reveal card" : label}</span><ImageField value={form[key]} onChange={set(key)} emptyAction={showcase?.page === "floralinvite" && ["storyPhoto", "couplePhoto"].includes(key) ? "Replace sample photo" : undefined} /></div>;
     if (key === "introVideoDesktop") return <div key={key} className={s.label}><span>{label}</span>
       <VideoField value={form[key] ?? ""} onChange={set(key)} sample={null} empty="None: computers show the phone video." /></div>;
     if (key === "introVideo") return <div key={key} className={s.label}><span>{label}</span>
@@ -225,15 +244,15 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
   return <InviteShell className={s.page}>
     <aside className={`${s.formPane} ${formFont.className}`}>
       <header className={s.head}>
-        <h1>{eventId ? "Wedding design" : "Create your invitation"}</h1>
-        <p>Type or upload on the left, and your invitation updates on the right.</p>
+        <h1>{inWizard && showcase ? `Make ${showcase.title} yours` : eventId ? "Wedding design" : "Create your invitation"}</h1>
+        <p>{inWizard && showcase ? "Your chosen design is ready to edit. Change the names, date, photo and details; the preview updates as you work." : "Type or upload on the left, and your invitation updates on the right."}</p>
         <div className={s.actions}>
           {eventId
             ? <button type="button" className={s.reset} onClick={() => setForm(initialForm)} title="Undo changes since the last save">Undo</button>
             : <button type="button" className={s.reset} onClick={() => setForm(sampleDefaults)} title="Reset to sample">Reset</button>}
-          <button type="button" className={s.envelopeBtn} disabled={!c.envelope.ready} onClick={() => setEnvelope(true)}
-            title={c.envelope.ready ? "Preview the envelope" : "The envelope film is being made"}>Preview</button>
-          <button type="button" className={s.envelopeBtn} disabled={publish.busy || !c.envelope.ready} onClick={publishSite}>{publish.busy ? "Saving…" : eventId ? "Save design" : inWizard ? "Save & Continue" : "Publish"}</button>
+          <button type="button" className={s.envelopeBtn} disabled={!openingReady} onClick={() => setEnvelope(true)}
+            title={openingReady ? "Preview the opening" : "The envelope film is being made"}>Preview</button>
+          <button type="button" className={s.envelopeBtn} disabled={publish.busy || !openingReady} onClick={publishSite}>{publish.busy ? "Saving…" : eventId ? "Save design" : inWizard ? "Save & Continue" : "Publish"}</button>
         </div>
         {publish.saved && <p className={s.hint} role="status">Saved — your website shows the new design.</p>}
         {publish.error && <p className={s.error}>{publish.error}</p>}
@@ -242,7 +261,20 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
         {grok.error && <p className={s.error}>{grok.error} <button type="button" className={s.linkBtn} onClick={grok.retry}>Try again</button></p>}
       </header>
       <form onSubmit={(e) => e.preventDefault()}>
-        {FORM_GROUPS.map((group) => <fieldset key={group.title} className={s.group}>
+        <fieldset className={s.group}>
+          <legend>Website design</legend>
+          <p className={s.hint}>The opening guests tap first and the page behind it. Your text, colours and photos stay as they are.</p>
+          <label className={s.label}>
+            <span>Design</span>
+            <select className={s.input} value={showcase?.slug ?? ""} onChange={(e) => set("showcase")(e.target.value)}>
+              <option value="">Sacred Garden — envelope film</option>
+              {SHOWCASE_SITES.map((site) => <option key={site.slug} value={site.slug}>{PAGES[site.page]?.[0] ?? site.page} — {STYLES[site.style]?.[1] ?? site.style}</option>)}
+            </select>
+          </label>
+          <a className={s.linkBtn} href="/wedding/webpages" target="_blank" rel="noopener noreferrer">See every design ↗</a>
+        </fieldset>
+        {FORM_GROUPS.filter((group) => (!group.gallery || (showcase && GALLERY_PAGES.includes(showcase.page)))
+          && !(showcase?.page === "floralinvite" && group.title === "Opening video")).map((group) => <fieldset key={group.title} className={s.group}>
           <legend>{group.title}</legend>
           {group.hint && <p className={s.hint}>{group.hint}</p>}
           {group.presets && <div className={s.presets}>
@@ -255,7 +287,7 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
               </button>;
             })}
           </div>}
-          {group.closingChoice && <div className={s.presets} role="radiogroup" aria-label="Photo or video">
+          {group.closingChoice && showcase?.page !== "floralinvite" && <div className={s.presets} role="radiogroup" aria-label="Photo or video">
             {[["photo", "Photo"], ["video", "Video"]].map(([kind, name]) => {
               const on = (form.closingVideo ? "video" : "photo") === kind;
               // only one at a time: picking video starts from the sample reel, picking photo drops the video
@@ -263,13 +295,19 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
                 onClick={() => setForm((f) => (kind === "video" ? { ...f, closingVideo: f.closingVideo || SAMPLE_CLOSING_VIDEO, couplePhoto: "" } : { ...f, closingVideo: "" }))}>{name}</button>;
             })}
           </div>}
-          {(group.closingChoice ? group.fields.filter(([key]) => key === (form.closingVideo ? "closingVideo" : "couplePhoto")) : group.fields).map(field)}
+          {(group.closingChoice
+            ? group.fields.filter(([key]) => key === (showcase?.page === "floralinvite" ? "couplePhoto" : form.closingVideo ? "closingVideo" : "couplePhoto"))
+            : group.fields).map(field)}
         </fieldset>)}
       </form>
     </aside>
     <main className={s.previewPane}>
-      <div className={s.previewGarden}><SacredGardenInvitation c={c} rsvp={rsvp} /></div>
+      <div className={s.previewGarden}>{showcase && showcase.page !== "garden"
+        ? <ShowcasePage layout={showcase.page} c={c} rsvp={rsvp ?? true} />
+        : <SacredGardenInvitation c={c} rsvp={rsvp} />}</div>
     </main>
-    {envelope && <SgEnvelope video={c.envelope.video} desktopVideo={c.envelope.desktopVideo} music={c.music || undefined} monogram={c.monogram} sealTrack={c.envelope.sealTrack} sealImage={c.envelope.sealImage} tapLabel={c.envelope.tapLabel} onDone={() => setEnvelope(false)} />}
+    {envelope && showcase && !needsFilm && <ShowcaseOpening key={showcase.slug} site={showcase} c={c} onDone={() => setEnvelope(false)} />}
+    {envelope && (!showcase || needsFilm) && <SgEnvelope video={c.envelope.video} desktopVideo={c.envelope.desktopVideo} music={c.music || undefined} monogram={c.monogram} sealTrack={c.envelope.sealTrack} sealImage={c.envelope.sealImage} tapLabel={c.envelope.tapLabel} onDone={() => setEnvelope(false)} />}
+    {askLogin && token && draftEventId && <DesignLoginDialog token={token} eventId={draftEventId} onClose={() => setAskLogin(false)} />}
   </InviteShell>;
 }

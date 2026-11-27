@@ -50,6 +50,7 @@ import {
   ClipboardCheck,
   ScanFace,
   LogIn,
+  BookOpen,
   MessageCircle,
   MessagesSquare,
 } from "lucide-react";
@@ -132,6 +133,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/payments", label: "Payments", icon: Wallet, group: "Payments" },
   { href: "/admin/checkin", label: "Check-In", icon: CalendarCheck, group: "Guests" },
   { href: "/admin/drafts", label: "Drafts", icon: FileClock, group: "Platform" },
+  { href: "/admin/blog", label: "Blog Posts", icon: BookOpen, group: "Platform" },
   { href: "/admin/billing", label: "Billing", icon: CreditCard, group: "Payments" },
   { href: "/admin/pricing-settings", label: "Pricing Settings", icon: Tags, group: "Platform" },
   { href: "/admin/platform-video", label: "Feature Video", icon: Video, group: "Platform" },

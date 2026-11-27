@@ -10,6 +10,7 @@ import { BarChart } from "@/features/admin/components/bar-chart";
 import { NoEventState } from "@/features/admin/components/no-event-state";
 import { DisplayMusicPicker } from "@/features/admin/display/display-music-picker";
 import { getDisplayMusic } from "@/services/display-music";
+import { canManageBlog } from "@/services/blog-access";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
   // "Overview" nav link and /admin/simple's own "Full Dashboard" link
   // for them (both point at plain /admin).
   const { from } = await searchParams;
-  if (admin?.role === "client" && from === "login") {
+  if (admin?.role === "client" && from === "login" && !canManageBlog(admin)) {
     redirect("/admin/simple");
   }
   // A session_organizer has no Overview at all — SESSION_ORGANIZER_ALLOWED_PATHS
@@ -42,7 +43,7 @@ export default async function AdminOverviewPage({ searchParams }: AdminOverviewP
 
   const event = admin ? await resolveAdminEvent(admin) : null;
   // the platform account sees its own platform dashboard, unless it opened an event it owns (Manage on All Events)
-  if (admin?.role === "owner" && !event) return <div className="space-y-5"><h1 className="font-display text-2xl">Platform dashboard</h1><p>Manage event accounts, public link exceptions, payments and support requests here. Customer media requires their owner&rsquo;s temporary approval.</p><div className="flex flex-wrap gap-5">{[["All Events","/admin/events"],["Public Event Links","/admin/public-event-links"],["Support Access","/admin/support-access"],["Billing","/admin/billing"]].map(([label,href]) => <Link key={href} href={href!} className="rounded-xl border bg-white px-5 py-4 underline">{label}</Link>)}</div></div>;
+  if (admin?.role === "owner" && !event) return <div className="space-y-5"><h1 className="font-display text-2xl">Platform dashboard</h1><p>Manage event accounts, public link exceptions, payments and support requests here. Customer media requires their owner&rsquo;s temporary approval.</p><div className="flex flex-wrap gap-5">{[["All Events","/admin/events"],["Public Event Links","/admin/public-event-links"],["Support Access","/admin/support-access"],["Billing","/admin/billing"],["Blog Posts","/admin/blog"]].map(([label,href]) => <Link key={href} href={href!} className="rounded-xl border bg-white px-5 py-4 underline">{label}</Link>)}</div></div>;
   if (!event) {
     // Same reasoning as app/admin/simple/page.tsx's identical check —
     // a client-role admin with no linked event now has somewhere to go

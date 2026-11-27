@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import s from "./ShowcaseIntro.module.css";
 
 /*
@@ -11,13 +11,13 @@ import s from "./ShowcaseIntro.module.css";
  * colours: { main, dark, trim, ink } — cloth / door, its shadow, gold work, lettering.
  * onOpen runs inside the tap (so music can start); onDone once the page is uncovered.
  */
-const OPEN_MS = { rise: 2400, sheer: 2600, swag: 2400, double: 3000, marigold: 2600, pearls: 2600, temple: 2400, jali: 2400, haveli: 2400, glass: 2200 };
+const OPEN_MS = { rise: 2400, sheer: 2600, swag: 2400, double: 3000, marigold: 2600, pearls: 2600, temple: 2400, jali: 2400, haveli: 2400, glass: 2200, flowerdoor: 4400 };
 const STRINGS = 26;
 
 const cx = (...names) => names.filter(Boolean).join(" ");
 const pair = (cls) => <><div className={cx(cls, s.left)} /><div className={cx(cls, s.right)} /></>;
 
-function Layers({ variant }) {
+function Layers({ variant, monogram, names, date, photo }) {
   switch (variant) {
     case "rise":
       return <><div className={s.footlights} /><div className={s.drape}><span className={s.fringe} /></div></>;
@@ -45,22 +45,29 @@ function Layers({ variant }) {
       return <><div className={s.frame} />{pair(s.haveliDoor)}</>;
     case "glass":
       return <><div className={s.chapel} />{pair(s.glassPanel)}</>;
+    case "flowerdoor":
+      return <><div className={s.flowerDoorFrame} /><div className={s.flowerCard}>
+        <div className={s.flowerCardPhoto}><img src={photo} alt="" /></div>
+        <div className={s.flowerCardCopy}><span>THE WEDDING OF</span><b>{names}</b>{date && <small>{date}</small>}<i aria-hidden="true">❧ ✿ ❧</i></div>
+      </div>{pair(s.flowerDoor)}<span className={s.flowerSeal} aria-hidden="true">✿</span></>;
     default:
       return null;
   }
 }
 
-export default function ShowcaseIntro({ variant, colors = {}, monogram, names, kicker = "The wedding of", date, tapLabel = "Tap to open", onOpen, onDone }) {
+export default function ShowcaseIntro({ variant, colors = {}, monogram, names, photo, kicker = "The wedding of", date, tapLabel = "Tap to open", thumb = false, play = false, onOpen, onDone }) {
   const [state, setState] = useState("closed"); // closed → opening → open
+  // thumbnails (thumb): open while `play` (the card is hovered), close again after
+  useEffect(() => { if (thumb) setState(play ? "opening" : "closed"); }, [thumb, play]);
   const open = () => {
-    if (state !== "closed") return;
+    if (thumb || state !== "closed") return;
     setState("opening");
     onOpen?.();
     window.setTimeout(() => { setState("open"); onDone?.(); }, OPEN_MS[variant] ?? 2400);
   };
   const vars = { "--main": colors.main, "--dark": colors.dark, "--trim": colors.trim, "--ink": colors.ink };
   return <div className={cx(s.stage, s[variant], state !== "closed" && s.opening, state === "open" && s.gone)} style={vars} aria-hidden={state === "open"} onClick={open}>
-    <Layers variant={variant} />
+    <Layers variant={variant} monogram={monogram} names={names} date={date} photo={photo} />
     <div className={s.content}>
       <p className={s.kicker}>{kicker}</p>
       <p className={s.names}>{names}</p>

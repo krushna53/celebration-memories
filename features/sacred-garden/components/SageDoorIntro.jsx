@@ -7,7 +7,7 @@ import { cx } from "./shared";
  * Embossed sage double doors that swing open in 3D, with a cream "tap to open" cartouche.
  * onOpen runs inside the tap (so music can start); onDone runs once the doors are open.
  */
-export default function SageDoorIntro({ names = "", tapLabel = "Tap to open", onOpen, onDone }) {
+export default function SageDoorIntro({ names = "", tapLabel = "Tap to open", theme, onOpen, onDone }) {
   const [state, setState] = useState("closed"); // closed → opening → open
   const open = () => {
     if (state !== "closed") return;
@@ -15,7 +15,7 @@ export default function SageDoorIntro({ names = "", tapLabel = "Tap to open", on
     onOpen?.();
     window.setTimeout(() => { setState("open"); onDone?.(); }, 2000);
   };
-  return <div className={cx(s.stage, state !== "closed" && s.opening, state === "open" && s.gone)} aria-hidden={state === "open"}>
+  return <div style={theme} className={cx(s.stage, state !== "closed" && s.opening, state === "open" && s.gone)} aria-hidden={state === "open"}>
     <div className={s.glow} />
     {names && <p className={s.names}>{names}</p>}
     <div className={cx(s.door, s.left)}><span className={s.panel} /></div>

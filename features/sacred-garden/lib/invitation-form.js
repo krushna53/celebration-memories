@@ -18,8 +18,12 @@ const AUTO_SCROLL = [["", "Guests scroll themselves"], ["on", "Scroll gently thr
 const CLOSING_LAYOUTS = [["", "Framed by flowers (design)"], ["bleed", "Full width, no flowers"]];
 
 export const FORM_GROUPS = [
-  { title: "Couple", fields: [["blessing", "God's name / blessing line (e.g. ॥ श्री कृष्णाय नमः ॥)"], ["groom", "Groom's name"], ["groomParents", "Line under the groom's name (optional, e.g. S/O Mrs. … and Mr. …)"], ["bride", "Bride's name"], ["brideParents", "Line under the bride's name (optional, e.g. D/O Mrs. … and Mr. …)"], ["date", "Wedding date & time", "datetime-local"], ["dateFormat", "Date style on the cover", "select", DATE_FORMATS],
-    ["coverDate", "Date on the cover in your own words (optional, e.g. 23rd–24th Nov 2026)"], ["heroPhoto", "Photo shown faintly behind the names (optional)", "image"]] },
+  { title: "Couple", hint: "Add your photo to replace the sample couple on the invitation cover and opening card. For the floral design, you can also change the story photo here and the closing photo below.", fields: [["blessing", "God's name / blessing line (e.g. ॥ श्री कृष्णाय नमः ॥)"], ["groom", "Groom's name"], ["groomParents", "Line under the groom's name (optional, e.g. S/O Mrs. … and Mr. …)"], ["bride", "Bride's name"], ["brideParents", "Line under the bride's name (optional, e.g. D/O Mrs. … and Mr. …)"], ["date", "Wedding date & time", "datetime-local"], ["dateFormat", "Date style on the cover", "select", DATE_FORMATS],
+    ["coverDate", "Date on the cover in your own words (optional, e.g. 23rd–24th Nov 2026)"], ["heroPhoto", "Cover and opening-card couple photo (optional)", "image"], ["storyPhoto", "Story section photo (optional)", "image"]] },
+  // only for the gallery designs (/wedding/webpages) that show a strip of photos or polaroids; empty = sample photos
+  { title: "Photo gallery", hint: "Up to four photos for the photo strip, polaroids and film frames of your design.", gallery: true, fields: [
+    ["galleryPhoto1", "Photo 1", "image"], ["galleryPhoto2", "Photo 2", "image"], ["galleryPhoto3", "Photo 3", "image"], ["galleryPhoto4", "Photo 4", "image"],
+  ] },
   { title: "Hashtag", hint: "Optional. Shown on the cover, the schedule, under RSVP, at the closing and in WhatsApp invites. Guests tap it to copy.", fields: [["hashtag", "Wedding hashtag (e.g. #KabirWedsAditi)"]] },
   { title: "Website link", hint: "Pick a link made from the names, or type your own. Publish puts your website there.", fields: [["slug", "Link", "slug"]] },
   { title: "Welcome", fields: [["welcomeTitle", "Welcome heading (one line each)", "textarea"], ["welcome", "Welcome message", "textarea"]] },
@@ -27,7 +31,7 @@ export const FORM_GROUPS = [
   { title: "Location", fields: [["venueName", "Venue name"], ["venueAddress", "Address"], ["venueMap", "Map search (optional)"], ["venueImage", "Hotel / venue picture", "image"]] },
   { title: "Dress code & gifts", fields: [["dressTitle", "Heading (e.g. Dress Code / Theme)"], ["dress", "Dress code", "textarea"], ["gifts", "Gift note", "textarea"]] },
   { title: "Closing", hint: "A photo or a video at the bottom of the page — pick one.", closingChoice: true, fields: [
-    ["couplePhoto", "Photo (upload to replace the sample)", "image"],
+    ["couplePhoto", "Closing photo (upload to replace the sample)", "image"],
     ["closingVideo", "Video", "video"],
     ["closingLayout", "Photo style", "select", CLOSING_LAYOUTS],
   ] },
@@ -81,6 +85,11 @@ export const formDefaults = {
   brideParents: "",
   coverDate: "",
   heroPhoto: "",
+  storyPhoto: "",
+  galleryPhoto1: "",
+  galleryPhoto2: "",
+  galleryPhoto3: "",
+  galleryPhoto4: "",
   slug: "",
   hashtag: "", // empty for every new couple; the samples carry their own
   welcomeTitle: DEFAULT_WELCOME_TITLE,
@@ -209,10 +218,14 @@ export function buildInvitation(f) {
     music: f.music.trim(),
     fonts: { script: f.fontScript, names: f.fontNames, body: f.fontBody, bodyStyle: f.fontBodyStyle },
     colors: { accent: f.colorAccent, text: f.colorText, background: f.colorBackground, detail: f.colorDetail, time: f.colorTime, button: f.colorButton },
-  }, { venue: f.venueImage || undefined, couple: f.couplePhoto || undefined, closingVideo: f.closingVideo || undefined, hero: f.heroPhoto || undefined });
+  }, { venue: f.venueImage || undefined, couple: f.couplePhoto || undefined,
+    closingVideo: f.showcase === "aarya-kabir-blush" ? undefined : f.closingVideo || undefined,
+    hero: f.heroPhoto || undefined });
   // computers: the wide video, else the phone one; phones: the phone video or film, else the wide one
   const desktopVideo = f.introVideoDesktop || WIDE_FILMS[film] || film;
   const video = film || desktopVideo;
   // never letters drawn over a film by code: the envelope is shown only once Grok's film (or the couple's own video) is ready
-  return { ...c, envelope: { ...c.envelope, ...(video ? { video, desktopVideo } : {}), ready: Boolean(video), autoOpen: Number(f.autoOpen) || 0 }, autoScroll: f.autoScroll === "on" };
+  return { ...c, storyPhoto: f.storyPhoto || "", envelope: { ...c.envelope, ...(video ? { video, desktopVideo } : {}), ready: Boolean(video), autoOpen: Number(f.autoOpen) || 0 }, autoScroll: f.autoScroll === "on",
+    // the couple's own photos for the gallery designs' photo strips (empty = the design's sample photos)
+    gallery: [f.galleryPhoto1, f.galleryPhoto2, f.galleryPhoto3, f.galleryPhoto4].map((photo) => photo || "") };
 }

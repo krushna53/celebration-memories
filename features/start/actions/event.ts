@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { requireDraftEvent } from "@/features/start/draft-auth";
 import { updateEvent, type EventUpdateInput } from "@/services/events";
@@ -285,3 +286,56 @@ export async function claimDraftEventFormAction(token: string): Promise<void> {
     redirect(`${wizardStepHref(token, "account")}?linkError=${encodeURIComponent(result.error)}`);
   }
 }
+
+/**
+ * Review step, "Create Your Event" for someone already logged in: adds this draft to their account (an existing host
+ * gets it as one more event; a login with no host account yet gets a client role for it) and opens What to Build,
+ * where they can add or change what they're making before choosing a plan. The platform owner's account can't own
+ * customer events, so it goes to the Account step instead, which explains that.
+ */
+export async function createEventFromReviewAction(token: string): Promise<void> {
+  const event = await requireDraftEvent(token);
+  const supabase = await supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(wizardStepHref(token, "account"));
+
+  const { data: existingAdmin, error: lookupError } = await supabaseAdmin()
+    .from("admins")
+    .select("id, role")
+    .eq("id", user.id)
+    .maybeSingle<{ id: string; role: string }>();
+  if (lookupError || existingAdmin?.role === "owner") redirect(wizardStepHref(token, "account"));
+
+  if (existingAdmin) {
+    const linked = await addDraftToAccount(user.id, event.id);
+    if (!linked.success) redirect(`${wizardStepHref(token, "account")}?linkError=${encodeURIComponent(linked.error)}`);
+  } else {
+    const meta = user.user_metadata as { full_name?: string; name?: string } | null;
+    const { error: insertError } = await supabaseAdmin().from("admins").insert({
+      id: user.id,
+      email: user.email ?? "",
+      name: meta?.full_name ?? meta?.name ?? user.email ?? "Host",
+      role: "client",
+      event_id: event.id,
+    });
+    if (insertError) {
+      redirect(
+        `${wizardStepHref(token, "account")}?linkError=${encodeURIComponent("Something went wrong setting up your account for this event.")}`,
+      );
+    }
+  }
+  // Remembered so Review's "Create Your Event" goes on to choosing a plan next time, not back to What to Build.
+  (await cookies()).set(REVIEW_CREATED_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: `/start/${token}`,
+    maxAge: 60 * 60 * 24 * 30,
+  });
+  redirect(wizardStepHref(token, "goals"));
+}
+
+/** Set by createEventFromReviewAction for this draft's pages only (path /start/<token>); its value is the draft token. */
+const REVIEW_CREATED_COOKIE = "em_review_created";

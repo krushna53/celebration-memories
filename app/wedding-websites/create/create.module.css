@@ -112,6 +112,9 @@ textarea.input { min-height: 86px; resize: vertical; font-size: 13.5px; line-hei
 .actions button { white-space: nowrap; }
 /* the garden design draws its own full-width bands; the pane shows it edge to edge */
 .previewGarden { margin: -24px calc(-1 * clamp(12px, 2.4vw, 32px)) -60px; background: #f9f0e0; }
+/* Keep the Sacred Garden page's computer backdrop (a position: fixed floral layer, desktop.module.css) inside the preview:
+   contain: paint makes this pane its containing block, so it can't spread over the form on the left. */
+.previewGarden { position: relative; contain: paint; }
 /* music player and a line of text in the picked font */
 .audio { width: 100%; height: 40px; }
 .fontSample { display: block; padding: 4px 2px 0; font-size: 22px; font-weight: 400; line-height: 1.3; color: #a67d2b; }
