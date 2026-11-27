@@ -241,6 +241,25 @@ test('emails use the saved brand: logo in the header, primary on button and link
   assert.doesNotMatch(renderEmail('diwali', content, {}, { brand: { ...brand, logoUrl: 'javascript:x' } }).html, /<img/);
 });
 
+test('{{logo}} puts the brand logo where it is typed; the header logo is a separate switch', () => {
+  const brand = { logoUrl: 'https://cdn.example/l.png', primaryColor: '#2563EB', secondaryColor: '#F59E0B' };
+  const content = { subject: 'Hi', preheader: '', body: 'Dear {{first_name}},\n\n{{logo}}\n\nThanks from {{ LOGO }} team', ctaLabel: '', ctaUrl: '' };
+  const imgs = (html) => (html.match(/<img /g) ?? []).length;
+  const r = renderEmail('diwali', content, { first_name: 'Priya', sender_name: 'Acme' }, { brand, headerLogo: false });
+  assert.equal(imgs(r.html), 2);
+  assert.match(r.html, /<div style="margin:0 0 16px;text-align:center;"><img src="https:\/\/cdn\.example\/l\.png"[^>]*height="56"/);
+  assert.match(r.html, /Thanks from <img [^>]*height="28"[^>]*> team<\/p>/);
+  assert.doesNotMatch(r.text, /logo|\u0000/i);
+  assert.equal(imgs(renderEmail('diwali', content, {}, { brand }).html), 3);
+  // No logo saved: the token simply disappears.
+  const none = renderEmail('diwali', content, {}, {}).html;
+  assert.equal(imgs(none), 0);
+  assert.doesNotMatch(none, /\{\{\s*logo/i);
+  // A contact field can't fake the logo.
+  assert.equal(imgs(renderEmail('diwali', { ...content, body: '{{first_name}}' }, { first_name: '\u0000LOGO\u0000 {{logo}}' }, { brand, headerLogo: false }).html), 0);
+  assert.deepEqual(unknownTokens('{{logo}} {{first_name}}'), []);
+});
+
 test('LocalStorage repository: brand settings save, reload and are cleared by Reset demo data', async () => {
   const store = memoryStore();
   const repo = new LocalStorageMailerRepository(store);
@@ -266,4 +285,74 @@ test('campaigns keep a "show logo" choice — on by default, off when unticked, 
   const off = await repo.saveCampaign({ ...base, showLogo: false });
   assert.equal(off.showLogo, false);
   assert.equal((await repo.saveCampaign({ ...base, showLogo: true }, off.id)).showLogo, true);
+});
+
+const { sanitizeEmailHtml, splitEmailDocument, joinEmailDocument, htmlToText } = load('lib/mailer/html-email');
+const { starterEmailHtml } = load('lib/mailer/email-html');
+
+test('HTML emails are sanitized: no scripts, handlers or javascript: links; email markup kept', () => {
+  const dirty = '<!doctype html><html><head><style>@import url(x.css); p{color:red}</style><script>alert(1)</script></head>'
+    + '<body style="margin:0"><table width="600" cellpadding="0" style="background:#fff"><tr><td align="center" onclick="x()">'
+    + '<a href="javascript:alert(1)">bad</a> <a href="https://ok.example" target="_blank">ok</a>'
+    + '<img src="https://cdn.example/a.png" onerror="x()" alt="a"><iframe src="https://evil.example"></iframe><form><input></form>'
+    + '</td></tr></table></body></html>';
+  const clean = sanitizeEmailHtml(dirty);
+  assert.doesNotMatch(clean, /<script|alert\(1\)|onclick|onerror|<iframe|<form|<input|@import|javascript:/i);
+  assert.match(clean, /<table width="600" cellpadding="0" style="background:#fff">/);
+  assert.match(clean, /<td align="center">/);
+  assert.match(clean, /<a href="https:\/\/ok\.example" target="_blank" rel="noopener noreferrer">ok<\/a>/);
+  assert.match(clean, /<img src="https:\/\/cdn\.example\/a\.png" alt="a" \/>|<img src="https:\/\/cdn\.example\/a\.png" alt="a">/);
+  assert.match(clean, /<style>\s*p\{color:red\}<\/style>/);
+  // The editor works on the body; the shell round-trips.
+  const parts = splitEmailDocument(clean);
+  assert.match(parts.before, /<body style="margin:0">$/);
+  assert.equal(joinEmailDocument(parts.before, parts.inner, parts.after), clean);
+  assert.match(joinEmailDocument('', '<p>Hi</p>', ''), /<body[^>]*>\n<p>Hi<\/p>\n<\/body>/);
+  assert.equal(htmlToText('<h1>Hello</h1><p>Line &amp; more<br>next</p><ul><li>One</li></ul>'), 'Hello\nLine & more\nnext\n• One');
+});
+
+test('HTML emails render with escaped tokens, the logo, the preheader and our unsubscribe footer', () => {
+  const brand = { logoUrl: 'https://cdn.example/l.png', primaryColor: '#2563EB', secondaryColor: '#F59E0B' };
+  const content = {
+    subject: 'Hi {{first_name}}', preheader: 'For {{first_name}}', body: 'ignored', ctaLabel: '', ctaUrl: '',
+    html: '<html><head><title>x</title></head><body style="background:#eee"><div>{{logo}}</div><p>Dear {{first_name}}</p><p><a href="{{event_venue}}">x</a></p><script>bad()</script></body></html>',
+  };
+  const r = renderEmail('diwali', content, { first_name: '<b>Priya</b>', sender_name: 'Acme', event_venue: 'javascript:alert(1)' }, { brand, unsubscribeUrl: 'https://u.example/x' });
+  assert.equal(r.subject, 'Hi <b>Priya</b>');
+  assert.match(r.html, /^<!doctype html>\n<html>/);
+  assert.match(r.html, /<body style="background:#eee"><div style="display:none;[^"]*">For &lt;b&gt;Priya&lt;\/b&gt;<\/div>/);
+  assert.match(r.html, /<div><img src="https:\/\/cdn\.example\/l\.png" alt="Acme"/);
+  assert.match(r.html, /<p>Dear &lt;b&gt;Priya&lt;\/b&gt;<\/p>/);
+  assert.doesNotMatch(r.html, /bad\(\)|javascript:/);
+  assert.match(r.html, /Sent by Acme via EveryMoment\./);
+  assert.match(r.html, /<a href="https:\/\/u\.example\/x" target="_blank"[^>]*>Unsubscribe<\/a>/);
+  assert.match(r.text, /^Dear <b>Priya<\/b>/);
+  assert.match(r.text, /Unsubscribe: https:\/\/u\.example\/x/);
+  // Without a brand logo, {{logo}} just disappears.
+  assert.doesNotMatch(renderEmail('diwali', content, {}).html, /\{\{\s*logo|<img/);
+});
+
+test('switching to the HTML editor starts from the current design, with tokens and {{logo}} kept', () => {
+  const brand = { logoUrl: 'https://cdn.example/l.png', primaryColor: '#2563EB', secondaryColor: '#F59E0B' };
+  const html = starterEmailHtml('diwali', { subject: 'Hello {{first_name}}', preheader: 'pre', body: 'Dear {{first_name}},\n\n{{logo}}', ctaLabel: 'Go', ctaUrl: 'https://go.example' }, { brand });
+  assert.match(html, /Hello \{\{first_name\}\}<\/h1>/);
+  assert.match(html, /Dear \{\{first_name\}\},/);
+  assert.equal((html.match(/\{\{logo\}\}/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /<img|Unsubscribe|display:none/);
+  assert.match(html, /href="https:\/\/go\.example\/"/);
+});
+
+test('templates and campaigns store sanitized HTML and refuse oversized HTML', async () => {
+  const repo = new LocalStorageMailerRepository(memoryStore());
+  await repo.load();
+  const t = await repo.saveTemplate({ name: 'AI', kind: 'diwali', subject: 'S', preheader: '', body: 'b', ctaLabel: '', ctaUrl: '', html: '<p onclick="x()">Hi {{first_name}}</p><script>x()</script>' });
+  assert.equal(t.html, '<p>Hi {{first_name}}</p>');
+  const plain = await repo.saveTemplate({ name: 'Plain', kind: 'diwali', subject: 'S', preheader: '', body: 'b', ctaLabel: '', ctaUrl: '' });
+  assert.equal(plain.html, '');
+  await assert.rejects(
+    repo.saveTemplate({ name: 'Big', kind: 'diwali', subject: 'S', preheader: '', body: '', ctaLabel: '', ctaUrl: '', html: `<p>${'x'.repeat(60_000)}</p>` }),
+    /too large/,
+  );
+  const c = await repo.saveCampaign({ name: 'C', kind: 'diwali', templateId: t.id, senderName: '', eventId: null, audience: { contactIds: [], listIds: [] }, subject: 'S', preheader: '', body: '', ctaLabel: '', ctaUrl: '', html: '<p>Hi</p><img src="javascript:x">' });
+  assert.equal(c.html, '<p>Hi</p>');
 });

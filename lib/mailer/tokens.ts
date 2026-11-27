@@ -22,6 +22,14 @@ export type TokenValues = Record<MailerToken, string>;
 
 const TOKEN_PATTERN = /\{\{\s*([a-z_]+)\s*\}\}/gi;
 
+/**
+ * {{logo}} puts the Brand Settings logo wherever it's typed in the message
+ * (lib/mailer/email-html.ts). It's an image, not text, so it isn't in
+ * MAILER_TOKENS / TokenValues — renderTokens leaves it alone.
+ */
+export const LOGO_TOKEN = "logo";
+export const LOGO_TOKEN_PATTERN = /\{\{\s*logo\s*\}\}/gi;
+
 /** Formats a YYYY-MM-DD calendar date without any timezone shift (it's a date, not an instant). */
 export function formatMailerDate(date: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
@@ -74,7 +82,7 @@ export function renderTokens(text: string, values: TokenValues): string {
 
 /** Tokens used in `text` that aren't known — shown as a warning in the editor. */
 export function unknownTokens(text: string): string[] {
-  const known = new Set<string>(MAILER_TOKENS.map((t) => t.token));
+  const known = new Set<string>([...MAILER_TOKENS.map((t) => t.token), LOGO_TOKEN]);
   const found = new Set<string>();
   for (const match of text.matchAll(TOKEN_PATTERN)) {
     const name = match[1]!.toLowerCase();

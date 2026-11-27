@@ -1,19 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { LayoutTemplate, Pencil, Plus, Send, Trash2 } from "lucide-react";
 
 import { CAMPAIGN_KINDS, type CampaignKind, type MailerTemplate, type MailerTemplateInput } from "@/types/mailer";
-import { MAILER_TOKENS } from "@/lib/mailer/tokens";
+import { LOGO_TOKEN, MAILER_TOKENS } from "@/lib/mailer/tokens";
+import { brandOf } from "@/lib/mailer/brand";
+import { starterEmailHtml } from "@/lib/mailer/email-html";
 import { useMailer } from "@/features/mailer/mailer-provider";
 import { useMailerNav } from "@/features/mailer/mailer-nav";
 import { EmailPreview } from "@/features/mailer/components/email-preview";
+import {
+  AiEmailGenerator,
+  HtmlEmailEditor,
+  MessageFormatSwitch,
+  plainTextOf,
+  type HtmlEmailEditorHandle,
+} from "@/features/mailer/components/html-message-tools";
 import {
   Card,
   ErrorText,
   Field,
   inputClasses,
   KIND_ICON_BG,
+  labelClasses,
   KindTag,
   Modal,
   primaryButton,
@@ -55,6 +65,7 @@ export function TemplatesView() {
                 <p className="mt-0.5 flex items-center gap-1.5 text-xs text-navy-700/55">
                   <KindTag kind={t.kind} />
                   {t.builtIn ? <span>Built-in</span> : null}
+                  {t.html ? <span className="rounded bg-navy-950/[0.06] px-1.5 py-px font-mono text-[10px] text-navy-700">HTML</span> : null}
                   <span>· Updated {timeAgo(t.updatedAt)}</span>
                 </p>
               </div>
@@ -86,6 +97,7 @@ export function TemplatesView() {
                       body: t.body,
                       ctaLabel: t.ctaLabel,
                       ctaUrl: t.ctaUrl,
+                      html: t.html ?? "",
                     }),
                   );
                   if (result.ok) navigate({ name: "editor", id: result.value.id });
@@ -108,15 +120,19 @@ function TemplateForm({ template, onClose }: { template: MailerTemplate | null; 
   const { data, run } = useMailer();
   const [form, setForm] = useState<MailerTemplateInput>(() =>
     template
-      ? { name: template.name, kind: template.kind, subject: template.subject, preheader: template.preheader, body: template.body, ctaLabel: template.ctaLabel, ctaUrl: template.ctaUrl }
-      : { name: "", kind: "announcement", subject: "", preheader: "", body: "Hi {{first_name}},\n\n\n\nThank you,\n{{sender_name}}", ctaLabel: "", ctaUrl: "" },
+      ? { name: template.name, kind: template.kind, subject: template.subject, preheader: template.preheader, body: template.body, ctaLabel: template.ctaLabel, ctaUrl: template.ctaUrl, html: template.html ?? "" }
+      : { name: "", kind: "announcement", subject: "", preheader: "", body: "Hi {{first_name}},\n\n\n\nThank you,\n{{sender_name}}", ctaLabel: "", ctaUrl: "", html: "" },
   );
   const [error, setError] = useState<string | null>(null);
   const set = <K extends keyof MailerTemplateInput>(k: K, v: MailerTemplateInput[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const editor = useRef<HtmlEmailEditorHandle | null>(null);
+  const isHtml = Boolean(form.html?.trim());
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const result = await run((repo) => repo.saveTemplate(form, template?.id));
+    const html = isHtml ? (editor.current?.flush() ?? form.html ?? "") : "";
+    const input = { ...form, html, body: html ? plainTextOf(html) : form.body };
+    const result = await run((repo) => repo.saveTemplate(input, template?.id));
     if (result.ok) onClose();
     else setError(result.error);
   }
@@ -145,13 +161,55 @@ function TemplateForm({ template, onClose }: { template: MailerTemplate | null; 
           <Field label="Preview text" htmlFor="t-pre">
             <input id="t-pre" className={inputClasses} value={form.preheader} onChange={(e) => set("preheader", e.target.value)} />
           </Field>
-          <Field label="Message" hint="(blank line = new paragraph)" htmlFor="t-body">
-            <textarea id="t-body" rows={9} className={cn(inputClasses, "resize-y leading-relaxed")} value={form.body} onChange={(e) => set("body", e.target.value)} />
-          </Field>
-          <p className="text-xs text-navy-700/60">
-            Tokens: {MAILER_TOKENS.map((t) => `{{${t.token}}}`).join(" ")}
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <MessageFormatSwitch
+              isHtml={isHtml}
+              onText={() => {
+                if (isHtml && !confirm("Switch back to simple text? The HTML design will be removed and only its text kept.")) return;
+                set("html", "");
+              }}
+              onHtml={() => {
+                if (!isHtml) set("html", starterEmailHtml(form.kind, form, { brand: brandOf(data) }));
+              }}
+            />
+            <AiEmailGenerator
+              kind={form.kind}
+              currentHtml={isHtml ? (form.html ?? null) : null}
+              onGenerated={(email) => setForm((f) => ({ ...f, subject: email.subject || f.subject, preheader: email.preheader, html: email.html, body: plainTextOf(email.html) }))}
+            />
+          </div>
+          {isHtml ? (
+            <div className="space-y-2">
+              <p className={labelClasses}>
+                Message <span className="font-normal text-navy-700/50">(click Source to see or edit the HTML)</span>
+              </p>
+              <HtmlEmailEditor html={form.html ?? ""} onChange={(html) => setForm((f) => ({ ...f, html, body: plainTextOf(html) }))} handle={editor} />
+              <div className="flex flex-wrap gap-1.5">
+                {[...MAILER_TOKENS.map((t) => t.token), LOGO_TOKEN].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => {
+                      if (!editor.current?.insertText(`{{${t}}}`)) setError("Close the Source view to insert a token, or type it into the HTML.");
+                    }}
+                    className="rounded-md border border-navy-950/10 bg-navy-950/[0.03] px-2 py-1 font-mono text-xs text-navy-700 hover:border-gold-500"
+                  >
+                    {`{{${t}}}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              <Field label="Message" hint="(blank line = new paragraph)" htmlFor="t-body">
+                <textarea id="t-body" rows={9} className={cn(inputClasses, "resize-y leading-relaxed")} value={form.body} onChange={(e) => set("body", e.target.value)} />
+              </Field>
+              <p className="text-xs text-navy-700/60">
+                Tokens: {[...MAILER_TOKENS.map((t) => t.token), LOGO_TOKEN].map((t) => `{{${t}}}`).join(" ")}
+              </p>
+            </>
+          )}
+          <div className={cn("grid gap-4 sm:grid-cols-2", isHtml && "hidden")}>
             <Field label="Button label" hint="(optional)" htmlFor="t-cta">
               <input id="t-cta" className={inputClasses} value={form.ctaLabel} onChange={(e) => set("ctaLabel", e.target.value)} />
             </Field>

@@ -6,12 +6,20 @@ import { ArrowLeft, Loader2, Send, Trash2, Users } from "lucide-react";
 import { CAMPAIGN_KINDS, type CampaignKind, type MailerCampaignInput, type MailerSender } from "@/types/mailer";
 import { resolveAudience } from "@/lib/mailer/audience";
 import { contactDisplayName } from "@/lib/mailer/email";
-import { MAILER_TOKENS, unknownTokens } from "@/lib/mailer/tokens";
+import { LOGO_TOKEN, MAILER_TOKENS, unknownTokens } from "@/lib/mailer/tokens";
 import { BUILT_IN_TEMPLATE_IDS } from "@/lib/mailer/seed";
 import { brandOf } from "@/lib/mailer/brand";
+import { starterEmailHtml } from "@/lib/mailer/email-html";
 import { useMailer } from "@/features/mailer/mailer-provider";
 import { useMailerNav } from "@/features/mailer/mailer-nav";
 import { EmailPreview } from "@/features/mailer/components/email-preview";
+import {
+  AiEmailGenerator,
+  HtmlEmailEditor,
+  MessageFormatSwitch,
+  plainTextOf,
+  type HtmlEmailEditorHandle,
+} from "@/features/mailer/components/html-message-tools";
 import {
   Card,
   dangerButton,
@@ -34,7 +42,7 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
   const [form, setForm] = useState<MailerCampaignInput>(() => {
     if (existing) {
       const { name, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl } = existing;
-      return { name, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl, showLogo: existing.showLogo !== false };
+      return { name, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl, showLogo: existing.showLogo !== false, html: existing.html ?? "" };
     }
     const kind = initialKind ?? "announcement";
     const template = data.templates.find((t) => t.id === BUILT_IN_TEMPLATE_IDS[kind]) ?? data.templates.find((t) => t.kind === kind);
@@ -51,6 +59,7 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
       body: template?.body ?? "",
       ctaLabel: template?.ctaLabel ?? "",
       ctaUrl: template?.ctaUrl ?? "",
+      html: template?.html ?? "",
       showLogo: true,
     };
   });
@@ -66,6 +75,8 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
   const [senderId, setSenderId] = useState<string>("");
   const [sendersError, setSendersError] = useState<string | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const htmlEditor = useRef<HtmlEmailEditorHandle | null>(null);
+  const isHtml = Boolean(form.html?.trim());
 
   const set = <K extends keyof MailerCampaignInput>(key: K, value: MailerCampaignInput[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -86,12 +97,16 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
       set("templateId", null);
       return;
     }
-    setForm((f) => ({ ...f, templateId: t.id, kind: t.kind, subject: t.subject, preheader: t.preheader, body: t.body, ctaLabel: t.ctaLabel, ctaUrl: t.ctaUrl }));
+    setForm((f) => ({ ...f, templateId: t.id, kind: t.kind, subject: t.subject, preheader: t.preheader, body: t.body, ctaLabel: t.ctaLabel, ctaUrl: t.ctaUrl, html: t.html ?? "" }));
   }
 
   function insertToken(token: string) {
     const el = bodyRef.current;
     const text = `{{${token}}}`;
+    if (isHtml) {
+      if (!htmlEditor.current?.insertText(text)) setError("Close the Source view to insert a token, or type it into the HTML.");
+      return;
+    }
     if (!el) return set("body", form.body + text);
     const start = el.selectionStart ?? form.body.length;
     const end = el.selectionEnd ?? start;
@@ -112,7 +127,10 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
   async function save(): Promise<string | null> {
     setError(null);
     setBusy("save");
-    const result = await run((repo) => repo.saveCampaign(form, savedId));
+    // The HTML editor's Source view only hands its edits over when asked.
+    const html = isHtml ? (htmlEditor.current?.flush() ?? form.html ?? "") : "";
+    const input = { ...form, html, body: html ? plainTextOf(html) : form.body };
+    const result = await run((repo) => repo.saveCampaign(input, savedId));
     setBusy(null);
     if (!result.ok) {
       setError(result.error);
@@ -275,16 +293,52 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
             <Field label="Preview text" hint="(shown after the subject in most inboxes)" htmlFor="c-pre">
               <input id="c-pre" className={inputClasses} value={form.preheader} onChange={(e) => set("preheader", e.target.value)} />
             </Field>
-            <Field label="Message" hint="(blank line = new paragraph)" htmlFor="c-body">
-              <textarea
-                id="c-body"
-                ref={bodyRef}
-                rows={10}
-                className={cn(inputClasses, "resize-y font-[inherit] leading-relaxed")}
-                value={form.body}
-                onChange={(e) => set("body", e.target.value)}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <MessageFormatSwitch
+                isHtml={isHtml}
+                onText={() => {
+                  if (isHtml && !confirm("Switch back to simple text? The HTML design will be removed and only its text kept.")) return;
+                  set("html", "");
+                }}
+                onHtml={() => {
+                  if (!isHtml) set("html", starterEmailHtml(form.kind, form, { brand: brandOf(data), headerLogo: form.showLogo !== false }));
+                }}
               />
-            </Field>
+              <AiEmailGenerator
+                kind={form.kind}
+                currentHtml={isHtml ? (form.html ?? null) : null}
+                onGenerated={(email) => {
+                  setForm((f) => ({ ...f, subject: email.subject || f.subject, preheader: email.preheader, html: email.html, body: plainTextOf(email.html) }));
+                  setNotice(null);
+                }}
+              />
+            </div>
+            {isHtml ? (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-navy-700/75">
+                  Message <span className="font-normal text-navy-700/50">(click Source to see or edit the HTML)</span>
+                </p>
+                <HtmlEmailEditor
+                  html={form.html ?? ""}
+                  onChange={(html) => {
+                    setForm((f) => ({ ...f, html, body: plainTextOf(html) }));
+                    setNotice(null);
+                  }}
+                  handle={htmlEditor}
+                />
+              </div>
+            ) : (
+              <Field label="Message" hint="(blank line = new paragraph)" htmlFor="c-body">
+                <textarea
+                  id="c-body"
+                  ref={bodyRef}
+                  rows={10}
+                  className={cn(inputClasses, "resize-y font-[inherit] leading-relaxed")}
+                  value={form.body}
+                  onChange={(e) => set("body", e.target.value)}
+                />
+              </Field>
+            )}
             <div>
               <p className="text-xs font-medium text-navy-700/75">Insert personalisation</p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -299,10 +353,21 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
                     {`{{${t.token}}}`}
                   </button>
                 ))}
+                {/* {{logo}}: the Brand Settings logo wherever it's placed in the message. */}
+                <button
+                  type="button"
+                  onClick={() => insertToken(LOGO_TOKEN)}
+                  disabled={!savedLogo}
+                  className="rounded-md border border-navy-950/10 bg-navy-950/[0.03] px-2 py-1 font-mono text-xs text-navy-700 hover:border-gold-500 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-navy-950/10"
+                  title={savedLogo ? "Your Brand Settings logo, placed here in the message" : "Upload a logo in Brand Settings first"}
+                >
+                  {`{{${LOGO_TOKEN}}}`}
+                </button>
                 {/* The Brand Settings logo, at the top of the email — on/off per campaign. */}
                 <label
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs",
+                    isHtml && "hidden",
                     savedLogo ? "cursor-pointer border-navy-950/10 bg-navy-950/[0.03] text-navy-700 hover:border-gold-500" : "border-navy-950/[0.06] text-navy-700/45",
                   )}
                   title={savedLogo ? "Show the Brand Settings logo at the top of this email" : "Upload a logo in Brand Settings first"}
@@ -314,7 +379,7 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
                     onChange={(e) => set("showLogo", e.target.checked)}
                     className="h-3.5 w-3.5 accent-[var(--color-gold-500)]"
                   />
-                  Logo
+                  Logo in header
                 </label>
               </div>
               {savedLogo ? null : <p className="mt-1.5 text-xs text-navy-700/50">Upload a logo in Brand Settings to add it to emails.</p>}
@@ -324,7 +389,7 @@ export function CampaignEditor({ id, kind: initialKind }: { id?: string; kind?: 
                 </p>
               ) : null}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className={cn("grid gap-4 sm:grid-cols-2", isHtml && "hidden")}>
               <Field label="Button label" hint="(optional)" htmlFor="c-cta">
                 <input id="c-cta" className={inputClasses} placeholder="e.g. RSVP now" value={form.ctaLabel} onChange={(e) => set("ctaLabel", e.target.value)} />
               </Field>

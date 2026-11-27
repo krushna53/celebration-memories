@@ -77,8 +77,9 @@ export function CampaignDetail({ id }: { id: string }) {
     if (!campaign) return;
     const { name, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl } = campaign;
     const showLogo = campaign.showLogo !== false;
+    const html = campaign.html ?? "";
     const result = await run((repo) =>
-      repo.saveCampaign({ name: `${name} (copy)`, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl, showLogo }),
+      repo.saveCampaign({ name: `${name} (copy)`, kind, templateId, senderName, eventId, audience, subject, preheader, body, ctaLabel, ctaUrl, showLogo, html }),
     );
     if (result.ok) navigate({ name: "editor", id: result.value.id });
     else setError(result.error);

@@ -319,8 +319,7 @@ export async function sendCampaignLive(tenantId: string, campaignId: unknown, se
         events: [],
       }));
       const event: MailerEvent | null = data.events.find((e) => e.id === campaign.eventId) ?? null;
-      const base = liveBrand(data);
-      const brand = base && campaign.showLogo === false ? { ...base, logoUrl: null } : base;
+      const brand = liveBrand(data);
       return { campaign: structuredClone(campaign), contacts: structuredClone(recipients) as MailerContact[], event, brand };
     }),
   );
@@ -343,7 +342,7 @@ export async function sendCampaignLive(tenantId: string, campaignId: unknown, se
     for (const [i, contact] of contacts.entries()) {
       const token = createUnsubscribeToken(tenantId, contact.id)!;
       const unsubscribeUrl = `${origin}/mailer/unsubscribe?t=${encodeURIComponent(token)}`;
-      const rendered = renderEmail(campaign.kind, campaign, tokenValuesFor(contact, event, delivery.fromName), { unsubscribeUrl, brand });
+      const rendered = renderEmail(campaign.kind, campaign, tokenValuesFor(contact, event, delivery.fromName), { unsubscribeUrl, brand, headerLogo: campaign.showLogo !== false });
       outcomes.set(
         contact.id,
         await sendOne(loaded.transport, {

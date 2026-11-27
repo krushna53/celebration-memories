@@ -103,6 +103,12 @@ export interface MailerEmailContent {
   body: string;
   ctaLabel: string;
   ctaUrl: string;
+  /**
+   * A full-HTML email (CKEditor / AI, lib/mailer/html-email.ts). When set it is what
+   * gets sent, and `body` is only its plain-text version. Absent/empty = the simple
+   * text message in the built-in design.
+   */
+  html?: string;
 }
 
 export interface MailerTemplate extends MailerEmailContent {
@@ -196,7 +202,7 @@ export type MailerCampaignInput = Pick<
   | "ctaLabel"
   | "ctaUrl"
 > &
-  Partial<Pick<MailerCampaign, "showLogo">>;
+  Partial<Pick<MailerCampaign, "showLogo" | "html">>;
 
 /**
  * Automatic emails driven by contact dates (lib/mailer/automations.ts):

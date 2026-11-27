@@ -35,10 +35,7 @@ export function EmailPreview({
 }) {
   // The saved Brand Settings — every preview shows the email as it will really go out.
   const { data } = useMailerStatus();
-  const brand = useMemo(() => {
-    const b = brandOf(data);
-    return b && !showLogo ? { ...b, logoUrl: null } : b;
-  }, [data, showLogo]);
+  const brand = useMemo(() => brandOf(data), [data]);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [contactId, setContactId] = useState<string>("");
   const contact = contacts.find((c) => c.id === contactId) ?? contacts[0] ?? null;
@@ -53,8 +50,8 @@ export function EmailPreview({
       if (event) values = { ...values, event_name: real.event_name, event_date: real.event_date, event_venue: real.event_venue };
       if (real.sender_name) values = { ...values, sender_name: real.sender_name };
     }
-    return renderEmail(kind, content, values, { brand });
-  }, [kind, content, senderName, event, contact, brand]);
+    return renderEmail(kind, content, values, { brand, headerLogo: showLogo });
+  }, [kind, content, senderName, event, contact, brand, showLogo]);
 
   return (
     <div className="flex h-full flex-col">

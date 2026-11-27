@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { BarChart3, Cake, FlaskConical, LayoutDashboard, LayoutTemplate, ListChecks, Loader2, Mail, Palette, Plus, RotateCcw, Settings, Users } from "lucide-react";
+import { BarChart3, Cake, CalendarDays, FlaskConical, LayoutDashboard, LayoutTemplate, ListChecks, Loader2, Mail, Palette, Plus, RotateCcw, Settings, Users } from "lucide-react";
 
 import type { MailerMode } from "@/lib/mailer/mode";
 import { cn } from "@/lib/utils";
@@ -19,9 +19,10 @@ import { ListsView } from "@/features/mailer/components/lists-view";
 import { TemplatesView } from "@/features/mailer/components/templates-view";
 import { AutomationsView } from "@/features/mailer/components/automations-view";
 import { BrandSettingsView } from "@/features/mailer/components/brand-settings-view";
+import { HolidayCalendarView } from "@/features/mailer/components/holiday-calendar-view";
 import { ErrorText, Modal, primaryButton, secondaryButton } from "@/features/mailer/components/ui";
 
-type Section = "dashboard" | "campaigns" | "analytics" | "contacts" | "lists" | "templates" | "automations" | "brand";
+type Section = "dashboard" | "campaigns" | "analytics" | "contacts" | "lists" | "templates" | "automations" | "brand" | "holidays";
 
 const SECTIONS: { id: Section; label: string; icon: LucideIcon; title: string; subtitle: string }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, title: "Dashboard", subtitle: "Here's how your email campaigns are doing." },
@@ -42,7 +43,16 @@ const BRAND_SECTION = {
   subtitle: "Your logo and colors, used in every email you send.",
 };
 
-const ALL_SECTIONS = [...SECTIONS, BRAND_SECTION];
+/** Company Holiday Calendar — saved in Supabase for the signed-in company (both mock and live mode). */
+const HOLIDAYS_SECTION = {
+  id: "holidays" as const,
+  label: "Holiday Calendar",
+  icon: CalendarDays,
+  title: "Company Holiday Calendar",
+  subtitle: "Pick your company's holidays for the year, and add your own.",
+};
+
+const ALL_SECTIONS = [...SECTIONS, BRAND_SECTION, HOLIDAYS_SECTION];
 
 const EMAIL_SETTINGS_HREF = "/admin/mailer/email-settings";
 
@@ -161,6 +171,18 @@ function MailerShell({ emailSettingsHref }: { emailSettingsHref: string }) {
                     {BRAND_SECTION.label}
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => navigate({ name: "holidays" })}
+                  aria-current={active === "holidays" ? "page" : undefined}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition",
+                    active === "holidays" ? "bg-navy-950/[0.06] font-medium text-navy-950" : "text-navy-700/70 hover:bg-navy-950/[0.03] hover:text-navy-950",
+                  )}
+                >
+                  <HOLIDAYS_SECTION.icon size={16} aria-hidden="true" />
+                  {HOLIDAYS_SECTION.label}
+                </button>
                 {/* … and the real (server-side) Email Settings — a separate page, not part of the mock data. */}
                 <Link
                   href={emailSettingsHref}
@@ -215,7 +237,7 @@ function MailerShell({ emailSettingsHref }: { emailSettingsHref: string }) {
                   <h1 className="font-display text-2xl text-navy-950 sm:text-3xl">{section.title}</h1>
                   <p className="mt-1 text-sm text-navy-700/60">{section.subtitle}</p>
                 </div>
-                {view.name !== "brand" ? (
+                {view.name !== "brand" && view.name !== "holidays" ? (
                   <button type="button" onClick={() => setPicking(true)} className={primaryButton}>
                     <Plus size={16} /> New Campaign
                   </button>
@@ -231,6 +253,7 @@ function MailerShell({ emailSettingsHref }: { emailSettingsHref: string }) {
             {view.name === "templates" ? <TemplatesView /> : null}
             {view.name === "automations" ? <AutomationsView /> : null}
             {view.name === "brand" ? <BrandSettingsView /> : null}
+            {view.name === "holidays" ? <HolidayCalendarView /> : null}
             {view.name === "campaign" ? <CampaignDetail key={view.id} id={view.id} /> : null}
             {view.name === "editor" ? <CampaignEditor key={view.id ?? `new-${view.kind}`} id={view.id} kind={view.kind} /> : null}
           </main>

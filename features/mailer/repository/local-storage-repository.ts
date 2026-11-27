@@ -26,6 +26,7 @@ import { contactDisplayName, isValidEmail, normalizeEmail } from "@/lib/mailer/e
 import { resolveAudience } from "@/lib/mailer/audience";
 import { createDemoData } from "@/lib/mailer/seed";
 import { simulateSend } from "@/lib/mailer/simulate";
+import { EMAIL_HTML_MAX, sanitizeEmailHtml } from "@/lib/mailer/html-email";
 import { MailerError, type MailerRepository } from "@/features/mailer/repository/types";
 
 /**
@@ -79,6 +80,14 @@ function looksLikeMailerData(value: unknown): value is MailerData {
     v.version === 1 &&
     ["events", "contacts", "lists", "templates", "campaigns"].every((k) => Array.isArray(v[k]))
   );
+}
+
+/** Sanitized full-HTML email, or "" for the simple text message. */
+function cleanEmailHtml(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const clean = sanitizeEmailHtml(value);
+  if (clean.length > EMAIL_HTML_MAX) throw new MailerError(`The HTML email is too large (${Math.ceil(clean.length / 1000)} KB). Keep it under ${EMAIL_HTML_MAX / 1000} KB — remove pasted images or long sections.`);
+  return clean;
 }
 
 function cleanText(value: string, max: number): string {
@@ -282,6 +291,7 @@ export class LocalStorageMailerRepository implements MailerRepository {
         body: input.body.slice(0, 10_000),
         ctaLabel: cleanText(input.ctaLabel, 60),
         ctaUrl: cleanText(input.ctaUrl, 500),
+        html: cleanEmailHtml(input.html),
       };
       const now = this.now();
       if (id) {
@@ -329,6 +339,7 @@ export class LocalStorageMailerRepository implements MailerRepository {
         body: input.body.slice(0, 10_000),
         ctaLabel: cleanText(input.ctaLabel, 60),
         ctaUrl: cleanText(input.ctaUrl, 500),
+        html: cleanEmailHtml(input.html),
       };
       const now = this.now();
       if (id) {

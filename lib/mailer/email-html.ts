@@ -1,6 +1,7 @@
 import type { AutomationKind, CampaignKind, MailerBrand, MailerEmailContent } from "@/types/mailer";
-import { escapeHtml, renderTokens, type TokenValues } from "@/lib/mailer/tokens";
+import { LOGO_TOKEN_PATTERN, MAILER_TOKENS, escapeHtml, renderTokens, type TokenValues } from "@/lib/mailer/tokens";
 import { isInlineLogo, normalizeHex, readableTextOn } from "@/lib/mailer/brand";
+import { renderHtmlEmail } from "@/lib/mailer/html-email";
 
 /**
  * Builds the responsive HTML email for a campaign/template — table layout
@@ -130,16 +131,55 @@ function brandLogoSrc(url: string | null): string | null {
   return safe && safe.startsWith("https:") ? safe : null;
 }
 
-export function bodyToHtml(body: string, color: string): string {
+/** Stands in for {{logo}} between token rendering and HTML building; stripped from token values so a contact field can't fake it. */
+const LOGO_MARK = "\u0000LOGO\u0000";
+
+/** Renders the body's tokens, keeping each {{logo}} as LOGO_MARK. */
+function renderBodyTokens(body: string, values: TokenValues): string {
+  return body
+    .split(LOGO_TOKEN_PATTERN)
+    .map((part) => renderTokens(part, values).replace(/\u0000/g, ""))
+    .join(LOGO_MARK);
+}
+
+/**
+ * `logoSrc` turns each {{logo}} into the logo: centred on its own when it's
+ * alone on a line, inline (text height) inside a sentence. Without a logo
+ * the token disappears.
+ */
+export function bodyToHtml(body: string, color: string, logoSrc: string | null = null, logoAlt = "Logo"): string {
+  const img = (block: boolean) =>
+    logoSrc
+      ? block
+        ? `<img src="${escapeHtml(logoSrc)}" alt="${escapeHtml(logoAlt)}" height="56" style="display:inline-block;height:56px;width:auto;max-width:240px;border:0;outline:none;text-decoration:none;">`
+        : `<img src="${escapeHtml(logoSrc)}" alt="${escapeHtml(logoAlt)}" height="28" style="display:inline-block;height:28px;width:auto;max-width:160px;vertical-align:middle;border:0;outline:none;text-decoration:none;">`
+      : "";
   return body
     .replace(/\r\n/g, "\n")
     .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map(
-      (p) =>
-        `<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:${color};">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`,
-    )
+    .flatMap((p) => {
+      // A {{logo}} alone on a line becomes its own centred block.
+      const out: string[] = [];
+      let lines: string[] = [];
+      const flush = () => {
+        const text = lines.join("\n").trim();
+        lines = [];
+        if (!text.replaceAll(LOGO_MARK, "").trim() && !(logoSrc && text.includes(LOGO_MARK))) return;
+        out.push(
+          `<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:${color};">${escapeHtml(text).replace(/\n/g, "<br>").replaceAll(LOGO_MARK, img(false))}</p>`,
+        );
+      };
+      for (const line of p.split("\n")) {
+        if (line.trim() === LOGO_MARK) {
+          flush();
+          if (logoSrc) out.push(`<div style="margin:0 0 16px;text-align:center;">${img(true)}</div>`);
+        } else {
+          lines.push(line);
+        }
+      }
+      flush();
+      return out;
+    })
     .join("\n");
 }
 
@@ -160,6 +200,8 @@ export function renderEmail(
     unsubscribeUrl?: string | null;
     /** The company's saved brand (lib/mailer/brand.ts brandOf); null keeps the kind's own look. */
     brand?: Pick<MailerBrand, "logoUrl" | "primaryColor" | "secondaryColor"> | null;
+    /** Show the logo in the header (a campaign's "Logo" tick). {{logo}} in the message works either way. */
+    headerLogo?: boolean;
   } = {},
 ): RenderedEmail {
   const unsubscribeHref = options.unsubscribeUrl ? safeHttpUrl(options.unsubscribeUrl) : null;
@@ -173,10 +215,25 @@ export function renderEmail(
   const linkColor = branded ? primary : t.muted;
   const subject = renderTokens(content.subject, values);
   const preheader = renderTokens(content.preheader, values);
-  const body = renderTokens(content.body, values);
+  const body = renderBodyTokens(content.body, values);
+  const headerLogoSrc = options.headerLogo === false ? null : logoSrc;
   const ctaLabel = renderTokens(content.ctaLabel, values).trim();
   const ctaUrl = safeHttpUrl(renderTokens(content.ctaUrl, values));
   const sentBy = values.sender_name ? `Sent by ${escapeHtml(values.sender_name)} via EveryMoment.` : "Sent via EveryMoment.";
+  const sentByText = values.sender_name ? `Sent by ${values.sender_name} via EveryMoment.` : "Sent via EveryMoment.";
+
+  // A full-HTML email (CKEditor / AI): sent as written, plus our footer with the unsubscribe link.
+  if (content.html?.trim()) {
+    const footerHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr><td align="center" style="padding:16px 24px 28px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+    <p style="margin:0;font-size:12px;line-height:1.6;color:#6b6a8a;">${sentBy}</p>
+    <p style="margin:4px 0 0;font-size:12px;line-height:1.6;color:#6b6a8a;">Don't want these emails? <a href="${unsubscribeHref ? escapeHtml(unsubscribeHref) : "#"}" target="_blank" style="color:${linkColor};">Unsubscribe</a>.</p>
+  </td></tr>
+</table>`;
+    const rendered = renderHtmlEmail(content.html, values, { logoSrc, logoAlt: values.sender_name || "Logo", preheader, footerHtml });
+    const text = [rendered.text, "--", sentByText, unsubscribeHref ? `Unsubscribe: ${unsubscribeHref}` : ""].filter(Boolean).join("\n\n");
+    return { subject, preheader, html: rendered.html, text };
+  }
 
   const button =
     ctaLabel && ctaUrl
@@ -212,7 +269,7 @@ export function renderEmail(
         branded
           ? `<tr><td style="height:6px;line-height:6px;font-size:0;background:${primary};">&nbsp;</td></tr>
       <tr><td class="em-pad" align="center" style="background:${t.cardBg};padding:32px 32px 8px;">
-        ${logoSrc ? `<img src="${escapeHtml(logoSrc)}" alt="${escapeHtml(values.sender_name || "Logo")}" height="56" style="display:block;margin:0 auto 18px;height:56px;width:auto;max-width:240px;border:0;outline:none;text-decoration:none;">` : ""}
+        ${headerLogoSrc ? `<img src="${escapeHtml(headerLogoSrc)}" alt="${escapeHtml(values.sender_name || "Logo")}" height="56" style="display:block;margin:0 auto 18px;height:56px;width:auto;max-width:240px;border:0;outline:none;text-decoration:none;">` : ""}
         <div style="font-size:22px;line-height:1;">${t.ornament}</div>
         <div style="margin-top:12px;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:${primary};">${escapeHtml(t.eyebrow)}</div>
         <h1 class="em-title" style="margin:10px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.25;font-weight:normal;color:${secondary};">${escapeHtml(subject)}</h1>
@@ -224,7 +281,7 @@ export function renderEmail(
       </td></tr>`
       }
       <tr><td class="em-pad" style="padding:36px 40px 28px;">
-        ${bodyToHtml(body, t.text)}
+        ${bodyToHtml(body, t.text, logoSrc, values.sender_name || "Logo")}
         ${button}
       </td></tr>
       <tr><td class="em-pad" style="padding:20px 40px 32px;border-top:1px solid rgba(0,0,0,0.06);">
@@ -238,7 +295,7 @@ export function renderEmail(
 </html>`;
 
   const text = [
-    body.replace(/\r\n/g, "\n").trim(),
+    body.replaceAll(LOGO_MARK, "").replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim(),
     ctaLabel && ctaUrl ? `${ctaLabel}: ${ctaUrl}` : "",
     "--",
     values.sender_name ? `Sent by ${values.sender_name} via EveryMoment.` : "Sent via EveryMoment.",
@@ -248,4 +305,28 @@ export function renderEmail(
     .join("\n\n");
 
   return { subject, preheader, html, text };
+}
+
+/**
+ * The current simple-text email as an editable HTML document — the starting
+ * point when a template/campaign switches to the HTML editor. Tokens stay as
+ * {{tokens}}, the logo becomes {{logo}} again, and the preheader and footer
+ * are left out because every HTML email gets them added when it's rendered.
+ */
+export function starterEmailHtml(
+  kind: EmailTheme,
+  content: MailerEmailContent,
+  options: { brand?: Pick<MailerBrand, "logoUrl" | "primaryColor" | "secondaryColor"> | null; headerLogo?: boolean } = {},
+): string {
+  const asTyped = Object.fromEntries(MAILER_TOKENS.map((t) => [t.token, `{{${t.token}}}`])) as TokenValues;
+  const { html } = renderEmail(kind, { ...content, html: "" }, asTyped, { brand: options.brand, headerLogo: options.headerLogo });
+  const logoSrc = options.brand ? brandLogoSrc(options.brand.logoUrl) : null;
+  let doc = html
+    .replace(/<div style="display:none;max-height:0;overflow:hidden;opacity:0;">[\s\S]*?<\/div>\n?/, "")
+    .replace(/\s*<tr><td class="em-pad" style="padding:20px 40px 32px;border-top:[\s\S]*?<\/td><\/tr>/, "");
+  if (logoSrc) {
+    const src = escapeHtml(logoSrc).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    doc = doc.replace(new RegExp(`<img src="${src}"[^>]*>`, "g"), "{{logo}}");
+  }
+  return doc;
 }
