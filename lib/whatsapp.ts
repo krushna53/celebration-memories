@@ -34,7 +34,7 @@ export const INVITE_TEMPLATE_PLACEHOLDERS = [
   { token: "{{link}}", description: "Their unique invitation link" },
   { token: "{{hostedBy}}", description: "Who's hosting (e.g. Jagruti Shah)" },
   { token: "{{honoreeName}}", description: "Who it's for (e.g. Mahesh J. Shah)" },
-  { token: "{{hashtag}}", description: "The event's hashtag (e.g. #AaChalwithKunal), from its design" },
+  { token: "{{hashtag}}", description: "The event's hashtag (e.g. #KabirWedsAditi), from its design" },
 ] as const;
 
 function interpolateTemplate(

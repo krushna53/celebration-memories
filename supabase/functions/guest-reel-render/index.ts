@@ -32,6 +32,19 @@ function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
+function isServiceCaller(authorization: string | null, serviceRoleKey: string): boolean {
+  if (!authorization?.startsWith("Bearer ")) return false;
+  const token = authorization.slice(7);
+  if (token === serviceRoleKey) return true;
+  const payload = token.split(".")[1];
+  if (!payload) return false;
+  try {
+    return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")))?.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
 interface ReelRow {
   id: string;
   event_id: string;
@@ -69,7 +82,11 @@ Deno.serve(async (req: Request) => {
 
   // This worker is invoked only by the authenticated Next.js server actions.
   // A public/ordinary user JWT plus a known reel ID must never start a job.
-  if (req.headers.get("authorization") !== `Bearer ${serviceRoleKey}`) {
+  // verify_jwt is on, so the gateway has already checked the signature; we
+  // then require the service_role claim. (An exact match against
+  // SUPABASE_SERVICE_ROLE_KEY rejected the web app's own key — the key
+  // injected into functions is a different string for the same role.)
+  if (!isServiceCaller(req.headers.get("authorization"), serviceRoleKey)) {
     return jsonResponse({ success: false, error: "Server authorization required" }, 401);
   }
   const supabase = createClient(supabaseUrl, serviceRoleKey);

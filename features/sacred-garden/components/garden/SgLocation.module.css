@@ -1,5 +1,6 @@
 .name { font-size: 20px; line-height: 1.55; }
 .address { font-size: 17px; line-height: 1.25; }
+.name + .address { margin-top: 7px; }
 /* the photo melts into the paper at its edges, like a painted vignette */
 .photo {
   display: block;

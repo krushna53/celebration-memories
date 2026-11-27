@@ -20,7 +20,7 @@ function localDateTime(iso: string, timeZone: string): string {
 
 /**
  * Sacred Garden (moved from krushna-53-invitations): its own full page, not the shared section stack.
- * The couple ("Kunal & Aanchal"), date, venue and dress code come from the event; everything else from the design the
+ * The couple ("Kabir & Aditi"), date, venue and dress code come from the event; everything else from the design the
  * couple made on /wedding-websites/create (events.design_config), else the design's sample text.
  */
 export default function SacredGarden({ event, displayData, galleryPhotos, milestones }: BirthdayTemplateProps) {

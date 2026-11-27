@@ -361,6 +361,35 @@ rules are in `supabase/migrations/20261006140000_guest_reels.sql`.
   `/reels/[shareToken]` (noindex) — native share sheet with the MP4 file
   (Instagram/WhatsApp on phones), Download, WhatsApp link.
 
+### Life Story — biography + AI film (added 2026-11-24)
+
+`/admin/life-story` (owner + client): the family's story (Google Doc
+downloaded as .docx — text extracted in the browser with mammoth — or
+pasted) plus their photos become a biography page
+(`/life-story/[shareToken]`, off until the host shares it, noindex), a
+printable A4 PDF book (built client-side, `features/life-story/pdf-book.tsx`)
+and a narrated 16:9 film. One `life_stories` row per event, subject =
+honoree. The `life-story` Edge Function (service-role JWT only; deployed with
+verify_jwt on) does the paid work: `structure` (one OpenAI call reads
+story + photos → chapters, captions, film script), `film_start` (TTS per
+scene + Grok Imagine image-to-video for ≤6 chosen photos via xAI
+`/v1/videos/generations`) and `film_tick` (polled; copies clips, builds the
+Shotstack edit in `edit.ts`, stores the MP4). Files live under
+`<eventId>/life-story/` in gallery/audio/videos; `services/media-access.ts`
+opens them to visitors only while shared. Client caps:
+`life_stories.structure_limit` / `film_render_limit`. Full notes:
+`docs/life-story.md`. Tests: `tests/life-story.cjs`.
+
+### Biography events (added 2026-11-25)
+
+Occasion **Biography / Life Story** (`category = biography`): the wizard runs
+just two steps (`/start/<token>/story`, `/start/<token>/book`) using the Life
+Story panels via `LifeStoryActionsProvider`; the event page uses the
+`bestseller` template (book-cover hero → **Read the Book** at
+`/events/<slug>/book`, the AI-drawn life timeline, gallery, memories). The book
+reader (`features/life-story/book-reader.tsx`) paginates like a printed
+bestseller. Film optional. Details: `docs/life-story.md`.
+
 ### Invitation card reading cost
 
 Every AI read in the wizard's "Your Card" step records real OpenAI token

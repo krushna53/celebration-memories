@@ -1,4 +1,5 @@
 import { getEventSegment, type EventSegment } from "@/lib/event-segment";
+import { BIOGRAPHY_TEMPLATE_SLUG, DEFAULT_TEMPLATE_SLUG } from "@/lib/template-catalog";
 import type { EventCategory } from "@/types/event";
 
 /**
@@ -70,7 +71,26 @@ export const DEFAULT_GOALS_BY_CATEGORY: Record<EventCategory, WizardGoal[]> = {
   live_stream: ["website"],
   reunion: ["website", "slideshow", "invitation_card"],
   celebration: ["website", "invitation_card"],
+  biography: ["website"],
 };
+
+/**
+ * Event settings an occasion brings with it when picked on the Occasion
+ * step — on top of lib/event-segment.ts's occasionSelectionPatch. A
+ * biography skips the Goals and Template steps, so it gets its goal (a
+ * web page) and its bestseller-book template here; leaving it again
+ * puts both back so the normal wizard asks.
+ */
+export function occasionWizardDefaults(
+  category: EventCategory,
+  previous: { category: EventCategory; templateSlug: string },
+): { wizardGoals?: string[] | null; templateSlug?: string } {
+  if (category === "biography") return { wizardGoals: ["website"], templateSlug: BIOGRAPHY_TEMPLATE_SLUG };
+  if (previous.category === "biography") {
+    return { wizardGoals: null, ...(previous.templateSlug === BIOGRAPHY_TEMPLATE_SLUG ? { templateSlug: DEFAULT_TEMPLATE_SLUG } : {}) };
+  }
+  return {};
+}
 
 export function getDefaultGoalsForCategory(
   category: import("@/types/event").EventCategory | null | undefined,
@@ -209,6 +229,26 @@ const STEP_REGISTRY = {
     ],
     optional: true,
   },
+  story: {
+    slug: "story",
+    label: "Story & Photos",
+    description: "Their story, in your own words",
+    tips: [
+      "Paste the story or upload the Google Doc (File → Download → Microsoft Word). Rough notes are fine — the AI turns them into a book.",
+      "Add photos in roughly the order life happened: childhood first, grandchildren last.",
+      "Names, dates and places come only from what you write, so the more detail you give, the richer the book.",
+    ],
+  },
+  book: {
+    slug: "book",
+    label: "The Book",
+    description: "AI writes the biography and timeline",
+    tips: [
+      "Read it through once — fix any name, date or place the AI got wrong. Everything is editable.",
+      "Each chapter's period (e.g. \"1951 – 1968\") becomes a point on the life timeline on your page.",
+      "A narrated film can be added later from your dashboard — it's optional.",
+    ],
+  },
   review: {
     slug: "review",
     label: "Review",
@@ -262,6 +302,9 @@ export function resolveWizardSteps(
 }
 
 function resolveWizardStepList(goals: string[] | null | undefined, category?: EventCategory | null): WizardStep[] {
+  // A biography is the book itself: two steps (story + photos, then the AI-written book), then publish.
+  if (category === "biography") return [STEP_REGISTRY.occasion, STEP_REGISTRY.story, STEP_REGISTRY.book, STEP_REGISTRY.review];
+
   const steps: WizardStep[] = [STEP_REGISTRY.occasion, STEP_REGISTRY.goals];
 
   const hasGoals = Array.isArray(goals) && goals.length > 0;
