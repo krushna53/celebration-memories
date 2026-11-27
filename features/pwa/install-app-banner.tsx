@@ -84,7 +84,10 @@ export function InstallAppBanner() {
     finally { setBusy(false); }
   }
 
-  if (!mobile || installed || suppressed || /\/display(?:\/|$)/.test(pathname)) return null;
+  // Not on a public event page (/events/<slug>/…): guests open those from an invitation, so the navy install box and
+  // the "Install app" pill would sit on top of the couple's page. The /events directory itself keeps it.
+  const onEventPage = /^\/events\/[^/]+/.test(pathname);
+  if (!mobile || installed || suppressed || onEventPage || /\/display(?:\/|$)/.test(pathname)) return null;
   return <div className="fixed inset-x-4 z-40 flex justify-start pointer-events-none" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)" }}>
     {expanded ? <section id="install-app-panel" aria-label={`Install ${SITE_NAME} app`} className="pointer-events-auto w-full max-w-sm rounded-2xl border border-gold-500/25 bg-navy-950 p-4 text-ivory-50 shadow-xl">
       <div className="flex items-center justify-between gap-3"><h2 className="flex items-center gap-2 font-display text-base"><Download size={18} aria-hidden />Install the {SITE_NAME} app</h2><button type="button" onClick={dismiss} aria-label="Close install instructions" className="flex min-h-11 min-w-11 items-center justify-center rounded-lg hover:bg-white/10"><X size={18} /></button></div>
