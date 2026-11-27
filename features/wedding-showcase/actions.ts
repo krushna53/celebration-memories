@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { startWeddingDraftAction } from "@/features/sacred-garden/actions";
 import { cleanDesign } from "@/features/sacred-garden/lib/design";
 import { resolveWizardSteps, wizardStepHref } from "@/features/start/wizard-steps";
-import { getDraftEventByToken } from "@/services/event-drafts";
 import { updateEvent } from "@/services/events";
 import { showcaseSite } from "@/features/wedding-showcase/showcase-sites";
 import { REELS, TEMPLATE_STORE_URL } from "@/features/wedding-showcase/reels/reel-templates";
@@ -25,14 +24,14 @@ export async function startFromShowcaseAction(formData: FormData): Promise<void>
   if (!site) redirect("/wedding/webpages");
   const started = await startWeddingDraftAction(null);
   if (!started.success) redirect("/wedding-websites/create");
-  const { token } = started.data;
-  const draft = await getDraftEventByToken(token);
-  if (draft) {
-    try {
-      await updateEvent(draft.id, { designConfig: cleanDesign({ ...site.form, showcase: site.slug }, draft.id) });
-    } catch {
-      // the sample didn't pass the design checks: the Design step still opens, with the default design
-    }
+  const { id, token } = started.data;
+  try {
+    const designConfig = cleanDesign({ ...site.form, showcase: site.slug }, id);
+    await updateEvent(id, { designConfig });
+  } catch (error) {
+    // Never send a visitor into a generic editor when a sample could not be applied.
+    console.error(`Could not apply wedding website sample "${site.slug}" to draft ${id}:`, error);
+    redirect("/wedding/webpages?error=design");
   }
   redirect(wizardStepHref(token, "design"));
 }

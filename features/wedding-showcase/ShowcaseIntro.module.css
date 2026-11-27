@@ -337,6 +337,43 @@
 .glass .content { color: color-mix(in srgb, var(--main), #000 50%); text-shadow: 0 1px 8px rgba(255, 255, 255, 0.95); }
 .glass .label { background: rgba(255, 255, 255, 0.75); }
 
+/* ---------- flowerdoor: embossed blush doors, a rising invitation card and a dancing-photo reveal ---------- */
+.flowerdoor { background: radial-gradient(ellipse at 50% 38%, #fffaf5, #f1d9d4 60%, #dfbcb8); }
+.flowerdoor::before { content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 40%, rgba(255,255,255,.42), transparent 62%); opacity: .82; }
+.flowerDoorFrame { position: absolute; z-index: 2; inset: 3% 5% 0; border: 2px solid color-mix(in srgb, var(--trim), #fff 35%); border-bottom: 0; border-radius: 40vw 40vw 0 0 / 22vw 22vw 0 0; box-shadow: inset 0 0 0 8px color-mix(in srgb, var(--trim), transparent 78%), 0 0 50px rgba(76, 39, 49, .18); transition: opacity .7s ease 1s; pointer-events: none; }
+.flowerCard { position: absolute; z-index: 3; top: 50%; left: 50%; display: grid; width: min(72vw, 410px); aspect-ratio: 4 / 5.4; grid-template-rows: 58% 42%; overflow: hidden; translate: -50% 24vh; opacity: .08; border: 8px solid #fffaf6; outline: 1px solid color-mix(in srgb, var(--trim), #fff 15%); background: #fffaf6 url("/invite-art/sacred/flourish-left.webp") center / 72% auto no-repeat; box-shadow: 0 28px 60px rgba(62, 37, 42, .32), inset 0 0 0 3px rgba(190, 144, 133, .35); transform-origin: 50% -14px; }
+.flowerCard::after { content: ""; position: absolute; z-index: 5; inset: 0; background: url("/invite-art/sacred/floral-invite-frame.svg") center / 100% 100% no-repeat; pointer-events: none; }
+.flowerCardPhoto { position: relative; overflow: hidden; border-bottom: 1px solid color-mix(in srgb, var(--trim), transparent 45%); }
+.flowerCardPhoto::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 63%, rgba(66, 36, 42, .22)); pointer-events: none; }
+.flowerCardPhoto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 42%; transform: scale(1.02); }
+.opening.flowerdoor .flowerCardPhoto img { animation: coupleDance 1.9s ease-in-out 1.75s infinite; }
+.flowerCardCopy { display: grid; align-content: center; justify-items: center; gap: 7px; padding: 12px; background: linear-gradient(135deg, #fffaf6, #f5e5e3); color: var(--ink); text-align: center; }
+.flowerCardCopy > span { color: var(--trim); font: 600 9px/1.3 var(--o-serif, Georgia, serif); letter-spacing: .22em; }
+.flowerCardCopy b { max-width: 100%; color: #315b82; font: 400 clamp(25px, 5vw, 40px)/1.05 var(--o-names, "Great Vibes", cursive); text-shadow: 0 1px 0 rgba(255,255,255,.82); overflow-wrap: anywhere; }
+.flowerCardCopy small { color: color-mix(in srgb, var(--ink), #fff 25%); font: italic 13px/1.3 var(--o-serif, Georgia, serif); }
+.flowerCardCopy i { color: var(--trim); font-size: 18px; font-style: normal; letter-spacing: .1em; }
+@keyframes cardRise { 0% { translate: -50% 24vh; scale: .78; opacity: .12; } 72% { translate: -50% -54%; scale: 1.035; opacity: 1; } 100% { translate: -50% -50%; scale: 1; opacity: 1; } }
+@keyframes coupleDance { 0%,100% { transform: scale(1.02) translateY(0) rotate(-1.2deg); } 50% { transform: scale(1.07) translateY(-7px) rotate(1.2deg); } }
+.flowerDoor { z-index: 4; top: 3%; bottom: 0; width: 50.5%; border: 1px solid color-mix(in srgb, var(--trim), #fff 25%); background: radial-gradient(ellipse at 50% 18%, color-mix(in srgb, var(--trim), transparent 88%), transparent 38%), radial-gradient(ellipse at 50% 82%, color-mix(in srgb, var(--trim), transparent 90%), transparent 36%), linear-gradient(110deg, color-mix(in srgb, var(--main), #fff 25%), var(--main) 48%, color-mix(in srgb, var(--main), var(--trim) 12%)); box-shadow: inset 0 0 0 7px color-mix(in srgb, var(--trim), transparent 76%), inset 0 0 0 9px color-mix(in srgb, var(--trim), #fff 35%), 0 14px 38px rgba(59, 35, 40, .2); backface-visibility: hidden; transition: transform 1.45s cubic-bezier(.34,.78,.18,1), filter 1.45s ease; }
+.flowerDoor.left { left: 0; border-right: 1px solid color-mix(in srgb, var(--trim), #fff 30%); transform-origin: left center; }
+.flowerDoor.right { right: 0; border-left: 1px solid color-mix(in srgb, var(--trim), #fff 30%); transform-origin: right center; }
+.flowerDoor::before { content: ""; position: absolute; inset: 5%; border: 1px solid color-mix(in srgb, var(--trim), #fff 22%); box-shadow: inset 0 0 0 5px color-mix(in srgb, var(--main), #fff 30%), inset 0 0 0 6px color-mix(in srgb, var(--trim), transparent 70%); background: radial-gradient(ellipse at 50% 18%, color-mix(in srgb, var(--trim), transparent 65%) 0 1px, transparent 2px 11px), radial-gradient(ellipse at 50% 82%, color-mix(in srgb, var(--trim), transparent 68%) 0 1px, transparent 2px 12px); }
+.flowerDoor::after { content: none; }
+.flowerSeal { position: absolute; z-index: 6; top: 50%; left: 50%; display: grid; width: clamp(54px, 10vw, 84px); aspect-ratio: 1; place-items: center; translate: -50% -50%; border: 2px solid color-mix(in srgb, var(--trim), #fff 25%); border-radius: 50%; background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--trim), #fff 48%), var(--trim) 55%, color-mix(in srgb, var(--trim), #6c2f3a 44%)); box-shadow: 0 0 0 5px color-mix(in srgb, var(--main), #fff 65%), 0 8px 20px rgba(54, 28, 36, .3); color: #fff9f4; font: 28px/1 Georgia, serif; text-shadow: 0 1px 2px rgba(70, 30, 35, .42); transition: opacity .25s ease, transform .3s ease; }
+.flowerdoor .content { color: var(--ink); text-shadow: 0 1px 8px rgba(255,255,255,.8); }
+.flowerdoor .kicker, .flowerdoor .names, .flowerdoor .date { display: none; }
+.flowerdoor .tap { position: absolute; top: calc(50% + clamp(38px, 6vw, 52px)); left: 50%; margin: 0; transform: translateX(-50%); }
+.flowerdoor .monogram { display: none; }
+.flowerdoor .label { background: color-mix(in srgb, var(--dark), transparent 18%); }
+.opening.flowerdoor .flowerDoor.left { transform: rotateY(132deg); filter: brightness(.8); }
+.opening.flowerdoor .flowerDoor.right { transform: rotateY(-132deg); filter: brightness(.8); }
+.opening .flowerDoorFrame { opacity: 0; }
+.opening .flowerSeal { opacity: 0; transform: scale(.55); }
+.opening.flowerdoor .flowerCard { animation: cardRise 1.45s cubic-bezier(.22,.75,.2,1) .25s forwards, cardSway 4s ease-in-out 1.95s infinite; }
+@keyframes cardSway { 0%,100% { rotate: -1.1deg; } 50% { rotate: 1.1deg; } }
+.opening.flowerdoor .tap { margin-top: 0; }
+.opening.flowerdoor .label { background: color-mix(in srgb, var(--dark), transparent 18%); }
+
 @media (prefers-reduced-motion: reduce) {
   .stage *, .stage *::before, .stage *::after { animation: none !important; transition-duration: 0.4s !important; transition-delay: 0s !important; }
 }

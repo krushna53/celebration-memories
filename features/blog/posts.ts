@@ -7,6 +7,7 @@ export type BlogPost = {
   readTime: string;
   image: string;
   imageAlt: string;
+  tags?: string[];
   sections: { heading: string; body: string }[];
   quote?: string;
 };

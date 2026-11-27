@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" fill="none">
+  <defs>
+    <linearGradient id="petal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff1e8"/><stop offset=".55" stop-color="#e8a6a5"/><stop offset="1" stop-color="#bd7487"/></linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a9b997"/><stop offset="1" stop-color="#536f5c"/></linearGradient>
+    <g id="bloom">
+      <ellipse rx="12" ry="23" fill="url(#petal)" transform="rotate(0) translate(0 -20)"/><ellipse rx="12" ry="23" fill="url(#petal)" transform="rotate(45) translate(0 -20)"/>
+      <ellipse rx="12" ry="23" fill="url(#petal)" transform="rotate(90) translate(0 -20)"/><ellipse rx="12" ry="23" fill="url(#petal)" transform="rotate(135) translate(0 -20)"/>
+      <circle r="10" fill="#cfaa68"/><circle r="4" fill="#fff1ca"/>
+    </g>
+    <g id="sprig" stroke="#718268" stroke-width="2.5" stroke-linecap="round">
+      <path d="M0 0C25-24 28-50 18-78M13-25C-3-29-12-39-14-50 0-49 12-41 13-25ZM20-48C35-54 42-64 42-75 29-73 21-64 20-48Z" fill="url(#leaf)"/>
+      <path d="M4-13C-10-18-20-27-23-38-9-37 0-30 4-13ZM18-37C5-44 1-54 3-64 15-59 20-50 18-37Z" fill="url(#leaf)"/>
+    </g>
+  </defs>
+  <rect x="10" y="10" width="580" height="780" rx="22" stroke="#c59c6d" stroke-width="2" opacity=".72"/>
+  <rect x="21" y="21" width="558" height="758" rx="17" stroke="#e4cbb0" stroke-width="2" opacity=".8"/>
+  <g opacity=".96">
+    <path d="M26 150C75 120 90 80 104 38M26 650C77 680 91 722 107 766M574 150C525 120 510 80 496 38M574 650C523 680 509 722 493 766" stroke="#73836b" stroke-width="4" stroke-linecap="round"/>
+    <use href="#sprig" transform="translate(66 143) rotate(-35) scale(1.35)"/><use href="#sprig" transform="translate(83 79) rotate(12) scale(1.05)"/>
+    <use href="#sprig" transform="translate(67 655) rotate(145) scale(1.35)"/><use href="#sprig" transform="translate(84 721) rotate(192) scale(1.05)"/>
+    <use href="#sprig" transform="translate(534 143) rotate(35) scale(-1.35 1.35)"/><use href="#sprig" transform="translate(517 79) rotate(-12) scale(-1.05 1.05)"/>
+    <use href="#sprig" transform="translate(533 655) rotate(-145) scale(-1.35 1.35)"/><use href="#sprig" transform="translate(516 721) rotate(-192) scale(-1.05 1.05)"/>
+    <use href="#bloom" transform="translate(48 45) scale(1.35)"/><use href="#bloom" transform="translate(104 86) scale(.72)"/><use href="#bloom" transform="translate(46 754) scale(1.2)"/><use href="#bloom" transform="translate(103 713) scale(.75)"/>
+    <use href="#bloom" transform="translate(552 45) scale(1.35)"/><use href="#bloom" transform="translate(496 86) scale(.72)"/><use href="#bloom" transform="translate(554 754) scale(1.2)"/><use href="#bloom" transform="translate(497 713) scale(.75)"/>
+    <use href="#bloom" transform="translate(34 290) scale(.52)"/><use href="#bloom" transform="translate(566 510) scale(.52)"/>
+  </g>
+</svg>

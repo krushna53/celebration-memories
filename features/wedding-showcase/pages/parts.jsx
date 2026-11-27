@@ -18,6 +18,7 @@ const hash = (text = "") => [...text].reduce((n, ch) => (n * 31 + ch.charCodeAt(
 /** A couple photo for this sample: its own hero photo for k = 0, else one picked from the names (k picks another). */
 export function photoFor(c, k = 0) {
   if (k === 0 && c.hero.photo) return c.hero.photo;
+  if (k === 1 && c.storyPhoto) return c.storyPhoto;
   return COUPLE_PHOTOS[(hash(c.couple.first + c.couple.second) + k) % COUPLE_PHOTOS.length];
 }
 

@@ -1,0 +1,79 @@
+.invitation {
+  --flower-ink: #53353c;
+  --flower-muted: #816a6a;
+  --flower-rose: #a66c73;
+  --flower-gold: #bd9b70;
+  min-height: 100vh;
+  padding: clamp(14px, 3vw, 38px) 16px 70px;
+  background: radial-gradient(ellipse at 50% 0, rgba(255,250,247,.92), rgba(242,232,228,.9) 70%), url("/invite-art/sacred/flowers-closing.webp") center top / min(100%, 1050px) auto fixed no-repeat;
+  color: var(--flower-ink);
+  font-family: var(--pg-serif, Georgia, serif);
+}
+.paperBook { width: min(100%, 710px); margin: 0 auto; display: grid; gap: clamp(18px, 3vw, 30px); }
+.panel { position: relative; overflow: hidden; border: 1px solid #e5d1cc; border-radius: 5px; background: linear-gradient(135deg, rgba(255,250,247,.96), rgba(248,239,237,.94) 52%, rgba(255,250,247,.96)), url("/invite-art/sacred/paper-hero.webp") center / 100% 100% no-repeat; box-shadow: 0 16px 44px rgba(75, 46, 48, .08); }
+.panel::before { content: ""; position: absolute; inset: 12px; z-index: 0; border: 1px solid rgba(176, 129, 126, .42); pointer-events: none; }
+.panel::after { content: ""; position: absolute; right: -17px; bottom: -18px; width: clamp(118px, 23vw, 205px); aspect-ratio: 1.45; background: url("/invite-art/sacred/flowers-closing.webp") center / contain no-repeat; opacity: .42; pointer-events: none; }
+.panelInner { position: relative; z-index: 1; width: 100%; padding: clamp(32px, 7vw, 64px) clamp(28px, 8vw, 78px); text-align: center; }
+.cover { min-height: 760px; background: linear-gradient(180deg, rgba(255,250,247,.66), rgba(248,239,237,.78)), url("/invite-art/sacred/paper-hero.webp") center / 100% 100% no-repeat; }
+.cover::after { display: block; inset: 0; right: auto; bottom: auto; z-index: 0; width: auto; aspect-ratio: auto; background: url("/invite-art/sacred/floral-invite-frame.svg") center / 100% 100% no-repeat; opacity: .95; }
+.cover .panelInner { display: flex; min-height: 760px; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: clamp(55px, 9vw, 90px); }
+.cover .panelInner::before { content: ""; position: absolute; inset: 28px 28px auto; height: 120px; background: url("/invite-art/sacred/flourish-left.webp") left top / 145px auto no-repeat, url("/invite-art/sacred/flourish-left.webp") right top / 145px auto no-repeat; opacity: .72; pointer-events: none; }
+.blessing { margin: 0 0 26px; color: var(--flower-rose); font-size: 13px; letter-spacing: .1em; }
+.eyebrow { margin: 0; color: var(--flower-rose); font-family: var(--pg-serif, Georgia, serif); font-size: 11px; font-weight: 600; letter-spacing: .24em; text-transform: uppercase; }
+.flourish { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 14px 0; color: var(--flower-gold); font-size: 22px; line-height: 1; }
+.flourish i { font-size: 17px; font-style: normal; }
+.cover h1 { display: grid; justify-items: center; gap: 1px; margin: 7px 0 13px; color: var(--flower-ink); font-family: var(--pg-script, "Great Vibes", cursive); font-size: clamp(44px, 9vw, 76px); font-weight: 400; line-height: .95; }
+.cover h1 span { color: var(--flower-rose); font-size: .52em; }
+.coverDate { margin: 0; color: var(--flower-muted); font-size: 16px; letter-spacing: .08em; }
+.coverPlace { margin: 7px 0 20px; color: var(--flower-rose); font-size: 13px; }
+.coverPhoto { position: relative; z-index: 1; width: min(100%, 300px); height: 205px; margin: 16px auto 0; padding: 8px 8px 18px; border: 1px solid rgba(176, 129, 126, .6); background: rgba(255, 252, 248, .98); box-shadow: 0 12px 26px rgba(92, 57, 62, .19); transform-style: preserve-3d; transform-origin: 50% -28px; backface-visibility: hidden; }
+.coverPhoto::after { content: ""; position: absolute; z-index: 2; inset: -5px; background: url("/invite-art/sacred/floral-invite-frame-wide.svg") center / 100% 100% no-repeat; pointer-events: none; }
+.coverPhoto img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; }
+.coverPhoto span { position: absolute; right: 10px; bottom: 0; color: var(--flower-gold); font-size: 18px; line-height: 1; }
+.coverPhotoOpened { animation: photoTurnIn 1.15s cubic-bezier(.2,.76,.2,1) both, photoSwing 4.2s ease-in-out 1.15s infinite; }
+@keyframes photoTurnIn { 0% { transform: perspective(900px) rotateY(-82deg) scale(.88); opacity: .25; } 62% { transform: perspective(900px) rotateY(12deg) scale(1.025); opacity: 1; } 100% { transform: perspective(900px) rotateY(0) scale(1); opacity: 1; } }
+@keyframes photoSwing { 0%,100% { rotate: -1.2deg; } 50% { rotate: 1.2deg; } }
+.storyImage img, .closingImage img, .closingImage video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 42%; }
+.scrollCue { display: grid; justify-items: center; gap: 5px; margin-top: 20px; color: var(--flower-rose); font-family: var(--pg-serif, Georgia, serif); font-size: 11px; letter-spacing: .12em; text-decoration: none; text-transform: uppercase; }
+.scrollCue span { font-size: 23px; line-height: 1; animation: drift 1.8s ease-in-out infinite; }
+@keyframes drift { 50% { transform: translateY(4px); } }
+.note, .countdown, .story, .schedule, .venue, .details, .rsvp { min-height: 340px; }
+.note h2, .story h2, .schedule h2, .venue h2, .details h2, .rsvp h2, .closing h2 { margin: 8px 0 14px; color: var(--flower-ink); font-family: var(--pg-script, "Great Vibes", cursive); font-size: clamp(32px, 6vw, 48px); font-weight: 400; line-height: 1.08; }
+.body { max-width: 520px; margin: 0 auto; color: var(--flower-muted); font-size: 15px; line-height: 1.85; overflow-wrap: anywhere; }
+.families { margin: 23px 0; color: var(--flower-rose); font-size: 13px; line-height: 1.55; }
+.families p { margin: 6px 0; }
+.dateLine { margin: 26px 0 0; color: var(--flower-rose); font-family: var(--pg-serif, Georgia, serif); font-size: 12px; letter-spacing: .13em; text-transform: uppercase; }
+.countdown { background: linear-gradient(135deg, rgba(241,226,226,.91), rgba(255,248,244,.95) 55%, rgba(241,226,226,.91)), url("/invite-art/sacred/ornament-bottom.webp") center bottom / min(72%, 480px) auto no-repeat; }
+.countGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 28px; }
+.countGrid div { display: grid; gap: 7px; justify-items: center; border: 1px solid rgba(173, 122, 123, .28); background: rgba(255, 252, 248, .72); padding: 14px 5px; }
+.countGrid b { color: var(--flower-rose); font-family: var(--pg-serif, Georgia, serif); font-size: clamp(20px, 4vw, 31px); font-weight: 500; }
+.countGrid span { color: var(--flower-muted); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; }
+.storyImage { position: relative; width: min(100%, 460px); height: 250px; margin: 22px auto; overflow: hidden; border: 5px solid #fffaf7; outline: 1px solid #dec5bf; }
+.day { margin-top: 26px; text-align: left; }
+.day h3 { margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(173, 122, 123, .35); color: var(--flower-rose); font-size: 13px; font-weight: 500; letter-spacing: .08em; }
+.day ol { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.day li { display: grid; grid-template-columns: minmax(100px, .8fr) minmax(0, 1.2fr); gap: 14px; border-bottom: 1px solid rgba(173, 122, 123, .16); padding: 13px 0; }
+.time { color: var(--flower-rose); font-size: 13px; }
+.time small, .event small { display: block; color: var(--flower-muted); font-size: 10px; }
+.event { color: var(--flower-ink); font-size: 14px; }
+.venue h2 { font-size: clamp(28px, 5vw, 40px); }
+.map { width: 100%; height: 260px; margin-top: 24px; overflow: hidden; border: 1px solid #e5d1cc; border-radius: 3px; }
+.map iframe { width: 100%; height: 100%; border: 0; }
+.details article + article { margin-top: 28px; padding-top: 18px; border-top: 1px solid rgba(173, 122, 123, .25); }
+.details article h2 { font-size: 26px; }
+.rsvp :global(form) { max-width: 480px; margin: 25px auto 0; text-align: left; }
+.closing .panelInner { padding-top: 34px; }
+.closingImage { position: relative; width: min(100%, 420px); height: 260px; margin: 0 auto 25px; overflow: hidden; border: 5px solid #fffaf7; outline: 1px solid #dec5bf; }
+.closing .names { margin: 0; color: var(--flower-rose); font-family: var(--pg-script, "Great Vibes", cursive); font-size: 30px; }
+.hashtag { margin: 9px 0 0; color: var(--flower-muted); font-size: 12px; }
+@media (max-width: 540px) {
+  .invitation { padding: 0 8px 40px; }
+  .paperBook { gap: 12px; }
+  .panelInner { padding-right: 26px; padding-left: 26px; }
+  .cover, .cover .panelInner { min-height: 710px; }
+  .coverPhoto { width: min(100%, 270px); height: 190px; }
+  .day li { grid-template-columns: minmax(82px, .75fr) minmax(0, 1.25fr); gap: 8px; }
+  .time { font-size: 12px; }
+  .event { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .scrollCue span, .coverPhotoOpened { animation: none; } }

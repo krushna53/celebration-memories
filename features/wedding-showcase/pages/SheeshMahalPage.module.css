@@ -1,0 +1,96 @@
+.page { --gold: #a47a3c; --gold-bright: #d7b676; --ink: #372d30; --muted: #786a65; overflow: hidden; color: var(--ink); background: #f6f0e5; font-family: var(--pg-serif, Georgia, serif); }
+.invitation { position: relative; display: grid; min-height: min(790px, 100svh); grid-template-columns: minmax(0, .92fr) minmax(400px, 1.08fr); align-items: center; gap: clamp(24px, 5vw, 72px); overflow: hidden; padding: clamp(36px, 6vw, 78px) max(24px, calc((100vw - 1180px)/2)); background: radial-gradient(ellipse at 85% 40%, rgba(219,194,151,.24), transparent 44%), linear-gradient(135deg, #f8f1e7, #eee2d0); }
+.invitation::before, .invitation::after { content: ""; position: absolute; z-index: 0; top: 0; bottom: 0; width: 16%; background: url("/invite-art/sacred/floral-invite-frame.svg") center / 100% 100% no-repeat; opacity: .42; pointer-events: none; }
+.invitation::before { left: -7%; }
+.invitation::after { right: -7%; }
+.palaceImage { position: relative; z-index: 1; height: min(610px, 76vh); min-height: 390px; overflow: hidden; border: 1px solid #bd9759; box-shadow: 0 20px 52px rgba(48,35,40,.2), 12px 12px 0 rgba(168,129,72,.17); }
+.palaceImage::before { content: ""; position: absolute; z-index: 1; inset: 12px; border: 1px solid rgba(244,224,185,.76); pointer-events: none; }
+.palaceImage img { width: 100%; height: 100%; object-fit: cover; object-position: center 42%; }
+.imageGlow { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,15,27,.12), transparent 45%, rgba(11,15,27,.46)); }
+.photoCaption { position: absolute; z-index: 2; right: 22px; bottom: 26px; left: 22px; color: #fff2d1; font-size: 11px; letter-spacing: .16em; text-align: center; text-transform: uppercase; }
+.inviteCard { position: relative; z-index: 1; display: flex; min-height: 570px; flex-direction: column; align-items: center; justify-content: center; padding: 60px clamp(24px, 5vw, 62px); border: 1px solid #ceb27b; background: linear-gradient(rgba(255,253,247,.95), rgba(250,245,234,.96)), url("/invite-art/sacred/paper-hero.webp") center / cover; box-shadow: inset 0 0 0 8px rgba(255,255,255,.6), 0 18px 44px rgba(62,48,48,.1); text-align: center; }
+.inviteCard::before { content: ""; position: absolute; inset: 15px; border: 1px solid rgba(179,143,83,.45); pointer-events: none; }
+.corner { position: absolute; top: 20px; left: 28px; color: #a7854d; font-size: 34px; }
+.cornerRight { right: 28px; left: auto; transform: scaleX(-1); }
+.blessing, .eyebrow { margin: 0; color: var(--gold); font-size: 10px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; }
+.parents { display: grid; gap: 5px; margin: 21px 0 18px; color: #67584f; font-size: 12px; line-height: 1.55; }
+.parents p { margin: 0; }
+.request { margin: 8px 0 0; color: #76675f; font-size: 14px; line-height: 1.65; }
+.ornament { display: block; margin: 14px 0 10px; color: #bd9b61; font-size: 21px; letter-spacing: .12em; }
+.inviteCard h1 { display: grid; justify-items: center; gap: 0; margin: 3px 0 17px; color: #594038; font-family: var(--pg-names, "Great Vibes", cursive); font-size: clamp(48px, 6vw, 77px); font-weight: 400; line-height: .9; }
+.inviteCard h1 i { color: #aa7948; font-size: .45em; font-style: normal; line-height: 1.15; }
+.date { margin: 0; color: #6c5b50; font-size: 13px; letter-spacing: .1em; line-height: 1.8; text-transform: uppercase; }
+.date span { color: var(--gold); font-size: 12px; }
+.venueName { margin: 15px 0 2px; color: #5b3e34; font-size: 16px; }
+.address { margin: 0; color: #8a7766; font-size: 12px; }
+.discover { display: grid; justify-items: center; gap: 4px; margin-top: 25px; color: #876a3d; font-size: 9px; letter-spacing: .17em; text-decoration: none; text-transform: uppercase; }
+.discover span { font-size: 20px; }
+.baraat { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: center; gap: clamp(28px, 7vw, 90px); padding: clamp(58px, 9vw, 100px) max(24px, calc((100vw - 1080px)/2)); color: #f1e8d7; background: radial-gradient(ellipse at 75% 40%, #374154, #151c2b 75%); }
+.baraat img { width: 100%; max-height: 430px; aspect-ratio: 4/3; border: 1px solid #c5a463; object-fit: cover; object-position: center 40%; box-shadow: 12px 12px 0 rgba(199,161,93,.16); }
+.baraat h2, .celebrations h2, .couple h2, .venue h2, .rsvp h2 { margin: 12px 0; font-family: var(--pg-script, "Great Vibes", cursive); font-size: clamp(38px, 6vw, 58px); font-weight: 400; line-height: 1.04; }
+.baraat .eyebrow { color: #e1c17e; }
+.baraat > div > p:last-child { max-width: 520px; color: #d2c8b7; font-size: 15px; line-height: 1.9; }
+.celebrations { padding: clamp(60px, 9vw, 104px) 24px; color: #43363a; background: #f8f3e9; text-align: center; }
+.celebrations h2 { color: #49383c; }
+.eventGrid { display: grid; width: min(100%, 1040px); grid-template-columns: repeat(auto-fit, minmax(min(100%, 255px), 1fr)); gap: 18px; margin: 32px auto 0; text-align: center; }
+.eventWindow { position: relative; min-height: 245px; padding: 54px 20px 25px; border: 1px solid #c7a766; border-radius: 48% 48% 5px 5px / 23% 23% 5px 5px; background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(241,231,211,.88)); box-shadow: inset 0 0 0 7px rgba(255,255,255,.54), 0 12px 25px rgba(60,44,43,.08); }
+.eventWindow::before { content: ""; position: absolute; inset: 12px; border: 1px solid rgba(175,140,74,.32); border-radius: inherit; pointer-events: none; }
+.eventNumber { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); color: #b38c4a; font-size: 10px; letter-spacing: .12em; }
+.eventDay { margin: 0 0 10px; color: #94734a; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; }
+.eventWindow h3 { margin: 0 0 8px; color: #49373b; font-family: var(--pg-script, "Great Vibes", cursive); font-size: 29px; font-weight: 400; }
+.eventTime { margin: 0; color: #765b42; font-size: 12px; }
+.eventWindow small { display: block; margin-top: 8px; color: #83756a; font-size: 10px; }
+.couple { padding: clamp(60px, 9vw, 104px) 24px; color: #f2e8d5; background: #192132; text-align: center; }
+.couple .eyebrow { color: #d9b978; }
+.couple h2 { color: #f2d995; }
+.portraits { display: grid; width: min(100%, 820px); grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin: 28px auto 0; }
+.portraits figure { position: relative; height: 360px; margin: 0; overflow: hidden; border: 1px solid #c6a35f; }
+.portraits img { width: 100%; height: 100%; object-fit: cover; object-position: center 38%; }
+.portraits figcaption { position: absolute; right: 0; bottom: 0; left: 0; padding: 15px; color: #f6e7c4; background: linear-gradient(transparent, rgba(15,18,28,.82)); font-family: var(--pg-script, "Great Vibes", cursive); font-size: 29px; }
+.venue { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); align-items: center; gap: clamp(24px, 5vw, 62px); padding: clamp(54px, 8vw, 88px) max(24px, calc((100vw - 1120px)/2)); color: #44383a; background: linear-gradient(135deg, #eee3d0, #faf5eb); }
+.venueCopy h2 { color: #503c3b; }
+.venueCopy > p:last-child { color: #77685e; line-height: 1.7; }
+.map { width: 100%; height: 290px; overflow: hidden; border: 1px solid #c7a766; box-shadow: 10px 10px 0 rgba(165,129,72,.14); }
+.map iframe { width: 100%; height: 100%; border: 0; }
+.details { padding: clamp(50px, 8vw, 82px) 24px; color: #44383a; background: #eae0cf; text-align: center; }
+.details > div { display: grid; width: min(100%, 950px); grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; margin: 25px auto 0; }
+.details article { padding: 22px 18px; border: 1px solid #d4c197; background: rgba(255,252,246,.72); }
+.details h3 { margin: 0 0 9px; color: #85683c; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+.details article p { margin: 0; color: #6f625c; font-size: 13px; line-height: 1.7; }
+.rsvp { padding: clamp(55px, 8vw, 88px) 24px; color: #efe5d4; background: radial-gradient(ellipse at top, #394252, #151b29 74%); text-align: center; }
+.rsvp .eyebrow { color: #d8b778; }
+.rsvp h2 { color: #f1d58c; }
+.reply { width: min(100%, 540px); margin: 24px auto 0 !important; text-align: left; }
+.closing { padding: 46px 24px 56px; color: #4b3938; background: #f8f2e7; text-align: center; }
+.closingPhoto { position: relative; width: min(100%, 680px); height: 310px; margin: 0 auto 25px; overflow: hidden; border: 8px solid #fffdf7; outline: 1px solid #c9a96a; box-shadow: 0 14px 36px rgba(48,35,40,.14); }
+.closingPhoto img, .closingPhoto video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.closing > .eyebrow { color: #9b7944; }
+.countGrid { display: grid; width: min(100%, 650px); grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin: 20px auto; }
+.countGrid div { display: grid; justify-items: center; gap: 4px; padding: 11px 4px; border: 1px solid #dfcfaa; background: #fffdf8; }
+.countGrid b { color: #80643d; font-size: clamp(20px, 4vw, 32px); font-weight: 400; }
+.countGrid span { color: #8e8175; font-size: 9px; letter-spacing: .13em; text-transform: uppercase; }
+.closing h2 { margin: 15px 0 4px; color: #533c42; font-family: var(--pg-names, "Great Vibes", cursive); font-size: clamp(36px, 6vw, 58px); font-weight: 400; }
+.closing h2 i { color: #a9854e; font-size: .62em; font-style: normal; }
+.closing > small { color: #8b704a; }
+@media (max-width: 760px) {
+  .invitation { min-height: auto; grid-template-columns: 1fr; gap: 0; padding: 34px 16px 50px; }
+  .invitation::before, .invitation::after { width: 20%; opacity: .25; }
+  .palaceImage { min-height: 320px; height: 46vh; order: 2; margin: -12px 4px 0; }
+  .inviteCard { min-height: 560px; padding: 58px 25px; }
+  .baraat, .venue { grid-template-columns: 1fr; }
+  .baraat img { max-height: 330px; }
+  .venue { text-align: center; }
+  .eventGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .eventWindow { min-height: 220px; padding: 49px 12px 20px; }
+  .portraits figure { height: 260px; }
+  .map { height: 250px; }
+  .closingPhoto { height: 230px; }
+}
+@media (max-width: 440px) {
+  .inviteCard { min-height: 520px; padding-inline: 21px; }
+  .eventGrid { grid-template-columns: 1fr; }
+  .eventWindow { min-height: 190px; }
+  .portraits { gap: 10px; }
+  .portraits figure { height: 220px; }
+}
+@media (prefers-reduced-motion: reduce) { .discover span { animation: none; } }

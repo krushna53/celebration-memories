@@ -16,6 +16,7 @@ import { ADMIN_NAV } from "@/lib/admin-nav";
 import { resolveAdminEvent } from "@/lib/admin-event";
 import { getEventSegment } from "@/lib/event-segment";
 import { getBrandForEvent } from "@/services/host-brands";
+import { canManageBlog } from "@/services/blog-access";
 
 
 export default async function AdminDashboardLayout({
@@ -35,6 +36,7 @@ export default async function AdminDashboardLayout({
   const visibleNav = ADMIN_NAV.filter(
     (item) =>
       isPathAllowedForRole(item.href, admin.role) ||
+      (item.href === "/admin/blog" && canManageBlog(admin)) ||
       (item.href === "/admin/checkin" && clientMayCheckIn(admin.role, segment)),
   );
 

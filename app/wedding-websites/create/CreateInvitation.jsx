@@ -24,7 +24,7 @@ const MAX_AUDIO_MB = 15;
 const MAX_VIDEO_MB = 50; // kept in the browser until Publish uploads it to storage
 
 /** One picture: upload from the device, or paste a URL. Empty = the design's own picture. */
-function ImageField({ value, onChange }) {
+function ImageField({ value, onChange, emptyAction = "Upload photo" }) {
   const [error, setError] = useState("");
   const pick = async (e) => {
     const file = e.target.files?.[0];
@@ -36,7 +36,7 @@ function ImageField({ value, onChange }) {
   return <div className={s.imageField}>
     {value ? <img className={s.thumb} src={value} alt="" /> : <p className={s.hint}>Showing the design&apos;s picture.</p>}
     <div className={s.row}>
-      <label className={s.fileBtn}>{value ? "Change photo" : "Upload photo"}<input type="file" accept="image/*" hidden onChange={pick} /></label>
+      <label className={s.fileBtn}>{value ? "Change photo" : emptyAction}<input type="file" accept="image/*" hidden onChange={pick} /></label>
       {value && <button type="button" className={s.linkBtn} onClick={() => onChange("")}>Remove</button>}
     </div>
     {!uploaded && <input className={s.input} placeholder="…or paste an image link" value={value} onChange={(e) => onChange(e.target.value)} />}
@@ -220,7 +220,7 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
 
   const field = ([key, label, type = "text", choices]) => {
     if (type === "slug") return <div key={key} className={s.label}><span>{label}</span><SlugField value={form.slug} onChange={set("slug")} options={slugOptions(form)} current={slug} /></div>;
-    if (type === "image") return <div key={key} className={s.label}><span>{label}</span><ImageField value={form[key]} onChange={set(key)} /></div>;
+    if (type === "image") return <div key={key} className={s.label}><span>{key === "heroPhoto" && showcase?.style === "flowerdoor" ? "Photo on the invitation and door-reveal card" : label}</span><ImageField value={form[key]} onChange={set(key)} emptyAction={showcase?.page === "floralinvite" && ["storyPhoto", "couplePhoto"].includes(key) ? "Replace sample photo" : undefined} /></div>;
     if (key === "introVideoDesktop") return <div key={key} className={s.label}><span>{label}</span>
       <VideoField value={form[key] ?? ""} onChange={set(key)} sample={null} empty="None: computers show the phone video." /></div>;
     if (key === "introVideo") return <div key={key} className={s.label}><span>{label}</span>
@@ -244,8 +244,8 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
   return <InviteShell className={s.page}>
     <aside className={`${s.formPane} ${formFont.className}`}>
       <header className={s.head}>
-        <h1>{eventId ? "Wedding design" : "Create your invitation"}</h1>
-        <p>Type or upload on the left, and your invitation updates on the right.</p>
+        <h1>{inWizard && showcase ? `Make ${showcase.title} yours` : eventId ? "Wedding design" : "Create your invitation"}</h1>
+        <p>{inWizard && showcase ? "Your chosen design is ready to edit. Change the names, date, photo and details; the preview updates as you work." : "Type or upload on the left, and your invitation updates on the right."}</p>
         <div className={s.actions}>
           {eventId
             ? <button type="button" className={s.reset} onClick={() => setForm(initialForm)} title="Undo changes since the last save">Undo</button>
@@ -273,7 +273,8 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
           </label>
           <a className={s.linkBtn} href="/wedding/webpages" target="_blank" rel="noopener noreferrer">See every design ↗</a>
         </fieldset>
-        {FORM_GROUPS.filter((group) => !group.gallery || (showcase && GALLERY_PAGES.includes(showcase.page))).map((group) => <fieldset key={group.title} className={s.group}>
+        {FORM_GROUPS.filter((group) => (!group.gallery || (showcase && GALLERY_PAGES.includes(showcase.page)))
+          && !(showcase?.page === "floralinvite" && group.title === "Opening video")).map((group) => <fieldset key={group.title} className={s.group}>
           <legend>{group.title}</legend>
           {group.hint && <p className={s.hint}>{group.hint}</p>}
           {group.presets && <div className={s.presets}>
@@ -286,7 +287,7 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
               </button>;
             })}
           </div>}
-          {group.closingChoice && <div className={s.presets} role="radiogroup" aria-label="Photo or video">
+          {group.closingChoice && showcase?.page !== "floralinvite" && <div className={s.presets} role="radiogroup" aria-label="Photo or video">
             {[["photo", "Photo"], ["video", "Video"]].map(([kind, name]) => {
               const on = (form.closingVideo ? "video" : "photo") === kind;
               // only one at a time: picking video starts from the sample reel, picking photo drops the video
@@ -294,7 +295,9 @@ export default function CreateInvitation({ draftToken = null, initialForm = samp
                 onClick={() => setForm((f) => (kind === "video" ? { ...f, closingVideo: f.closingVideo || SAMPLE_CLOSING_VIDEO, couplePhoto: "" } : { ...f, closingVideo: "" }))}>{name}</button>;
             })}
           </div>}
-          {(group.closingChoice ? group.fields.filter(([key]) => key === (form.closingVideo ? "closingVideo" : "couplePhoto")) : group.fields).map(field)}
+          {(group.closingChoice
+            ? group.fields.filter(([key]) => key === (showcase?.page === "floralinvite" ? "couplePhoto" : form.closingVideo ? "closingVideo" : "couplePhoto"))
+            : group.fields).map(field)}
         </fieldset>)}
       </form>
     </aside>

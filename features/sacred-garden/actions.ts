@@ -39,13 +39,16 @@ const fail = (err: unknown, fallback: string): { success: false; error: string }
 });
 
 /** The draft this design publishes into: the one from the wizard link, else a new wedding draft. */
-export async function startWeddingDraftAction(token: string | null): Promise<Result<{ token: string }>> {
+export async function startWeddingDraftAction(token: string | null): Promise<Result<{ id: string; token: string }>> {
   try {
-    if (token && (await getDraftEventByToken(token))) return { success: true, data: { token } };
+    if (token) {
+      const existing = await getDraftEventByToken(token);
+      if (existing) return { success: true, data: { id: existing.id, token } };
+    }
     const referredByCode = (await cookies()).get(REF_COOKIE)?.value ?? null;
     const draft = await createDraftEvent(referredByCode, "family");
     await updateEvent(draft.id, { category: "wedding", templateSlug: TEMPLATE, wizardGoals: ["website"] });
-    return { success: true, data: { token: draft.token } };
+    return { success: true, data: { id: draft.id, token: draft.token } };
   } catch (err) {
     return fail(err, "Your website could not be started. Please try again.");
   }

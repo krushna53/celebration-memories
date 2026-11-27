@@ -11,9 +11,11 @@ import Celestial from "./Celestial";
 import ModernGrid from "./ModernGrid";
 import Arches from "./Arches";
 import Kit, { DESIGNS } from "./Kit";
+import FloralInvitation from "./FloralInvitation";
+import SheeshMahalPage from "./SheeshMahalPage";
 import p from "./parts.module.css";
 
-const LAYOUTS = { editorial: Editorial, scroll: RoyalScroll, ticket: BoardingPass, scrapbook: Scrapbook, celestial: Celestial, modern: ModernGrid, arches: Arches };
+const LAYOUTS = { editorial: Editorial, scroll: RoyalScroll, ticket: BoardingPass, scrapbook: Scrapbook, celestial: Celestial, modern: ModernGrid, arches: Arches, floralinvite: FloralInvitation, sheeshmahal: SheeshMahalPage };
 
 // Devanagari / Gujarati / Bengali fall back to fonts that have those letters
 const stack = (family, last) => `"${family}", "Tiro Devanagari Hindi", "Nirmala UI", "Noto Sans Gujarati", ${last}`;
@@ -35,6 +37,6 @@ export default function ShowcasePage({ layout, c, active = true, autoScroll = fa
     "--pg-script": stack(f.script, "cursive"), "--pg-names": stack(f.names, "cursive"), "--pg-serif": stack(f.body, "Georgia, serif"), "--pg-body-style": f.bodyStyle,
   };
   return <div ref={root} className={p.page} style={vars} data-layout={layout}>
-    <RsvpSlot.Provider value={rsvp}>{Layout ? <Layout c={c} /> : <Kit c={c} design={DESIGNS[layout] ? layout : "pearl"} />}</RsvpSlot.Provider>
+    <RsvpSlot.Provider value={rsvp}>{Layout ? <Layout c={c} active={active} /> : <Kit c={c} design={DESIGNS[layout] ? layout : "pearl"} />}</RsvpSlot.Provider>
   </div>;
 }

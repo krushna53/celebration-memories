@@ -3,13 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import s from "./RealOpening.module.css";
 
 /*
- * Three photo-real openings, drawn from textures rendered for them (public/showcase/real):
+ * Photo-real and palace openings, drawn from textures rendered for them (public/showcase/real):
  *  stagevelvet — crimson velvet stage curtains under a swagged pelmet; they gather into folds at the sides
  *  teakdoor    — carved teak doors with brass studs and ring knockers in a lime-washed wall; they swing in
  *  waxenvelope — a maroon paper envelope with a gold wax seal; the seal breaks, the flap lifts, the card slides out
  * Same props as the other openings. thumb draws it inside its parent (a gallery card) and opens it while `play`.
  */
-const OPEN_MS = { stagevelvet: 2300, teakdoor: 2500, waxenvelope: 2900 };
+const OPEN_MS = { stagevelvet: 2300, teakdoor: 2500, waxenvelope: 2900, sheeshmahal: 3300 };
 export const REAL_OPENINGS = Object.keys(OPEN_MS);
 const STRIPS = 12;
 const IMG = "/showcase/real/";
@@ -44,6 +44,25 @@ function Doors() {
   </>;
 }
 
+function SheeshMahal({ photo }) {
+  return <>
+    <div className={s.palaceSky} aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ "--star-x": `${(i * 47 + 7) % 100}%`, "--star-y": `${(i * 31 + 9) % 46}%`, "--star-delay": `${(i % 7) * -0.31}s` }} />)}</div>
+    <div className={s.palaceFacade}>
+      <div className={s.palaceDomeRow} aria-hidden="true"><i /><i /><i /><i /><i /></div>
+      <div className={s.palaceBalcony} aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
+      <div className={s.palacePortal}>
+        <div className={s.palaceReveal}><img src={photo} alt="" /><span /></div>
+        <div className={`${s.palaceLeaf} ${s.palaceLeafLeft}`}><i /></div>
+        <div className={`${s.palaceLeaf} ${s.palaceLeafRight}`}><i /></div>
+      </div>
+      <div className={s.palaceSteps} aria-hidden="true"><i /><i /><i /></div>
+      <div className={`${s.palaceLantern} ${s.palaceLanternLeft}`} aria-hidden="true"><i /></div>
+      <div className={`${s.palaceLantern} ${s.palaceLanternRight}`} aria-hidden="true"><i /></div>
+    </div>
+    <div className={s.palaceFloor} aria-hidden="true" />
+  </>;
+}
+
 function Envelope({ monogram, kicker, names, date }) {
   return <div className={s.table}>
     <div className={s.envelope}>
@@ -66,9 +85,9 @@ function Envelope({ monogram, kicker, names, date }) {
   </div>;
 }
 
-const KICKER = { stagevelvet: "Now showing", teakdoor: "The wedding of", waxenvelope: "You are invited" };
+const KICKER = { stagevelvet: "Now showing", teakdoor: "The wedding of", waxenvelope: "You are invited", sheeshmahal: "॥ शुभ विवाह ॥" };
 
-export default function RealOpening({ variant, colors = {}, monogram, names, date, kicker, tapLabel = "Tap to open", thumb = false, play = false, onOpen, onDone }) {
+export default function RealOpening({ variant, colors = {}, monogram, names, date, photo, kicker, tapLabel = "Tap to open", thumb = false, play = false, onOpen, onDone }) {
   const [state, setState] = useState("closed"); // closed → opening → open
   const timer = useRef(0);
   useEffect(() => () => window.clearTimeout(timer.current), []);
@@ -79,18 +98,29 @@ export default function RealOpening({ variant, colors = {}, monogram, names, dat
     onOpen?.();
     timer.current = window.setTimeout(() => { setState("open"); onDone?.(); }, OPEN_MS[variant] ?? 2400);
   };
+  const onWheel = (event) => {
+    if (variant === "sheeshmahal" && event.deltaY > 0) { event.preventDefault(); open(); }
+  };
+  const touchStart = useRef(null);
+  const onTouchStart = (event) => { if (variant === "sheeshmahal") touchStart.current = event.touches[0]?.clientY ?? null; };
+  const onTouchEnd = (event) => {
+    const end = event.changedTouches[0]?.clientY;
+    if (variant === "sheeshmahal" && touchStart.current !== null && end !== undefined && touchStart.current - end > 36) { event.preventDefault(); open(); }
+    touchStart.current = null;
+  };
   const vars = { "--main": colors.main, "--dark": colors.dark, "--trim": colors.trim, "--ink": colors.ink, "--ms": `${OPEN_MS[variant] ?? 2400}ms` };
   const words = kicker ?? KICKER[variant];
   return <div className={cx(s.stage, s[variant], thumb && s.thumb, state !== "closed" && s.opening, state === "open" && s.gone)} style={vars}
-    aria-hidden={thumb || state === "open"} onClick={open}>
+    aria-hidden={thumb || state === "open"} onClick={open} onWheel={onWheel} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
     {variant === "stagevelvet" && <Curtain />}
     {variant === "teakdoor" && <Doors />}
+    {variant === "sheeshmahal" && <SheeshMahal photo={photo} />}
     {variant === "waxenvelope" && <Envelope monogram={monogram} kicker={words} names={names} date={date} />}
     {variant !== "waxenvelope" && <div className={s.sign}>
       <p className={s.kicker}>{words}</p>
       <p className={s.names}>{names}</p>
       {date && <p className={s.date}>{date}</p>}
     </div>}
-    {!thumb && <button type="button" className={s.tap} onClick={(e) => { e.stopPropagation(); open(); }} aria-label={`${tapLabel} the invitation`}>{tapLabel}</button>}
+    {!thumb && <button type="button" className={s.tap} onClick={(e) => { e.stopPropagation(); open(); }} aria-label={`${variant === "sheeshmahal" ? "Scroll or tap to open the palace doors" : tapLabel} the invitation`}>{variant === "sheeshmahal" ? "Scroll or tap to open the palace doors" : tapLabel}</button>}
   </div>;
 }

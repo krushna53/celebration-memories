@@ -1,4 +1,4 @@
-// 21 sample wedding websites for /wedding/webpages with fictional couples, each showing a different opening
+// Sample wedding websites for /wedding/webpages with fictional couples, each showing a different opening
 // (envelopes, curtains, doors…) onto its own page design (PAGES), with its own colours, fonts and closing.
 // Every name, venue and family here is made up; nothing is tied to a real client or event.
 import { sampleDefaults, colorFields, buildInvitation } from "@/features/sacred-garden/lib/invitation-form";
@@ -35,11 +35,13 @@ export const STYLES = {
   petals: ["curtain", "Stage curtains with a burst of petals"],
   temple: ["doors", "Temple doors with bells and a toran"],
   teakdoor: ["doors", "Real carved teak doors with brass knockers"],
+  sheeshmahal: ["doors", "Moonlit Sheesh Mahal palace doors swing open from a carved arch"],
   jali: ["doors", "Jali screens in a Mughal arch"],
   haveli: ["doors", "Arched haveli doors with brass studs"],
   glass: ["doors", "Frosted chapel doors"],
   sage: ["doors", "Embossed garden doors"],
   monogram: ["doors", "Doors with a monogram seal"],
+  flowerdoor: ["doors", "Blush floral invitation doors open from a centre seal"],
   none: ["none", "Straight to the page"],
 };
 
@@ -48,6 +50,7 @@ export const PAGES = {
   garden: ["Sacred Garden", "Painted florals on torn paper"],
   editorial: ["The Wedding Issue", "A glossy magazine cover, contents and feature spread"],
   scroll: ["Royal Patrika", "A parchment scroll with a marigold toran and diyas"],
+  sheeshmahal: ["Sheesh Mahal", "A mirror-palace wedding story in midnight blue, antique gold and carved arches"],
   ticket: ["Flight to Forever", "Boarding pass, split-flap departures board, postcard"],
   scrapbook: ["Scrapbook", "Taped polaroids, sticky notes and a tear-off calendar"],
   celestial: ["Written in the Stars", "Night sky, crescent moon and glowing countdown rings"],
@@ -66,6 +69,7 @@ export const PAGES = {
   paisley: ["Bandhani & Paisley", "Tie-dye dots and paisleys in festive colours"],
   pearl: ["Pearl & Blush", "Strings of pearls, blush satin and soft script"],
   phulkari: ["Phulkari", "Bright embroidered geometry from a Punjabi phulkari"],
+  floralinvite: ["Blush Floral Invitation", "A phone-friendly floral invitation with a cover, countdown, schedule and RSVP"],
 };
 
 /**
@@ -100,6 +104,7 @@ const PAGE_OF = {
   "rohan-ishita": "editorial", "aditya-nisha": "filmstrip", "vivaan-tara": "sunset", "samar-riya": "pearl",
   "dev-kavya": "paisley", "yash-sneha": "scrapbook", "neil-zara": "azulejo", "aryan-diya": "deco",
   "siddharth-pooja": "kasavu", "ayaan-sara": "arches", "raghav-mira": "alpona", "manav-tanvi": "modern",
+  "aarya-kabir-blush": "floralinvite", "veer-meera-sheesh-mahal": "sheeshmahal",
   "jay-prisha": "watercolor", "daniel-anika": "minimal", "omkar-gauri": "newspaper",
 };
 
@@ -177,6 +182,11 @@ const RAW = [
     groom: "Siddharth", bride: "Pooja", date: "2027-02-27T18:30", ...preset("Sage"), heroPhoto: `${P}couple-tamil-jasmine.webp`,
     program: [[0], ["6am", "Muhurtham"], ["11am", "Wedding Lunch"], ["7pm onwards", "Reception"]],
     venueName: "Jasmine Mandapam — Sample Venue", venueAddress: "ECR, Chennai, Tamil Nadu", venueMap: "Chennai, Tamil Nadu", dressTitle: "Dress Code", dress: "Traditional silks — pastel and gold." }, { colors: { main: "#6b3a1e", dark: "#2e170a", trim: "#d9a441", ink: "#fff6e2" } }],
+  ["veer-meera-sheesh-mahal", "Sheesh Mahal Palace Doors", "A moonlit Rajput palace, glowing lanterns and ornate doors that swing open to reveal your invitation.", "sheeshmahal", {
+    groom: "Veer", bride: "Meera", date: "2027-11-26T19:00", dateFormat: "long", ...preset("Maroon"),
+    heroPhoto: `${P}couple-orchid-evening.webp`, hashtag: "#VeerMeeraForever",
+    venueName: "Sheesh Mahal — Sample Venue", venueAddress: "Amer Fort, Jaipur, Rajasthan", venueMap: "Amer Fort, Jaipur" },
+    { colors: { main: "#20303a", dark: "#101321", trim: "#d7b56a", ink: "#fff0ca" } }],
   ["ayaan-sara", "Jali Arch, Nikah", "Lattice jali screens slide away inside a Mughal arch.", "jali", {
     groom: "Ayaan", bride: "Sara", date: "2027-01-17T19:00", blessing: "بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْم", welcomeTitle: "Two Souls\nOne Promise",
     program: [[-1], ["11am", "Manjha"], ["4pm", "Mehndi"], ["8pm onwards", "Sangeet"], [0], ["5pm", "Nikah"], ["8pm onwards", "Walima Dinner"]],
@@ -194,6 +204,11 @@ const RAW = [
     groom: "Jay", bride: "Prisha", date: "2027-01-23T18:00", fontBody: "Italiana",
     program: [[-1], ["10am", "Ganesh Sthapana"], ["4pm", "Mehndi"], ["8pm onwards", "Garba & Dandiya"], [0], ["4pm", "Jaan Aagman"], ["6pm", "Hast Melap"], ["8:30pm", "Dinner"]],
     ...preset("Sage"), venueName: "Kesar Party Plot — Sample Venue", venueAddress: "Vesu, Surat, Gujarat", venueMap: "Surat, Gujarat" }],
+  ["aarya-kabir-blush", "Blush Bloom Invitation Doors", "Embossed blush panels part from a wax seal to reveal a floral invitation, inspired by the recorded door-opening reference.", "flowerdoor", {
+    groom: "Kabir", bride: "Aarya", date: "2027-12-18T16:00", dateFormat: "long", fontNames: "Parisienne", fontBody: "Cormorant Garamond",
+    ...preset("Rose blush"), heroPhoto: `${P}couple-orchid-evening.webp`, hashtag: "#AaryaAndKabir",
+    venueName: "The Rose Courtyard — Sample Venue", venueAddress: "Jaipur, Rajasthan", venueMap: "Jaipur, Rajasthan" },
+    { colors: { main: "#f4e9eb", dark: "#cbb5ac", trim: "#c58d86", ink: "#593540" } }],
   ["daniel-anika", "Chapel Glass Doors", "Frosted, gold-leaded chapel doors slide apart for a church wedding.", "glass", {
     groom: "Daniel", bride: "Anika", date: "2027-04-24T16:00", blessing: "", welcomeTitle: "Love Is Patient\nLove Is Kind",
     program: [[0], ["4pm", "Holy Matrimony"], ["6pm", "Cocktails"], ["7:30pm onwards", "Reception Dinner"]],

@@ -208,6 +208,32 @@ export function publicMediaUrl(bucket: string, path: string): string {
   return data.publicUrl;
 }
 
+/** Owner-only callers issue this signed upload for public blog cover images. */
+export async function createSignedBlogImageUpload(params: {
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const contentType = params.contentType.split(";")[0]?.trim().toLowerCase() ?? "";
+  if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) {
+    throw new UploadValidationError("Choose a JPG, PNG, or WebP image.");
+  }
+  if (params.fileSize <= 0 || params.fileSize > 10 * 1024 * 1024) {
+    throw new UploadValidationError("Blog images must be smaller than 10 MB.");
+  }
+  const name = sanitizeFileName(params.fileName);
+  const path = `platform/blog/${randomUUID()}-${name}`;
+  const { data, error } = await supabaseAdmin().storage.from("blog-assets").createSignedUploadUrl(path);
+  if (error || !data) throw new Error(`Could not prepare the image upload: ${error?.message}`);
+  return {
+    bucket: "blog-assets",
+    path,
+    token: data.token,
+    signedUrl: data.signedUrl,
+    viewUrl: publicMediaUrl("blog-assets", path),
+  };
+}
+
 /**
  * Same signed-upload pattern as createSignedMediaUpload, but for
  * admin-curated content (the site Gallery) rather than guest uploads —

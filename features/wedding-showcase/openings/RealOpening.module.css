@@ -129,6 +129,50 @@
 .opening .wall, .opening .step, .opening .lamp { opacity: 0; }
 .opening .doorway { box-shadow: 0 0 0 0 transparent; }
 
+/* ---------- sheesh mahal: a moonlit Rajput palace with a pair of carved doors ---------- */
+.sheeshmahal { --gold: #d9b66c; --palace: #9d7249; background: radial-gradient(ellipse 54% 54% at 50% 55%, #523b48 0, #17192f 67%, #080d20 100%); }
+.palaceSky { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(ellipse 45% 35% at 50% 65%, rgba(255,190,110,.24), transparent 72%), linear-gradient(180deg, rgba(5,10,28,.2), transparent 48%, rgba(5,8,18,.35)); }
+.palaceSky i { position: absolute; left: var(--star-x); top: var(--star-y); width: max(2px, .45cqw); aspect-ratio: 1; border-radius: 50%; background: #ffe5a1; box-shadow: 0 0 1.8cqw rgba(255,218,140,.9); animation: palaceStar 2.8s ease-in-out var(--star-delay) infinite; }
+@keyframes palaceStar { 50% { opacity: .28; transform: scale(.65); } }
+.palaceFacade { position: absolute; inset: 5% 0 5%; overflow: hidden; background: linear-gradient(90deg, transparent 0 4%, rgba(218,179,117,.24) 4.2% 4.7%, transparent 5% 95%, rgba(218,179,117,.24) 95.3% 95.8%, transparent 96%), repeating-linear-gradient(90deg, transparent 0 12%, rgba(244,206,147,.1) 12.2% 12.5%, transparent 12.7% 24%), linear-gradient(180deg, #35304b 0%, #725243 42%, #b48251 80%, #553725 100%); box-shadow: inset 0 0 0 1px rgba(241,205,144,.4), inset 0 0 7cqw rgba(9,12,27,.5); }
+.palaceFacade::before { content: ""; position: absolute; inset: 35% 0 9%; opacity: .55; background: repeating-linear-gradient(90deg, transparent 0 8.5%, rgba(255,221,158,.18) 8.7% 9.1%, transparent 9.3% 17%), repeating-linear-gradient(0deg, transparent 0 23%, rgba(255,221,158,.2) 23.2% 23.8%, transparent 24% 46%); }
+.palaceDomeRow { position: absolute; inset: 0 0 auto; height: 40%; display: flex; justify-content: space-around; align-items: end; padding: 0 2%; }
+.palaceDomeRow i { position: relative; display: block; width: 15%; height: 72%; border: 1px solid rgba(248,208,141,.7); border-bottom: 0; border-radius: 52% 52% 0 0 / 76% 76% 0 0; background: radial-gradient(ellipse at 50% 14%, #a8918a, #51445a 74%); box-shadow: inset 0 0 2cqw rgba(255,224,169,.25), 0 0 2.5cqw rgba(255,190,108,.15); }
+.palaceDomeRow i::before { content: ""; position: absolute; left: 50%; top: -13%; height: 16%; border-left: 1px solid var(--gold); }
+.palaceDomeRow i:nth-child(2), .palaceDomeRow i:nth-child(4) { width: 19%; height: 91%; }
+.palaceDomeRow i:nth-child(3) { width: 26%; height: 100%; }
+.palaceBalcony { position: absolute; z-index: 2; top: 34%; left: 0; right: 0; height: 7%; border-top: 1px solid rgba(244,207,147,.7); border-bottom: 1px solid rgba(244,207,147,.6); background: linear-gradient(180deg, rgba(238,196,125,.24), rgba(31,23,36,.25)); display: flex; justify-content: space-evenly; align-items: center; }
+.palaceBalcony i { width: 1px; height: 65%; background: rgba(255,222,166,.6); box-shadow: 0 0 1cqw rgba(255,208,130,.28); }
+.palacePortal { position: absolute; z-index: 3; left: 50%; bottom: 3%; width: min(58%, 72cqh); height: 66%; transform: translateX(-50%); border: 1.2cqw solid #c99b5e; border-bottom: 0; border-radius: 49% 49% 0 0 / 34% 34% 0 0; background: #170e18; box-shadow: 0 0 0 .45cqw #513b3c, 0 0 0 .8cqw rgba(226,183,113,.78), 0 0 5cqw rgba(255,184,93,.38); }
+.palacePortal::before { content: ""; position: absolute; z-index: 5; inset: -2.4cqw -2.4cqw 0; border: .45cqw solid rgba(255,226,174,.84); border-bottom: 0; border-radius: inherit; pointer-events: none; }
+.palaceReveal { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; background: radial-gradient(ellipse at 50% 42%, #ffe5ae, #a85d36 50%, #24101d 78%); }
+.palaceReveal img { position: absolute; inset: 0; object-fit: cover; object-position: center 38%; opacity: .83; }
+.palaceReveal span { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,12,28,.15), rgba(23,12,16,.06) 45%, rgba(12,7,14,.68)); }
+.palaceLeaf { position: absolute; z-index: 4; top: 0; bottom: 0; width: 50.5%; overflow: hidden; backface-visibility: hidden; background-repeat: no-repeat; background-size: 100% 100%; box-shadow: inset 0 0 0 .45cqw rgba(226,183,113,.35); transition: transform 2.25s cubic-bezier(.55,0,.22,1) .15s, filter 2.25s ease; }
+.palaceLeaf::before, .palaceLeaf::after { content: none; }
+.palaceLeaf i { display: none; }
+.palaceLeafLeft { left: 0; transform-origin: left center; background-image: url("/showcase/real/door-left.webp"); }
+.palaceLeafRight { right: 0; transform-origin: right center; background-image: url("/showcase/real/door-right.webp"); }
+.opening .palaceLeafLeft { transform: perspective(100cqw) rotateY(-112deg); filter: brightness(.72); }
+.opening .palaceLeafRight { transform: perspective(100cqw) rotateY(112deg); filter: brightness(.72); }
+.palaceSteps { position: absolute; z-index: 5; left: 50%; bottom: 0; width: 76%; transform: translateX(-50%); }
+.palaceSteps i { display: block; height: 1.7cqh; margin-top: .45cqh; border: 1px solid rgba(255,221,157,.45); background: linear-gradient(180deg, #bd8f5d, #392a31 70%); box-shadow: 0 1cqh 2cqh rgba(0,0,0,.4); }
+.palaceSteps i:nth-child(2) { width: 88%; margin-inline: auto; }
+.palaceSteps i:nth-child(3) { width: 75%; margin-inline: auto; }
+.palaceLantern { position: absolute; z-index: 6; bottom: 12%; width: 4cqw; height: 10cqh; border: 1px solid #dcb66e; border-radius: 42% 42% 10% 10%; background: linear-gradient(90deg, #3c2c36, #c18b4e 50%, #32212b); box-shadow: 0 0 4cqw rgba(255,187,93,.38); }
+.palaceLantern::before { content: ""; position: absolute; left: 50%; top: -3cqh; height: 3cqh; border-left: 1px solid #dfbd7c; }
+.palaceLantern i { position: absolute; inset: 20%; background: radial-gradient(ellipse, #fff4ba, #ffb948 40%, transparent 74%); filter: blur(.2cqw); }
+.palaceLanternLeft { left: 10%; }
+.palaceLanternRight { right: 10%; }
+.palaceFloor { position: absolute; inset: auto 0 0; height: 12%; background: repeating-linear-gradient(90deg, transparent 0 14%, rgba(255,219,147,.18) 14.2% 14.5%, transparent 14.7% 28%), linear-gradient(180deg, #70503d, #17111b); box-shadow: 0 -1cqh 4cqh rgba(255,196,121,.15); }
+.sheeshmahal .sign { display: none; }
+.sheeshmahal .kicker { color: #e7c77f; font-size: max(10px, 2.2cmin); }
+.sheeshmahal .names { font-size: max(31px, 7.2cmin); }
+.sheeshmahal .date { color: #f7e7c2; }
+.sheeshmahal .tap { bottom: 4cqh; border-color: rgba(255,226,173,.72); background: rgba(20,14,26,.68); box-shadow: 0 0 2cqw rgba(255,206,130,.25); }
+.opening .palaceDomeRow, .opening .palaceBalcony, .opening .palaceLantern, .opening .palaceSteps { opacity: .2; transition: opacity 1.5s ease; }
+.thumb.sheeshmahal .palaceLantern, .thumb.sheeshmahal .palaceDomeRow { display: none; }
+
 /* ---------- wax-sealed envelope on a walnut table ---------- */
 .waxenvelope { background: #160a05 url("/showcase/real/table.webp") 0 0 / 384px; display: grid; place-items: center; perspective: 200cqmin; }
 .waxenvelope::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 65% 55% at 48% 42%, rgba(255, 220, 170, 0.22), transparent 60%), radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.7)); pointer-events: none; }
